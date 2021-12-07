@@ -1,0 +1,1170 @@
+<!DOCTYPE html><html class=" js no-flexbox canvas canvastext webgl no-touch geolocation postmessage websqldatabase indexeddb hashchange history draganddrop websockets rgba hsla multiplebgs backgroundsize borderimage borderradius boxshadow textshadow opacity cssanimations csscolumns cssgradients cssreflections csstransforms csstransforms3d csstransitions fontface generatedcontent video audio localstorage sessionstorage webworkers no-applicationcache svg inlinesvg smil svgclippaths" xmlns:mml="http://www.w3.org/1998/Math/MathML" lang="en"><!--<![endif]--><head><script async="" src="//www.google-analytics.com/analytics.js"></script><script type="text/javascript" async="" src="https://www.gstatic.com/recaptcha/releases/QVh-Tz10ahidjrORgXOS1oB0/recaptcha__en.js"></script><script type="text/javascript" async="" src="https://www.gstatic.com/recaptcha/releases/QVh-Tz10ahidjrORgXOS1oB0/recaptcha__en.js"></script><script type="text/javascript" async="" src="https://www.gstatic.com/recaptcha/releases/QVh-Tz10ahidjrORgXOS1oB0/recaptcha__en.js"></script>
+    <meta charset="utf-8">
+    <title>Automatic move pruning for single-agent search - IOS Press</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- These tags have been added for Google Scholar. -->
+<!-- see: http://scholar.google.com/intl/en/scholar/inclusion.html -->
+<!-- Three fields are required at a minimum: title, at least one author, publication date -->
+            <meta name="description" content="Move pruning is a low-overhead technique for reducing search cost in single-agent search problems by avoiding the generation of duplicate states. Redundant sequences of moves, where the effect of one sequence is provably identical to some other seque">
+            <meta name="citation_author" content="Holte, Robert C.">
+            <meta name="citation_author" content="Burch, Neil">
+    <meta name="citation_pdf_url" content="https://content.iospress.com:443/download/ai-communications/aic605?id=ai-communications%2Faic605">
+
+        <meta name="DC.type" content="Text">
+
+        <meta name="citation_firstpage" content="363">
+
+        <meta name="citation_lastpage" content="383">
+
+        <meta name="citation_doi" content="10.3233/AIC-140605">
+
+
+
+
+    <meta name="citation_title" content="Automatic move pruning for single-agent search">
+
+        <meta name="citation_journal_title" content="AI Communications">
+
+
+         <meta name="citation_issn" content="0921-7126">
+    <meta name="citation_volume" content="27">
+    <meta name="citation_issue" content="4">
+        <meta name="citation_publication_date" content="2014/01/01">
+    <meta name="citation_publisher" content="IOS Press">
+
+    <meta name="format-detection" content="telephone=no">
+<link rel="search" href="/opensearch.xml?title=Scolaris&amp;autocompletePath=%2Fautocomplete%3Fq%3D%7BsearchTerms%7D" type="application/opensearchdescription+xml" title="Scolaris">    <link href="//fonts.googleapis.com/css?family=PT+Sans:400,700%7CPT+Serif:400,700" rel="stylesheet" type="text/css">
+    <link rel="stylesheet" href="https://content.iospress.com:443/static/less/journals.less.css@2.6.3">
+    <script async="" src="//www.google-analytics.com/analytics.js"></script><script src="https://content.iospress.com:443/static/js/libs/modernizr-2.5.3.min.js@2.6.3"></script>
+    <link rel="shortcut icon" href="https://content.iospress.com:443/static/img/favicon.ico@2.6.3">
+
+<link rel="stylesheet" type="text/css" href="https://trendmd.s3.amazonaws.com/trendmd.min.css" media="all"><style type="text/css">.MathJax_Hover_Frame {border-radius: .25em; -webkit-border-radius: .25em; -moz-border-radius: .25em; -khtml-border-radius: .25em; box-shadow: 0px 0px 15px #83A; -webkit-box-shadow: 0px 0px 15px #83A; -moz-box-shadow: 0px 0px 15px #83A; -khtml-box-shadow: 0px 0px 15px #83A; border: 1px solid #A6D ! important; display: inline-block; position: absolute}
+.MathJax_Menu_Button .MathJax_Hover_Arrow {position: absolute; cursor: pointer; display: inline-block; border: 2px solid #AAA; border-radius: 4px; -webkit-border-radius: 4px; -moz-border-radius: 4px; -khtml-border-radius: 4px; font-family: 'Courier New',Courier; font-size: 9px; color: #F0F0F0}
+.MathJax_Menu_Button .MathJax_Hover_Arrow span {display: block; background-color: #AAA; border: 1px solid; border-radius: 3px; line-height: 0; padding: 4px}
+.MathJax_Hover_Arrow:hover {color: white!important; border: 2px solid #CCC!important}
+.MathJax_Hover_Arrow:hover span {background-color: #CCC!important}
+</style><style type="text/css">#MathJax_About {position: fixed; left: 50%; width: auto; text-align: center; border: 3px outset; padding: 1em 2em; background-color: #DDDDDD; color: black; cursor: default; font-family: message-box; font-size: 120%; font-style: normal; text-indent: 0; text-transform: none; line-height: normal; letter-spacing: normal; word-spacing: normal; word-wrap: normal; white-space: nowrap; float: none; z-index: 201; border-radius: 15px; -webkit-border-radius: 15px; -moz-border-radius: 15px; -khtml-border-radius: 15px; box-shadow: 0px 10px 20px #808080; -webkit-box-shadow: 0px 10px 20px #808080; -moz-box-shadow: 0px 10px 20px #808080; -khtml-box-shadow: 0px 10px 20px #808080; filter: progid:DXImageTransform.Microsoft.dropshadow(OffX=2, OffY=2, Color='gray', Positive='true')}
+#MathJax_About.MathJax_MousePost {outline: none}
+.MathJax_Menu {position: absolute; background-color: white; color: black; width: auto; padding: 2px; border: 1px solid #CCCCCC; margin: 0; cursor: default; font: menu; text-align: left; text-indent: 0; text-transform: none; line-height: normal; letter-spacing: normal; word-spacing: normal; word-wrap: normal; white-space: nowrap; float: none; z-index: 201; box-shadow: 0px 10px 20px #808080; -webkit-box-shadow: 0px 10px 20px #808080; -moz-box-shadow: 0px 10px 20px #808080; -khtml-box-shadow: 0px 10px 20px #808080; filter: progid:DXImageTransform.Microsoft.dropshadow(OffX=2, OffY=2, Color='gray', Positive='true')}
+.MathJax_MenuItem {padding: 2px 2em; background: transparent}
+.MathJax_MenuArrow {position: absolute; right: .5em; padding-top: .25em; color: #666666; font-size: .75em}
+.MathJax_MenuActive .MathJax_MenuArrow {color: white}
+.MathJax_MenuArrow.RTL {left: .5em; right: auto}
+.MathJax_MenuCheck {position: absolute; left: .7em}
+.MathJax_MenuCheck.RTL {right: .7em; left: auto}
+.MathJax_MenuRadioCheck {position: absolute; left: 1em}
+.MathJax_MenuRadioCheck.RTL {right: 1em; left: auto}
+.MathJax_MenuLabel {padding: 2px 2em 4px 1.33em; font-style: italic}
+.MathJax_MenuRule {border-top: 1px solid #CCCCCC; margin: 4px 1px 0px}
+.MathJax_MenuDisabled {color: GrayText}
+.MathJax_MenuActive {background-color: Highlight; color: HighlightText}
+.MathJax_MenuDisabled:focus, .MathJax_MenuLabel:focus {background-color: #E8E8E8}
+.MathJax_ContextMenu:focus {outline: none}
+.MathJax_ContextMenu .MathJax_MenuItem:focus {outline: none}
+#MathJax_AboutClose {top: .2em; right: .2em}
+.MathJax_Menu .MathJax_MenuClose {top: -10px; left: -10px}
+.MathJax_MenuClose {position: absolute; cursor: pointer; display: inline-block; border: 2px solid #AAA; border-radius: 18px; -webkit-border-radius: 18px; -moz-border-radius: 18px; -khtml-border-radius: 18px; font-family: 'Courier New',Courier; font-size: 24px; color: #F0F0F0}
+.MathJax_MenuClose span {display: block; background-color: #AAA; border: 1.5px solid; border-radius: 18px; -webkit-border-radius: 18px; -moz-border-radius: 18px; -khtml-border-radius: 18px; line-height: 0; padding: 8px 0 6px}
+.MathJax_MenuClose:hover {color: white!important; border: 2px solid #CCC!important}
+.MathJax_MenuClose:hover span {background-color: #CCC!important}
+.MathJax_MenuClose:hover:focus {outline: none}
+</style><style type="text/css">.MathJax_Preview .MJXf-math {color: inherit!important}
+</style><style type="text/css">.MJX_Assistive_MathML {position: absolute!important; top: 0; left: 0; clip: rect(1px, 1px, 1px, 1px); padding: 1px 0 0 0!important; border: 0!important; height: 1px!important; width: 1px!important; overflow: hidden!important; display: block!important; -webkit-touch-callout: none; -webkit-user-select: none; -khtml-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none}
+.MJX_Assistive_MathML.MJX_Assistive_MathML_Block {width: 100%!important}
+</style><style type="text/css">#MathJax_Zoom {position: absolute; background-color: #F0F0F0; overflow: auto; display: block; z-index: 301; padding: .5em; border: 1px solid black; margin: 0; font-weight: normal; font-style: normal; text-align: left; text-indent: 0; text-transform: none; line-height: normal; letter-spacing: normal; word-spacing: normal; word-wrap: normal; white-space: nowrap; float: none; -webkit-box-sizing: content-box; -moz-box-sizing: content-box; box-sizing: content-box; box-shadow: 5px 5px 15px #AAAAAA; -webkit-box-shadow: 5px 5px 15px #AAAAAA; -moz-box-shadow: 5px 5px 15px #AAAAAA; -khtml-box-shadow: 5px 5px 15px #AAAAAA; filter: progid:DXImageTransform.Microsoft.dropshadow(OffX=2, OffY=2, Color='gray', Positive='true')}
+#MathJax_ZoomOverlay {position: absolute; left: 0; top: 0; z-index: 300; display: inline-block; width: 100%; height: 100%; border: 0; padding: 0; margin: 0; background-color: white; opacity: 0; filter: alpha(opacity=0)}
+#MathJax_ZoomFrame {position: relative; display: inline-block; height: 0; width: 0}
+#MathJax_ZoomEventTrap {position: absolute; left: 0; top: 0; z-index: 302; display: inline-block; border: 0; padding: 0; margin: 0; background-color: white; opacity: 0; filter: alpha(opacity=0)}
+</style><style type="text/css">.MathJax_Preview {color: #888}
+#MathJax_Message {position: fixed; left: 1em; bottom: 1.5em; background-color: #E6E6E6; border: 1px solid #959595; margin: 0px; padding: 2px 8px; z-index: 102; color: black; font-size: 80%; width: auto; white-space: nowrap}
+#MathJax_MSIE_Frame {position: absolute; top: 0; left: 0; width: 0px; z-index: 101; border: 0px; margin: 0px; padding: 0px}
+.MathJax_Error {color: #CC0000; font-style: italic}
+</style><style type="text/css">.MJXp-script {font-size: .8em}
+.MJXp-right {-webkit-transform-origin: right; -moz-transform-origin: right; -ms-transform-origin: right; -o-transform-origin: right; transform-origin: right}
+.MJXp-bold {font-weight: bold}
+.MJXp-italic {font-style: italic}
+.MJXp-scr {font-family: MathJax_Script,'Times New Roman',Times,STIXGeneral,serif}
+.MJXp-frak {font-family: MathJax_Fraktur,'Times New Roman',Times,STIXGeneral,serif}
+.MJXp-sf {font-family: MathJax_SansSerif,'Times New Roman',Times,STIXGeneral,serif}
+.MJXp-cal {font-family: MathJax_Caligraphic,'Times New Roman',Times,STIXGeneral,serif}
+.MJXp-mono {font-family: MathJax_Typewriter,'Times New Roman',Times,STIXGeneral,serif}
+.MJXp-largeop {font-size: 150%}
+.MJXp-largeop.MJXp-int {vertical-align: -.2em}
+.MJXp-math {display: inline-block; line-height: 1.2; text-indent: 0; font-family: 'Times New Roman',Times,STIXGeneral,serif; white-space: nowrap; border-collapse: collapse}
+.MJXp-display {display: block; text-align: center; margin: 1em 0}
+.MJXp-math span {display: inline-block}
+.MJXp-box {display: block!important; text-align: center}
+.MJXp-box:after {content: " "}
+.MJXp-rule {display: block!important; margin-top: .1em}
+.MJXp-char {display: block!important}
+.MJXp-mo {margin: 0 .15em}
+.MJXp-mfrac {margin: 0 .125em; vertical-align: .25em}
+.MJXp-denom {display: inline-table!important; width: 100%}
+.MJXp-denom > * {display: table-row!important}
+.MJXp-surd {vertical-align: top}
+.MJXp-surd > * {display: block!important}
+.MJXp-script-box > *  {display: table!important; height: 50%}
+.MJXp-script-box > * > * {display: table-cell!important; vertical-align: top}
+.MJXp-script-box > *:last-child > * {vertical-align: bottom}
+.MJXp-script-box > * > * > * {display: block!important}
+.MJXp-mphantom {visibility: hidden}
+.MJXp-munderover {display: inline-table!important}
+.MJXp-over {display: inline-block!important; text-align: center}
+.MJXp-over > * {display: block!important}
+.MJXp-munderover > * {display: table-row!important}
+.MJXp-mtable {vertical-align: .25em; margin: 0 .125em}
+.MJXp-mtable > * {display: inline-table!important; vertical-align: middle}
+.MJXp-mtr {display: table-row!important}
+.MJXp-mtd {display: table-cell!important; text-align: center; padding: .5em 0 0 .5em}
+.MJXp-mtr > .MJXp-mtd:first-child {padding-left: 0}
+.MJXp-mtr:first-child > .MJXp-mtd {padding-top: 0}
+.MJXp-mlabeledtr {display: table-row!important}
+.MJXp-mlabeledtr > .MJXp-mtd:first-child {padding-left: 0}
+.MJXp-mlabeledtr:first-child > .MJXp-mtd {padding-top: 0}
+.MJXp-merror {background-color: #FFFF88; color: #CC0000; border: 1px solid #CC0000; padding: 1px 3px; font-style: normal; font-size: 90%}
+.MJXp-scale0 {-webkit-transform: scaleX(.0); -moz-transform: scaleX(.0); -ms-transform: scaleX(.0); -o-transform: scaleX(.0); transform: scaleX(.0)}
+.MJXp-scale1 {-webkit-transform: scaleX(.1); -moz-transform: scaleX(.1); -ms-transform: scaleX(.1); -o-transform: scaleX(.1); transform: scaleX(.1)}
+.MJXp-scale2 {-webkit-transform: scaleX(.2); -moz-transform: scaleX(.2); -ms-transform: scaleX(.2); -o-transform: scaleX(.2); transform: scaleX(.2)}
+.MJXp-scale3 {-webkit-transform: scaleX(.3); -moz-transform: scaleX(.3); -ms-transform: scaleX(.3); -o-transform: scaleX(.3); transform: scaleX(.3)}
+.MJXp-scale4 {-webkit-transform: scaleX(.4); -moz-transform: scaleX(.4); -ms-transform: scaleX(.4); -o-transform: scaleX(.4); transform: scaleX(.4)}
+.MJXp-scale5 {-webkit-transform: scaleX(.5); -moz-transform: scaleX(.5); -ms-transform: scaleX(.5); -o-transform: scaleX(.5); transform: scaleX(.5)}
+.MJXp-scale6 {-webkit-transform: scaleX(.6); -moz-transform: scaleX(.6); -ms-transform: scaleX(.6); -o-transform: scaleX(.6); transform: scaleX(.6)}
+.MJXp-scale7 {-webkit-transform: scaleX(.7); -moz-transform: scaleX(.7); -ms-transform: scaleX(.7); -o-transform: scaleX(.7); transform: scaleX(.7)}
+.MJXp-scale8 {-webkit-transform: scaleX(.8); -moz-transform: scaleX(.8); -ms-transform: scaleX(.8); -o-transform: scaleX(.8); transform: scaleX(.8)}
+.MJXp-scale9 {-webkit-transform: scaleX(.9); -moz-transform: scaleX(.9); -ms-transform: scaleX(.9); -o-transform: scaleX(.9); transform: scaleX(.9)}
+</style></head>
+
+    <body class="page-article" data-baseurl="https://content.iospress.com:443/" data-git="@2.6.3" data-p13n="no" data-saved-alerts="true" data-ecommerce="true" data-shibboleth="true" data-default-counter="true" style=""><div id="MathJax_Message" style="display: none;"></div>
+    <div class="no-js-message">
+        <i class="icon-warning-sign" role="presentation"></i>
+        You are viewing a javascript disabled version of the site. Please enable Javascript for this site to function properly.
+    </div>
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-61973590-1', 'auto');
+  if (window.location.search &&
+      window.location.search.search(/[?&]\w*email=[^&]+(@|%40)[^&]+/i) >= 0) {
+    // Build URL which doesn't expose parameters
+    ga('set', 'location',
+        window.location.protocol + '//' +
+        window.location.host + window.location.pathname);
+  }
+  ga('send', 'pageview');
+</script><a href="#header-skiplink" class="skiplinks">Go to header</a><a href="#nav-skiplink" class="skiplinks">Go to navigation</a><a href="#search-bar" class="skiplinks">Go to search</a><a href="#content" class="skiplinks">Go to contents</a><a href="#footer-skiplink" class="skiplinks">Go to footer</a>    <div class="header-block">
+<header id="header" class="header block">
+    <a href="#nav-skiplink" class="skiplinks" id="header-skiplink">In header section. Select this link to jump to navigation</a>
+    <div class="container">
+        <div class="logo">
+            <a href="https://content.iospress.com:443/" title="Home" class="header-home-link">
+              <img src="https://content.iospress.com:443/static/img/header-logo.png@2.6.3" alt="IOS Press">
+            </a>
+        </div>
+        <div class="header-menu clearfix">
+            <ul class="">
+              <li class=""><a href="https://content.iospress.com:443/page/help">Help</a></li>
+              <li class=""><a href="https://content.iospress.com:443/page/about">About us</a></li>
+              <li class=""><a href="https://content.iospress.com:443/page/contact">Contact us</a></li>
+            </ul>
+        </div>
+    </div>
+</header>
+<nav id="nav" class="nav">
+    <a href="#content" class="skiplinks" id="nav-skiplink">In navigation section. Select this link to jump to content</a>
+    <div class="menu-mobile js-toggle-handle">
+        <a class="menu-mobile-text" href="#" title="Main menu"> Menu</a>
+    </div>
+    <div class="container nav-menu-dropdown toggle-section clearfix">
+        <ul class="nav-item nav-main">
+          <!--Add selected class if you want to display the nav for the current page as selected
+          -->
+          <li class="nav-item"><a href="https://content.iospress.com:443/">Home</a></li>
+          <li class="nav-item"><a href="https://content.iospress.com:443/journals/">Journals</a></li>
+        </ul>
+        <ul class="nav-item nav-sp-side nav-sub clearfix">
+                <li>
+                    <form class="getCartForm" id="getCart" method="get" action="https://content.iospress.com:443/cart">
+                        <button class="getCartButton">
+                          <i class="icon-shopping-cart"></i> Cart
+                          <span class="shopping-cart">
+                          </span>
+                        </button>
+                        <input type="hidden" name="dest" value="https://content.iospress.com/articles/ai-communications/aic605">
+                            <span class="currency-section">
+                                        <span class="selected-currency">€</span>
+                                        <button class="currency-change" data-currency="US_DOLLAR"><span class="visuallyhidden">title="Change currency to USD - US Dollar"</span>$</button>
+                            </span>
+                    </form>
+                </li>
+            <li>
+                    <a id="p13n-menu" href="/login?dest=https://content.iospress.com:443/" data-recaptchasitekey="6LfnJVIUAAAAAE-bUOMg0MJGki4lqSvDmhJp19fN">
+                        Log in / Register
+                    </a>
+                <div id="p13n-dd" class="p13n-dd"><div class="p13n-dd-signin"><div class="p13n-dd-login"><form novalidate="novalidate"><h1 class="p13n-header">Log in to my account</h1>
+<div class="p13n-inner">
+    <div class="p13n-form-row">
+        <span class="p13n-l-error"></span>
+    </div>
+    <p class="p13n-form-row">
+        Log in or <a href="#" class="l-toggle">register</a> to purchase instant access and more.
+    </p>
+    <div class="p13n-form-row">
+        <label class="l-label" for="l-email">Email</label>
+        <input type="email" id="l-email" name="j_username" placeholder="Email" required="">
+    </div>
+    <div class="p13n-form-row">
+        <label class="l-label" for="l-password">Password</label>
+        <input type="password" id="l-password" name="j_password" placeholder="Password" required="">
+    </div>
+    <div class="p13n-form-row">
+        <input type="submit" class="btn btn-login btn-primary" value="Log in">
+    </div>
+    <div class="p13n-row clearfix">
+        <label for="remember-me" class="remember-me">
+            <input id="remember-me" name="remember-me" type="checkbox">
+            Remember me
+        </label>
+        <a href="https://content.iospress.com:443/forgotPassword" class="forgotten-password">Forgotten password</a>
+    </div>
+</div>
+<button class="btn p13n-menu-hide"><span class="visuallyhidden">Hide this section</span><i class="icon-remove" role="presentation"></i></button>
+</form></div>
+<div class="p13n-dd-register"><form novalidate="novalidate"><h1 class="p13n-header">Register for my account</h1>
+<div class="p13n-inner">
+    <div class="p13n-form-row"><label id="reg-error" class="error"></label></div>
+
+    <p class="p13n-form-row">
+        Register to purchase instant access and more or <a href="#" class="r-toggle">log in</a> to your account
+    </p>
+
+    
+        <div class="p13n-form-row">
+            <label class="r-label" for="r-firstName">First name</label>
+            <input class="r-addtional" type="text" id="r-firstName" name="firstName" placeholder="First name" required="">
+            
+        </div>
+    
+        <div class="p13n-form-row">
+            <label class="r-label" for="r-lastName">Last name</label>
+            <input class="r-addtional" type="text" id="r-lastName" name="lastName" placeholder="Last name" required="">
+            
+        </div>
+    
+
+    <div class="p13n-form-row">
+        <label class="r-label" for="r-email">Email</label>
+        <input type="email" id="r-email" name="email" placeholder="Email" required="required">
+    </div>
+    <div class="p13n-form-row">
+        <label class="r-label" for="r-password">Password</label>
+        <input type="password" id="r-password" name="password" placeholder="Password" required="required">
+    </div>
+    <div class="p13n-form-row">
+        <label class="r-label" for="r-password">Confirm password</label>
+        <input type="password" id="r-cpassword" name="confirmPassword" placeholder="Confirm password" required="required" equalto="#r-password">
+    </div>
+
+
+    
+        <div class="p13n-checkbox-row">
+            <label for="r-termsAccepted" class="r-termsAccepted">
+                <input class="r-permissions" type="checkbox" name="termsAccepted" id="r-termsAccepted" required="">
+                I accept the <a href="https://content.iospress.com:443/page/terms" target="_blank">terms and conditions</a> 
+            </label>
+        </div>
+    
+        <div class="p13n-checkbox-row">
+            <label for="r-allowsCookies" class="r-allowsCookies">
+                <input class="r-permissions" type="checkbox" name="allowsCookies" id="r-allowsCookies" required="">
+                You can use <a href="https://content.iospress.com:443/page/privacy" target="_blank">cookies</a> 
+            </label>
+        </div>
+    
+        <div class="p13n-checkbox-row">
+            <label for="r-sendNewsLetter" class="r-sendNewsLetter">
+                <input class="r-permissions" type="checkbox" name="sendNewsLetter" id="r-sendNewsLetter">
+                Receive news and updates! <span class="p13n-form-additional-info">(optional)</span>
+            </label>
+        </div>
+    
+
+    <div class="p13n-form-row">
+        <input id="r-register" type="submit" class="btn btn-signup btn-primary" value="Register">
+        <script src="https://www.google.com/recaptcha/api.js" async="" defer=""></script>
+        <div class="g-recaptcha" data-sitekey="6LfnJVIUAAAAAE-bUOMg0MJGki4lqSvDmhJp19fN"><div style="width: 304px; height: 78px;"><div><iframe src="https://www.google.com/recaptcha/api2/anchor?ar=1&amp;k=6LfnJVIUAAAAAE-bUOMg0MJGki4lqSvDmhJp19fN&amp;co=aHR0cHM6Ly9jb250ZW50Lmlvc3ByZXNzLmNvbTo0NDM.&amp;hl=en&amp;v=QVh-Tz10ahidjrORgXOS1oB0&amp;size=normal&amp;cb=b3i2gmnf97z9" width="304" height="78" role="presentation" name="a-xj4734u1qvam" frameborder="0" scrolling="no" sandbox="allow-forms allow-popups allow-same-origin allow-scripts allow-top-navigation allow-modals allow-popups-to-escape-sandbox"></iframe></div><textarea id="g-recaptcha-response" name="g-recaptcha-response" class="g-recaptcha-response" style="width: 250px; height: 40px; border: 1px solid rgb(193, 193, 193); margin: 10px 25px; padding: 0px; resize: none; display: none;"></textarea></div><iframe style="display: none;"></iframe></div>
+    </div>
+</div>
+<button class="btn p13n-menu-hide"><span class="visuallyhidden">Hide this section</span><i class="icon-remove" role="presentation"></i></button>
+</form></div>
+<div class="p13n-dd-forgotten"></div>
+<div class="p13n-dd-menu"><div><h2 class="p13n-header p13n-welcome-msg">Hello <span class="name"></span></h2>
+<div class="p13n-inner">
+    <ul class="p13n-menu">
+        <li>
+            <a href="https://content.iospress.com:443/saved-items">
+                <span class="p-icon-saveditems icon-star menu-icon"></span> Saved items
+                <span class="p13n-count p-count-saveditems"> (0)</span>
+            </a>
+        </li>
+        <li>
+            <a href="https://content.iospress.com:443/saved-searches">
+                <span class="p-icon-savedsearches icon-search menu-icon"></span> Saved searches
+                <span class="p13n-count p-count-savedsearches">(0)</span>
+            </a>
+        </li>
+        
+        <li>
+            <a href="https://content.iospress.com:443/saved-tocs">
+                <span class="p-icon-savedtocs icon-star menu-icon"></span> Saved new issue alerts
+                <span class="p13n-count p-count-savedtocs">(0)</span>
+            </a>
+        </li>
+        
+        <li>
+            <a href="https://content.iospress.com:443/my-account">
+                <span class="p-icon-myaccount icon-user menu-icon"></span> Edit account
+            </a>
+        </li>
+        
+        <li>
+            <a href="https://content.iospress.com:443/checkout/purchase-history" class="p13n-history-button">
+                <span class="icon-th-list menu-icon"></span> Purchase history
+            </a>
+        </li>
+        
+        
+    </ul>
+
+    <input type="submit" name="logout" value="Log out" class="btn btn-signout">
+</div>
+<button class="btn p13n-menu-hide"><span class="visuallyhidden">Hide this section</span><i class="icon-remove" role="presentation"></i></button>
+</div></div>
+</div></div>
+                <div class="p13n-modal-overlay"></div>
+                    <div id="p13n-history" data-uri="https://content.iospress.com:443/checkout/purchase-history"></div>
+            </li>
+        </ul>
+    </div>
+</nav>
+<div id="search" class="search-complex" role="search">
+    <div class="container">
+        <form id="search-form" action="https://content.iospress.com:443/search" class="search-form block clearfix">
+            <div class="wrap-input clearfix">
+                <i role="presentation" class="icon-search"></i>
+                <label for="search-bar" class="visuallyhidden">Search</label>
+                <span role="status" aria-live="polite" class="ui-helper-hidden-accessible"></span><input id="search-bar" type="search" name="q" placeholder="Search" class="search-query search-input focused ui-autocomplete-input" value="" required="required" autocomplete="off">
+                <button type="submit" class="search-btn btn">Search</button>
+                <input name="published_between" type="hidden" value="">
+                <input name="from_year" type="hidden" value="">
+                <input name="to_year" type="hidden" value="">
+                
+            </div>
+        </form>
+        <div class="search-row second-search-row clearfix">
+        <form id="peer-review-form" novalidate="novalidate">
+            <label class="search-label published-label" for="published-between">
+                <input id="published-between" name="published_between" type="checkbox">
+                Published between:
+            </label>
+            <label class="visuallyhidden" for="from-year">Published from year:</label>
+            <input class="tinput search-year search-year-from" id="from-year" name="from_year" type="text" placeholder="YYYY" pattern="\d{4,4}">
+            <span>and</span>
+            <label class="visuallyhidden" for="to-year">Published to year:</label>
+            <input class="tinput search-year" id="to-year" name="to_year" type="text" placeholder="YYYY" pattern="\d{4,4}">
+            <a class="search-syntax" href="#">Search syntax help</a>
+        </form>
+        </div>
+<div id="search-syntax" class="search-helptext">
+    <div class="container">
+        <div class="search-row search-syntax-row clearfix">
+            <div class="search-syntax-content">
+                <p class="intro">Searching for just a few words should be enough to get started. If you need to make more complex queries, use the tips below to guide you.</p>
+                <dl>
+                    <dt>Boolean operators</dt>
+                    <dd>This <strong>OR</strong> that<br>This <strong>AND</strong> that<br>This <strong>NOT</strong> that</dd>
+
+                    <dt>Must include "This" and "That"</dt>
+                    <dd>This That</dd>
+                    <dt class="grouped">Must not include "That"</dt>
+                    <dd class="grouped">This -That</dd>
+                    <dt class="grouped">"This" is optional</dt>
+                    <dd class="grouped">This +That</dd>
+                    <dt>Exact phrase "This That"</dt>
+                    <dd>"This That"</dd>
+
+                    <dt>Grouping</dt>
+                    <dd>(this <strong>AND</strong> that) <strong>OR</strong> (that <strong>AND</strong> other)</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+</div>    </div>
+</div>
+
+
+    </div>
+
+
+
+
+
+
+    <div class="container main-container">
+        <a href="#nav-skiplink" class="skiplinks" id="content">In content section. Select this link to jump to navigation</a>
+    <script>
+        ga('set', 'dimension6','Automatic move pruning for single-agent search');
+        ga('set', 'dimension3',"AI Communications");
+        ga('set', 'metric2', 1 );
+        ga('set', 'dimension4',"Volume 27");
+        ga('set', 'metric3', 1 );
+        ga('set', 'metric4', 1 );
+        ga('set', 'metric5', 1 );
+        ga('set', 'dimension5',"Issue 4");
+        ga('send', 'pageview', "/AI Communications/");
+    </script>
+    <div class="main col">
+
+       
+        <div class="col-spacing shadow">
+            <header class="article-header">
+                <h1 class="" data-p13n="journal-article" data-p13n-uri="https://content.iospress.com/articles/ai-communications/aic605" data-p13n-articleid="ai-communications/aic605" data-p13n-title="Automatic move pruning for single-agent search" data-abstract="Move pruning is a low-overhead technique for reducing search cost in single-agent search problems by avoiding the generation of duplicate states. Redundant sequences of moves, where the effect of one sequence is provably identical to some other sequence of moves, are suppressed during search. We present an algorithm for automatically identifying redundant move sequences in a general class of single-agent search problems, and a method for selecting redundant move sequences to prune during search. We demonstrate that the redundant move sequences which are to be pruned must be chosen carefully, and give experimental results using our move pruning method which show a speedup of multiple orders of magnitude in a variety of domains. Finally, we give theoretical results on conditions where move pruning does, and does not, affect the correctness of different search algorithms. "><div><div class="percy-options">
+    
+	<a href="#" class="btn btn-p13n p13n-cite"> Cite </a>
+	<a href="#" class="btn btn-p13n p13n-email"> Email </a>
+	<a href="#" class="btn btn-p13n p13n-print"> Print </a>
+	<a href="#" class="btn btn-p13n p13n-share"> Share </a>
+</div>
+
+</div>
+                        Automatic move pruning for single-agent search
+                </h1>
+                        <div class="front-meta-data" id="article1-front-metadata"><p class="metadata-entry"><span class="generated">Article type: </span>Research Article</p><p class="metadata-entry"><span class="generated">Authors: </span><a href="https://content.iospress.com:443/search?q=author%3A%28%22Holte, Robert C.%22%29">Holte, Robert C.</a><sup><a href="#"></a>; <a href="#"></a></sup> | <a href="https://content.iospress.com:443/search?q=author%3A%28%22Burch, Neil%22%29">Burch, Neil</a><sup><a href="#"></a></sup></p><p class="metadata-entry"><span class="generated">Affiliations: </span><a id="aff1"><!-- named anchor --></a>Computing Science Department, University of Alberta, Edmonton, AB, Canada. E-mails: {holte, nburch}@cs.ualberta.ca</p><p class="metadata-entry"><span class="generated">Note: </span><span id="">[] Corresponding author: Robert C. Holte, Computing Science Department, University of Alberta, Edmonton, AB T6G 2E8, Canada. E-mail: holte@cs.ualberta.ca</span></p><p class="metadata-entry"><span class="generated">Abstract: </span><span>Move pruning is a low-overhead technique for reducing search cost in single-agent search problems by avoiding the generation of duplicate states. Redundant sequences of moves, where the effect of one sequence is provably identical to some other sequence of moves, are suppressed during search. We pr</span><span class="below-fold" data-below-fold="aic605">esent an algorithm for automatically identifying redundant move sequences in a general class of single-agent search problems, and a method for selecting redundant move sequences to prune during search. We demonstrate that the redundant move sequences which are to be pruned must be chosen carefully, and give experimental results using our move pruning method which show a speedup of multiple orders of magnitude in a variety of domains. Finally, we give theoretical results on conditions where move pruning does, and does not, affect the correctness of different search algorithms. </span></p><p class="metadata-entry"><span class="generated">Keywords: </span>Heuristic search, singe-agent search problem, move pruning</p><p class="metadata-entry"><span class="generated">DOI: </span>10.3233/AIC-140605</p><p class="metadata-entry"><span class="generated">Journal: </span><a href="https://content.iospress.com:443/journals/ai-communications">AI Communications</a>, vol. 27, no. 4, pp. 363-383, 2014</p><div class="metadata-entry history-date-wrapper"><div class="history-date"><span class="generated">Published:</span> 2014</div></div></div>
+                <div class="pricing">
+
+                <strong>Price: EUR 27.50</strong>
+                    <form class="add-to-cart-form" id="add-ArticleId_aic605" action="https://content.iospress.com:443/cart/add" method="post">
+                      <input type="hidden" name="dest" value="https://content.iospress.com/articles/ai-communications/aic605">
+                      <input type="hidden" name="id" value="ArticleId_aic605">
+                      <button class="btn btn-arrow btn-cart add-single"><i class="icon-shopping-cart" role="presentation"></i> Add to cart</button>
+                    </form>
+                </div>
+            </header>
+            <div class="complete-article-html-placeholder">
+                    <div class="no-access-section">
+                            
+                                    <button class="btn btn-wide open-p13n-modal">Log in or register to view or purchase instant access </button>
+                          
+                  </div>
+                    <script src="//api.growkudos.com/widgets/article/10.3233/AIC-140605"></script>
+                    <script src="//api.growkudos.com/widgets/resources/10.3233/AIC-140605"></script>                                     
+            </div>
+        </div>
+    </div>
+    <div class="citation-popup-container"></div>
+
+    <div class="sidebar col">
+<ul class="social-media-share">
+    <li><h2>Share this: </h2></li>
+    <li>
+        <a class="twitter-share-button" href="https://twitter.com/intent/tweet?status=Automatic%20move%20pruning%20for%20single-agent%20search+https://content.iospress.com/articles/ai-communications/aic605" target="_blank"><span class="visuallyhidden">Twitter share</span><i class="icon-twitter icon icon-big"></i></a>
+    </li>
+    <li>
+        <a href="https://www.facebook.com/sharer/sharer.php?u=https://content.iospress.com/articles/ai-communications/aic605&amp;title=Automatic%20move%20pruning%20for%20single-agent%20search" target="_blank"><span class="visuallyhidden">Facebook share</span><i class="icon-facebook icon icon-big"></i></a>
+    </li>
+    <li>
+        <a href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://content.iospress.com/articles/ai-communications/aic605&amp;title=Automatic%20move%20pruning%20for%20single-agent%20search" target="_blank"><span class="visuallyhidden">Linked in share</span><i class="icon-linkedin icon icon-big"></i></a>
+    </li>
+</ul><div class="volume-list toc folded-section shadow border" id="table-of-content">
+    <ul>
+            <li class="">
+                <button class="volume-no js-volume-toggle" title="Press to access issues within this volume">
+                    <i class="icon icon-plus"></i>Volume Pre-press
+                </button>
+                <ul class="toggle-section">
+                            <li><a href="https://content.iospress.com:443/journals/ai-communications/Pre-press/Pre-press">Issue Pre-press</a></li>
+                </ul>
+            </li>
+            <li class="">
+                <button class="volume-no js-volume-toggle" title="Press to access issues within this volume">
+                    <i class="icon icon-plus"></i>Volume 33
+                </button>
+                <ul class="toggle-section">
+                            <li><a href="https://content.iospress.com:443/journals/ai-communications/33/1">Issue 1</a></li>
+                </ul>
+            </li>
+            <li class="">
+                <button class="volume-no js-volume-toggle" title="Press to access issues within this volume">
+                    <i class="icon icon-plus"></i>Volume 32
+                </button>
+                <ul class="toggle-section">
+                            <li><a href="https://content.iospress.com:443/journals/ai-communications/32/5-6">Issue 5-6</a></li>
+                            <li><a href="https://content.iospress.com:443/journals/ai-communications/32/4">Issue 4</a></li>
+                            <li><a href="https://content.iospress.com:443/journals/ai-communications/32/3">Issue 3</a></li>
+                            <li><a href="https://content.iospress.com:443/journals/ai-communications/32/2">Issue 2</a></li>
+                            <li><a href="https://content.iospress.com:443/journals/ai-communications/32/1">Issue 1</a></li>
+                </ul>
+            </li>
+            <li class="">
+                <button class="volume-no js-volume-toggle" title="Press to access issues within this volume">
+                    <i class="icon icon-plus"></i>Volume 31
+                </button>
+                <ul class="toggle-section">
+                            <li><a href="https://content.iospress.com:443/journals/ai-communications/31/6">Issue 6</a></li>
+                            <li><a href="https://content.iospress.com:443/journals/ai-communications/31/5">Issue 5</a></li>
+                            <li><a href="https://content.iospress.com:443/journals/ai-communications/31/4">Issue 4</a></li>
+                            <li><a href="https://content.iospress.com:443/journals/ai-communications/31/3">Issue 3</a></li>
+                            <li><a href="https://content.iospress.com:443/journals/ai-communications/31/2">Issue 2</a></li>
+                            <li><a href="https://content.iospress.com:443/journals/ai-communications/31/1">Issue 1</a></li>
+                </ul>
+            </li>
+            <li class="">
+                <button class="volume-no js-volume-toggle" title="Press to access issues within this volume">
+                    <i class="icon icon-plus"></i>Volume 30
+                </button>
+                <ul class="toggle-section">
+                            <li><a href="https://content.iospress.com:443/journals/ai-communications/30/6">Issue 6</a></li>
+                            <li><a href="https://content.iospress.com:443/journals/ai-communications/30/5">Issue 5</a></li>
+                            <li><a href="https://content.iospress.com:443/journals/ai-communications/30/3-4">Issue 3-4</a></li>
+                            <li><a href="https://content.iospress.com:443/journals/ai-communications/30/2">Issue 2</a></li>
+                            <li><a href="https://content.iospress.com:443/journals/ai-communications/30/1">Issue 1</a></li>
+                </ul>
+            </li>
+    </ul>
+
+            <div class="below-fold">
+                <ul>
+                            <li class="">
+                                <button class="volume-no js-volume-toggle" title="Press to access issues within this volume">
+                                    <i class="icon icon-plus"></i>Volume 29
+                                </button>
+                                <ul class="toggle-section">
+                                            <li><a href="https://content.iospress.com:443/journals/ai-communications/29/6">Issue 6</a></li>
+                                            <li><a href="https://content.iospress.com:443/journals/ai-communications/29/5">Issue 5</a></li>
+                                            <li><a href="https://content.iospress.com:443/journals/ai-communications/29/4">Issue 4</a></li>
+                                            <li><a href="https://content.iospress.com:443/journals/ai-communications/29/3">Issue 3</a></li>
+                                            <li><a href="https://content.iospress.com:443/journals/ai-communications/29/2">Issue 2</a></li>
+                                            <li><a href="https://content.iospress.com:443/journals/ai-communications/29/1">Issue 1</a></li>
+                                </ul>
+                            </li>
+                            <li class="">
+                                <button class="volume-no js-volume-toggle" title="Press to access issues within this volume">
+                                    <i class="icon icon-plus"></i>Volume 28
+                                </button>
+                                <ul class="toggle-section">
+                                            <li><a href="https://content.iospress.com:443/journals/ai-communications/28/4">Issue 4</a></li>
+                                            <li><a href="https://content.iospress.com:443/journals/ai-communications/28/3">Issue 3</a></li>
+                                            <li><a href="https://content.iospress.com:443/journals/ai-communications/28/2">Issue 2</a></li>
+                                            <li><a href="https://content.iospress.com:443/journals/ai-communications/28/1">Issue 1</a></li>
+                                </ul>
+                            </li>
+                            <li class="active">
+                                <button class="volume-no js-volume-toggle" title="Press to access issues within this volume">
+                                    <i class="icon icon-minus"></i>Volume 27
+                                </button>
+                                <ul class="toggle-section open">
+                                            <li class="active"><span><a href="https://content.iospress.com:443/journals/ai-communications/27/4">Issue 4</a></span></li>
+                                            <li><a href="https://content.iospress.com:443/journals/ai-communications/27/3">Issue 3</a></li>
+                                            <li><a href="https://content.iospress.com:443/journals/ai-communications/27/2">Issue 2</a></li>
+                                            <li><a href="https://content.iospress.com:443/journals/ai-communications/27/1">Issue 1</a></li>
+                                </ul>
+                            </li>
+                            <li class="hidden">
+                                <button class="volume-no js-volume-toggle" title="Press to access issues within this volume">
+                                    <i class="icon icon-plus"></i>Volume 26
+                                </button>
+                                <ul class="toggle-section">
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/26/4">Issue 4</a></li>
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/26/3">Issue 3</a></li>
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/26/2">Issue 2</a></li>
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/26/1">Issue 1</a></li>
+                                </ul>
+                            </li>
+                            <li class="hidden">
+                                <button class="volume-no js-volume-toggle" title="Press to access issues within this volume">
+                                    <i class="icon icon-plus"></i>Volume 25
+                                </button>
+                                <ul class="toggle-section">
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/25/4">Issue 4</a></li>
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/25/3">Issue 3</a></li>
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/25/2">Issue 2</a></li>
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/25/1">Issue 1</a></li>
+                                </ul>
+                            </li>
+                            <li class="hidden">
+                                <button class="volume-no js-volume-toggle" title="Press to access issues within this volume">
+                                    <i class="icon icon-plus"></i>Volume 24
+                                </button>
+                                <ul class="toggle-section">
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/24/4">Issue 4</a></li>
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/24/3">Issue 3</a></li>
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/24/2">Issue 2</a></li>
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/24/1">Issue 1</a></li>
+                                </ul>
+                            </li>
+                            <li class="hidden">
+                                <button class="volume-no js-volume-toggle" title="Press to access issues within this volume">
+                                    <i class="icon icon-plus"></i>Volume 23
+                                </button>
+                                <ul class="toggle-section">
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/23/4">Issue 4</a></li>
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/23/2-3">Issue 2-3</a></li>
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/23/1">Issue 1</a></li>
+                                </ul>
+                            </li>
+                            <li class="hidden">
+                                <button class="volume-no js-volume-toggle" title="Press to access issues within this volume">
+                                    <i class="icon icon-plus"></i>Volume 22
+                                </button>
+                                <ul class="toggle-section">
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/22/4">Issue 4</a></li>
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/22/3">Issue 3</a></li>
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/22/2">Issue 2</a></li>
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/22/1">Issue 1</a></li>
+                                </ul>
+                            </li>
+                            <li class="hidden">
+                                <button class="volume-no js-volume-toggle" title="Press to access issues within this volume">
+                                    <i class="icon icon-plus"></i>Volume 21
+                                </button>
+                                <ul class="toggle-section">
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/21/4">Issue 4</a></li>
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/21/2-3">Issue 2-3</a></li>
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/21/1">Issue 1</a></li>
+                                </ul>
+                            </li>
+                            <li class="hidden">
+                                <button class="volume-no js-volume-toggle" title="Press to access issues within this volume">
+                                    <i class="icon icon-plus"></i>Volume 20
+                                </button>
+                                <ul class="toggle-section">
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/20/4">Issue 4</a></li>
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/20/3">Issue 3</a></li>
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/20/2">Issue 2</a></li>
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/20/1">Issue 1</a></li>
+                                </ul>
+                            </li>
+                            <li class="hidden">
+                                <button class="volume-no js-volume-toggle" title="Press to access issues within this volume">
+                                    <i class="icon icon-plus"></i>Volume 19
+                                </button>
+                                <ul class="toggle-section">
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/19/4">Issue 4</a></li>
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/19/3">Issue 3</a></li>
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/19/2">Issue 2</a></li>
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/19/1">Issue 1</a></li>
+                                </ul>
+                            </li>
+                            <li class="hidden">
+                                <button class="volume-no js-volume-toggle" title="Press to access issues within this volume">
+                                    <i class="icon icon-plus"></i>Volume 18
+                                </button>
+                                <ul class="toggle-section">
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/18/4">Issue 4</a></li>
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/18/3">Issue 3</a></li>
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/18/2">Issue 2</a></li>
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/18/1">Issue 1</a></li>
+                                </ul>
+                            </li>
+                            <li class="hidden">
+                                <button class="volume-no js-volume-toggle" title="Press to access issues within this volume">
+                                    <i class="icon icon-plus"></i>Volume 17
+                                </button>
+                                <ul class="toggle-section">
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/17/4">Issue 4</a></li>
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/17/3">Issue 3</a></li>
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/17/2">Issue 2</a></li>
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/17/1">Issue 1</a></li>
+                                </ul>
+                            </li>
+                            <li class="hidden">
+                                <button class="volume-no js-volume-toggle" title="Press to access issues within this volume">
+                                    <i class="icon icon-plus"></i>Volume 16
+                                </button>
+                                <ul class="toggle-section">
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/16/4">Issue 4</a></li>
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/16/3">Issue 3</a></li>
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/16/2">Issue 2</a></li>
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/16/1">Issue 1</a></li>
+                                </ul>
+                            </li>
+                            <li class="hidden">
+                                <button class="volume-no js-volume-toggle" title="Press to access issues within this volume">
+                                    <i class="icon icon-plus"></i>Volume 15
+                                </button>
+                                <ul class="toggle-section">
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/15/4">Issue 4</a></li>
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/15/2,3">Issue 2,3</a></li>
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/15/1">Issue 1</a></li>
+                                </ul>
+                            </li>
+                            <li class="hidden">
+                                <button class="volume-no js-volume-toggle" title="Press to access issues within this volume">
+                                    <i class="icon icon-plus"></i>Volume 14
+                                </button>
+                                <ul class="toggle-section">
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/14/4">Issue 4</a></li>
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/14/3">Issue 3</a></li>
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/14/2">Issue 2</a></li>
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/14/1">Issue 1</a></li>
+                                </ul>
+                            </li>
+                            <li class="hidden">
+                                <button class="volume-no js-volume-toggle" title="Press to access issues within this volume">
+                                    <i class="icon icon-plus"></i>Volume 13
+                                </button>
+                                <ul class="toggle-section">
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/13/4">Issue 4</a></li>
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/13/3">Issue 3</a></li>
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/13/2">Issue 2</a></li>
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/13/1">Issue 1</a></li>
+                                </ul>
+                            </li>
+                            <li class="hidden">
+                                <button class="volume-no js-volume-toggle" title="Press to access issues within this volume">
+                                    <i class="icon icon-plus"></i>Volume 12
+                                </button>
+                                <ul class="toggle-section">
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/12/4">Issue 4</a></li>
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/12/3">Issue 3</a></li>
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/12/1-2">Issue 1-2</a></li>
+                                </ul>
+                            </li>
+                            <li class="hidden">
+                                <button class="volume-no js-volume-toggle" title="Press to access issues within this volume">
+                                    <i class="icon icon-plus"></i>Volume 11
+                                </button>
+                                <ul class="toggle-section">
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/11/3,4">Issue 3,4</a></li>
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/11/2">Issue 2</a></li>
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/11/1">Issue 1</a></li>
+                                </ul>
+                            </li>
+                            <li class="hidden">
+                                <button class="volume-no js-volume-toggle" title="Press to access issues within this volume">
+                                    <i class="icon icon-plus"></i>Volume 10
+                                </button>
+                                <ul class="toggle-section">
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/10/3,4">Issue 3,4</a></li>
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/10/2">Issue 2</a></li>
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/10/1">Issue 1</a></li>
+                                </ul>
+                            </li>
+                            <li class="hidden">
+                                <button class="volume-no js-volume-toggle" title="Press to access issues within this volume">
+                                    <i class="icon icon-plus"></i>Volume 9
+                                </button>
+                                <ul class="toggle-section">
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/9/4">Issue 4</a></li>
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/9/3">Issue 3</a></li>
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/9/2">Issue 2</a></li>
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/9/1">Issue 1</a></li>
+                                </ul>
+                            </li>
+                            <li class="hidden">
+                                <button class="volume-no js-volume-toggle" title="Press to access issues within this volume">
+                                    <i class="icon icon-plus"></i>Volume 8
+                                </button>
+                                <ul class="toggle-section">
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/8/3-4">Issue 3-4</a></li>
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/8/2">Issue 2</a></li>
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/8/1">Issue 1</a></li>
+                                </ul>
+                            </li>
+                            <li class="hidden">
+                                <button class="volume-no js-volume-toggle" title="Press to access issues within this volume">
+                                    <i class="icon icon-plus"></i>Volume 7
+                                </button>
+                                <ul class="toggle-section">
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/7/3-4">Issue 3-4</a></li>
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/7/2">Issue 2</a></li>
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/7/1">Issue 1</a></li>
+                                </ul>
+                            </li>
+                            <li class="hidden">
+                                <button class="volume-no js-volume-toggle" title="Press to access issues within this volume">
+                                    <i class="icon icon-plus"></i>Volume 6
+                                </button>
+                                <ul class="toggle-section">
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/6/3-4">Issue 3-4</a></li>
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/6/2">Issue 2</a></li>
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/6/1">Issue 1</a></li>
+                                </ul>
+                            </li>
+                            <li class="hidden">
+                                <button class="volume-no js-volume-toggle" title="Press to access issues within this volume">
+                                    <i class="icon icon-plus"></i>Volume 5
+                                </button>
+                                <ul class="toggle-section">
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/5/4">Issue 4</a></li>
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/5/3">Issue 3</a></li>
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/5/2">Issue 2</a></li>
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/5/1">Issue 1</a></li>
+                                </ul>
+                            </li>
+                            <li class="hidden">
+                                <button class="volume-no js-volume-toggle" title="Press to access issues within this volume">
+                                    <i class="icon icon-plus"></i>Volume 4
+                                </button>
+                                <ul class="toggle-section">
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/4/4">Issue 4</a></li>
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/4/2-3">Issue 2-3</a></li>
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/4/1">Issue 1</a></li>
+                                </ul>
+                            </li>
+                            <li class="hidden">
+                                <button class="volume-no js-volume-toggle" title="Press to access issues within this volume">
+                                    <i class="icon icon-plus"></i>Volume 3
+                                </button>
+                                <ul class="toggle-section">
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/3/4">Issue 4</a></li>
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/3/3">Issue 3</a></li>
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/3/2">Issue 2</a></li>
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/3/1">Issue 1</a></li>
+                                </ul>
+                            </li>
+                            <li class="hidden">
+                                <button class="volume-no js-volume-toggle" title="Press to access issues within this volume">
+                                    <i class="icon icon-plus"></i>Volume 2
+                                </button>
+                                <ul class="toggle-section">
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/2/3-4">Issue 3-4</a></li>
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/2/2">Issue 2</a></li>
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/2/1">Issue 1</a></li>
+                                </ul>
+                            </li>
+                            <li class="hidden">
+                                <button class="volume-no js-volume-toggle" title="Press to access issues within this volume">
+                                    <i class="icon icon-plus"></i>Volume 1
+                                </button>
+                                <ul class="toggle-section">
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/1/4">Issue 4</a></li>
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/1/3">Issue 3</a></li>
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/1/2">Issue 2</a></li>
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/1/1">Issue 1</a></li>
+                                </ul>
+                            </li>
+                            <li class="hidden">
+                                <button class="volume-no js-volume-toggle" title="Press to access issues within this volume">
+                                    <i class="icon icon-plus"></i>Volume 0
+                                </button>
+                                <ul class="toggle-section">
+                                        <li><a href="https://content.iospress.com:443/journals/ai-communications/0/1">Issue 1</a></li>
+                                </ul>
+                            </li>
+                </ul>
+            </div>
+        <div class="view-control-section">
+                <a class="view-more has-hidden-items" href="#">Show more</a>
+        </div>
+</div>
+
+        <div class="ad-block">
+<div id="article-sidebar-ad" data-mercury="full" class="sidebar-advert"><a href="http://iospress.com/journal-newsletters/" target="_blank"><img src="https://www.iospress.nl/wp-content/uploads/2018/05/Content-site_square-banner_signup-journal-newsletters0.png"></a></div>        </div>
+
+        <div class="sidebar-block" id="related-content">
+        <div id="trendmd-suggestions"><div class="trendmd-widget-container trendmd-widget_title-normal trendmd-widget_body-normal" data-trendmd-journal-id="57541" data-trendmd-article-id="fdf3cd2b-9f28-478b-8e7f-c795fe54bddb" data-trendmd-swoop="eyJzd2kiOm51bGwsInB1Ym4iOiJjMGNhNWU1YjdiODJmODNlN2EwMWUzNTA3NjMwNmYyMSIsImlubiI6ImY3ZjgyYjA2MDk1Mjk5MGY2M2Y4NDEyYTg3YzEwM2U2In0=" similar-nonsponsored-merged="true" style="display: block;" data-trendmd-widget-id="0" similar-sponsored-merged="true">
+  <div class="trendmd-widget ">
+    <div class="trendmd-widget-inner">
+        <div class="trendmd-widget-section">
+          <div class="trendmd-widget-header">
+                          <h3 class="trendmd-widget-header__heading">We recommend</h3>
+                      </div>
+          <ol class="trendmd-widget-list"><li class="trendmd-widget-list-item">
+                <a class="trendmd-widget-list-item__link" data-trendmd-id="8f31398a-0eb2-4c0a-a12b-984f3e671d0d" data-trendmd-journal-id="57456" data-trendmd-content-category="" data-trendmd-campaign-id="0" data-trendmd-ct="%7B%22i%22:%5B%5D,%22c%22:%5B%5D,%22n%22:%5B%5D%7D" data-trendmd-sponsored="false" href="https://content.iospress.com/articles/icga-journal/icg25305?utm_source=TrendMD&amp;utm_medium=cpc&amp;utm_campaign=ICGA_Journal_TrendMD_0" rel="noindex, nofollow" target="_self">VERIFIED NULL-MOVE PRUNING</a>
+                                <div class="trendmd-widget-list-item__meta">
+                                                        <span class="js_authors">Tabibi et al.,</span>
+                                                        ICGA Journal,                                                         <span class="js_publication_date">2002</span>
+                                  </div>
+              </li><li class="trendmd-widget-list-item">
+                <a class="trendmd-widget-list-item__link" data-trendmd-id="7731f2fc-117f-4962-983e-628a422c832a" data-trendmd-journal-id="57456" data-trendmd-content-category="" data-trendmd-campaign-id="0" data-trendmd-ct="%7B%22i%22:%5B%5D,%22c%22:%5B%5D,%22n%22:%5B%5D%7D" data-trendmd-sponsored="false" href="https://content.iospress.com/articles/icga-journal/icg22302?utm_source=TrendMD&amp;utm_medium=cpc&amp;utm_campaign=ICGA_Journal_TrendMD_0" rel="noindex, nofollow" target="_self">Adaptive Null-Move Pruning</a>
+                                <div class="trendmd-widget-list-item__meta">
+                                                        <span class="js_authors">Heinz, E.A.,</span>
+                                                        ICGA Journal,                                                         <span class="js_publication_date">1999</span>
+                                  </div>
+              </li><li class="trendmd-widget-list-item">
+                <a class="trendmd-widget-list-item__link" data-trendmd-id="d2542082-7abc-4503-8ecd-dd1763e5bd89" data-trendmd-journal-id="57456" data-trendmd-content-category="" data-trendmd-campaign-id="0" data-trendmd-ct="%7B%22i%22:%5B%5D,%22c%22:%5B%5D,%22n%22:%5B%5D%7D" data-trendmd-sponsored="false" href="https://content.iospress.com/articles/icga-journal/icg9-1-02?utm_source=TrendMD&amp;utm_medium=cpc&amp;utm_campaign=ICGA_Journal_TrendMD_0" rel="noindex, nofollow" target="_self">A Review of Game-Tree Pruning</a>
+                                <div class="trendmd-widget-list-item__meta">
+                                                        <span class="js_authors">Marsland, T.A.,</span>
+                                                        ICGA Journal,                                                         <span class="js_publication_date">1986</span>
+                                  </div>
+              </li><li class="trendmd-widget-list-item">
+                <a class="trendmd-widget-list-item__link" data-trendmd-id="56428b14-1d83-46d5-ae49-25e718526f8d" data-trendmd-journal-id="57456" data-trendmd-content-category="" data-trendmd-campaign-id="0" data-trendmd-ct="%7B%22i%22:%5B%5D,%22c%22:%5B%5D,%22n%22:%5B%5D%7D" data-trendmd-sponsored="false" href="https://content.iospress.com/articles/icga-journal/icg26303?utm_source=TrendMD&amp;utm_medium=cpc&amp;utm_campaign=ICGA_Journal_TrendMD_0" rel="noindex, nofollow" target="_self">TWO LEARNING ALGORITHMS FOR FORWARD PRUNING</a>
+                                <div class="trendmd-widget-list-item__meta">
+                                                        <span class="js_authors">Kocsis et al.,</span>
+                                                        ICGA Journal,                                                         <span class="js_publication_date">2003</span>
+                                  </div>
+              </li><li class="trendmd-widget-list-item">
+                <a class="trendmd-widget-list-item__link" data-trendmd-id="a46ead9c-8fd9-4c35-87d7-fde40ac8fe1e" data-trendmd-journal-id="57456" data-trendmd-content-category="" data-trendmd-campaign-id="0" data-trendmd-ct="%7B%22i%22:%5B%5D,%22c%22:%5B%5D,%22n%22:%5B%5D%7D" data-trendmd-sponsored="false" href="https://content.iospress.com/articles/icga-journal/icg20-1-04?utm_source=TrendMD&amp;utm_medium=cpc&amp;utm_campaign=ICGA_Journal_TrendMD_0" rel="noindex, nofollow" target="_self">Searching with Uncertainty Cut-Offs</a>
+                                <div class="trendmd-widget-list-item__meta">
+                                                        <span class="js_authors">Bjornsson, Y. et al.,</span>
+                                                        ICGA Journal,                                                         <span class="js_publication_date">1997</span>
+                                  </div>
+              </li></ol>
+        </div>
+      
+        <div class="trendmd-widget-section">
+          <div class="trendmd-widget-header">
+                      </div>
+          <ol class="trendmd-widget-list"><li class="trendmd-widget-list-item">
+                <a class="trendmd-widget-list-item__link" data-trendmd-id="9b7d794c-37ce-4806-ad7c-e9882c42b50d" data-trendmd-journal-id="65009" data-trendmd-content-category="None" data-trendmd-campaign-id="133" data-trendmd-ct="%7B%22i%22:true,%22c%22:true,%22n%22:true%7D" data-trendmd-sponsored="true" href="https://mra.asm.org/content/5/14/e00061-17?utm_source=TrendMD&amp;utm_medium=cpc&amp;utm_campaign=Microbiology_Resource_Announcements_TrendMD_1&amp;origin=c0ca5e5b7b82f83e7a01e35076306f21" rel="noindex, nofollow" target="_blank">Draft Genome Sequence of Diplodia seriata F98.1, a Fungal Species Involved in Grapevine Trunk Diseases<span class="trendmd-widget-list-item__link__external"></span></a>
+                                <div class="trendmd-widget-list-item__meta">
+                                                                          Microbiology Resource Announcements,                                                         <span class="js_publication_date">2017</span>
+                                  </div>
+              </li><li class="trendmd-widget-list-item">
+                <a class="trendmd-widget-list-item__link" data-trendmd-id="fdb60ce1-3072-4ad0-a262-d34d15936822" data-trendmd-journal-id="57707" data-trendmd-content-category="" data-trendmd-campaign-id="14788" data-trendmd-ct="%7B%22i%22:true,%22c%22:true,%22n%22:true%7D" data-trendmd-sponsored="true" href="http://journal.hep.com.cn/fcs/EN/pdf/10.1007/s11704-016-6245-4?utm_source=TrendMD&amp;utm_medium=cpc&amp;utm_campaign=Frontiers_of_Computer_Science_TrendMD_1&amp;origin=c0ca5e5b7b82f83e7a01e35076306f21" rel="noindex, nofollow" target="_blank">CLS-Miner: efficient and effective closed high-utility itemset mining<span class="trendmd-widget-list-item__link__external"></span></a>
+                                <div class="trendmd-widget-list-item__meta">
+                                                                          Frontiers of Computer Science,                                                         <span class="js_publication_date">2018</span>
+                                  </div>
+              </li><li class="trendmd-widget-list-item">
+                <a class="trendmd-widget-list-item__link" data-trendmd-id="9a6ca819-021f-45c3-af5b-c4393e08c6ce" data-trendmd-journal-id="61971" data-trendmd-content-category="None" data-trendmd-campaign-id="7960" data-trendmd-ct="%7B%22i%22:true,%22c%22:true,%22n%22:true%7D" data-trendmd-sponsored="true" href="http://www.zjnyxb.cn/EN/abstract/abstract3684.shtml?utm_source=TrendMD&amp;utm_medium=cpc&amp;utm_campaign=Acta_Agriculturae_Zhejiangensis_TrendMD_1&amp;origin=c0ca5e5b7b82f83e7a01e35076306f21" rel="noindex, nofollow" target="_blank">Effects of summer pruning on fruit quality and 6 kinds of aromatic compounds of Jumeigui grape<span class="trendmd-widget-list-item__link__external"></span></a>
+                                <div class="trendmd-widget-list-item__meta">
+                                                        <span class="js_authors">SHANG Jiayin et al.,</span>
+                                                        Acta Agriculturae Zhejiangensis,                                                         <span class="js_publication_date">2019</span>
+                                  </div>
+              </li><li class="trendmd-widget-list-item">
+                <a class="trendmd-widget-list-item__link" data-trendmd-id="9285f696-479b-4c3a-87ee-c8061b8cf679" data-trendmd-journal-id="65009" data-trendmd-content-category="None" data-trendmd-campaign-id="133" data-trendmd-ct="%7B%22i%22:true,%22c%22:true,%22n%22:true%7D" data-trendmd-sponsored="true" href="https://mra.asm.org/content/9/16/e00230-20?utm_source=TrendMD&amp;utm_medium=cpc&amp;utm_campaign=Microbiology_Resource_Announcements_TrendMD_1&amp;origin=c0ca5e5b7b82f83e7a01e35076306f21" rel="noindex, nofollow" target="_blank">Genome Sequences of Chikungunya Virus Isolates from Bolivia<span class="trendmd-widget-list-item__link__external"></span></a>
+                                <div class="trendmd-widget-list-item__meta">
+                                                                          Microbiology Resource Announcements,                                                         <span class="js_publication_date">2020</span>
+                                  </div>
+              </li><li class="trendmd-widget-list-item">
+                <a class="trendmd-widget-list-item__link" data-trendmd-id="dc0b1a26-54e6-42e1-b3c7-0561cc6ac92a" data-trendmd-journal-id="74639" data-trendmd-content-category="None" data-trendmd-campaign-id="12863" data-trendmd-ct="%7B%22i%22:true,%22c%22:true,%22n%22:true%7D" data-trendmd-sponsored="true" href="https://www.healio.com/news/hematology-oncology/20170814/skeletal-metastases-in-breast-carcinoma-classic-patterns-of-treatment-response?utm_campaign=trendhot&amp;utm_medium=cpc&amp;utm_source=trendmd&amp;origin=c0ca5e5b7b82f83e7a01e35076306f21" rel="noindex, nofollow" target="_blank">Skeletal metastases in breast carcinoma: classic patterns of treatment response<span class="trendmd-widget-list-item__link__external"></span></a>
+                                <div class="trendmd-widget-list-item__meta">
+                                                        <span class="js_authors">Munir Ghesani et al.,</span>
+                                                        Healio,                                                         <span class="js_publication_date">2017</span>
+                                  </div>
+              </li></ol>
+        </div>
+      
+    </div>
+    <div class="trendmd-widget-footer">
+      <div class="trendmd-widget-footer-inner">
+        <div class="trendmd-widget-footer-inner-left">
+          <a href="https://www.trendmd.com/how-it-works-readers" target="_blank" class="trendmd-widget-brand" title="TrendMD">
+            <span class="trendmd-widget-brand__recommended">Powered by</span>
+            <span class="trendmd-widget-brand__logo trendmd-widget-brand__logo__faded" style="display: inline-block; width: 93px">
+              <svg viewBox="0 0 234 57" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+                <g id="logo">
+                  <path d="M227.7,56.9 L149.7,56.9 C146.7,56.9 143.7,53.8 143.7,50.9 L143.7,6.9 C143.7,4 146.7,0.9 149.7,0.9 L227.7,0.9 C230.7,0.9 233.7,4 233.7,6.9 L233.7,50.9 C233.7,53.9 230.6,56.9 227.7,56.9 L227.7,56.9 Z" id="shape0" fill="#CA2127"></path>
+                  <g id="group1" transform="translate(0.000000, 14.000000)" fill="#16325c">
+                    <path d="M15.8,5.9 L15.8,29.6 L9.2,29.6 L9.2,5.9 L0.9,5.9 L0.9,0.2 L24.1,0.2 L24.1,5.9 L15.8,5.9 L15.8,5.9 Z" id="shape1"></path>
+                    <path d="M50.2,10 C50.2,14.7 48.3,17.7 44.6,19.1 L52,29.6 L44,29.6 L37.5,20.2 L33,20.2 L33,29.6 L26.4,29.6 L26.4,0.2 L37.5,0.2 C42.1,0.2 45.3,1 47.3,2.5 C49.2,4.1 50.2,6.6 50.2,10 L50.2,10 Z M42.3,13.5 C43.1,12.8 43.5,11.6 43.5,10 C43.5,8.4 43.1,7.3 42.2,6.7 C41.4,6.1 39.9,5.8 37.8,5.8 L32.9,5.8 L32.9,14.5 L37.7,14.5 C40,14.6 41.5,14.2 42.3,13.5 L42.3,13.5 Z" id="shape2"></path>
+                    <path d="M75.6,0.3 L75.6,6.1 L61,6.1 L61,12.1 L74.1,12.1 L74.1,17.7 L61,17.7 L61,23.8 L76,23.8 L76,29.6 L54.4,29.6 L54.4,0.2 L75.6,0.2 L75.6,0.3 Z" id="shape3"></path>
+                    <path d="M99.9,0.3 L106.5,0.3 L106.5,29.7 L99.9,29.7 L85.9,11.3 L85.9,29.7 L79.3,29.7 L79.3,0.3 L85.4,0.3 L99.8,19.2 L99.8,0.3 L99.9,0.3 Z" id="shape4"></path>
+                    <path d="M133.6,4.1 C136.4,6.7 137.8,10.2 137.8,14.8 C137.8,19.4 136.4,23 133.7,25.6 C131,28.3 126.8,29.6 121.2,29.6 L111.2,29.6 L111.2,0.2 L121.6,0.2 C126.7,0.3 130.8,1.5 133.6,4.1 L133.6,4.1 Z M128.8,21.6 C130.4,20.1 131.2,17.9 131.2,15 C131.2,12.1 130.4,9.9 128.8,8.3 C127.2,6.7 124.7,6 121.4,6 L117.7,6 L117.7,23.9 L121.9,23.9 C124.8,23.8 127.1,23.1 128.8,21.6 L128.8,21.6 Z" id="shape5"></path>
+                  </g>
+                  <g id="group2" transform="translate(156.000000, 14.000000)" fill="#FFFFFF">
+                    <path d="M26.9,11.1 L19,27.1 L15,27.1 L7.1,11.1 L7.1,29.6 L0.5,29.6 L0.5,0.2 L9.4,0.2 L17,16.3 L24.6,0.2 L33.4,0.2 L33.4,29.6 L26.8,29.6 L26.8,11.1 L26.9,11.1 Z" id="shape6"></path>
+                    <path d="M60.6,4.1 C63.4,6.7 64.8,10.2 64.8,14.8 C64.8,19.4 63.4,23 60.7,25.6 C58,28.3 53.8,29.6 48.2,29.6 L38.2,29.6 L38.2,0.2 L48.6,0.2 C53.7,0.3 57.8,1.5 60.6,4.1 L60.6,4.1 Z M55.8,21.6 C57.4,20.1 58.2,17.9 58.2,15 C58.2,12.1 57.4,9.9 55.8,8.3 C54.2,6.7 51.7,6 48.4,6 L44.7,6 L44.7,23.9 L48.9,23.9 C51.8,23.8 54.1,23.1 55.8,21.6 L55.8,21.6 Z" id="shape7"></path>
+                  </g>
+                </g>
+              </svg>
+            </span>
+          </a>
+        </div>
+        <div class="trendmd-widget-footer-inner-right">
+                      <span class="trendmd-widget-footer__login-text" style="display:none">
+              <a class="trendmd-widget-footer__login-link" href="https://reader.trendmd.com/login">Sign in</a> or
+              <a class="trendmd-widget-footer__login-link" href="https://reader.trendmd.com/sign_up?wid=57541">create an account</a> for a better, personalized experience
+            </span>
+                    <div class="trendmd-widget-settings"><span class="trendmd-widget-settings__cog"></span>
+            <div class="trendmd-widget-settings__modal"><ul class="trendmd-widget-settings__list">
+                                
+                  <li class="trendmd-widget-settings__item">
+                    <a href="https://www.trendmd.com/targeting-settings" target="_blank" class="trendmd-widget-settings__link">Targeting settings</a>
+                  </li>
+                                <li class="trendmd-widget-settings__item trendmd-widget-dns" style="display: block;">
+                  <a href="https://www.trendmd.com/personaldata" target="_blank" class="trendmd-widget-settings__link">Do not sell my personal information</a>
+                </li>
+                <li class="trendmd-widget-settings__item">
+                  <a href="https://www.trendmd.com/google-analytics" target="_blank" class="trendmd-widget-settings__link">Google Analytics settings</a>
+                </li>
+                              </ul></div>
+          </div>
+        </div>
+        <div class="trendmd-widget-footer-inner-clear"></div>
+        <div class="trendmd-widget-footer-inner-bottom">
+                      <div class="trendmd-widget-cookie-notification">
+              <div class="trendmd-widget-cookie-notification__info"><span>I consent to the use of Google Analytics and related cookies across the TrendMD network (widget, website, blog). </span><a href="https://www.trendmd.com/google-analytics" target="_blank">Learn more</a></div>
+              <div class="trendmd-widget-cookie-notification__actions">
+                <span></span>
+                <button onclick="(function() { window.TrendMD.gdpr().setGaConsent(true); })(); return false;">Yes</button>
+                <button onclick="(function() { window.TrendMD.gdpr().setGaConsent(false); })(); return false;">No</button>
+              </div>
+            </div>
+                  </div>
+      </div>
+    </div>
+  </div>
+  
+    <div id="trendmd-check">
+      <div id="ad-holder"></div>
+    </div>
+  
+</div>
+</div>
+        <script type="text/javascript" src="//trendmd.s3.amazonaws.com/trendmd.min.js"></script>
+        <script type="text/javascript">TrendMD.register({element: '#trendmd-suggestions', track_id: null});</script>
+    </div>
+        </div>
+    </div>
+    
+
+<div id="footer" class="footer block">
+<a href="#header-skiplink" class="skiplinks">Go to header</a><a href="#nav-skiplink" class="skiplinks">Go to navigation</a><a href="#search-bar" class="skiplinks">Go to search</a><a href="#content" class="skiplinks">Go to contents</a><a href="#footer-skiplink" class="skiplinks">Go to footer</a>    <a href="#content" class="skiplinks" id="footer-skiplink">In footer section. Select this link to jump to content</a>
+<div class="footer-primary container clearfix">
+    <div class="col-1by3 col">
+        <div class="spacing">
+            <ul>
+                <li>
+                       <a href="https://content.iospress.com:443/sgk-login">Administrator log in</a>
+                                    <p>
+                                        <a href="https://shibboleth2sp.ios.semcs.net/shib?dest=https%3A%2F%2Fcontent.iospress.com%3A443%2FSHIBBOLETH%3Fdest%3Dhttps%253A%252F%252Fcontent.iospress.com%252Farticles%252Fai-communications%252Faic605">Shibboleth log in</a>
+                                    </p>
+                       
+                </li>
+                <li>
+                    <a href="https://content.iospress.com:443/journals/">Journals</a>
+                </li>
+                <li>
+                    <a href="https://content.iospress.com:443/page/help">Help</a>
+                </li>
+                <li>
+                    <a href="https://content.iospress.com:443/page/about">About us</a>
+                </li>
+                <li>
+                    <a href="https://content.iospress.com:443/page/contact">Contact us</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+    <div class="col-1by3 col">
+        <div class="spacing">
+            <ul class="legal-links">
+                <li>
+                    <a href="https://content.iospress.com:443/page/terms" id="terms-of-use">Terms &amp; conditions</a>
+                </li>
+                <li>
+                    <a href="https://content.iospress.com:443/page/privacy" id="cookies-hidden">Privacy policy</a>
+                </li>
+                <li>
+                    <span class="copy-right">
+                        Copyright ©2020 IOS Press All rights reserved.
+                    </span>
+                </li>
+            </ul>
+        </div>
+    </div>
+    <div class="col-1by3 col">
+        <div class="spacing last">
+<ul class="social-media-tags">
+    <li><strong>Join our network: </strong></li>
+    <li>
+        <a href="https://twitter.com/iospress_stm" target="_blank"><i class="icon-twitter icon icon-big"></i>Twitter</a>
+    </li>
+    <li>
+        <a href="https://www.facebook.com/publisheriospress" target="_blank"><i class="icon-facebook icon icon-big"></i>Facebook</a>
+    </li>
+    <li>
+        <a href="https://www.linkedin.com/company/iospress" target="_blank"><i class="icon-linkedin icon icon-big"></i>LinkedIn</a>
+    </li>
+    <li>
+        <a href="http://www.iospress.nl/feed/?post_type=ios_news" target="_blank"><i class="icon-rss icon icon-big"></i>RSS feed</a>
+    </li>
+</ul>        </div>
+    </div>
+</div><div class="footer-secondary">
+    <div class="container block">
+        <div class="col col-1by3">
+            <div class="spacing">
+                <h2>North America</h2>
+                <p>
+                    IOS Press, Inc. <br>
+                    6751 Tepper Drive <br>
+                    Clifton, VA 20124 <br>
+                    USA <br>
+                </p>
+                <p>
+                    Tel: +1 703 830 6300<br>
+                    Fax: +1 703 830 2300 <br>
+                    <a href="mailto:sales@iospress.com">sales@iospress.com</a> <br>
+                </p>
+                <p class="info">
+                    For editorial issues, like the status of your submitted paper or proposals, write to <a href="mailto:editorial@iospress.nl">editorial@iospress.nl</a>
+                </p>
+            </div>
+        </div>
+        <div class="col col-1by3">
+            <div class="spacing">
+                <h2>Europe</h2>
+                <p>
+                    IOS Press <br>
+                    Nieuwe Hemweg 6B <br>
+                    1013 BG Amsterdam <br>
+                    The Netherlands <br>
+                </p>
+                <p>
+                    Tel: +31 20 688 3355 <br>
+                    Fax: +31 20 687 0091 <br>
+                    <a href="mailto:info@iospress.nl">info@iospress.nl</a> <br>
+                </p>
+                <p>
+                    For editorial issues, permissions, book requests, submissions and proceedings, contact the Amsterdam office <a href="mailto:info@iospress.nl">info@iospress.nl</a> <br>
+                </p>
+            </div>
+        </div>
+        <div class="col col-1by3">
+            <div class="spacing last">
+                <h2>Asia</h2>
+                <p>
+                    Inspirees International (China Office) <br>
+                    Ciyunsi Beili 207(CapitaLand), Bld 1, 7-901 <br>
+                    100025, Beijing <br>
+                    China <br>
+
+                    <br>
+                    Free service line: 400 661 8717
+                    <br>
+                    Fax: +86 10 8446 7947<br>
+                    <a href="mailto:china@iospress.cn">china@iospress.cn</a> <br>
+                </p>
+                <p>
+                    For editorial issues, like the status of your submitted paper or proposals, write to <a href="mailto:editorial@iospress.nl">editorial@iospress.nl</a>
+                </p>
+                <p>
+                    如果您在出版方面需要帮助或有任何建, 件至: <a href="mailto:editorial@iospress.nl">editorial@iospress.nl</a> <br>
+                </p>
+           </div>
+        </div>
+    </div>
+</div><div class="container padded footer-credits block">
+    <div class="col col-1by2">
+        <img class="logo" src="https://content.iospress.com:443/static/img/footer-logo-iospress.png@2.6.3" alt="IOS press, Impacting the world of science, Books &amp; Journals, Online &amp; Print">
+    </div>
+    <div class="col col-1by2 semantico-credits">Built on the Scolaris platform by: <a href="http://www.semantico.com"><img width="120" src="https://content.iospress.com:443/static/img/sem_logo.png@2.6.3" alt="Semantico"></a></div>
+</div></div>
+
+<!--[if lt IE 8]>
+    <script src="https://content.iospress.com:443/static/js/source/vendor/json3.js@2.6.3" ></script>
+    <script src="https://content.iospress.com:443/static/js/source/vendor/storage.js@2.6.3" ></script>
+<!<![endif]-->
+    <script src="https://content.iospress.com:443/static/js/compiled/compiled.min.js@2.6.3"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=MML_HTMLorMML" id=""></script>
+
+
+
+
+
+<!-- com.semantico.sgk.client.AuthInfoImpl@4c4f5262[accountId=<null>,relatedAccountIds=[],accountType=<null>,authCredentials=[],roamingPassportCredentialType=<null>,roamingPassportCredentialValue=<null>,roamingPassportDateSet=<null>,roamingPassportDateExpires=<null>,roamingPassportUsed=false,baseUrl=<null>,contentUnits={},failOpen=false,organisation=<null>,preferences={},products=[],requestedUrl=<null>,siteId=<null>,secondarySiteIds=<null>,userId=<null>,subscribedProductUrls={},subscribedSiteIds=[],secondarySiteProducts={},secondarySiteContentUnitTypes={},subsIdContentUnits={},accIdSubsIds={},subsIdType={},subsIdPreferences={},subsIdConcurrencyType={}] -->
+<!-- mvn: 2.6.3 -->
+<!-- git: 2.6.3 -->
+<!-- cspiosweb30yb.cloud.ios.semcs.net -->
+<!-- loggedInP13n: java.lang.Boolean@356233ab[value=false] -->
+<!-- loggedInFragr: false -->
+<!-- client ip: 128.119.246.72 -->
+<!-- ecommerce: true -->
+<!-- shibboleth: true -->
+<!-- default-counter: true -->
+<iframe style="display:none!important" src="https://www.medtargetsystem.com/beacon/portal-lite?client-origin=https://content.iospress.com&amp;timestamp=1598937135092"></iframe><ul class="ui-autocomplete ui-front ui-menu ui-widget ui-widget-content ui-corner-all" id="ui-id-1" tabindex="0" style="display: none;"></ul><div style="background-color: rgb(255, 255, 255); border: 1px solid rgb(204, 204, 204); box-shadow: rgba(0, 0, 0, 0.2) 2px 2px 3px; position: absolute; transition: visibility 0s linear 0.3s, opacity 0.3s linear 0s; opacity: 0; visibility: hidden; z-index: 2000000000; left: 0px; top: -10000px;"><div style="width: 100%; height: 100%; position: fixed; top: 0px; left: 0px; z-index: 2000000000; background-color: rgb(255, 255, 255); opacity: 0.05;"></div><div class="g-recaptcha-bubble-arrow" style="border: 11px solid transparent; width: 0px; height: 0px; position: absolute; pointer-events: none; margin-top: -11px; z-index: 2000000000;"></div><div class="g-recaptcha-bubble-arrow" style="border: 10px solid transparent; width: 0px; height: 0px; position: absolute; pointer-events: none; margin-top: -10px; z-index: 2000000000;"></div><div style="z-index: 2000000000; position: relative;"><iframe title="recaptcha challenge" src="https://www.google.com/recaptcha/api2/bframe?hl=en&amp;v=QVh-Tz10ahidjrORgXOS1oB0&amp;k=6LfnJVIUAAAAAE-bUOMg0MJGki4lqSvDmhJp19fN&amp;cb=t4zb1mdnotbs" name="c-xj4734u1qvam" frameborder="0" scrolling="no" sandbox="allow-forms allow-popups allow-same-origin allow-scripts allow-top-navigation allow-modals allow-popups-to-escape-sandbox" style="width: 100%; height: 100%;"></iframe></div></div></body></html>

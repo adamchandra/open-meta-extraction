@@ -1,0 +1,247 @@
+
+<!DOCTYPE html>
+    <!--[if lt IE 7]>      <html class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
+    <!--[if IE 7]>         <html class="no-js lt-ie9 lt-ie8"> <![endif]-->
+    <!--[if IE 8]>         <html class="no-js lt-ie9"> <![endif]-->
+    <!--[if gt IE 8]><!--> <html class="no-js"> <!--<![endif]-->
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        <title>Learner-aware Teaching: Inverse Reinforcement Learning with Preferences and Constraints</title>
+        
+    <meta name="citation_title" content="Learner-aware Teaching: Inverse Reinforcement Learning with Preferences and Constraints">
+
+    
+    <meta name="citation_author" content="Sebastian Tschiatschek">
+    
+    <meta name="citation_author" content="Ahana Ghosh">
+    
+    <meta name="citation_author" content="Luis Haug">
+    
+    <meta name="citation_author" content="Rati Devidze">
+    
+    <meta name="citation_author" content="Adish Singla">
+    
+
+    <meta name="citation_publication_date" content="2019">
+    <meta name="citation_conference_title" content="Advances in Neural Information Processing Systems">
+
+    
+    <meta name="citation_firstpage" content="4145">
+    
+    
+    <meta name="citation_lastpage" content="4155">
+    
+
+    
+    <meta name="citation_pdf_url" content="http://papers.nips.cc/paper/8668-learner-aware-teaching-inverse-reinforcement-learning-with-preferences-and-constraints.pdf">
+    
+
+    
+        <meta name="description" content="Electronic Proceedings of Neural Information Processing Systems">
+        <meta name="viewport" content="width=device-width">
+        
+
+
+        
+        <link rel="stylesheet" href="//media.nips.cc/nipsbooks/nipspapers/css/normalize.min.css">
+        <link rel="stylesheet" href="//media.nips.cc/nipsbooks/nipspapers/css/main.css">
+        
+
+        
+        <script src="//media.nips.cc/nipsbooks/nipspapers/js/vendor/modernizr-2.6.2-respond-1.1.0.min.js"></script>
+        
+    </head>
+    <body>
+        <!--[if lt IE 7]>
+            <p class="chromeframe">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> or <a href="http://www.google.com/chromeframe/?redirect=true">activate Google Chrome Frame</a> to improve your experience.</p>
+        <![endif]-->
+
+        <div class="header-container">
+            <header class="wrapper clearfix">
+                
+                    <h1 class="sitename"><a href="/">NIPS Proceedings</a><sup>β</sup></h1>
+                
+                
+                <form action="/search/" class="search">
+                    <input name="q" value="" class="search" placeholder="search" />
+                </form>
+                
+                <nav>
+                    <ul>
+                      
+    
+                        <li><a href="/">Books</a></li>
+                      
+    <li><a href="/book/advances-in-neural-information-processing-systems-32-2019">2019</a></li>
+
+                    </ul>
+                </nav>
+            </header>
+        </div>
+
+        <div class="main-container">
+            <div class="main wrapper clearfix">
+            
+<h2 class="subtitle">Learner-aware Teaching: Inverse Reinforcement Learning with Preferences and Constraints</h2>
+
+            
+    
+
+<p>Part of: <a href="/book/advances-in-neural-information-processing-systems-32-2019">Advances in Neural Information Processing Systems 32 (NIPS 2019)</a></p>
+
+
+
+
+    <a href="/paper/8668-learner-aware-teaching-inverse-reinforcement-learning-with-preferences-and-constraints.pdf">[PDF]</a>
+
+
+
+    <a href="/paper/8668-learner-aware-teaching-inverse-reinforcement-learning-with-preferences-and-constraints/bibtex">[BibTeX]</a>
+
+
+
+
+
+    <a href="/paper/8668-learner-aware-teaching-inverse-reinforcement-learning-with-preferences-and-constraints-supplemental.zip">[Supplemental]</a>
+
+
+
+    <a href="//media.nips.cc/nipsbooks/nipspapers/paper_files/nips32/reviews/2298.html">[Reviews]</a>
+
+
+
+    <a href="//media.nips.cc/nipsbooks/nipspapers/paper_files/nips32/reviews/2298-AuthorFeedback.pdf">[Author Feedback]</a>
+    <a href="//media.nips.cc/nipsbooks/nipspapers/paper_files/nips32/reviews/2298-metareview.html">[Meta Review]</a>
+    
+
+
+
+
+
+
+<h3>Authors</h3>
+
+<ul class="authors">
+    
+    <li class="author"><a href="/author/sebastian-tschiatschek-7386">Sebastian Tschiatschek</a></li>
+    
+    <li class="author"><a href="/author/ahana-ghosh-13193">Ahana Ghosh</a></li>
+    
+    <li class="author"><a href="/author/luis-haug-11984">Luis Haug</a></li>
+    
+    <li class="author"><a href="/author/rati-devidze-13194">Rati Devidze</a></li>
+    
+    <li class="author"><a href="/author/adish-singla-10792">Adish Singla</a></li>
+    
+</ul>
+
+
+
+
+<h3>Conference Event Type: Poster</h3>
+
+
+<h3>Abstract</h3>
+<p class="abstract">Inverse reinforcement learning (IRL) enables an agent to learn complex behavior by observing demonstrations from a (near-)optimal policy. The typical assumption is that the learner&#39;s goal is to match the teacher’s demonstrated behavior. In this paper, we consider the setting where the learner has its own preferences that it additionally takes into consideration. These preferences can for example capture behavioral biases, mismatched worldviews, or physical constraints. We study two teaching approaches: learner-agnostic teaching, where the teacher provides demonstrations from an optimal policy ignoring the learner&#39;s preferences, and learner-aware teaching, where the teacher accounts for the learner’s preferences. We design learner-aware teaching algorithms and show that significant performance improvements can be achieved over learner-agnostic teaching.</p>
+
+
+            
+                <aside>
+                    <h3>Neural Information Processing Systems (NIPS)</h3>
+                    <p>Papers published at the Neural Information Processing Systems Conference.</p>
+                </aside>
+            
+            </div> <!-- #main -->
+        </div> <!-- #main-container -->
+
+        <div class="footer-container">
+            <footer class="wrapper">
+            
+                <h3>&copy; 1987 – 2020 Neural Information Processing Systems Foundation, Inc.</h3>
+            
+            </footer>
+        </div>
+
+        
+    
+        <script src="//media.nips.cc/nipsbooks/nipspapers/js/vendor/jquery-1.10.2.min.js"></script>
+        <script src="//media.nips.cc/nipsbooks/nipspapers/js/main.js"></script>
+        
+
+<script type="text/javascript">
+
+// using jQuery
+function getCookie(name) {
+    var cookieValue = null;
+    if (document.cookie && document.cookie != '') {
+        var cookies = document.cookie.split(';');
+        for (var i = 0; i < cookies.length; i++) {
+            var cookie = jQuery.trim(cookies[i]);
+            // Does this cookie string begin with the name we want?
+            if (cookie.substring(0, name.length + 1) == (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+var csrftoken = getCookie('csrftoken');
+function csrfSafeMethod(method) {
+    // these HTTP methods do not require CSRF protection
+    return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+}
+function sameOrigin(url) {
+    // test that a given url is a same-origin URL
+    // url could be relative or scheme relative or absolute
+    var host = document.location.host; // host + port
+    var protocol = document.location.protocol;
+    var sr_origin = '//' + host;
+    var origin = protocol + sr_origin;
+    // Allow absolute or scheme relative URLs to same origin
+    return (url == origin || url.slice(0, origin.length + 1) == origin + '/') ||
+        (url == sr_origin || url.slice(0, sr_origin.length + 1) == sr_origin + '/') ||
+        // or any other URL that isn't scheme relative or absolute i.e relative.
+        !(/^(\/\/|http:|https:).*/.test(url));
+}
+$.ajaxSetup({
+    beforeSend: function(xhr, settings) {
+        if (!csrfSafeMethod(settings.type) && sameOrigin(settings.url)) {
+            // Send the token to same-origin, relative URLs only.
+            // Send the token only if the method warrants CSRF protection
+            // Using the CSRFToken value acquired earlier
+            xhr.setRequestHeader("X-CSRFToken", csrftoken);
+        }
+    }
+});
+
+
+</script>
+
+
+<script type="text/javascript" src="//media.nips.cc/nipsbooks/autocomplete_light/autocomplete.js"></script>
+<script type="text/javascript" src="//media.nips.cc/nipsbooks/autocomplete_light/widget.js"></script>
+<script type="text/javascript" src="//media.nips.cc/nipsbooks/autocomplete_light/addanother.js"></script>
+<script type="text/javascript" src="//media.nips.cc/nipsbooks/autocomplete_light/text_widget.js"></script>
+<script type="text/javascript" src="//media.nips.cc/nipsbooks/autocomplete_light/remote.js"></script>
+<link rel="stylesheet" type="text/css" href="//media.nips.cc/nipsbooks/autocomplete_light/style.css" />
+
+
+        <script>
+          (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+          (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+          })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+          ga('create', 'UA-2097757-2', 'nips.cc');
+          ga('send', 'pageview');
+
+        </script>
+        
+        
+    <script type="text/javascript" src="//media.nips.cc/nipsbooks/nipspapers/js/MathJax/MathJax.js"></script>
+
+    </body>
+</html>
+<!-- Do not remove: This comment is monitored to verify that the site is working properly -->

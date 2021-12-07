@@ -1,0 +1,57 @@
+#!/bin/bash
+
+SCRIPT=$(readlink -f "$0")
+BIN=$(dirname "$SCRIPT")
+
+showhelp() {
+    echo "Usage: "
+    echo "  todo  "
+    exit 2
+}
+
+# default arg vals
+corpus=
+
+# prefix : disables default error handling (recommended)
+# m: means -m arg
+while getopts ":c:y:h" opt; do
+    case $opt in
+        c)    corpus=$OPTARG;;
+        h)    showhelp $0;;
+        \?) echo "Invalid option: $OPTARG" 1>&2 && showhelp ;;
+
+        # $opt is set to ':' if option not provided
+        :) echo "Invalid option: $OPTARG requires an argument" 1>&2 ;;
+    esac
+done
+shift $((OPTIND -1))
+
+
+jqabs='if .fields.abstract.instances == null then "none" else .fields.abstract.instances[].value end'
+jqabsc='if .fields["abstract-clipped"]?.instances? == null then "none" else .fields["abstract-clipped"].instances[].value end'
+jqauth='if .fields.author.instances? == null then "none" else .fields.author.instances[].value end'
+jqtitle='if .fields.title.instances == null then "none" else .fields.title.instances[].value end'
+jqpdflink='if .fields["pdf-link"].instances == null then "none" else .fields["pdf-link"].instances[].value end'
+jqpdfpath='if .fields["pdf-path"].instances == null then "none" else .fields["pdf-path"].instances[].value end'
+
+meta='.responseUrl'
+
+find $corpus -type f -name 'extraction-records.json' \
+     -exec echo "======= Examining {} ===========" ';' \
+     -exec "$BIN/realdir.sh" {} ';' \
+     -exec "$BIN/gt-exists.sh" {} ';' \
+     -exec echo Title ';' \
+     -exec jq "$jqtitle" {} ';' \
+     -exec echo Abstract ';' \
+     -exec jq "$jqabs" {} ';' \
+     -exec echo "Abstract Clipped" ';' \
+     -exec jq "$jqabsc" {} ';' \
+     -exec echo Authors ';' \
+     -exec jq "$jqauth" {} ';' \
+     -exec echo Pdf Link ';' \
+     -exec jq "$jqpdflink" {} ';' \
+     -exec echo Pdf Path ';' \
+     -exec jq "$jqpdfpath" {} ';' \
+     -exec "$BIN/readopts.sh" {} ';'
+
+

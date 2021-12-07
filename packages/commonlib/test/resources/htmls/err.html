@@ -1,0 +1,149 @@
+<html xmlns="http://www.w3.org/1999/xhtml"><head>
+	<title>Erdogdu</title>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<meta name="description" content="Privacy-Utility Trade-Off for Time-Series with Application to Smart-Meter Data">
+			<meta name="keywords" content="privacy; privacy-utility tradeoff; time-series; inference attack; continual observation; smartmeter; mutual information; information leakage">
+	
+	
+	<link rel="schema.DC" href="http://purl.org/dc/elements/1.1/">
+
+	<meta name="DC.Contributor.Sponsor" xml:lang="en" content="Technicolor">
+	<meta name="DC.Creator.PersonalName" content="Murat A. Erdogdu">
+	<meta name="DC.Creator.PersonalName" content="Nadia Fawaz">
+	<meta name="DC.Creator.PersonalName" content="Andrea Montanari">
+	<meta name="DC.Date.available" scheme="ISO8601" content="2015-03-01">
+	<meta name="DC.Date.created" scheme="ISO8601" content="2015-04-01">
+	<meta name="DC.Date.dateSubmitted" scheme="ISO8601" content="2014-12-01">
+	<meta name="DC.Date.modified" scheme="ISO8601" content="2015-04-01">
+	<meta name="DC.Description" xml:lang="en" content="We consider the online setting where a user would like to continuously release a time-series of data that is correlated with his private data, to a service provider in the hope of deriving some utility. Due to correlations, the continual observation of the released time-series puts the user at risk of inference of his private data by an adversary. To protect the user from inference attacks on his private data, the time-series is randomized prior to its release according to a probabilistic privacy mapping. The privacy mapping should be designed in a way that balances privacy and utility requirements over time.Our contributions are threefold. First, we formalize the framework for the design of utility-aware privacy mappings for time-series data, under both online and batch models. We provide a sequential scheme that allows to design online privacy mappings at scale, that account for privacy risk from the history of released data and future releases to come. Second, we prove the equivalence of the optimal mappings under the batch and the online models, in the case where the time-series samples are independent across time. We further show that there exists a gap between optimal batch and online privacy mappings when certain conditions are not satisfied.Finally, we evaluate the performance of the framework over synthetic and real-world time-series data. In particular, we show that smart-meter data can be randomized for privacy purposes to prevent disaggregation of per-device energy consumption, while preserving the utility.">
+	<meta name="DC.Format" scheme="IMT" content="application/pdf">		
+	<meta name="DC.Identifier" content="10193">
+	<meta name="DC.Identifier.URI" content="https://aaai.org/ocs/index.php/WS/AAAIW15/paper/view/10193">
+	<meta name="DC.Language" scheme="ISO639-1" content="en">
+	<meta name="DC.Rights" content="  Authors who publish a paper in an  AAAI Technical Report  agree to the following terms:     Author(s) agree to grant to AAAI (1) the perpetual, nonexclusive world rights to use the submitted paper as part of an AAAI publication, in all languages and for all editions. (2) The right to use the paper, together with the author's name and pertinent biographical data, in advertising and promotion of it and the AAAI publication. (3) The right to publish or cause to be published the paper in connection with any republication of the AAAI publication in any medium including electronic. (4) The right to, and authorize others to, publish or cause to be published the paper in whole or in part, individually or in conjunction with other works, in any medium including electronic.   The author(s) warrants that they are the sole author and owner of the copyright in the above article/paper, except for those portions shown to be in quotations; that the article/paper is original throughout; and that the undersigned right to make the grants set forth above is complete and unencumbered.   The author(s) agree that if anyone brings any claim or action alleging facts that, if true, constitute a breach of any of the foregoing warranties, the author(s) will hold harmless and indemnify AAAI, their grantees, their licensees, and their distributors against any liability, whether under judgment, decree, or compromise, and any legal fees and expenses arising out of that claim or actions, and the undersigned will cooperate fully in any defense AAAI may make to such claim or action. Moreover, the undersigned agrees to cooperate in any claim or other action seeking to protect or enforce any right the undersigned has granted to AAAI in the article/paper. If any such claim or action fails because of facts that constitute a breach of any of the foregoing warranties, the undersigned agrees to reimburse whomever brings such claim or action for expenses and attorneys’ fees incurred therein.   Author(s) retain all proprietary rights (such as patent rights).   In the event the above article/paper is not accepted and published by AAAI, or is withdrawn by the author(s) before acceptance by AAAI, this agreement becomes null and void.  ">
+	<meta name="DC.Source" content="Workshops at the Twenty-Ninth AAAI Conference on Artificial Intelligence">
+	<meta name="DC.Source.URI" content="https://aaai.org/ocs/index.php/WS/AAAIW15/index">
+						<meta name="DC.Subject" xml:lang="en" content="privacy">
+								<meta name="DC.Subject" xml:lang="en" content="privacy-utility tradeoff">
+								<meta name="DC.Subject" xml:lang="en" content="time-series">
+								<meta name="DC.Subject" xml:lang="en" content="inference attack">
+								<meta name="DC.Subject" xml:lang="en" content="continual observation">
+								<meta name="DC.Subject" xml:lang="en" content="smartmeter">
+								<meta name="DC.Subject" xml:lang="en" content="mutual information">
+								<meta name="DC.Subject" xml:lang="en" content="information leakage">
+				<meta name="DC.Title" content="Privacy-Utility Trade-Off for Time-Series with Application to Smart-Meter Data">
+		<meta name="DC.Type" content="Text.Proceedings">
+	<meta name="DC.Type.paperType" content="Computational Sustainability">			<meta name="gs_meta_revision" content="1.1">
+	<meta name="citation_conference_title" content="Workshops at the Twenty-Ninth AAAI Conference on Artificial Intelligence">
+	<meta name="citation_author" content="Murat A. Erdogdu">
+	<meta name="citation_author_institution" content="Stanford University">
+	<meta name="citation_author" content="Nadia Fawaz">
+	<meta name="citation_author_institution" content="Technicolor">
+	<meta name="citation_author" content="Andrea Montanari">
+	<meta name="citation_author_institution" content="Stanford University">
+	<meta name="citation_title" content="Privacy-Utility Trade-Off for Time-Series with Application to Smart-Meter Data">
+	<meta name="citation_date" content="2015/04/01">
+	<meta name="citation_abstract_html_url" content="https://aaai.org/ocs/index.php/WS/AAAIW15/paper/view/10193">
+	<meta name="citation_pdf_url" content="https://aaai.org/ocs/index.php/WS/AAAIW15/paper/download/10193/10170">
+
+	<link rel="stylesheet" href="https://aaai.org/ocs/lib/pkp/styles/common.css" type="text/css">
+	<link rel="stylesheet" href="https://aaai.org/ocs/styles/common.css" type="text/css">
+	<link rel="stylesheet" href="https://aaai.org/ocs/styles/paperView.css" type="text/css">
+
+	<!-- Base Jquery -->
+	<script src="http://www.google.com/jsapi"></script>
+	<script>
+		google.load("jquery", "1");
+		google.load("jqueryui", "1");
+	</script>
+		<!-- Add javascript required for font sizer -->
+	<script type="text/javascript" src="https://aaai.org/ocs/lib/pkp/js/jquery.cookie.js"></script>
+	<script type="text/javascript" src="https://aaai.org/ocs/lib/pkp/js/fontController.js"></script>
+	<script type="text/javascript">
+		$(function(){
+			fontSize("#sizer", "body", 9, 16, 32, "https://aaai.org/ocs"); // Initialize the font sizer
+		});
+	</script>
+
+			<link rel="stylesheet" href="https://aaai.org/ocs/plugins/themes/desert/desert.css" type="text/css">
+			<link rel="stylesheet" href="https://aaai.org/ocs/lib/pkp/styles/jqueryUi.css" type="text/css">
+			<link rel="stylesheet" href="https://aaai.org/ocs/lib/pkp/styles/jquery.pnotify.default.css" type="text/css">
+			<link rel="stylesheet" href="https://aaai.org/ocs/lib/pkp/styles/themes/default/pnotify.css" type="text/css">
+	
+	<script type="text/javascript" src="https://aaai.org/ocs/lib/pkp/js/general.js"></script>
+	
+	<!-- Add javascript required for font sizer -->
+	<script type="text/javascript" src="https://aaai.org/ocs/lib/pkp/js/jquery.cookie.js"></script>	
+	<script type="text/javascript" src="https://aaai.org/ocs/lib/pkp/js/fontController.js"></script>
+	<script type="text/javascript">
+		$(function(){
+			fontSize("#sizer", "body", 9, 16, 32, "https://aaai.org/ocs"); // Initialize the font sizer
+		});
+	</script>
+</head>
+<body>
+
+<div id="container">
+
+<div id="body">
+
+<div id="main">
+
+<h2>AAAI Publications,&nbsp;Workshops at the Twenty-Ninth AAAI Conference on Artificial Intelligence</h2>
+
+<div id="navbar">
+	<ul class="menu">
+		<li><a href="https://aaai.org/ocs/index.php/index/index/index/index" target="_parent">Home</a></li>
+		<li><a href="https://aaai.org/ocs/index.php/WS/AAAIW15/about" target="_parent">About</a></li>
+
+					<li><a href="https://aaai.org/ocs/index.php/WS/AAAIW15/login" target="_parent">Log In</a></li>
+			<li><a href="https://aaai.org/ocs/index.php/WS/AAAIW15/user/account" target="_parent">Account</a></li>
+				<li><a href="https://aaai.org/ocs/index.php/WS/AAAIW15/search" target="_parent">Search</a></li>
+
+								<li><a href="https://aaai.org/ocs/index.php/WS/index/schedConfs/archive" target="_parent">Archive</a></li>
+							<li><a href="https://aaai.org/ocs/index.php/WS/AAAIW15/announcement" target="_parent">Announcements</a></li>
+						
+										</ul>
+</div>
+
+<div id="breadcrumb">
+	<a href="https://aaai.org/ocs/index.php/WS/AAAIW15/index" target="_parent">Home</a> &gt;
+	<a href="https://aaai.org/ocs/index.php/WS/" target="_parent">AAAI Workshops</a> &gt;
+	<a href="https://aaai.org/ocs/index.php/WS/AAAIW15/index" target="_parent">Workshops at the Twenty-Ninth AAAI Conference on Artificial Intelligence</a> &gt;
+	<a href="https://aaai.org/ocs/index.php/WS/AAAIW15/schedConf/presentations" target="_parent">Computational Sustainability</a> &gt;
+	<a href="https://aaai.org/ocs/index.php/WS/AAAIW15/paper/view/10193/0" class="current" target="_parent">Erdogdu</a>
+</div>
+
+<div id="content">
+	<div id="topBar">
+		<div id="paperFontSize">
+			Font Size:&nbsp;
+			<div id="sizer"></div>
+		</div>
+	</div>
+
+	<div id="title">Privacy-Utility Trade-Off for Time-Series with Application to Smart-Meter Data</div>
+	<div id="author"><em>Murat A. Erdogdu, Nadia Fawaz, Andrea Montanari</em></div>
+	<br>
+
+	<blockquote>
+		Last modified:&nbsp;2015-04-01<br>
+	</blockquote>
+
+		<div id="abstract">
+	<h4>Abstract</h4>
+	<br>
+	<div>We consider the online setting where a user would like to continuously release a time-series of data that is correlated with his private data, to a service provider in the hope of deriving some utility. Due to correlations, the continual observation of the released time-series puts the user at risk of inference of his private data by an adversary. To protect the user from inference attacks on his private data, the time-series is randomized prior to its release according to a probabilistic privacy mapping. The privacy mapping should be designed in a way that balances privacy and utility requirements over time.Our contributions are threefold. First, we formalize the framework for the design of utility-aware privacy mappings for time-series data, under both online and batch models. We provide a sequential scheme that allows to design online privacy mappings at scale, that account for privacy risk from the history of released data and future releases to come. Second, we prove the equivalence of the optimal mappings under the batch and the online models, in the case where the time-series samples are independent across time. We further show that there exists a gap between optimal batch and online privacy mappings when certain conditions are not satisfied.Finally, we evaluate the performance of the framework over synthetic and real-world time-series data. In particular, we show that smart-meter data can be randomized for privacy purposes to prevent disaggregation of per-device energy consumption, while preserving the utility.</div>
+	<br>
+	</div>
+	
+			<div id="paperSubject">
+		<h4>Keywords</h4>
+		<br>
+		<div>privacy; privacy-utility tradeoff; time-series; inference attack; continual observation; smartmeter; mutual information; information leakage</div>
+		<br>
+		</div>
+	
+		
+	<div id="paper">
+			</div></div></div></div></div></body></html>
