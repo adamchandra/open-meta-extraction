@@ -296,7 +296,7 @@ function separateResults<A, Env extends BaseEnv>(
 ): Task.Task<[Array<W<ControlInstruction, Env>>, Array<W<A, Env>>]> {
   return () => Async.mapSeries<ExtractionResult<A, Env>, PerhapsW<A, Env>>(
     extractionResults,
-    async er => er())
+    Async.asyncify(async (er: ExtractionResult<A, Env>) => er()))
     .then((settled: PerhapsW<A, Env>[]) => {
       const lefts: WCI<Env>[] = [];
       const rights: W<A, Env>[] = [];
@@ -377,8 +377,9 @@ const scatterAndSettle: <A, B, Env extends BaseEnv> (
     });
     const sequenced = () => Async
       .mapSeries<ExtractionResult<B, Env>, PerhapsW<B, Env>>(
-      bbs, async er => er()
-    );
+        bbs,
+        Async.asyncify(async (er: ExtractionResult<A, Env>) => er())
+      );
     const pBsTask = pipe(
       sequenced,
       Task.map((perhapsBs) => asW(perhapsBs, env))

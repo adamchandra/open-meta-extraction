@@ -127,19 +127,26 @@ describe('Extraction Prelude / Primitives', () => {
     ];
 
 
-    await Async.eachOf(examples, async ([example, expectedMessages]) => {
+
+    await Async.eachOf(examples, Async.asyncify(async ([example, expectedMessages]) => {
+      // console.log('p.1')
       const messages = await runTakeWhileSuccess(example);
+      // console.log('p.2')
 
       const haveExpectedMessages = _.every(expectedMessages, em => messages.includes(em));
+      // console.log('p.3')
       const haveBadMessages = _.some(messages, msg => /bad/.test(msg));
 
       // prettyPrint({ msg: `example: ${n}`, messages, expectedMessages });
 
       expect(haveExpectedMessages).toBe(true);
       expect(haveBadMessages).toBe(false);
-    });
+      // console.log('p.5')
+      return;
+    }));
 
 
+      // console.log('p.10')
     // done();
   });
 
@@ -166,7 +173,7 @@ describe('Extraction Prelude / Primitives', () => {
     ];
 
 
-    await Async.eachOf(examples, async ([example, expectedMessages], _n) => {
+    await Async.eachOf(examples, Async.asyncify(async ([example, expectedMessages], _n) => {
       const messages = await runTakeFirstSuccess(example);
       const haveExpectedMessages = _.every(expectedMessages, em => messages.includes(em));
       const haveBadMessages = _.some(messages, msg => /bad/.test(msg));
@@ -175,7 +182,7 @@ describe('Extraction Prelude / Primitives', () => {
 
       expect(haveExpectedMessages).toBe(true);
       expect(haveBadMessages).toBe(false);
-    });
+    }));
 
 
     // done();
@@ -184,19 +191,20 @@ describe('Extraction Prelude / Primitives', () => {
   it('gatherSuccess examples', async () => {
     const examples: Array<[Arrow<string, string>[], string[]]> = [
       [[emit('A:okay'), emit('B:okay')],
-        ['A:okay', 'B:okay']],
+       ['A:okay', 'B:okay']],
       [[emit('A:okay'), fgood_, emit('B:okay')],
-        ['A:okay', 'B:okay']],
+       ['A:okay', 'B:okay']],
       [[emit('A:okay'), fbad_, emit('B:okay')],
-        ['A:okay', 'B:okay']],
+       ['A:okay', 'B:okay']],
       [[fbad_, fgood_, emit('A:okay'), fbad_, emit('B:okay'), fbad_],
-        ['A:okay', 'B:okay']],
-
+       ['A:okay', 'B:okay']],
     ];
 
 
-    await Async.eachOf(examples, async ([example, expectedMessages], _n) => {
+    await Async.eachOf(examples, Async.asyncify(async ([example, expectedMessages], _n) => {
+      console.log('p.1')
       const messages = await runGatherSuccess(example);
+      console.log('p.2')
       const haveExpectedMessages = _.every(expectedMessages, em => messages.includes(em));
       const haveBadMessages = _.some(messages, msg => /bad/.test(msg));
 
@@ -204,8 +212,10 @@ describe('Extraction Prelude / Primitives', () => {
 
       expect(haveExpectedMessages).toBe(true);
       expect(haveBadMessages).toBe(false);
-    });
+      console.log('p.3')
+    }));
 
+    console.log('p.5')
 
     // done();
   });
@@ -228,7 +238,7 @@ describe('Extraction Prelude / Primitives', () => {
     );
 
 
-    await Async.eachOf(expected, async (exp, _n) => {
+    await Async.eachOf(expected, Async.asyncify(async (exp, _n) => {
       if (typeof _n !== 'number') {
         fail('_n != "number"');
       }
@@ -243,7 +253,7 @@ describe('Extraction Prelude / Primitives', () => {
       } else {
         fail('!right(res');
       }
-    });
+    }));
 
     // done();
   });

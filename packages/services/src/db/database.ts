@@ -30,8 +30,8 @@ export async function initSequelize(dbConfig: DBConfig): Promise<Sequelize> {
   const sequelize = new Sequelize({
     dialect: 'postgres',
     ...dbConfig,
-    // logging: false, // logging: console.log,
-    logging: console.log,
+    logging: false, // logging: console.log,
+    // logging: console.log,
   });
 
   return sequelize

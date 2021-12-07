@@ -2,12 +2,12 @@ import _ from 'lodash';
 
 import * as winston from 'winston';
 import { AlphaRecord, getCorpusEntryDirForUrl } from '@watr/commonlib';
-import { Metadata } from '@watr/spider';
+import { UrlFetchData } from '@watr/spider';
 import { CanonicalFieldRecords, extractFieldsForEntry, getCanonicalFieldRecord } from '~/extract/run-main';
 
 
 import { createSpiderService, SpiderService } from './spider-service';
-import { commitMetadata, commitUrlStatus, DatabaseContext, getNextUrlForSpidering, getUrlStatus, insertAlphaRecords, insertNewUrlChains } from '~/db/db-api';
+import { commitUrlFetchData, commitUrlStatus, DatabaseContext, getNextUrlForSpidering, getUrlStatus, insertAlphaRecords, insertNewUrlChains } from '~/db/db-api';
 import { getServiceLogger } from '~/utils/basic-logging';
 
 export interface WorkflowServices {
@@ -44,6 +44,7 @@ export async function fetchOneRecord(
   const { url } = alphaRec;
 
   log.info(`Fetching fields for ${url}`);
+
   const insertedAlphaRecs = await insertAlphaRecords(dbCtx, [alphaRec]);
   log.info(`inserted ${insertedAlphaRecs.length} new alpha records`);
 
@@ -121,7 +122,7 @@ export async function fetchNextDBRecord(
       return metadataOrError;
     }
 
-    await commitMetadata(dbCtx, metadataOrError);
+    await commitUrlFetchData(dbCtx, metadataOrError);
 
     log.info(`Extracting Fields in ${entryPath}`);
     await extractFieldsForEntry(entryPath, log);
@@ -176,7 +177,7 @@ async function scrapeUrl(
   dbCtx: DatabaseContext,
   services: WorkflowServices,
   url: string,
-): Promise<Metadata | ErrorRecord> {
+): Promise<UrlFetchData | ErrorRecord> {
   const { spiderService, log } = services;
   const metadata = await spiderService
     .scrape(url)
@@ -198,7 +199,7 @@ async function scrapeUrl(
     return ErrorRecord(msg);
   }
 
-  await commitMetadata(dbCtx, metadata);
+  await commitUrlFetchData(dbCtx, metadata);
 
   const spiderSuccess = metadata.status === '200';
 

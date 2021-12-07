@@ -19,7 +19,7 @@ export function initCrawlScheduler(): CrawlScheduler {
       const inputUrls = await streamPump.createPump()
         .viaStream<string>(urlStream)
         .filter(() => {
-          // check if valid url
+          // TODO check if valid url
           return true;
         })
         .gather()

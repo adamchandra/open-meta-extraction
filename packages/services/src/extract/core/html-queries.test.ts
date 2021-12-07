@@ -50,7 +50,7 @@ const tmpHtml = stripMargin(`
 
 
 describe('HTML jquery-like css queries', () => {
-  it('smokescreen', async (): Promise<void> => {
+  it('smokescreen', async () => {
     const attr0 = await selectElementAttr(tmpHtml, 'meta[name=citation_title]', 'content');
     const attr1 = await selectElementAttr(tmpHtml, 'meta[name=citation_title]', 'content_');
     const attr2 = await selectElementAttr(tmpHtml, 'meta[name=empty]', 'content');
@@ -76,7 +76,7 @@ describe('HTML jquery-like css queries', () => {
       ['a.show-pdf', /success:pdf/],
     ];
 
-    await Async.eachSeries(examples, async ([query, regexTest]) => {
+    await Async.eachSeries(examples, Async.asyncify(async ([query, regexTest]) => {
       const maybeResult = await _queryOne(browser, tmpHtml, query);
       if (isRight(maybeResult)) {
         const elem = maybeResult.right;
@@ -88,7 +88,7 @@ describe('HTML jquery-like css queries', () => {
         console.log('error', query, error);
       }
       expect(isRight(maybeResult)).toBe(true);
-    });
+    }));
 
     await browser.close();
     // done();
@@ -105,22 +105,22 @@ describe('HTML jquery-like css queries', () => {
     ];
 
 
-    await Async.forEachOfSeries(examples, async ([query, ], exampleNum) => {
+    await Async.forEachOfSeries(examples, Async.asyncify(async ([query, ], exampleNum) => {
       const maybeResult = await _queryAll(browser, tmpHtml, query);
       putStrLn(`Example #${exampleNum}`);
       if (isRight(maybeResult)) {
         const elems = maybeResult.right;
-        await Async.forEachOfSeries(elems, async (elem, index) => {
+        await Async.forEachOfSeries(elems, Async.asyncify(async (elem, index) => {
           const outerHtml = await elem.evaluate(e => e.outerHTML);
-          prettyPrint({ query, outerHtml, result: index });
+          // prettyPrint({ query, outerHtml, result: index });
           // const regexTest: RegExp = _.get(regexTests, index);
           // expect(regexTest.test(outerHtml)).toBe(true);
-        });
+        }));
       } else {
         const error = maybeResult.left;
         console.log('error', query, error);
       }
-    });
+    }));
 
     await browser.close();
     // done();
@@ -129,7 +129,7 @@ describe('HTML jquery-like css queries', () => {
   it('should create all expansions', () => {
     const cases1 = expandCaseVariations('A.B.C', (n) => `meta[name="${n}"]`);
     const cases2 = expandCaseVariations('DC.Creator', (n) => `meta[name="${n}"]`);
-    prettyPrint({ cases1, cases2 });
+    // prettyPrint({ cases1, cases2 });
   });
 
   it('should downcase attributes', async () => {
@@ -142,22 +142,21 @@ describe('HTML jquery-like css queries', () => {
       ['meta[name~="dc.creator"],meta[name~="dc.Creator"]', [/Adam/, /adam/]],
     ];
 
-
-    await Async.eachSeries(examples, async ([query, ]) => {
+    await Async.eachSeries(examples, Async.asyncify(async ([query, ]) => {
       const maybeResult = await _queryAll(browser, tmpHtml, query);
       if (isRight(maybeResult)) {
         const elems = maybeResult.right;
-        await Async.forEachOfSeries(elems, async (elem, index) => {
+        await Async.forEachOfSeries(elems, Async.asyncify(async (elem, index) => {
           const outerHtml = await elem.evaluate(e => e.outerHTML);
           prettyPrint({ query, outerHtml, index });
           // const regexTest: RegExp = _.get(regexTests, index);
           // expect(regexTest.test(outerHtml)).toBe(true);
-        });
+        }));
       } else {
         const error = maybeResult.left;
         console.log('error', query, error);
       }
-    });
+    }));
 
     await browser.close();
     // done();

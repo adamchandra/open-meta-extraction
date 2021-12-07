@@ -2,7 +2,7 @@ import _ from 'lodash';
 import Koa, { Context } from 'koa';
 import Router from 'koa-router';
 import { Server } from 'http';
-import { prettyPrint, stripMargin } from '@watr/commonlib';
+import { delay, prettyPrint, stripMargin } from '@watr/commonlib';
 import { createAppLogger } from './portal-logger';
 
 const withFields = stripMargin(`
@@ -74,14 +74,16 @@ export async function startSpiderableTestServer(): Promise<Server> {
       /\/.+/,
       (ctx: Context, next: () => Promise<any>) => {
         const { response, path } = ctx;
-        prettyPrint({ path });
-        const [status, respKey] = path.slice(1).split(/~/);
-        // prettyPrint({ status, respKey });
+        prettyPrint({ testServer: path });
+        const [status, respKey, maybeTimeout] = path.slice(1).split(/~/);
+        const timeout = maybeTimeout? Number.parseInt(maybeTimeout) : 0;
+        prettyPrint({ status, respKey, timeout });
 
         response.type = 'html';
         response.status = Number.parseInt(status, 10);
         response.body = htmlSamples[respKey] || 'Unknown';
-        return next();
+        return delay(timeout)
+          .then(() => next());
       });
 
   app

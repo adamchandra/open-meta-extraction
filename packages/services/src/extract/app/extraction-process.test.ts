@@ -7,7 +7,7 @@ import cproc from 'child_process';
 import Async from 'async';
 
 
-import { Metadata } from '@watr/spider';
+import { UrlFetchData } from '@watr/spider';
 import { AbstractFieldAttempts } from './extraction-rules';
 import { runFieldExtractor } from '../run-main';
 
@@ -36,15 +36,15 @@ describe('Field Extraction Pipeline', () => {
     const logLevel = 'debug';
     const logfilePath = testScratchDir;
     const log = getConsoleAndFileLogger(logfilePath, logLevel);
-    await Async.mapSeries(examples, async example => {
+    await Async.mapSeries(examples, Async.asyncify(async example => {
       const entryPath = path.join(testScratchDir, 'spidered-corpus', example);
-      const metadata = readCorpusJsonFile<Metadata>(entryPath, '.', 'metadata.json');
+      const metadata = readCorpusJsonFile<UrlFetchData>(entryPath, '.', 'metadata.json');
       expect(metadata).toBeDefined();
       if (metadata === undefined) {
         console.log('ERROR: no metadata found');
         return;
       }
       return runFieldExtractor({ entryPath, log }, metadata, AbstractFieldAttempts);
-    });
+    }));
   });
 });

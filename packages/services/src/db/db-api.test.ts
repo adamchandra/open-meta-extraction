@@ -1,9 +1,9 @@
 import _ from 'lodash';
 
 import { prettyPrint, AlphaRecord } from '@watr/commonlib';
-import { mockAlphaRecord, mockMetadata } from '@watr/spider';
+import { mockAlphaRecord, mockUrlFetchData } from '@watr/spider';
 import { useEmptyDatabase } from './db-test-utils';
-import { commitMetadata, DatabaseContext, getNextUrlForSpidering, insertAlphaRecords, insertNewUrlChains } from './db-api';
+import { commitUrlFetchData, DatabaseContext, getNextUrlForSpidering, insertAlphaRecords, insertNewUrlChains } from './db-api';
 import { getDBConfig } from './database';
 
 describe('High-level Database API', () => {
@@ -30,7 +30,7 @@ describe('High-level Database API', () => {
     return useEmptyDatabase(dbConfig, async () => {});
   });
 
-  it.only('should create new alpha records and insert new url chains', async () => {
+  it('should create new alpha records and insert new url chains', async () => {
     const newAlphaRecs = await insertAlphaRecords(dbCtx, inputRecs);
     _.each(newAlphaRecs, r => {
       const rplain = r.get({ plain: true });
@@ -50,7 +50,7 @@ describe('High-level Database API', () => {
 
 
   it('should commit spidering metadata to db', async () => {
-    const metadata = mockMetadata(3);
+    const metadata = mockUrlFetchData(3);
     const alphaRecord = mockAlphaRecord(0);
     // prettyPrint({ metadata, alphaRecord });
 
@@ -58,7 +58,7 @@ describe('High-level Database API', () => {
     await insertNewUrlChains(dbCtx);
     const nextUrl = await getNextUrlForSpidering(dbCtx);
     prettyPrint({ nextUrl });
-    const commitedMeta = await commitMetadata(dbCtx, metadata);
+    const commitedMeta = await commitUrlFetchData(dbCtx, metadata);
     prettyPrint({ commitedMeta });
     const { requestUrl } = metadata;
     prettyPrint({ requestUrl });
