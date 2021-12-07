@@ -1,0 +1,4 @@
+#!/bin/bash
+
+args=${@}
+exec ts-node --files -r tsconfig-paths/register $args

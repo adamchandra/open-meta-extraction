@@ -1,0 +1,13 @@
+{
+  /* Use the config that HAS the aliases for rollup. */
+  "extends": "../../tsconfig.json",
+
+  "compilerOptions": {
+    "baseUrl": "./",
+    "outDir": "dist",
+  },
+
+  "include": [
+    "src/**/*"
+  ]
+}
