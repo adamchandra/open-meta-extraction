@@ -11,7 +11,7 @@ import { csvStream } from '~/util/parse-csv';
 import { throughFunc } from '~/util/stream-utils';
 
 
-/// / The Initial Record supplied by the OpenReview team
+/// The Initial Record supplied by the OpenReview team
 // interface AlphaRecord {
 //   noteId: string;
 //   dblpConfId: string;

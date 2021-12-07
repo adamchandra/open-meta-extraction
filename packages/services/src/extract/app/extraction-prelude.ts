@@ -1,6 +1,6 @@
 import _ from 'lodash';
 
-import { Metadata } from '@watr/spider';
+import { UrlFetchData } from '@watr/spider';
 import { Logger } from 'winston';
 import { Browser, Page } from 'puppeteer';
 import * as ft from '../core/function-defs';
@@ -26,7 +26,7 @@ export type ExtractionEnv = {
   log: Logger;
   ns: string[];
   entryPath: string;
-  metadata: Metadata;
+  metadata: UrlFetchData;
   fieldRecs: Record<string, Field[]>;
   fields: Field[];
   evidence: ExtractionEvidence[];

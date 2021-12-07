@@ -1,9 +1,9 @@
 import _ from 'lodash';
 
 import { stripMargin, putStrLn, AlphaRecord } from '@watr/commonlib';
-import ASync from 'async';
+import Async from 'async';
 
-import { Metadata } from '@watr/spider';
+import { UrlFetchData } from '@watr/spider';
 import { DBConfig, openDatabase } from './database';
 import * as DB from './db-tables';
 
@@ -19,9 +19,9 @@ export async function insertAlphaRecords(
   const ins = await db.run(async (_sql) => {
     let inserted = 0;
     let processed = 0;
-    return ASync.mapSeries<AlphaRecord, DB.AlphaRecord, Error>(
+    return Async.mapSeries<AlphaRecord, DB.AlphaRecord, Error>(
       inputRecs,
-      async (rec: AlphaRecord) => {
+      Async.asyncify(async (rec: AlphaRecord) => {
         if (processed % 100 === 0) {
           putStrLn(`processed ${processed}: new = ${inserted} total = ${inputRecs.length}...`);
         }
@@ -44,8 +44,7 @@ export async function insertAlphaRecords(
         inserted += isNew ? 1 : 0;
 
         return newEntry;
-      }
-    );
+      }));
   });
   await db.close();
   return ins;
@@ -169,9 +168,9 @@ export async function getUrlStatus(
   return response[0];
 }
 
-export async function commitMetadata(
+export async function commitUrlFetchData(
   dbCtx: DatabaseContext,
-  metadata: Metadata
+  metadata: UrlFetchData
 ): Promise<UrlStatus | undefined> {
   const db = await openDatabase(dbCtx.dbConfig);
 

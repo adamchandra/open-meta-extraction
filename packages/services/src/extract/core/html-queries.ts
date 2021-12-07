@@ -10,7 +10,8 @@ import {
   ElementHandle,
   // errors as puppeteerErrors
 } from 'puppeteer';
-import { launchBrowser } from '@watr/commonlib';
+
+import { launchBrowser } from '@watr/spider';
 
 export type AttrSelection = E.Either<string, string>;
 
@@ -215,9 +216,9 @@ export async function getTextContents(maybeElems: ElemSelectAll): Promise<Array<
   if (isRight(maybeElems)) {
     const elems = maybeElems.right;
 
-    const outers = await Async.map<Elem, string | undefined>(elems, async (elem) => {
+    const outers = await Async.map<Elem, string | undefined>(elems, Async.asyncify(async (elem) => {
       return elem.evaluate((e) => (e.textContent !== null ? e.textContent : undefined));
-    });
+    }));
     return outers;
   }
   return undefined;
@@ -228,9 +229,10 @@ export async function getOuterHtmls(maybeElems: ElemSelectAll): Promise<string[]
   if (isRight(maybeElems)) {
     const elems = maybeElems.right;
 
-    const outers = await Async.map<Elem, string>(elems, async (elem) => {
+    const outers = await Async.map<Elem, string>(elems, Async.asyncify(async (elem) => {
       return elem.evaluate((e) => e.outerHTML);
-    });
+    }));
+
     return outers;
   }
   return ['(error)'];

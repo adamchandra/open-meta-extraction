@@ -3,12 +3,28 @@ import { Readable } from 'stream';
 import {
   initScraper,
   Scraper,
-  Metadata,
+  UrlFetchData,
   CrawlScheduler,
   initCrawlScheduler
 } from '@watr/spider';
 
-import isUrl from 'is-url-superb';
+function isUrl(str: string) {
+	if (typeof str !== 'string') {
+		throw new TypeError('Expected a string');
+	}
+
+	const trimmed = str.trim();
+	if (trimmed.includes(' ')) {
+		return false;
+	}
+
+	try {
+		new URL(trimmed);
+		return true;
+	} catch {
+		return false;
+	}
+}
 
 import {
   streamPump, putStrLn, delay,
@@ -20,8 +36,8 @@ import { DatabaseContext, insertAlphaRecords } from '~/db/db-api';
 export interface SpiderService {
   crawlScheduler: CrawlScheduler;
   scraper: Scraper;
-  run(alphaRecordStream: Readable): Promise<Readable>; // Readable<Metadata|undefined>
-  scrape(url: string): Promise<Metadata | undefined>;
+  run(alphaRecordStream: Readable): Promise<Readable>; // Readable<UrlFetchData|undefined>
+  scrape(url: string): Promise<UrlFetchData | undefined>;
   quit(): Promise<void>;
 }
 
@@ -32,7 +48,7 @@ export async function createSpiderService(): Promise<SpiderService> {
   const service: SpiderService = {
     scraper,
     crawlScheduler,
-    async scrape(url: string): Promise<Metadata | undefined> {
+    async scrape(url: string): Promise<UrlFetchData | undefined> {
       return this.scraper.scrapeUrl(url);
     },
     async run(alphaRecordStream: Readable): Promise<Readable> {

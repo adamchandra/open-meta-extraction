@@ -4,9 +4,10 @@ import { flow as compose, pipe } from 'fp-ts/function';
 import * as TE from 'fp-ts/TaskEither';
 import * as E from 'fp-ts/Either';
 
-import { Metadata } from '@watr/spider';
-import { ArtifactSubdir, expandDir, launchBrowser, readCorpusTextFile, setLogLabel, writeCorpusTextFile, shaEncodeAsHex, diffByChars } from '@watr/commonlib';
+import { UrlFetchData } from '@watr/spider';
+import { ArtifactSubdir, expandDir, readCorpusTextFile, setLogLabel, writeCorpusTextFile, shaEncodeAsHex, diffByChars } from '@watr/commonlib';
 import { Logger } from 'winston';
+import { launchBrowser } from '@watr/spider';
 
 import puppeteer from 'puppeteer-extra';
 import { Page } from 'puppeteer';
@@ -757,7 +758,7 @@ puppeteer.use(blockResources({
 export async function initExtractionEnv(
   entryPath: string,
   ctx: ExtractContext,
-  metadata: Metadata,
+  metadata: UrlFetchData,
 ): Promise<ExtractionEnv> {
   const { log } = ctx;
 

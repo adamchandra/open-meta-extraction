@@ -60,7 +60,7 @@ describe('End-to-end Extraction workflows', () => {
   });
 
 
-  it('should fetch alpha records', async () => {
+  it.only('should fetch alpha records', async () => {
     const log = getServiceLogger('test-run');
 
     const spiderService = await createSpiderService();
@@ -71,18 +71,22 @@ describe('End-to-end Extraction workflows', () => {
       dbCtx
     };
     const exampleUrls = [
-      '/200~withFields',
-      '/200~withoutFields',
+      // '/200~withFields',
+      // '/200~withoutFields',
+      // '/404~custom404~100',
       '/404~custom404',
     ];
 
-    await Async.eachOfSeries(exampleUrls, async (url, exampleNumber) => {
+    await Async.eachOfSeries(exampleUrls, Async.asyncify(async (url, exampleNumber) => {
       const alphaRec = mockAlphaRecord(1, url);
       const fetchedRecord = await fetchOneRecord(dbCtx, workflowServices, alphaRec);
       prettyPrint({ exampleNumber, fetchedRecord });
-    });
+    }));
+
+    console.log('quitting..')
 
     await spiderService.quit();
+    console.log('...quit')
   });
 
   it('should update database if fields are extracted but no db entry exists', async () => {
@@ -99,7 +103,7 @@ describe('End-to-end Extraction workflows', () => {
       '/200~withFields',
     ];
 
-    await Async.eachOfSeries(exampleUrls, async (_url, exampleNumber) => {
+    await Async.eachOfSeries(exampleUrls, Async.asyncify(async (_url, exampleNumber) => {
       const alphaRec = mockAlphaRecord(1, _url);
       const { url } = alphaRec;
       await spiderService
@@ -113,7 +117,7 @@ describe('End-to-end Extraction workflows', () => {
 
       const fetchedRecord = await fetchOneRecord(dbCtx, workflowServices, alphaRec);
       prettyPrint({ exampleNumber, fetchedRecord });
-    });
+    }));
 
     await spiderService.quit();
   });

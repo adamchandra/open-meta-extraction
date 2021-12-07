@@ -27,7 +27,7 @@ import fs from 'fs-extra';
 import * as TE from 'fp-ts/TaskEither';
 import * as E from 'fp-ts/Either';
 import Async from 'async';
-import { Metadata } from '@watr/spider';
+import { UrlFetchData } from '@watr/spider';
 import { ExtractContext, initExtractionEnv } from './app/extraction-process';
 import {
   Arrow,
@@ -61,7 +61,7 @@ export async function runMainInitFilters(
   const pumpBuilder = streamPump.createPump()
     .viaStream<string>(dirEntryStream)
     .throughF((entryPath) => {
-      const metadata = readCorpusJsonFile<Metadata>(entryPath, '.', 'metadata.json');
+      const metadata = readCorpusJsonFile<UrlFetchData>(entryPath, '.', 'metadata.json');
 
       if (metadata === undefined) {
         return;
@@ -142,7 +142,7 @@ export async function runMainInitFilters(
 
 export async function runFieldExtractor(
   ctx: ExtractContext,
-  metadata: Metadata,
+  metadata: UrlFetchData,
   extractionPipeline: Arrow<unknown, unknown>
 ): Promise<PerhapsW<unknown>> {
   const { entryPath } = ctx;
@@ -152,7 +152,7 @@ export async function runFieldExtractor(
 
   const browserPages = _.map(_.toPairs(env.browserPageCache), ([, p]) => p);
 
-  await Async.each(browserPages, async page => page.close());
+  await Async.each(browserPages, Async.asyncify(async page => page.close()));
 
   await env.browser.close();
 
@@ -193,7 +193,7 @@ export async function runMainExtractFields(
       const pathRE = new RegExp(pathFilter);
       return pathRE.test(entryPath);
     })
-    .throughF((entryPath) => readCorpusJsonFile<Metadata>(entryPath, '.', 'metadata.json'))
+    .throughF((entryPath) => readCorpusJsonFile<UrlFetchData>(entryPath, '.', 'metadata.json'))
     .filter((metadata) => {
       if (metadata === undefined) return false;
       const url = metadata.responseUrl;
@@ -229,7 +229,7 @@ export async function extractFieldsForEntry(
 ): Promise<void> {
   log.info(`extracting field in ${entryPath}`);
 
-  const metadata = readCorpusJsonFile<Metadata>(entryPath, '.', 'metadata.json');
+  const metadata = readCorpusJsonFile<UrlFetchData>(entryPath, '.', 'metadata.json');
   if (metadata === undefined) {
     log.info(`no metadata found for ${entryPath}`);
     return;

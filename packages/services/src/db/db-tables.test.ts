@@ -56,7 +56,7 @@ describe('Database Tables Basics', () => {
       // const alphaRec0 = inputRecs[0];
 
       await db.runTransaction(async (_sql, transaction) => {
-        await Async.eachSeries(inputRecs, async alphaRec => {
+        await Async.eachSeries(inputRecs, Async.asyncify(async alphaRec => {
           const [newEntry, isNew] = await T.AlphaRecord.findOrCreate({
             where: {
               note_id: alphaRec.noteId,
@@ -74,7 +74,7 @@ describe('Database Tables Basics', () => {
 
           const plainNewEntry = newEntry.get({ plain: true });
           prettyPrint({ isNew, plainNewEntry });
-        });
+        }));
       });
 
       await db.run(async () => {

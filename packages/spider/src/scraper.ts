@@ -1,5 +1,5 @@
 import _ from 'lodash';
-import { writeCorpusJsonFile, writeCorpusTextFile, hasCorpusFile, launchBrowser, putStrLn } from '@watr/commonlib';
+import { writeCorpusJsonFile, writeCorpusTextFile, hasCorpusFile, putStrLn } from '@watr/commonlib';
 
 import {
   HTTPResponse,
@@ -8,23 +8,18 @@ import {
   Frame
 } from 'puppeteer';
 
-import puppeteer from 'puppeteer-extra';
-
-import StealthPlugin from 'puppeteer-extra-plugin-stealth';
-// @ts-ignore
-import AnonPlugin from 'puppeteer-extra-plugin-anonymize-ua';
-
 import Async from 'async';
 import { logPageEvents } from './page-event';
-import { createMetadata, Metadata } from './data-formats';
+import { getFetchDataFromResponse, UrlFetchData } from './url-fetch-chains';
 import { createScrapingContext } from './scraping-context';
+import { launchBrowser, useAnonPlugin, useStealthPlugin } from './puppet';
 
-puppeteer.use(StealthPlugin());
-puppeteer.use(AnonPlugin());
+useStealthPlugin();
+useAnonPlugin();
 
 export interface Scraper {
   browser: Browser;
-  scrapeUrl(url: string): Promise<Metadata | undefined>;
+  scrapeUrl(url: string): Promise<UrlFetchData | undefined>;
   quit(): Promise<void>;
 }
 
@@ -38,7 +33,8 @@ export async function initScraper(
       return scrapeUrl(browser, url);
     },
     async quit() {
-      browser.disconnect();
+      // browser.disconnect();
+
       return browser.close()
         .then(() => putStrLn('Browser is closed'));
     }
@@ -48,7 +44,7 @@ export async function initScraper(
 async function scrapeUrl(
   browser: Browser,
   url: string
-): Promise<Metadata | undefined> {
+): Promise<UrlFetchData | undefined> {
   const scrapingContext = createScrapingContext(url);
 
   const { rootLogger } = scrapingContext;
@@ -56,9 +52,9 @@ async function scrapeUrl(
 
   rootLogger.info(`downloading ${url} to ${scrapingContext.entryEncPath.toPath()}`);
 
-  const hasMetadata = hasCorpusFile(entryRootPath, '.', 'metadata.json');
+  const hasUrlFetchData = hasCorpusFile(entryRootPath, '.', 'metadata.json');
 
-  if (hasMetadata) {
+  if (hasUrlFetchData) {
     rootLogger.warn(`skipping ${url}: metadata file exists`);
     return;
   }
@@ -109,25 +105,36 @@ async function scrapeUrl(
     const frames = page.frames();
     const frameCount = frames.length;
     let frameNum = 0;
+    const timeoutMS = 5000;
 
     const allFrameContent = await Async.mapSeries<Frame, string>(
       page.frames(),
-      async (frame: Frame) => {
+      Async.asyncify(async (frame: Frame) => {
         rootLogger.info(`retrieving frame content ${frameNum} of ${frameCount}`);
         let content = '';
+
         try {
-          const sdf = await Async.mapSeries<Frame, string>(
-            [frame],
-            Async.timeout(async (f: Frame) => f.content(), 5000)
-          );
-          content = sdf[0] || '';
+          Async.race([
+            function(callback) {
+              setTimeout(function() {
+                callback(null, [`timeout after ${timeoutMS}ms`]);
+              }, timeoutMS);
+            },
+            function(callback) {
+              frame.content()
+                .then(c => callback(null, c))
+            }
+          ], (err, contents) => {
+            console.log({ contents, err });
+            content = contents[0];
+          });
         } catch (error) {
           rootLogger.info(`error retrieving frame content ${frameNum} of ${frameCount}`);
           rootLogger.info(`   ${error}`);
         }
         frameNum += 1;
         return content;
-      }
+      })
     );
 
 
@@ -137,7 +144,7 @@ async function scrapeUrl(
       }
     });
 
-    const metadata = createMetadata(url, response);
+    const metadata = getFetchDataFromResponse(url, response);
     writeCorpusJsonFile(entryRootPath, '.', 'metadata.json', metadata);
     const status = response.status();
     await page.close();
