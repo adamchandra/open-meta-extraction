@@ -1,14 +1,24 @@
-const { pathsToModuleNameMapper } = require("ts-jest");
-const { compilerOptions } = require("./tsconfig.json");
+const baseConfig = require("../eslint-config/jest.base");
+const pkg = require('./package.json');
+// import { pathsToModuleNameMapper } from "ts-jest";
+// import { compilerOptions } from "../../tsconfig.json";
 
 module.exports = {
-  preset: "ts-jest",
-
-  moduleNameMapper: pathsToModuleNameMapper(compilerOptions.paths, {
-    // This has to match the baseUrl defined in tsconfig.json.
-    prefix: "<rootDir>",
-  }),
-  roots: [
-    '<rootDir>/src'
-  ]
+  ...baseConfig,
+  displayName: pkg.name,
+  rootDir: '../eslint-config',
+  roots:['<rootDir>/../commonlib'],
+  moduleNameMapper: {
+    ...baseConfig.moduleNameMapper,
+    // "^~/*": "<rootDir>/../commonlib/src/$1",
+   "^~/(.*)$": "<rootDir>/../commonlib/src/$1",
+  },
+  globals: {
+    'ts-jest': {
+      tsconfig: '<rootDir>/../commonlib/tsconfig.json'
+    }
+  },
+  // setupFilesAfterEnv: ['@testing-library/react/cleanup-after-each'],
+  // snapshotSerializers: ['jest-emotion']
 };
+

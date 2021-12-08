@@ -12,8 +12,9 @@
     "src": "src"
   },
   "scripts": {
+    "clean": "rm -r ./dist",
     "compile": "tsc",
-    "build": "rollup -c",
+    "build": "tsc",
     "lint": "eslint src/",
     "lint:fix": "eslint src/ --fix",
     "test": "jest"

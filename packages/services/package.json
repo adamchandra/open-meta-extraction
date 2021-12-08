@@ -9,8 +9,9 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
+    "clean": "rm -r ./dist",
     "compile": "tsc",
-    "build": "rollup -c",
+    "build": "tsc",
     "lint": "eslint ./src",
     "lint:fix": "eslint src/ --fix",
     "test": "jest"
@@ -94,15 +95,5 @@
     "rollup-plugin-ts": "^2.0.2",
     "ts-node": "^10.4.0",
     "ts-node-dev": "^1.1.8"
-  },
-  "jest": {
-    "preset": "ts-jest",
-    "roots": [
-      "<rootDir>/src"
-    ],
-    "moduleNameMapper": {
-      "^@/(.*)$": "<rootDir>/$1",
-      "^~/(.*)$": "<rootDir>/src/$1"
-    }
   }
 }
