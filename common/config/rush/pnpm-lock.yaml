@@ -3728,6 +3728,11 @@ packages:
     resolution: {integrity: sha1-GwqzvVU7Kg1jmdKcDj6gslIHgyc=}
     dev: false
 
+  /generic-pool/3.8.2:
+    resolution: {integrity: sha512-nGToKy6p3PAbYQ7p1UlWl6vSPwfwU6TMSWK7TTu+WUY4ZjyZQGniGGt2oNVvyNSpyZYSB43zMXVLcBm08MTMkg==}
+    engines: {node: '>= 4'}
+    dev: false
+
   /gensync/1.0.0-beta.2:
     resolution: {integrity: sha512-3hN7NaskYvMDLQY55gnW3NQ+mesEAepTqlg+VEbj7zzqEMBVNhzcGYYeqFo/TlYz6eQiFcp1HcsCZO+nGgS8zg==}
     engines: {node: '>=6.9.0'}
@@ -8070,7 +8075,7 @@ packages:
     dev: false
 
   file:projects/commonlib.tgz_ts-node@10.4.0:
-    resolution: {integrity: sha512-7MzRR3BGRCtXt03jFy9WxLyD4EvfBjFnpybb65s9P19WWndDsLL48uvGlNonUlGNVyaYmPMK5sLB/e/oR0/BlA==, tarball: file:projects/commonlib.tgz}
+    resolution: {integrity: sha512-TUvC9r7WuRDP/5U4uyKFlM9GxyFD5663R7p3zCvEow4fKqpN5fOUCgQSRo6xKb2Ac5HZOxc5vOaSvNfnesv5kQ==, tarball: file:projects/commonlib.tgz}
     id: file:projects/commonlib.tgz
     name: '@rush-temp/commonlib'
     version: 0.0.0
@@ -8271,7 +8276,7 @@ packages:
     dev: false
 
   file:projects/spider.tgz_ts-node@10.4.0:
-    resolution: {integrity: sha512-9+4SOvAC6wuvKm9ZGkFSq2K9FeYPJA1zZG18RL2ZV//46LzsgN95FkcE8VOSmb39sDNLYPJwlXB0+wDXzMgopg==, tarball: file:projects/spider.tgz}
+    resolution: {integrity: sha512-8R54Ew/F7UZ5wN0Yk+CxYBx9dXQbFazP+X0X3PUfNRQDudW661LrL4MqGZxwBaxzF3k+vjkuSl+fE+S3UEGbFQ==, tarball: file:projects/spider.tgz}
     id: file:projects/spider.tgz
     name: '@rush-temp/spider'
     version: 0.0.0
@@ -8289,6 +8294,7 @@ packages:
       fast-csv: 4.3.6
       fp-ts: 2.11.5
       fs-extra: 10.0.0
+      generic-pool: 3.8.2
       got: 11.8.3
       io-ts: 2.2.16_fp-ts@2.11.5
       is-url-superb: 6.1.0
