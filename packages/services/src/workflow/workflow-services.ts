@@ -1,7 +1,7 @@
 import _ from 'lodash';
 
 import * as winston from 'winston';
-import { AlphaRecord, getCorpusEntryDirForUrl } from '@watr/commonlib';
+import { AlphaRecord, getCorpusEntryDirForUrl, prettyPrint } from '@watr/commonlib';
 import { UrlFetchData } from '@watr/spider';
 import { CanonicalFieldRecords, extractFieldsForEntry, getCanonicalFieldRecord } from '~/extract/run-main';
 
@@ -182,12 +182,13 @@ async function scrapeUrl(
   const metadata = await spiderService
     .scrape(url)
     .catch((error: Error) => {
+      log.warn(error.message);
       return `${error.name}: ${error.message}`;
     });
 
   if (_.isString(metadata)) {
     const msg = `Spidering error ${metadata}`;
-    log.info(msg);
+    log.warn(msg);
     await commitUrlStatus(dbCtx, url, 'spider:error', msg);
 
     return ErrorRecord(msg);
@@ -198,6 +199,8 @@ async function scrapeUrl(
     log.info(msg);
     return ErrorRecord(msg);
   }
+
+  prettyPrint({ metadata });
 
   await commitUrlFetchData(dbCtx, metadata);
 

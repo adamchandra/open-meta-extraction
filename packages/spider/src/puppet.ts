@@ -1,5 +1,5 @@
 import {
-  Browser,
+  Browser as PBrowser,
 } from 'puppeteer';
 
 import puppeteer from 'puppeteer-extra';
@@ -10,6 +10,8 @@ import AnonPlugin from 'puppeteer-extra-plugin-anonymize-ua';
 import blockResources from 'puppeteer-extra-plugin-block-resources';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 
+export type Browser = PBrowser;
+export const Browser = PBrowser;
 
 export function useStealthPlugin(): void {
   puppeteer.use(StealthPlugin());

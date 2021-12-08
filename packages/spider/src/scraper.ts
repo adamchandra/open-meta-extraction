@@ -1,5 +1,8 @@
 import _ from 'lodash';
-import { writeCorpusJsonFile, writeCorpusTextFile, hasCorpusFile, putStrLn } from '@watr/commonlib';
+
+import * as E from 'fp-ts/Either';
+
+import { writeCorpusJsonFile, writeCorpusTextFile, hasCorpusFile, putStrLn, prettyPrint } from '@watr/commonlib';
 
 import {
   HTTPResponse,
@@ -12,31 +15,33 @@ import Async from 'async';
 import { logPageEvents } from './page-event';
 import { getFetchDataFromResponse, UrlFetchData } from './url-fetch-chains';
 import { createScrapingContext } from './scraping-context';
-import { launchBrowser, useAnonPlugin, useStealthPlugin } from './puppet';
+import { useAnonPlugin, useStealthPlugin } from './puppet';
+import { BrowserPool, createBrowserPool } from './browser-pool';
 
 useStealthPlugin();
 useAnonPlugin();
 
 export interface Scraper {
-  browser: Browser;
-  scrapeUrl(url: string): Promise<UrlFetchData | undefined>;
+  browserPool: BrowserPool;
+  scrapeUrl(url: string): Promise<E.Either<string, UrlFetchData>>;
   quit(): Promise<void>;
 }
 
 export async function initScraper(
 ): Promise<Scraper> {
-  const browser = await launchBrowser();
+  const browserPool = createBrowserPool();
 
   return {
-    browser,
-    async scrapeUrl(url: string) {
-      return scrapeUrl(browser, url);
+    browserPool,
+    async scrapeUrl(url: string): Promise<E.Either<string, UrlFetchData>> {
+      const result = await browserPool.use(async (browser: Browser) => {
+        return scrapeUrl(browser, url);
+      });
+      return result;
     },
     async quit() {
-      // browser.disconnect();
-
-      return browser.close()
-        .then(() => putStrLn('Browser is closed'));
+      await browserPool.shutdown();
+      putStrLn('Browser is closed');
     }
   };
 }
@@ -44,7 +49,7 @@ export async function initScraper(
 async function scrapeUrl(
   browser: Browser,
   url: string
-): Promise<UrlFetchData | undefined> {
+): Promise<E.Either<string, UrlFetchData>> {
   const scrapingContext = createScrapingContext(url);
 
   const { rootLogger } = scrapingContext;
@@ -72,11 +77,10 @@ async function scrapeUrl(
       rootLogger.info('retrying navigation to page');
       const response2 = await page
         .waitForNavigation({
-          // waitUntil: [ ]
+          //
         })
         .catch(() => {
           //
-
         });
       if (response2) {
         rootLogger.info('successful retry navigation to page');
@@ -111,27 +115,26 @@ async function scrapeUrl(
       page.frames(),
       Async.asyncify(async (frame: Frame) => {
         rootLogger.info(`retrieving frame content ${frameNum} of ${frameCount}`);
-        let content = '';
+        const content = await new Promise((resolve) => {
+          let counter = 0;
+          const timeout = setTimeout(function() {
+            counter += 1;
+            // clearImmediate(immediate);
+            resolve(`timeout after ${timeoutMS}ms`);
+          }, timeoutMS);
 
-        try {
-          Async.race([
-            function(callback) {
-              setTimeout(function() {
-                callback(null, [`timeout after ${timeoutMS}ms`]);
-              }, timeoutMS);
-            },
-            function(callback) {
-              frame.content()
-                .then(c => callback(null, c))
-            }
-          ], (err, contents) => {
-            console.log({ contents, err });
-            content = contents[0];
-          });
-        } catch (error) {
-          rootLogger.info(`error retrieving frame content ${frameNum} of ${frameCount}`);
-          rootLogger.info(`   ${error}`);
-        }
+          frame.content()
+            .then(c => {
+              if (counter === 0) {
+                clearTimeout(timeout);
+                resolve(c[0])
+              }
+            }).catch(_err => {
+              // Catches Target Closed errors if timeout occurs
+              // console.log(`error getting frame.content(): ${err}`);
+            });
+        });
+
         frameNum += 1;
         return content;
       })
@@ -149,18 +152,10 @@ async function scrapeUrl(
     const status = response.status();
     await page.close();
     rootLogger.info(`Scraped ${url}: status: ${status}`);
-    return metadata;
+    return E.right(metadata);
   } catch (error) {
     await page.close();
-    rootLogger.error(`For ${url}: error: ${error}`);
+    const errorMsg = `Error for ${url}: ${error}`;
+    return E.left(errorMsg);
   }
-  return undefined;
-}
-
-export async function scrapeUrlAndQuit(
-  url: string
-): Promise<void> {
-  const browser = await launchBrowser();
-  await scrapeUrl(browser, url);
-  await browser.close();
 }

@@ -1,4 +1,5 @@
 
+import { Browser } from 'puppeteer';
 import { createBrowserPool } from './browser-pool';
 
 describe('browser pooling', () => {
@@ -17,7 +18,7 @@ describe('browser pooling', () => {
 
     console.log('pos.1');
 
-    await browserPool.use(async browser => {
+    await browserPool.use(async (browser: Browser)=> {
       console.log('pos.2');
       throw new Error('problem');
     }).catch((err) => {

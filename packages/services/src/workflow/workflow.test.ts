@@ -4,7 +4,6 @@ import _ from 'lodash';
 import { getCorpusEntryDirForUrl, prettyPrint, putStrLn, AlphaRecord, setEnv } from '@watr/commonlib';
 import fs from 'fs-extra';
 import Async from 'async';
-import got from 'got';
 import { Server } from 'http';
 import { fetchOneRecord, WorkflowServices } from './workflow-services';
 
@@ -28,7 +27,7 @@ describe('End-to-end Extraction workflows', () => {
     });
   }
 
-  const workingDir = './workflow-test.d';
+  const workingDir = './test.scratch.d';
   setEnv('AppSharePath', workingDir);
   setEnv('DBPassword', 'watrpasswd');
   const dbConfig = getDBConfig('test');
@@ -71,10 +70,10 @@ describe('End-to-end Extraction workflows', () => {
       dbCtx
     };
     const exampleUrls = [
-      // '/200~withFields',
+      '/200~withFields',
       // '/200~withoutFields',
       // '/404~custom404~100',
-      '/404~custom404',
+      // '/404~custom404',
     ];
 
     await Async.eachOfSeries(exampleUrls, Async.asyncify(async (url, exampleNumber) => {

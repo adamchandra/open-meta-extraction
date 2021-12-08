@@ -154,7 +154,7 @@ export async function runFieldExtractor(
 
   await Async.each(browserPages, Async.asyncify(async page => page.close()));
 
-  await env.browser.close();
+  await env.browserPool.shutdown();
 
   return res;
 }

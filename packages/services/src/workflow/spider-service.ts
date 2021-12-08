@@ -32,6 +32,7 @@ import {
 } from '@watr/commonlib';
 
 import { DatabaseContext, insertAlphaRecords } from '~/db/db-api';
+import * as E from 'fp-ts/Either';
 
 export interface SpiderService {
   crawlScheduler: CrawlScheduler;
@@ -49,18 +50,25 @@ export async function createSpiderService(): Promise<SpiderService> {
     scraper,
     crawlScheduler,
     async scrape(url: string): Promise<UrlFetchData | undefined> {
-      return this.scraper.scrapeUrl(url);
+      return scraper.scrapeUrl(url)
+        .then(resultOrError => {
+          console.log('resultOrError?', resultOrError);
+        return E.match(
+          (_err: string) => undefined,
+          (succ: UrlFetchData) => succ
+        )(resultOrError);
+      });
     },
     async run(alphaRecordStream: Readable): Promise<Readable> {
-      const urlCount = await this.crawlScheduler.addUrls(alphaRecordStream);
-      const seedUrlStream = this.crawlScheduler.getUrlStream();
+      const urlCount = await crawlScheduler.addUrls(alphaRecordStream);
+      const seedUrlStream = crawlScheduler.getUrlStream();
       let i = 0;
       return streamPump.createPump()
         .viaStream<string>(seedUrlStream)
         .throughF(async (urlString) => {
           putStrLn(`url ${i} of ${urlCount}`);
           i += 1;
-          return this.scraper.scrapeUrl(urlString)
+          return scraper.scrapeUrl(urlString)
             .then((didScrape) => {
               if (didScrape) {
                 return delay(1000);
@@ -72,7 +80,7 @@ export async function createSpiderService(): Promise<SpiderService> {
         .toReadableStream();
     },
     quit() {
-      return this.scraper.quit();
+      return scraper.quit();
     }
   };
 

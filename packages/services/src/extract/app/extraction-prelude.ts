@@ -6,6 +6,7 @@ import { Browser, Page } from 'puppeteer';
 import * as ft from '../core/function-defs';
 
 import { ExtractionEvidence, Field } from '../core/extraction-records';
+import { BrowserPool } from '@watr/spider/dist/browser-pool';
 
 export interface NormalForms {
   'css-norm': null;
@@ -33,7 +34,7 @@ export type ExtractionEnv = {
   fieldCandidates: FieldCandidate[];
   fileContentCache: Record<string, string>;
   browserPageCache: Record<string, Page>;
-  browser: Browser;
+  browserPool: BrowserPool;
   enterNS(ns: string[]): void;
   exitNS(ns: string[]): void;
 };

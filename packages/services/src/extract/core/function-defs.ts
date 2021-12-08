@@ -7,7 +7,6 @@ import * as E from 'fp-ts/Either';
 import { isLeft } from 'fp-ts/Either';
 import { Logger } from 'winston';
 import Async from 'async';
-// import { prettyPrint, putStrLn } from '@watr/commonlib';
 
 export interface FPackage<Env extends BaseEnv> {
   asW<A>(a: A, w: Env): W<A, Env>;
@@ -121,15 +120,14 @@ function asWCI<Env extends BaseEnv>(ci: ControlInstruction, w: Env): WCI<Env> {
 
 export type Eventual<A> = A | Promise<A>;
 
-
 export type Perhaps<A> = E.Either<ControlInstruction, A>;
 export type PerhapsW<A, Env extends BaseEnv> = E.Either<WCI<Env>, W<A, Env>>;
 
 export type PostHook<A, B, Env extends BaseEnv> = (a: A, eb: Perhaps<B>, env: Env) => void;
 
 export type ClientResult<A> = Eventual<A>
-| Eventual<Perhaps<A>>
-| TE.TaskEither<ControlInstruction, A>
+  | Eventual<Perhaps<A>>
+  | TE.TaskEither<ControlInstruction, A>
   ;
 
 export type ClientFunc<A, B, Env extends BaseEnv> = (a: A, env: Env) => ClientResult<B>;
@@ -452,7 +450,7 @@ const __takeFirstSuccess: <A, B, Env extends BaseEnv> (arrows: Arrow<A, B, Env>[
 };
 
 const hook: <A, B, Env extends BaseEnv>(f: (a: A, b: Perhaps<B>, env: Env) => void) =>
-PostHook<A, B, Env> = (f) => f;
+  PostHook<A, B, Env> = (f) => f;
 
 function through<A, B, Env extends BaseEnv>(
   f: ClientFunc<A, B, Env>,
@@ -553,9 +551,9 @@ function filter<A, Env extends BaseEnv>(
 }
 
 export type LogLevel = 'info'
-| 'debug'
-| 'warn'
-| 'error'
+  | 'debug'
+  | 'warn'
+  | 'error'
   ;
 
 
