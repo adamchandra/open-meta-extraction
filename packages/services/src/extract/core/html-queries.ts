@@ -1,8 +1,6 @@
 import _ from 'lodash';
 import * as E from 'fp-ts/Either';
 import { pipe } from 'fp-ts/function';
-import { isRight } from 'fp-ts/Either';
-import Async from 'async';
 
 import {
   Page,
@@ -10,8 +8,6 @@ import {
   ElementHandle,
   // errors as puppeteerErrors
 } from 'puppeteer';
-
-import { launchBrowser } from '@watr/spider';
 
 export type AttrSelection = E.Either<string, string>;
 
@@ -38,7 +34,7 @@ export function expandCaseVariations(seed: string, sub: (s: string) => string): 
   return expanded;
 }
 
-export async function _queryAllP(
+export async function queryAllP(
   page: Page,
   query: string
 ): Promise<ElemSelectAll> {
@@ -53,7 +49,7 @@ export async function _queryAllP(
   }
 }
 
-export async function _queryAll(
+export async function queryAll(
   browser: Browser,
   sourceHtml: string,
   query: string
@@ -66,7 +62,7 @@ export async function _queryAll(
       waitUntil: 'domcontentloaded',
     });
 
-    return await _queryAllP(page, query);
+    return await queryAllP(page, query);
   } catch (error) {
     if (error instanceof Error) {
       return E.left(`${error.name}: ${error.message}`);
@@ -75,11 +71,11 @@ export async function _queryAll(
   }
 }
 
-export async function _queryOneP(
+export async function queryOneP(
   page: Page,
   query: string
 ): Promise<ElemSelectOne> {
-  return _queryAllP(page, query)
+  return queryAllP(page, query)
     .then(elems => {
       return pipe(elems, E.chain(es => {
         return es.length > 0
@@ -88,12 +84,12 @@ export async function _queryOneP(
       }));
     });
 }
-export async function _queryOne(
+export async function queryOne(
   browser: Browser,
   sourceHtml: string,
   query: string
 ): Promise<ElemSelectOne> {
-  return _queryAll(browser, sourceHtml, query)
+  return queryAll(browser, sourceHtml, query)
     .then(elems => {
       return pipe(elems, E.chain(es => {
         return es.length > 0
@@ -103,50 +99,7 @@ export async function _queryOne(
     });
 }
 
-export async function queryOne(
-  sourceHtml: string,
-  elementSelector: string,
-): Promise<ElemSelectOne> {
-  const browser = await launchBrowser();
-
-
-  const result = await _queryOne(browser, sourceHtml, elementSelector);
-
-  await browser.close();
-  return result;
-}
-
-export async function queryAll(
-  sourceHtml: string,
-  elementSelector: string,
-): Promise<ElemSelectAll> {
-  const browser = await launchBrowser();
-
-  const result = await _queryAll(browser, sourceHtml, elementSelector);
-
-  await browser.close();
-  return result;
-}
-
-export async function selectElementAttr(
-  sourceHtml: string,
-  elementSelector: string,
-  attributeName: string
-): Promise<AttrSelection> {
-  const browser = await launchBrowser();
-
-  const result: AttrSelection = await _selectElementAttr(
-    browser,
-    sourceHtml,
-    elementSelector,
-    attributeName
-  );
-
-  await browser.close();
-  return result;
-}
-
-export async function _selectElementAttrP(
+export async function selectElementAttrP(
   page: Page,
   elementSelector: string,
   attributeName: string
@@ -178,7 +131,7 @@ export async function _selectElementAttrP(
   }
 }
 
-export async function _selectElementAttr(
+export async function selectElementAttr(
   browser: Browser,
   sourceHtml: string,
   elementSelector: string,
@@ -191,7 +144,7 @@ export async function _selectElementAttr(
       waitUntil: 'domcontentloaded',
     });
 
-    return await _selectElementAttrP(page, elementSelector, attributeName);
+    return await selectElementAttrP(page, elementSelector, attributeName);
   } catch (error) {
     // if (error instanceof puppeteerErrors.TimeoutError) {
     //   // TODO Do something if this is a timeout.
@@ -201,39 +154,4 @@ export async function _selectElementAttr(
     }
     return E.left(`${error}`);
   }
-}
-
-export async function getOuterHtml(maybeElem: ElemSelectOne): Promise<string> {
-  if (isRight(maybeElem)) {
-    const elem = maybeElem.right;
-    return elem.evaluate((e) => e.outerHTML);
-  }
-  return '(error)';
-}
-
-
-export async function getTextContents(maybeElems: ElemSelectAll): Promise<Array<string | undefined> | undefined> {
-  if (isRight(maybeElems)) {
-    const elems = maybeElems.right;
-
-    const outers = await Async.map<Elem, string | undefined>(elems, Async.asyncify(async (elem) => {
-      return elem.evaluate((e) => (e.textContent !== null ? e.textContent : undefined));
-    }));
-    return outers;
-  }
-  return undefined;
-}
-
-
-export async function getOuterHtmls(maybeElems: ElemSelectAll): Promise<string[]> {
-  if (isRight(maybeElems)) {
-    const elems = maybeElems.right;
-
-    const outers = await Async.map<Elem, string>(elems, Async.asyncify(async (elem) => {
-      return elem.evaluate((e) => e.outerHTML);
-    }));
-
-    return outers;
-  }
-  return ['(error)'];
 }

@@ -13,7 +13,7 @@ import { runFieldExtractor } from '../run-main';
 
 describe('Field Extraction Pipeline', () => {
   const testCorpus = './test/resources/spidered-corpus';
-  const testScratchDir = './test-scratch.d';
+  const testScratchDir = './test.scratch.d';
 
   beforeEach(() => {
     fs.emptyDirSync(testScratchDir);
@@ -31,7 +31,6 @@ describe('Field Extraction Pipeline', () => {
       // '22133',
       // '22168'
     ];
-    // const log = getBasicConsoleLogger();
 
     const logLevel = 'debug';
     const logfilePath = testScratchDir;

@@ -4,10 +4,9 @@ import { flow as compose, pipe } from 'fp-ts/function';
 import * as TE from 'fp-ts/TaskEither';
 import * as E from 'fp-ts/Either';
 
-import { UrlFetchData } from '@watr/spider';
+import { UrlFetchData, createBrowserPool } from '@watr/spider';
 import { ArtifactSubdir, expandDir, readCorpusTextFile, setLogLabel, writeCorpusTextFile, shaEncodeAsHex, diffByChars } from '@watr/commonlib';
 import { Logger } from 'winston';
-import { launchBrowser } from '@watr/spider';
 
 import puppeteer from 'puppeteer-extra';
 import { Page } from 'puppeteer';
@@ -41,7 +40,8 @@ import {
 import { ExtractionEvidence, Field } from '../core/extraction-records';
 
 import { runTidyCmdBuffered } from '~/utils/run-cmd-tidy-html';
-import { Elem, expandCaseVariations, _queryAllP, _queryOneP, _selectElementAttrP } from '../core/html-queries';
+import { Elem, expandCaseVariations, queryAllP, queryOneP, selectElementAttrP } from '../core/html-queries';
+
 import { runFileCmd } from '~/utils/run-cmd-file';
 
 
@@ -240,38 +240,48 @@ export const saveDocumentMetaDataEvidence: (name: string, f: (m: GlobalDocumentM
   clearEvidence(new RegExp(name)),
 );
 
-/// ///////////////
-/// // jquery/css selector and Elem functions
+///////////////
+// jquery/css selector and Elem functions
 
-export const loadPageFromCache: Arrow<CacheFileKey, Page> = through((cacheKey: CacheFileKey, { browser, fileContentCache, browserPageCache }) => {
-  if (cacheKey in browserPageCache) {
-    return browserPageCache[cacheKey];
-  }
-  if (cacheKey in fileContentCache) {
-    const fileContent = fileContentCache[cacheKey];
+export const loadPageFromCache: Arrow<CacheFileKey, Page> =
+  through((cacheKey: CacheFileKey, { browserPool, fileContentCache, browserPageCache }) => {
+    if (cacheKey in browserPageCache) {
+      return browserPageCache[cacheKey];
+    }
+    if (cacheKey in fileContentCache) {
+      const fileContent = fileContentCache[cacheKey];
+      browserPool.use(browser => {
+        return browser.newPage()
+          .then(async page => {
+            await page.setContent(fileContent, {
+              timeout: 8000,
+              waitUntil: 'domcontentloaded',
+              // waitUntil: 'load',
+            });
+            browserPageCache[cacheKey] = page;
+            return page;
+          }).then((page: Page) => {
+            return pipe(
+              E.right(page),
+              E.match(function onLeft(err: string): E.Either<string, Page> {
+                return E.left(err);
+              }, function onRight(p: Page): E.Either<string, Page> {
+                return E.right(p);
 
-    const pagePromise = browser.newPage()
-      .then(async page => {
-        await page.setContent(fileContent, {
-          timeout: 8000,
-          waitUntil: 'domcontentloaded',
-          // waitUntil: 'load',
-        });
-        browserPageCache[cacheKey] = page;
-        return page;
+              })
+            );
+          });
       });
+    }
 
-    return pagePromise;
-  }
-
-  return ClientFunc.halt(`cache has no record for key ${cacheKey}`);
-});
+    return ClientFunc.halt(`cache has no record for key ${cacheKey}`);
+  });
 
 export const selectOne: (queryString: string) => Arrow<CacheFileKey, Elem> = (queryString) => compose(
   loadPageFromCache,
   through((page: Page, { }) => {
     return pipe(
-      () => _queryOneP(page, queryString),
+      () => queryOneP(page, queryString),
       TE.mapLeft((msg) => ['continue', `selectElemAttr error: ${msg}`])
     );
   })
@@ -281,7 +291,7 @@ export const selectAll: (queryString: string) => Arrow<CacheFileKey, Elem[]> = (
   loadPageFromCache,
   through((page: Page, { }) => {
     return pipe(
-      () => _queryAllP(page, queryString),
+      () => queryAllP(page, queryString),
       TE.mapLeft((msg) => ['continue', `selectElemAttr error: ${msg}`])
     );
   })
@@ -330,7 +340,7 @@ export const selectElemAttr: (queryString: string, contentAttr: string) => Arrow
   loadPageFromCache,
   through((page: Page, { }) => {
     return pipe(
-      () => _selectElementAttrP(page, queryString, contentAttr),
+      () => selectElementAttrP(page, queryString, contentAttr),
       TE.mapLeft((msg) => ['continue', `selectElemAttr error: ${msg}`])
     );
   })
@@ -765,11 +775,11 @@ export async function initExtractionEnv(
   const pathPrefix = path.basename(entryPath).slice(0, 6);
   const logPrefix = [pathPrefix];
 
-  const browser = await launchBrowser();
+  const browserPool = createBrowserPool();
 
   const env: ExtractionEnv = {
     log,
-    browser,
+    browserPool,
     ns: logPrefix,
     entryPath,
     metadata,

@@ -1,10 +1,10 @@
 import _ from 'lodash';
 
 import { isLeft, isRight } from 'fp-ts/Either';
-import { prettyPrint, putStrLn, stripMargin, launchBrowser } from '@watr/commonlib';
+import { prettyPrint, putStrLn, stripMargin } from '@watr/commonlib';
 import Async from 'async';
-import { selectElementAttr, _queryOne, _queryAll, expandCaseVariations } from './html-queries';
-
+import { selectElementAttr, queryOne, queryAll, expandCaseVariations } from './html-queries';
+import { createBrowserPool } from '@watr/spider';
 
 const tmpHtml = stripMargin(`
 |<html>
@@ -50,20 +50,26 @@ const tmpHtml = stripMargin(`
 
 
 describe('HTML jquery-like css queries', () => {
-  it('smokescreen', async () => {
-    const attr0 = await selectElementAttr(tmpHtml, 'meta[name=citation_title]', 'content');
-    const attr1 = await selectElementAttr(tmpHtml, 'meta[name=citation_title]', 'content_');
-    const attr2 = await selectElementAttr(tmpHtml, 'meta[name=empty]', 'content');
-    expect(isRight(attr0)).toBeTruthy();
-    expect(isLeft(attr1)).toBeTruthy();
-    expect(isLeft(attr2)).toBeTruthy();
 
-    // done();
+  const browserPool = createBrowserPool();
+
+  afterAll(() => {
+    return browserPool.shutdown();
+  })
+
+  it('smokescreen', async () => {
+    await browserPool.use(async (b) => {
+      const attr0 = await selectElementAttr(b, tmpHtml, 'meta[name=citation_title]', 'content');
+      const attr1 = await selectElementAttr(b, tmpHtml, 'meta[name=citation_title]', 'content_');
+      const attr2 = await selectElementAttr(b, tmpHtml, 'meta[name=empty]', 'content');
+      expect(isRight(attr0)).toBeTruthy();
+      expect(isLeft(attr1)).toBeTruthy();
+      expect(isLeft(attr2)).toBeTruthy();
+    })
   });
 
 
   it('should run assorted css queries', async () => {
-    const browser = await launchBrowser();
 
     const examples: [string, RegExp][] = [
       ['div#abstracts > div.abstract > div', /success1/],
@@ -75,27 +81,25 @@ describe('HTML jquery-like css queries', () => {
       ['meta[property="og:description"]', /success:/],
       ['a.show-pdf', /success:pdf/],
     ];
+    await browserPool.use(async (browser) => {
+      await Async.eachSeries(examples, Async.asyncify(async ([query, regexTest]) => {
+        const maybeResult = await queryOne(browser, tmpHtml, query);
+        if (isRight(maybeResult)) {
+          const elem = maybeResult.right;
+          const outerHtml = await elem.evaluate(e => e.outerHTML);
+          // prettyPrint({ query, outerHtml });
+          expect(regexTest.test(outerHtml)).toBe(true);
+        } else {
+          const error = maybeResult.left;
+          console.log('error', query, error);
+        }
+        expect(isRight(maybeResult)).toBe(true);
+      }));
+    });
 
-    await Async.eachSeries(examples, Async.asyncify(async ([query, regexTest]) => {
-      const maybeResult = await _queryOne(browser, tmpHtml, query);
-      if (isRight(maybeResult)) {
-        const elem = maybeResult.right;
-        const outerHtml = await elem.evaluate(e => e.outerHTML);
-        // prettyPrint({ query, outerHtml });
-        expect(regexTest.test(outerHtml)).toBe(true);
-      } else {
-        const error = maybeResult.left;
-        console.log('error', query, error);
-      }
-      expect(isRight(maybeResult)).toBe(true);
-    }));
-
-    await browser.close();
-    // done();
   });
 
   it('should run assorted css multi-queries', async () => {
-    const browser = await launchBrowser();
 
     const examples: [string, RegExp[]][] = [
       // ['meta[name=citation_author]', [/Holte/, /Burch/]],
@@ -105,25 +109,24 @@ describe('HTML jquery-like css queries', () => {
     ];
 
 
-    await Async.forEachOfSeries(examples, Async.asyncify(async ([query, ], exampleNum) => {
-      const maybeResult = await _queryAll(browser, tmpHtml, query);
-      putStrLn(`Example #${exampleNum}`);
-      if (isRight(maybeResult)) {
-        const elems = maybeResult.right;
-        await Async.forEachOfSeries(elems, Async.asyncify(async (elem, index) => {
-          const outerHtml = await elem.evaluate(e => e.outerHTML);
-          // prettyPrint({ query, outerHtml, result: index });
-          // const regexTest: RegExp = _.get(regexTests, index);
-          // expect(regexTest.test(outerHtml)).toBe(true);
-        }));
-      } else {
-        const error = maybeResult.left;
-        console.log('error', query, error);
-      }
-    }));
-
-    await browser.close();
-    // done();
+    await browserPool.use(async (browser) => {
+      await Async.forEachOfSeries(examples, Async.asyncify(async ([query,], exampleNum) => {
+        const maybeResult = await queryAll(browser, tmpHtml, query);
+        putStrLn(`Example #${exampleNum}`);
+        if (isRight(maybeResult)) {
+          const elems = maybeResult.right;
+          await Async.forEachOfSeries(elems, Async.asyncify(async (elem, index) => {
+            const outerHtml = await elem.evaluate(e => e.outerHTML);
+            // prettyPrint({ query, outerHtml, result: index });
+            // const regexTest: RegExp = _.get(regexTests, index);
+            // expect(regexTest.test(outerHtml)).toBe(true);
+          }));
+        } else {
+          const error = maybeResult.left;
+          console.log('error', query, error);
+        }
+      }));
+    });
   });
 
   it('should create all expansions', () => {
@@ -133,7 +136,6 @@ describe('HTML jquery-like css queries', () => {
   });
 
   it('should downcase attributes', async () => {
-    const browser = await launchBrowser();
 
     const examples: [string, RegExp[]][] = [
       // ['meta[name=citation_author]', [/Holte/, /Burch/]],
@@ -142,8 +144,9 @@ describe('HTML jquery-like css queries', () => {
       ['meta[name~="dc.creator"],meta[name~="dc.Creator"]', [/Adam/, /adam/]],
     ];
 
-    await Async.eachSeries(examples, Async.asyncify(async ([query, ]) => {
-      const maybeResult = await _queryAll(browser, tmpHtml, query);
+    await browserPool.use(async (browser) => {
+    await Async.eachSeries(examples, Async.asyncify(async ([query,]) => {
+      const maybeResult = await queryAll(browser, tmpHtml, query);
       if (isRight(maybeResult)) {
         const elems = maybeResult.right;
         await Async.forEachOfSeries(elems, Async.asyncify(async (elem, index) => {
@@ -158,7 +161,6 @@ describe('HTML jquery-like css queries', () => {
       }
     }));
 
-    await browser.close();
-    // done();
+    });
   });
 });
