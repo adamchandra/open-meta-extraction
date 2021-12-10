@@ -33,7 +33,6 @@
     "puppeteer-extra-plugin-anonymize-ua": "^2.3.3",
     "puppeteer-extra-plugin-block-resources": "^2.3.0",
     "puppeteer-extra-plugin-stealth": "^2.9.0",
-    "tsconfig-paths": "^3.12.0",
     "typescript": "^4.5.2",
     "url-parse": "^1.5.3",
     "winston": "^3.3.3",
@@ -43,15 +42,11 @@
   },
   "devDependencies": {
     "@watr/root": "0.1.0",
-    "@rollup/plugin-commonjs": "^21.0.1",
-    "@rollup/plugin-node-resolve": "^13.0.6",
     "@types/async": "^3.2.10",
     "@types/chai": "^4.2.22",
     "@types/jest": "^27.0.3",
     "@types/node": "^16.11.10",
     "@types/lodash": "^4.14.177",
-    "rollup": "^2.60.1",
-    "rollup-plugin-ts": "^2.0.2",
     "eslint": "^8.3.0",
     "jest": "^27.4.0"
   }
