@@ -5,20 +5,21 @@
     "sourceMap": true,
     "noEmitOnError": true,
     "noEmit": false,
-    "composite": false,
+    "composite": true,
     "declaration": true,
     "declarationMap": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
-    "resolveJsonModule": true,
+    "resolveJsonModule": false,
     "types": [
       "node",
-        "jest",
-    ],
-    "jsx": "react"
+      "jest",
+    ]
   },
   "exclude": [
     "node_modules",
     "dist"
+  ],
+  "references": [
   ]
 }

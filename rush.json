@@ -390,8 +390,8 @@
    */
   "projects": [
     {
-      "packageName": "@watr/eslint-config",
-      "projectFolder": "packages/eslint-config",
+      "packageName": "@watr/root",
+      "projectFolder": "packages/root",
     },
     {
       "packageName": "@watr/commonlib",

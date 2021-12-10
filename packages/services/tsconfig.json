@@ -4,5 +4,9 @@
     "paths": {
       "~/*": ["src/*"]
     }
-  }
+  },
+  "references": [
+    {"path": "../commonlib"},
+    {"path": "../spider"}
+  ]
 }

@@ -2,7 +2,7 @@ import _ from 'lodash';
 
 import * as E from 'fp-ts/Either';
 
-import { writeCorpusJsonFile, writeCorpusTextFile, hasCorpusFile, putStrLn, prettyPrint } from '@watr/commonlib';
+import { writeCorpusJsonFile, writeCorpusTextFile, hasCorpusFile, putStrLn } from '@watr/commonlib';
 
 import {
   HTTPResponse,

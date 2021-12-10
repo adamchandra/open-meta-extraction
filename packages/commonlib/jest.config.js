@@ -1,4 +1,7 @@
-const { makeConfig } = require("../eslint-config/jest.base");
-const pkg = require('./package.json');
+const {
+  makeConfig
+} = require("../root/jest.base");
 
-module.exports = makeConfig(pkg, '<rootDir>');
+const pkg = require("./package.json");
+
+module.exports = makeConfig(pkg, true);

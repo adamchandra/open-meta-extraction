@@ -1,6 +1,6 @@
 module.exports = {
   extends: [
-    '../eslint-config/.eslintrc.js'
+    '../root/.eslintrc.js'
   ],
   parserOptions: {
     project: './tsconfig.json',
