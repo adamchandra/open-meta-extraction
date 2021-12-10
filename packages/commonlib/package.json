@@ -41,8 +41,6 @@
     "@watr/root": "0.1.0",
     "@types/chai": "^4.2.22",
     "@types/jest": "^27.0.3",
-    "@rollup/plugin-commonjs": "^21.0.1",
-    "@rollup/plugin-node-resolve": "^13.0.6",
     "@types/chai": "^4.2.22",
     "@types/crypto-js": "^4.0.2",
     "@types/diff": "^5.0.1",
@@ -56,8 +54,6 @@
     "@types/wrap-ansi": "^8.0.1",
     "@types/yargs": "^17.0.7",
     "eslint": "^8.3.0",
-    "jest": "^27.4.0",
-    "rollup": "^2.60.1",
-    "rollup-plugin-ts": "^2.0.2"
+    "jest": "^27.4.0"
   }
 }
