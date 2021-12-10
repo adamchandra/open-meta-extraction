@@ -6,12 +6,12 @@
   "keywords": [],
   "author": "Adam Saunders <saunders@cs.umass.edu>",
   "license": "ISC",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "dist/src/index",
   "scripts": {
-    "clean": "rm -r ./dist",
+    "clean": "rm -rf ./dist",
     "compile": "tsc",
-    "build": "tsc",
+    "path-rewrite": "../root/node_modules/.bin/babel --config-file ../root/.babelrc-path-alias ./dist -d ./dist",
+    "build": "npm run clean && npm run compile && npm run path-rewrite",
     "lint": "eslint ./src",
     "lint:fix": "eslint src/ --fix",
     "test": "jest"
@@ -61,7 +61,7 @@
     "tslib": "~2.3.1"
   },
   "devDependencies": {
-    "@watr/eslint-config": "0.1.0",
+    "@watr/root": "0.1.0",
     "@rollup/plugin-commonjs": "^21.0.1",
     "@rollup/plugin-json": "^4.1.0",
     "@rollup/plugin-node-resolve": "^13.0.6",

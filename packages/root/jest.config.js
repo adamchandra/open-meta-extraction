@@ -1,8 +1,10 @@
+const { makeConfig } = require("./jest.base");
+
 module.exports = {
   projects: [
-    '<rootDir>/../commonlib/jest.config.js',
-    '<rootDir>/../spider/jest.config.js',
-    '<rootDir>/../services/jest.config.js'
+    [ makeConfig('../commonlib') ] ,
+    [ makeConfig('../spider') ],
+    // makeConfig('../services/package.json')
   ]
 };
 

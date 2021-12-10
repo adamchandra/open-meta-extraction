@@ -1,48 +1,49 @@
 const { pathsToModuleNameMapper } = require("ts-jest");
 const { compilerOptions } = require("../../tsconfig.json");
 
-function rootPath(pk, relpath) {
-  const packagePath = pk.name.split('/')[1];
+function rootPath(packagePath, relpath) {
   if (relpath) {
-    return ['<rootDir>', '..', packagePath, relpath].join('/');
+    return ['<rootDir>', packagePath, relpath].join('/');
   }
-  return ['<rootDir>', '..', packagePath].join('/');
+  return ['<rootDir>', packagePath].join('/');
 }
 
-function makeConfig(modulePackage) {
+function makeConfig(modulePackage, local=false) {
+  // const modulePackagePath = [moduleRoot, 'package.json'].join('/');
+  // const modulePackage = require(modulePackagePath);
+  const moduleRoot = '.'
   const displayName = modulePackage.name;
-  // console.log({ displayName })
-  const packagePath = displayName.split('/')[1];
 
   const moduleMap = pathsToModuleNameMapper(compilerOptions.paths, {
     // This has to match the baseUrl defined in tsconfig.json.
     prefix: "<rootDir>/../..",
   });
-  const tildePathMap = rootPath(modulePackage, 'src/$1');
-  // const tildePathMap = rootPath(modulePackage, 'src');
-  const tsconfig = rootPath(modulePackage, 'tsconfig.json');
-  // const tsconfig = `<rootDir>/../${packagePath}/tsconfig.json`
-  const pkgRoot = rootPath(modulePackage);
+  const tildePathMap = rootPath(moduleRoot, 'src/$1');
+  const tsconfig = rootPath(moduleRoot, 'tsconfig.json');
+  const pkgRoot = rootPath(moduleRoot);
   const config = {
     preset: 'ts-jest',
-    rootDir: '../eslint-config/',
+    rootDir: '.',
     // roots: [pkgRoot],
-    roots: ['<rootDir>/../..'],
+    roots: ['<rootDir>/src'],
+    // resolver: '<rootDir>/resolver.js',
     displayName,
-    transform: {
-      "^.+\\.ts$": "ts-jest",
-    },
+    // transform: {
+    //   "^.+\\.ts$": "ts-jest",
+    // },
     testRegex: ".*\\.test\\.ts$",
     moduleNameMapper: {
-      ...moduleMap,
+      // ...moduleMap,
       "^~/(.*)$": tildePathMap,
-      // "^~$": tildePathMap,
     },
     moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json", "node"],
+    // transformIgnorePatterns: [ "commonlib" ],
     globals: {
       'ts-jest': {
         tsconfig,
-        diagnostics: false
+        diagnostics: false,
+        isolatedModules: false,
+        noEmit: true
       }
     },
   };
