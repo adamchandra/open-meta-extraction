@@ -35,9 +35,4 @@ describe('File corpus operations', () => {
     ));
   });
 
-  // it.only('should full expand a directory of files', async (done) => {
-  //   const expanded = await expandDirRecursive(testDirPath, true, false);
-  //   prettyPrint({ expanded })
-  //   done();
-  // });
 });

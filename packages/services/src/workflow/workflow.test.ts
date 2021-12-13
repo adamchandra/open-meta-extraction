@@ -59,7 +59,7 @@ describe('End-to-end Extraction workflows', () => {
   });
 
 
-  it.only('should fetch alpha records', async () => {
+  it('should fetch alpha records', async () => {
     const log = getServiceLogger('test-run');
 
     const spiderService = await createSpiderService();

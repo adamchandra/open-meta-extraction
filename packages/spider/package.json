@@ -34,7 +34,6 @@
     "puppeteer-extra-plugin-block-resources": "^2.3.0",
     "puppeteer-extra-plugin-stealth": "^2.9.0",
     "typescript": "^4.5.2",
-    "url-parse": "^1.5.3",
     "winston": "^3.3.3",
     "yargs": "^17.2.1",
     "tslib": "~2.3.1",
