@@ -6,6 +6,9 @@ import { useEmptyDatabase } from './db-test-utils';
 import { commitUrlFetchData, DatabaseContext, getNextUrlForSpidering, insertAlphaRecords, insertNewUrlChains } from './db-api';
 import { getDBConfig } from './database';
 
+// TODO create per-unit-test database instances https://dev.to/walrusai/testing-database-interactions-with-jest-519n
+
+
 describe('High-level Database API', () => {
   const dbConfig = getDBConfig('test');
   const dbCtx: DatabaseContext | undefined = dbConfig ? { dbConfig } : undefined;
@@ -34,7 +37,7 @@ describe('High-level Database API', () => {
     const newAlphaRecs = await insertAlphaRecords(dbCtx, inputRecs);
     _.each(newAlphaRecs, r => {
       const rplain = r.get({ plain: true });
-      prettyPrint({ rplain });
+      // prettyPrint({ rplain });
     });
     const updateCount = await insertNewUrlChains(dbCtx);
 
@@ -45,7 +48,7 @@ describe('High-level Database API', () => {
     await insertAlphaRecords(dbCtx, inputRecs);
     await insertNewUrlChains(dbCtx);
     const nextUrl = await getNextUrlForSpidering(dbCtx);
-    prettyPrint({ nextUrl });
+    // prettyPrint({ nextUrl });
   });
 
 
@@ -57,10 +60,10 @@ describe('High-level Database API', () => {
     await insertAlphaRecords(dbCtx, [alphaRecord]);
     await insertNewUrlChains(dbCtx);
     const nextUrl = await getNextUrlForSpidering(dbCtx);
-    prettyPrint({ nextUrl });
+    // prettyPrint({ nextUrl });
     const commitedMeta = await commitUrlFetchData(dbCtx, metadata);
-    prettyPrint({ commitedMeta });
+    // prettyPrint({ commitedMeta });
     const { requestUrl } = metadata;
-    prettyPrint({ requestUrl });
+    // prettyPrint({ requestUrl });
   });
 });

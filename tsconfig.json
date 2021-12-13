@@ -1,11 +1,32 @@
 {
-  "extends": "./tsconfig.build.json",
   "compilerOptions": {
+    "module": "commonjs",
+    "target": "esnext",
+    "moduleResolution": "node",
+    "sourceMap": true,
+    "noEmitOnError": true,
+    "noEmit": false,
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": false,
+    "types": [
+      "node",
+      "jest",
+    ],
     "paths": {
       "@watr/commonlib": ["packages/commonlib/src"],
       "@watr/services": ["packages/services/src"],
       "@watr/spider": ["packages/spider/src"],
       "@watr/root": ["packages/root/src"]
     }
-  }
+  },
+  "exclude": [
+    "node_modules",
+    "dist"
+  ],
+  "references": [
+  ]
 }

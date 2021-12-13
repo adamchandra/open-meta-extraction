@@ -73,7 +73,7 @@ describe('Database Tables Basics', () => {
           });
 
           const plainNewEntry = newEntry.get({ plain: true });
-          prettyPrint({ isNew, plainNewEntry });
+          // prettyPrint({ isNew, plainNewEntry });
         }));
       });
 
@@ -81,7 +81,7 @@ describe('Database Tables Basics', () => {
         return T.AlphaRecord.findAll()
           .then((alphaRecs) => {
             const plainRecs = alphaRecs.map(a => a.get({ plain: true }));
-            prettyPrint({ plainRecs });
+            // prettyPrint({ plainRecs });
           });
       });
     });

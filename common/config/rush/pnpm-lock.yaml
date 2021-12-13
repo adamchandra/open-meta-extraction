@@ -3,9 +3,6 @@ lockfileVersion: 5.3
 specifiers:
   '@babel/cli': ~7.16.0
   '@babel/core': ~7.16.0
-  '@rollup/plugin-commonjs': ^21.0.1
-  '@rollup/plugin-json': ^4.1.0
-  '@rollup/plugin-node-resolve': ^13.0.6
   '@rush-temp/commonlib': file:./projects/commonlib.tgz
   '@rush-temp/root': file:./projects/root.tgz
   '@rush-temp/services': file:./projects/services.tgz
@@ -80,16 +77,12 @@ specifiers:
   puppeteer-extra-plugin-anonymize-ua: ^2.3.3
   puppeteer-extra-plugin-block-resources: ^2.3.0
   puppeteer-extra-plugin-stealth: ^2.9.0
-  rollup: ^2.60.1
-  rollup-plugin-ts: ^2.0.2
   sequelize: ^6.11.0
   slice-ansi: ^5.0.0
   split: ^1.0.1
   through2: ^4.0.2
   ts-jest: ^27.0.7
   ts-node: ^10.4.0
-  ts-node-dev: ^1.1.8
-  tsconfig-paths: ^3.12.0
   typescript: ^4.5.2
   url-parse: ^1.5.3
   winston: ^3.3.3
@@ -99,13 +92,10 @@ specifiers:
 dependencies:
   '@babel/cli': 7.16.0_@babel+core@7.16.0
   '@babel/core': 7.16.0
-  '@rollup/plugin-commonjs': 21.0.1_rollup@2.60.2
-  '@rollup/plugin-json': 4.1.0_rollup@2.60.2
-  '@rollup/plugin-node-resolve': 13.0.6_rollup@2.60.2
   '@rush-temp/commonlib': file:projects/commonlib.tgz_ts-node@10.4.0
   '@rush-temp/root': file:projects/root.tgz_68212d3c5f342a0c59715bbaaf1875e7
-  '@rush-temp/services': file:projects/services.tgz_@babel+core@7.16.0
-  '@rush-temp/spider': file:projects/spider.tgz_c01017ccf5593e4c0bc4fe6ccc694830
+  '@rush-temp/services': file:projects/services.tgz
+  '@rush-temp/spider': file:projects/spider.tgz_ts-node@10.4.0
   '@types/async': 3.2.10
   '@types/chai': 4.2.22
   '@types/crypto-js': 4.0.2
@@ -176,16 +166,12 @@ dependencies:
   puppeteer-extra-plugin-anonymize-ua: 2.3.3_puppeteer-extra@3.2.3
   puppeteer-extra-plugin-block-resources: 2.3.0_puppeteer-extra@3.2.3
   puppeteer-extra-plugin-stealth: 2.9.0_puppeteer-extra@3.2.3
-  rollup: 2.60.2
-  rollup-plugin-ts: 2.0.4_b6890e6f1911e024c1335c56d1af6cb1
   sequelize: 6.11.0_pg-hstore@2.3.4+pg@8.7.1
   slice-ansi: 5.0.0
   split: 1.0.1
   through2: 4.0.2
   ts-jest: 27.1.0_a7e1d2c38ebf0ca98355db7f22a3c88f
   ts-node: 10.4.0_68212d3c5f342a0c59715bbaaf1875e7
-  ts-node-dev: 1.1.8_typescript@4.5.2
-  tsconfig-paths: 3.12.0
   typescript: 4.5.2
   url-parse: 1.5.3
   winston: 3.3.3
@@ -912,15 +898,6 @@ packages:
       rollup: 2.60.2
     dev: false
 
-  /@rollup/plugin-json/4.1.0_rollup@2.60.2:
-    resolution: {integrity: sha512-yfLbTdNS6amI/2OpmbiBoW12vngr5NW2jCJVZSBEz+H5KfUJZ2M7sDjk0U6GOOdCWFVScShte29o9NezJ53TPw==}
-    peerDependencies:
-      rollup: ^1.20.0 || ^2.0.0
-    dependencies:
-      '@rollup/pluginutils': 3.1.0_rollup@2.60.2
-      rollup: 2.60.2
-    dev: false
-
   /@rollup/plugin-node-resolve/13.0.6_rollup@2.60.2:
     resolution: {integrity: sha512-sFsPDMPd4gMqnh2gS0uIxELnoRUp5kBl5knxD2EO0778G1oOJv4G1vyT2cpWz75OU2jDVcXhjVUuTAczGyFNKA==}
     engines: {node: '>= 10.0.0'}
@@ -1338,14 +1315,6 @@ packages:
 
   /@types/stack-utils/2.0.1:
     resolution: {integrity: sha512-Hl219/BT5fLAaz6NDkSuhzasy49dwQS/DSdu4MdggFB8zcXv7vflBI3xp7FEmkmdDkBUI2bPUNeMttp2knYdxw==}
-    dev: false
-
-  /@types/strip-bom/3.0.0:
-    resolution: {integrity: sha1-FKjsOVbC6B7bdSB5CuzyHCkK69I=}
-    dev: false
-
-  /@types/strip-json-comments/0.0.30:
-    resolution: {integrity: sha512-7NQmHra/JILCd1QqpSzl8+mJRc8ZHz3uDm8YV1Ks9IhK0epEiTw8aIErbvH9PI+6XbqhyIQy3462nEsn7UVzjQ==}
     dev: false
 
   /@types/through/0.0.30:
@@ -1883,6 +1852,7 @@ packages:
     resolution: {integrity: sha512-jDctJ/IVQbZoJykoeHbhXpOlNBqGNcwXJKJog42E5HDPUwQTSdjCHdihjj0DlnheQ7blbT6dHOafNAiS8ooQKA==}
     engines: {node: '>=8'}
     dev: false
+    optional: true
 
   /bl/4.1.0:
     resolution: {integrity: sha512-1W07cM9gS6DcLperZfFSj+bWLtaPGSOHWhPiGzXmvVJbRLdG82sH/Kn8EtW1VqWVA54AKf2h5k5BbnIbwF3h6w==}
@@ -2143,6 +2113,7 @@ packages:
     optionalDependencies:
       fsevents: 2.3.2
     dev: false
+    optional: true
 
   /chownr/1.1.4:
     resolution: {integrity: sha512-jJ0bqzaylmJtVnNgzTeSOs8DPavpbYgEr/b0YL8/2GO3xJEhInFmhKMUnEJQjZumK7KXGFhUy89PrsJWlakBVg==}
@@ -2817,12 +2788,6 @@ packages:
       inherits: 2.0.4
       readable-stream: 3.6.0
       stream-shift: 1.0.1
-    dev: false
-
-  /dynamic-dedupe/0.3.0:
-    resolution: {integrity: sha1-BuRMIj9eTpTXjvnbI6ZRXOL5YqE=}
-    dependencies:
-      xtend: 4.0.2
     dev: false
 
   /ee-first/1.1.1:
@@ -4256,6 +4221,7 @@ packages:
     dependencies:
       binary-extensions: 2.2.0
     dev: false
+    optional: true
 
   /is-boolean-object/1.1.2:
     resolution: {integrity: sha512-gDYaKHJmnj4aWxyj6YHyXVpdQawtVLHU5cb+eztPGczf6cjuTdwve5ZIEfgXqH4e57An1D1AKf8CZ3kYrQRqYA==}
@@ -5700,12 +5666,6 @@ packages:
     resolution: {integrity: sha512-gKLcREMhtuZRwRAfqP3RFW+TK4JqApVBtOIftVgjuABpAtpxhPGaDcfvbhNvD0B8iD1oUr/txX35NjcaY6Ns/A==}
     dev: false
 
-  /mkdirp/1.0.4:
-    resolution: {integrity: sha512-vVqVZQyf3WLx2Shd0qJ9xuvqgAyKPLAiqITEtqW0oIUjzo3PePDd6fW9iFz30ef7Ysp/oiWqbhszeGWW2T6Gzw==}
-    engines: {node: '>=10'}
-    hasBin: true
-    dev: false
-
   /mnemonist/0.39.0:
     resolution: {integrity: sha512-7v08Ldk1lnlywnIShqfKYN7EW4WKLUnkoWApdmR47N1xA2xmEtWERfEvyRCepbuFCETG5OnfaGQpp/p4Bus6ZQ==}
     dependencies:
@@ -6677,6 +6637,7 @@ packages:
     dependencies:
       picomatch: 2.3.0
     dev: false
+    optional: true
 
   /regenerator-runtime/0.13.9:
     resolution: {integrity: sha512-p3VT+cOEgxFsRRA9X4lkI1E+k2/CtnKtU4gcxyaCUreilL/vqI6CdZ3wxVUx3UOUg+gnUOQQcRI7BmSI656MYA==}
@@ -6823,13 +6784,6 @@ packages:
   /reusify/1.0.4:
     resolution: {integrity: sha512-U9nH88a3fc/ekCF1l0/UP1IosiuIjyTh7hBvXVMHYgVcfGvt897Xguj2UOLDeI5BG2m7/uwyaLVT6fbtCwTyzw==}
     engines: {iojs: '>=1.0.0', node: '>=0.10.0'}
-    dev: false
-
-  /rimraf/2.7.1:
-    resolution: {integrity: sha512-uWjbaKIK3T1OSVptzX7Nl6PvQ3qAGtKEtVRjRuazjfL3Bx5eI409VZSqgND+4UNnmzLVdPj9FqFJNPqBZFve4w==}
-    hasBin: true
-    dependencies:
-      glob: 7.2.0
     dev: false
 
   /rimraf/3.0.2:
@@ -7519,11 +7473,6 @@ packages:
       punycode: 2.1.1
     dev: false
 
-  /tree-kill/1.2.2:
-    resolution: {integrity: sha512-L0Orpi8qGpRG//Nd+H90vFB+3iHnue1zSSGmNOOCh1GLJ7rUKVwV2HvijphGQS2UmhUZewS9VgvxYIdgr+fG1A==}
-    hasBin: true
-    dev: false
-
   /triple-beam/1.3.0:
     resolution: {integrity: sha512-XrHUvV5HpdLmIj4uVMxHggLbFSZYIn7HEWsqePZcI50pco+MPqJ50wMGY794X7AOOhxOBAjbkqfAbEe/QMp2Lw==}
     dev: false
@@ -7603,30 +7552,6 @@ packages:
       yargs-parser: 20.2.9
     dev: false
 
-  /ts-node-dev/1.1.8_typescript@4.5.2:
-    resolution: {integrity: sha512-Q/m3vEwzYwLZKmV6/0VlFxcZzVV/xcgOt+Tx/VjaaRHyiBcFlV0541yrT09QjzzCxlDZ34OzKjrFAynlmtflEg==}
-    engines: {node: '>=0.8.0'}
-    hasBin: true
-    peerDependencies:
-      node-notifier: '*'
-      typescript: '*'
-    peerDependenciesMeta:
-      node-notifier:
-        optional: true
-    dependencies:
-      chokidar: 3.5.2
-      dynamic-dedupe: 0.3.0
-      minimist: 1.2.5
-      mkdirp: 1.0.4
-      resolve: 1.20.0
-      rimraf: 2.7.1
-      source-map-support: 0.5.21
-      tree-kill: 1.2.2
-      ts-node: 9.1.1_typescript@4.5.2
-      tsconfig: 7.0.0
-      typescript: 4.5.2
-    dev: false
-
   /ts-node/10.4.0_68212d3c5f342a0c59715bbaaf1875e7:
     resolution: {integrity: sha512-g0FlPvvCXSIO1JDF6S232P5jPYqBkRL9qly81ZgAOSU7rwI0stphCgd2kLiCrU9DjQCrJMWEqcNSjQL02s6d8A==}
     hasBin: true
@@ -7657,22 +7582,6 @@ packages:
       yn: 3.1.1
     dev: false
 
-  /ts-node/9.1.1_typescript@4.5.2:
-    resolution: {integrity: sha512-hPlt7ZACERQGf03M253ytLY3dHbGNGrAq9qIHWUY9XHYl1z7wYngSr3OQ5xmui8o2AaxsONxIzjafLUiWBo1Fg==}
-    engines: {node: '>=10.0.0'}
-    hasBin: true
-    peerDependencies:
-      typescript: '>=2.7'
-    dependencies:
-      arg: 4.1.3
-      create-require: 1.1.1
-      diff: 4.0.2
-      make-error: 1.3.6
-      source-map-support: 0.5.21
-      typescript: 4.5.2
-      yn: 3.1.1
-    dev: false
-
   /tsconfig-paths/3.12.0:
     resolution: {integrity: sha512-e5adrnOYT6zqVnWqZu7i/BQ3BnhzvGbjEjejFXO20lKIKpwTaupkCPgEfv4GZK1IBciJUEhYs3J3p75FdaTFVg==}
     dependencies:
@@ -7680,15 +7589,6 @@ packages:
       json5: 1.0.1
       minimist: 1.2.5
       strip-bom: 3.0.0
-    dev: false
-
-  /tsconfig/7.0.0:
-    resolution: {integrity: sha512-vZXmzPrL+EmC4T/4rVlT2jNVMWCi/O4DIiSj3UHg1OE5kCKbk4mfrXc6dZksLgRM/TZlKnousKH9bbTazUWRRw==}
-    dependencies:
-      '@types/strip-bom': 3.0.0
-      '@types/strip-json-comments': 0.0.30
-      strip-bom: 3.0.0
-      strip-json-comments: 2.0.1
     dev: false
 
   /tslib/1.14.1:
@@ -8195,7 +8095,7 @@ packages:
     dev: false
 
   file:projects/commonlib.tgz_ts-node@10.4.0:
-    resolution: {integrity: sha512-/Rz+AMGPqeWkCrsE3smLndVQuBO9fvwSF+5dlWKlWG4oUJAEvDIOajPMwDkgyAB70gQSxP7n5UioqAyAEdkz/w==, tarball: file:projects/commonlib.tgz}
+    resolution: {integrity: sha512-4z/5Nmdv1QgrnNZgS8bwTYZSPsro1eZ+l7cCO/tgJXyaG1HIzT06rgEdjaMzS9C0oW40oDjNQEPKVz0xERSEPQ==, tarball: file:projects/commonlib.tgz}
     id: file:projects/commonlib.tgz
     name: '@rush-temp/commonlib'
     version: 0.0.0
@@ -8247,11 +8147,6 @@ packages:
       wrap-ansi: 8.0.1
       yargs: 17.3.0
     transitivePeerDependencies:
-      - '@babel/plugin-transform-runtime'
-      - '@babel/preset-env'
-      - '@babel/runtime'
-      - '@swc/core'
-      - '@swc/helpers'
       - bufferutil
       - canvas
       - node-notifier
@@ -8261,7 +8156,7 @@ packages:
     dev: false
 
   file:projects/root.tgz_68212d3c5f342a0c59715bbaaf1875e7:
-    resolution: {integrity: sha512-McStkxxdcGPMAOy8Ctk2UyLNUVMh1qzStu8KpLKkobAq/YTG/XKAoDtcX7ho9JcgzYPqx9tQvfszjWHUhwWGDw==, tarball: file:projects/root.tgz}
+    resolution: {integrity: sha512-TsBqkn5Pfh8rm5hMo9ExU16ndnr1yIo3HdV/bXYnWQ+kws3EZ1xrPPMem9SAiqcy8iY4n5OJhD86YZGTGI/kuQ==, tarball: file:projects/root.tgz}
     id: file:projects/root.tgz
     name: '@rush-temp/root'
     version: 0.0.0
@@ -8301,15 +8196,11 @@ packages:
       - utf-8-validate
     dev: false
 
-  file:projects/services.tgz_@babel+core@7.16.0:
-    resolution: {integrity: sha512-D//DjKbllStriajPeJJ2JNSGouSUT/aGH3QmlAdpF0oZP97hNyQ6a5pvgL1MW7RkbPhQ0wsc3qK/PFLOw39qUw==, tarball: file:projects/services.tgz}
-    id: file:projects/services.tgz
+  file:projects/services.tgz:
+    resolution: {integrity: sha512-plHimCCzaNS6hoXhWHlVXk2vKwxP3CjBP7f4vbIxpe96gnCRxrQpAk9nlZBvdbXK49dYy9RypyuIeB/6GCNSpQ==, tarball: file:projects/services.tgz}
     name: '@rush-temp/services'
     version: 0.0.0
     dependencies:
-      '@rollup/plugin-commonjs': 21.0.1_rollup@2.60.2
-      '@rollup/plugin-json': 4.1.0_rollup@2.60.2
-      '@rollup/plugin-node-resolve': 13.0.6_rollup@2.60.2
       '@types/async': 3.2.10
       '@types/chai': 4.2.22
       '@types/deep-diff': 1.0.1
@@ -8365,15 +8256,11 @@ packages:
       puppeteer-extra-plugin-anonymize-ua: 2.3.3_puppeteer-extra@3.2.3
       puppeteer-extra-plugin-block-resources: 2.3.0_puppeteer-extra@3.2.3
       puppeteer-extra-plugin-stealth: 2.9.0_puppeteer-extra@3.2.3
-      rollup: 2.60.2
-      rollup-plugin-ts: 2.0.4_b6890e6f1911e024c1335c56d1af6cb1
       sequelize: 6.11.0_pg-hstore@2.3.4+pg@8.7.1
       slice-ansi: 5.0.0
       split: 1.0.1
       through2: 4.0.2
       ts-node: 10.4.0_68212d3c5f342a0c59715bbaaf1875e7
-      ts-node-dev: 1.1.8_typescript@4.5.2
-      tsconfig-paths: 3.12.0
       tslib: 2.3.1
       typescript: 4.5.2
       url-parse: 1.5.3
@@ -8381,12 +8268,7 @@ packages:
       wrap-ansi: 8.0.1
       yargs: 17.3.0
     transitivePeerDependencies:
-      - '@babel/core'
-      - '@babel/plugin-transform-runtime'
-      - '@babel/preset-env'
-      - '@babel/runtime'
       - '@swc/core'
-      - '@swc/helpers'
       - '@swc/wasm'
       - bufferutil
       - canvas
@@ -8400,14 +8282,12 @@ packages:
       - utf-8-validate
     dev: false
 
-  file:projects/spider.tgz_c01017ccf5593e4c0bc4fe6ccc694830:
-    resolution: {integrity: sha512-1MgRufDLYkRg7R6GOwGf4pjxo1Eg0R442HGLIitC16KUenOlYnhJIj1uqXyKaL65Vu0lP+ERcxJZabKZ71kULg==, tarball: file:projects/spider.tgz}
+  file:projects/spider.tgz_ts-node@10.4.0:
+    resolution: {integrity: sha512-4/faTUz1fTJtY73OzCB707YNsWztZEHkoDR9mt1rMGpNUYCXnBWtwjsdit73L9JKp2NGoZA+iytluwh0VPNa/g==, tarball: file:projects/spider.tgz}
     id: file:projects/spider.tgz
     name: '@rush-temp/spider'
     version: 0.0.0
     dependencies:
-      '@rollup/plugin-commonjs': 21.0.1_rollup@2.60.2
-      '@rollup/plugin-node-resolve': 13.0.6_rollup@2.60.2
       '@types/async': 3.2.10
       '@types/chai': 4.2.22
       '@types/jest': 27.0.3
@@ -8431,21 +8311,12 @@ packages:
       puppeteer-extra-plugin-anonymize-ua: 2.3.3_puppeteer-extra@3.2.3
       puppeteer-extra-plugin-block-resources: 2.3.0_puppeteer-extra@3.2.3
       puppeteer-extra-plugin-stealth: 2.9.0_puppeteer-extra@3.2.3
-      rollup: 2.60.2
-      rollup-plugin-ts: 2.0.4_b6890e6f1911e024c1335c56d1af6cb1
-      tsconfig-paths: 3.12.0
       tslib: 2.3.1
       typescript: 4.5.2
       url-parse: 1.5.3
       winston: 3.3.3
       yargs: 17.3.0
     transitivePeerDependencies:
-      - '@babel/core'
-      - '@babel/plugin-transform-runtime'
-      - '@babel/preset-env'
-      - '@babel/runtime'
-      - '@swc/core'
-      - '@swc/helpers'
       - bufferutil
       - canvas
       - node-notifier
