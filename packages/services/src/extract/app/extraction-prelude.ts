@@ -2,7 +2,7 @@ import _ from 'lodash';
 
 import { UrlFetchData } from '@watr/spider';
 import { Logger } from 'winston';
-import { Page } from 'puppeteer';
+import { Page, Browser } from 'puppeteer';
 import * as ft from '../core/function-defs';
 
 import { ExtractionEvidence, Field } from '../core/extraction-records';
@@ -36,6 +36,7 @@ export type ExtractionEnv = {
   fileContentCache: Record<string, string>;
   browserPageCache: Record<string, Page>;
   browserPool: BrowserPool;
+  browserInstance: Browser;
   enterNS(ns: string[]): void;
   exitNS(ns: string[]): void;
 };

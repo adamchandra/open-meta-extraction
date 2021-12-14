@@ -4,16 +4,11 @@ import { flow as compose, pipe } from 'fp-ts/function';
 import * as TE from 'fp-ts/TaskEither';
 import * as E from 'fp-ts/Either';
 
-import { UrlFetchData, createBrowserPool } from '@watr/spider';
+import { UrlFetchData, createBrowserPool, useResourceBlockPlugin } from '@watr/spider';
 import { ArtifactSubdir, expandDir, readCorpusTextFile, setLogLabel, writeCorpusTextFile, shaEncodeAsHex, diffByChars } from '@watr/commonlib';
 import { Logger } from 'winston';
 
-import puppeteer from 'puppeteer-extra';
 import { Page } from 'puppeteer';
-
-// @ts-ignore
-import blockResources from 'puppeteer-extra-plugin-block-resources';
-
 
 import path from 'path';
 import parseUrl from 'url-parse';
@@ -38,12 +33,10 @@ import {
 
 
 import { ExtractionEvidence, Field } from '../core/extraction-records';
-
 import { runTidyCmdBuffered } from '~/utils/run-cmd-tidy-html';
 import { Elem, expandCaseVariations, queryAllP, queryOneP, selectElementAttrP } from '../core/html-queries';
 
 import { runFileCmd } from '~/utils/run-cmd-file';
-
 
 import { GlobalDocumentMetadata } from './ieee-metadata';
 import { AbstractCleaningRules, CleaningRule, CleaningRuleResult } from './data-clean-abstracts';
@@ -243,35 +236,25 @@ export const saveDocumentMetaDataEvidence: (name: string, f: (m: GlobalDocumentM
 ///////////////
 // jquery/css selector and Elem functions
 
+
 export const loadPageFromCache: Arrow<CacheFileKey, Page> =
-  through((cacheKey: CacheFileKey, { browserPool, fileContentCache, browserPageCache }) => {
+  through((cacheKey: CacheFileKey, { browserInstance, fileContentCache, browserPageCache }) => {
     if (cacheKey in browserPageCache) {
       return browserPageCache[cacheKey];
     }
     if (cacheKey in fileContentCache) {
       const fileContent = fileContentCache[cacheKey];
-      browserPool.use(browser => {
-        return browser.newPage()
-          .then(async page => {
-            await page.setContent(fileContent, {
-              timeout: 8000,
-              waitUntil: 'domcontentloaded',
-              // waitUntil: 'load',
-            });
-            browserPageCache[cacheKey] = page;
-            return page;
-          }).then((page: Page) => {
-            return pipe(
-              E.right(page),
-              E.match(function onLeft(err: string): E.Either<string, Page> {
-                return E.left(err);
-              }, function onRight(p: Page): E.Either<string, Page> {
-                return E.right(p);
-
-              })
-            );
+      const page = browserInstance.newPage()
+        .then(async page => {
+          await page.setContent(fileContent, {
+            timeout: 8000,
+            waitUntil: 'domcontentloaded',
+            // waitUntil: 'load',
           });
-      });
+          browserPageCache[cacheKey] = page;
+          return page;
+        });
+      return page;
     }
 
     return ClientFunc.halt(`cache has no record for key ${cacheKey}`);
@@ -744,26 +727,7 @@ export interface ExtractContext {
   entryPath: string;
 }
 
-
-// const allResourceTypes = ['document', 'stylesheet', 'image', 'media', 'font', 'script', 'texttrack', 'xhr', 'fetch', 'eventsource', 'websocket', 'manifest', 'other'];
-const blockedResourceTypes = [
-  // 'document',
-  'stylesheet',
-  'image',
-  'media',
-  'font',
-  'script',
-  'texttrack',
-  'xhr',
-  'fetch',
-  // 'eventsource',
-  'websocket',
-  'manifest',
-  'other'
-];
-puppeteer.use(blockResources({
-  blockedTypes: new Set(blockedResourceTypes)
-}));
+useResourceBlockPlugin();
 
 export async function initExtractionEnv(
   entryPath: string,
@@ -776,10 +740,12 @@ export async function initExtractionEnv(
   const logPrefix = [pathPrefix];
 
   const browserPool = createBrowserPool();
+  const browserInstance = await browserPool.acquire();
 
   const env: ExtractionEnv = {
     log,
     browserPool,
+    browserInstance,
     ns: logPrefix,
     entryPath,
     metadata,

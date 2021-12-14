@@ -14,7 +14,7 @@ const { opt, config, registerCmd } = arglib;
 
 
 export async function startRestPortal(
-  dbCtx: DatabaseContext
+  dbCtx: DatabaseContext | undefined
 ): Promise<Server> {
   const log = createAppLogger();
   const app = new Koa();
@@ -39,13 +39,13 @@ export async function startRestPortal(
     // .use(koaBody({ multipart: true }))
     .use(portalRouter.routes())
     .use(portalRouter.allowedMethods())
-  ;
+    ;
 
   app
     .use(rootRouter.routes())
     .use(rootRouter.allowedMethods())
     .use(json({ pretty: false }))
-  ;
+    ;
 
   return new Promise((resolve) => {
     const server = app.listen(port, () => {
@@ -61,16 +61,21 @@ registerCmd(
   'start rest server for spidering and extraction',
   config(
     opt.existingDir('app-share-dir: root directory for shared logging/spidering/extraction data'),
+    opt.ion('use-db: use database backend', { boolean: false })
   )
 )((args: any) => {
-  const { appShareDir } = args;
+  const { appShareDir, useDb } = args;
   setEnv('AppSharePath', appShareDir);
-  const dbConfig = getDBConfig('production');
-  if (dbConfig === undefined) {
+  if (useDb === true) {
+    const dbConfig = getDBConfig('production');
+    if (dbConfig === undefined) {
+      return;
+    }
+    const dbCtx: DatabaseContext = { dbConfig };
+
+    startRestPortal(dbCtx);
     return;
   }
 
-  const dbCtx: DatabaseContext = { dbConfig };
-
-  startRestPortal(dbCtx);
+  startRestPortal(undefined);
 });

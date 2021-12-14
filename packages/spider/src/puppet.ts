@@ -22,8 +22,26 @@ export function useAnonPlugin(): void {
 }
 
 export function useResourceBlockPlugin(): void {
+  // const allResourceTypes = ['document', 'stylesheet', 'image', 'media', 'font', 'script', 'texttrack', 'xhr', 'fetch', 'eventsource', 'websocket', 'manifest', 'other'];
+  const blockedResourceTypes = [
+    'stylesheet',
+    'image',
+    // 'document',
+    // 'media',
+    'font',
+    'script',
+    // 'texttrack',
+    'xhr',
+    // 'fetch',
+    // 'eventsource',
+    // 'websocket',
+    // 'manifest',
+    // 'other'
+  ];
+
+
   puppeteer.use(blockResources({
-    blockedTypes: new Set(['image', 'stylesheet'])
+    blockedTypes: new Set(blockedResourceTypes)
   }));
 }
 

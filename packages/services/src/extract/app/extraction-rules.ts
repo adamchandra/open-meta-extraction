@@ -117,6 +117,8 @@ export const UrlSpecificAttempts = takeFirstSuccess(
         gatherHighwirePressTags,
         gatherOpenGraphTags,
       ),
+
+      log('info', (_0, env) => `Current Evidence ${env.evidence}`),
       tryEvidenceMapping({
         citation_title: 'title',
         'og:description': 'abstract',

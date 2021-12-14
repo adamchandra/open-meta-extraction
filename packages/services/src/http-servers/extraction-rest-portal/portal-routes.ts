@@ -9,6 +9,7 @@ import {
 } from '@watr/commonlib';
 import {
   fetchOneRecord,
+  runServicesInlineNoDB,
   WorkflowServices
 } from '~/workflow/workflow-services';
 
@@ -32,7 +33,8 @@ async function postRecordJson(
       responseBody.status = 'error';
       responseBody.errors = decoded;
     } else {
-      const responseRec = await fetchOneRecord(dbCtx, workflowServices, decoded);
+      // const responseRec = await fetchOneRecord(dbCtx, workflowServices, decoded);
+      const responseRec = await runServicesInlineNoDB(workflowServices, decoded);
       _.merge(responseBody, responseRec);
     }
   } else {

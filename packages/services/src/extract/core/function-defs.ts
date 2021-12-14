@@ -336,32 +336,33 @@ const forEachDo: <A, B, Env extends BaseEnv> (arrow: Arrow<A, B, Env>) => Arrow<
 
 
 // Given a single input A, produce an array of Bs by running the given array of functions on the initial A
-const gatherSuccess: <A, B, Env extends BaseEnv> (...arrows: Arrow<A, B, Env>[]) => Arrow<A, B[], Env> = <A, B, Env extends BaseEnv>(...arrows: Arrow<A, B, Env>[]) => (ra: ExtractionResult<A, Env>) => {
-  return pipe(
-    ra,
-    scatterAndSettle(...arrows),
-    TE.chain(([settledBs, env]) => {
-      const bs: B[] = [];
-      _.each(settledBs, (wb) => {
-        if (E.isRight(wb)) {
-          const [b] = wb.right;
-          bs.push(b);
-        } else {
-          const [ci] = wb.left;
-          let msg = '';
-          if (typeof ci === 'string') {
-            msg = ci;
+const gatherSuccess: <A, B, Env extends BaseEnv> (...arrows: Arrow<A, B, Env>[]) => Arrow<A, B[], Env> =
+  <A, B, Env extends BaseEnv>(...arrows: Arrow<A, B, Env>[]) => (ra: ExtractionResult<A, Env>) => {
+    return pipe(
+      ra,
+      scatterAndSettle(...arrows),
+      TE.chain(([settledBs, env]) => {
+        const bs: B[] = [];
+        _.each(settledBs, (wb) => {
+          if (E.isRight(wb)) {
+            const [b] = wb.right;
+            bs.push(b);
           } else {
-            const [code, m] = ci;
-            msg = `${code}: ${m}`;
+            const [ci] = wb.left;
+            let msg = '';
+            if (typeof ci === 'string') {
+              msg = ci;
+            } else {
+              const [code, m] = ci;
+              msg = `${code}: ${m}`;
+            }
+            env.log.log('debug', `gatherSuccess/left = ${msg}`);
           }
-          env.log.log('debug', `gatherSuccess/left = ${msg}`);
-        }
-      });
-      return TE.right(asW(bs, env));
-    })
-  );
-};
+        });
+        return TE.right(asW(bs, env));
+      })
+    );
+  };
 
 
 const scatterAndSettle: <A, B, Env extends BaseEnv> (
@@ -413,10 +414,12 @@ const __takeWhileSuccess: <A, Env extends BaseEnv> (arrows: Arrow<A, A, Env>[], 
 };
 
 // Try each arrow on input until one succeeds
-const takeFirstSuccess: <A, B, Env extends BaseEnv> (...arrows: Arrow<A, B, Env>[]) => Arrow<A, B, Env> = (...arrows) => withNS(
-  `takeFirstSuccess:${arrows.length}`,
-  __takeFirstSuccess(arrows, arrows.length),
-);
+// const takeFirstSuccess: <A, B, Env extends BaseEnv> (...arrows: Arrow<A, B, Env>[]) => Arrow<A, B, Env> = (...arrows) => withNS(
+//   `takeFirstSuccess:`,
+//   __takeFirstSuccess(arrows, arrows.length),
+// );
+const takeFirstSuccess: <A, B, Env extends BaseEnv> (...arrows: Arrow<A, B, Env>[]) => Arrow<A, B, Env> = (...arrows) =>
+  __takeFirstSuccess(arrows, arrows.length)
 
 
 const __takeFirstSuccess: <A, B, Env extends BaseEnv> (arrows: Arrow<A, B, Env>[], arrowCount: number) => Arrow<A, B, Env> = (arrows, arrowCount) => (ra) => {
@@ -434,7 +437,7 @@ const __takeFirstSuccess: <A, B, Env extends BaseEnv> (arrows: Arrow<A, B, Env>[
   const headArrow = arrows[0];
   const tailArrows = arrows.slice(1);
   const arrowNum = arrowCount - arrows.length;
-  const ns = `#${arrowNum}`;
+  const ns = `takeFirstSuccess(${arrowNum} of ${arrowCount})`;
 
   return pipe(
     ra,
@@ -457,7 +460,7 @@ function through<A, B, Env extends BaseEnv>(
   name?: string,
   postHook?: PostHook<A, B, Env>,
 ): Arrow<A, B, Env> {
-  const ns = name ? `fn:${name}` : 'fn()';
+  const ns = name ? `exec:${name}` : 'fn()';
 
   const mhook = <A>() => hook<A, B, Env>((a, b, env) => {
     const msg = pipe(b, E.fold(
@@ -531,7 +534,7 @@ function filter<A, Env extends BaseEnv>(
   postHook?: PostHook<A, boolean, Env>,
 ): FilterArrow<A, Env> {
   const fa: FilterArrow<A, Env> = (ra: ExtractionResult<A, Env>) => {
-    const ns = name ? `cond:${name}` : 'cond:_';
+    const ns = name ? `filter:${name} ?` : 'filter:_ ?';
 
     return pipe(
       ra,
