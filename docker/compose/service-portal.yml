@@ -1,0 +1,25 @@
+version: '3.8'
+
+x-service-defaults:
+  &service-defaults
+  image: adamchandra/service-portal
+  restart: always
+  networks:
+    - watr-net
+
+x-workflow-service:
+  &workflow-service
+  << : *service-defaults
+
+services:
+  service-portal:
+    << : *workflow-service
+
+    container_name: service-portal
+    volumes:
+      - app-share:/usr/src/app/app-share.d
+    ports:
+      - "3100:3100"
+    user: run-user 
+    command: ["service-portal", "--app-share-dir", "/usr/src/app/app-share.d"]
+
