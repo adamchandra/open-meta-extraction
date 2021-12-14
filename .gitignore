@@ -69,3 +69,6 @@ common/autoinstallers/*/.npmrc
 
 #
 *.d/
+
+# chrome install used by puppeteer
+puppeteer@13.0.0.local-chromium/

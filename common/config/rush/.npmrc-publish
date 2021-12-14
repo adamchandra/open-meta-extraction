@@ -18,3 +18,12 @@
 #
 #   //registry.npmjs.org/:_authToken=${NPM_AUTH_TOKEN}
 #
+
+puppeteer_skip_chromium_download=true        # do not download bundled Chromium during installation step.
+# puppeteer_download_path=./.local-chromium    # overwrite the path for the downloads folder. Defaults to <root>/.local-chromium, where <root> is Puppeteer's package root.
+# http_proxy, https_proxy, no_proxy          # defines HTTP proxy settings that are used to download and run the browser.
+# puppeteer_tmp_dir                          # defines the directory to be used by Puppeteer for creating temporary files. Defaults to os.tmpdir().
+# puppeteer_download_host                    # overwrite URL prefix that is used to download Chromium. Note: this includes protocol and might even include path prefix. Defaults to https://storage.googleapis.com.
+# puppeteer_chromium_revision                # specify a certain version of Chromium you'd like Puppeteer to use. See puppeteer.launch([options]) on how executable path is inferred. BEWARE: Puppeteer is only guaranteed to work with the bundled Chromium, use at your own risk.
+# puppeteer_executable_path                  # specify an executable path to be used in puppeteer.launch. See puppeteer.launch([options]) on how the executable path is inferred. BEWARE: Puppeteer is only guaranteed to work with the bundled Chromium, use at your own risk.
+# puppeteer_product                          # specify which browser you'd like Puppeteer to use. Must be one of chrome or firefox. This can also be used during installation to fetch the recommended browser binary. Setting product programmatically in puppeteer.launch([options]) supersedes this environment variable. The product is exposed in puppeteer.product

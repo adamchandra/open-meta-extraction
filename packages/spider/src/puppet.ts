@@ -3,6 +3,8 @@ import {
 } from 'puppeteer';
 
 import puppeteer from 'puppeteer-extra';
+import * as dotenv from 'dotenv';
+dotenv.config()
 
 // @ts-ignore
 import AnonPlugin from 'puppeteer-extra-plugin-anonymize-ua';
@@ -50,7 +52,7 @@ export async function launchBrowser(): Promise<Browser> {
     headless: true,
     // These arguments seem to be required to avoid bug where chrome doesn't shutdown on browser.close()
     args: ['--single-process', '--no-zygote', '--no-sandbox'],
-    // executablePath: 'google-chrome-stable'
+    executablePath: process.env.CHROME_EXECUTABLE,
     // devtools: true,
   });
 
