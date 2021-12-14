@@ -13,7 +13,7 @@ import { getServiceLogger } from '~/utils/basic-logging';
 export interface WorkflowServices {
   log: winston.Logger;
   spiderService: SpiderService;
-  dbCtx: DatabaseContext;
+  dbCtx: DatabaseContext | undefined;
 }
 
 interface ErrorRecord {
@@ -34,6 +34,46 @@ export function getCanonicalFieldRecs(alphaRec: AlphaRecord): CanonicalFieldReco
   fieldRecs.url = alphaRec.url;
   return fieldRecs;
 }
+
+export async function runServicesInlineNoDB(
+  services: WorkflowServices,
+  alphaRec: AlphaRecord,
+): Promise<CanonicalFieldRecords | ErrorRecord> {
+  const { log } = services;
+  const { url } = alphaRec;
+
+  log.info(`Fetching fields for ${url}`);
+
+  // First attempt: if we have the data on disk, just return it
+  let fieldRecs = getCanonicalFieldRecs(alphaRec);
+
+  if (fieldRecs === undefined) {
+    // Try to spider/extract
+    log.info(`No extracted fields found.. spidering ${url}`);
+    const metadataOrError = await scrapeUrlNoDB(services, url);
+    if ('error' in metadataOrError) {
+      return metadataOrError;
+    }
+
+    const entryPath = getCorpusEntryDirForUrl(url);
+
+    log.info(`Extracting Fields in ${entryPath}`);
+
+    await extractFieldsForEntry(entryPath, log);
+
+    // try again:
+    fieldRecs = getCanonicalFieldRecs(alphaRec);
+  }
+
+  if (fieldRecs === undefined) {
+    const msg = 'No extracted fields available';
+    log.info(msg);
+    return ErrorRecord(msg);
+  }
+
+  return fieldRecs;
+}
+
 
 export async function fetchOneRecord(
   dbCtx: DatabaseContext,
@@ -203,6 +243,45 @@ async function scrapeUrl(
   prettyPrint({ metadata });
 
   await commitUrlFetchData(dbCtx, metadata);
+
+  const spiderSuccess = metadata.status === '200';
+
+  if (!spiderSuccess) {
+    const msg = `Spider returned ${metadata.status} for ${metadata.requestUrl}`;
+    log.info(msg);
+    return ErrorRecord(msg);
+  }
+  return metadata;
+}
+
+async function scrapeUrlNoDB(
+  services: WorkflowServices,
+  url: string,
+): Promise<UrlFetchData | ErrorRecord> {
+  const { spiderService, log } = services;
+  const metadata = await spiderService
+    .scrape(url)
+    .catch((error: Error) => {
+      log.warn(error.message);
+      return `${error.name}: ${error.message}`;
+    });
+
+  if (_.isString(metadata)) {
+    const msg = `Spidering error ${metadata}`;
+    log.warn(msg);
+    // await commitUrlStatus(dbCtx, url, 'spider:error', msg);
+
+    return ErrorRecord(msg);
+  }
+  if (metadata === undefined) {
+    const msg = `Spider could not fetch url ${url}`;
+    // await commitUrlStatus(dbCtx, url, 'spider:error', msg);
+    log.info(msg);
+    return ErrorRecord(msg);
+  }
+
+  // prettyPrint({ metadata });
+  // await commitUrlFetchData(dbCtx, metadata);
 
   const spiderSuccess = metadata.status === '200';
 

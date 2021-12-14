@@ -9,21 +9,21 @@ import {
 } from '@watr/spider';
 
 function isUrl(str: string) {
-	if (typeof str !== 'string') {
-		throw new TypeError('Expected a string');
-	}
+  if (typeof str !== 'string') {
+    throw new TypeError('Expected a string');
+  }
 
-	const trimmed = str.trim();
-	if (trimmed.includes(' ')) {
-		return false;
-	}
+  const trimmed = str.trim();
+  if (trimmed.includes(' ')) {
+    return false;
+  }
 
-	try {
-		new URL(trimmed);
-		return true;
-	} catch {
-		return false;
-	}
+  try {
+    new URL(trimmed);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 import {
@@ -52,12 +52,14 @@ export async function createSpiderService(): Promise<SpiderService> {
     async scrape(url: string): Promise<UrlFetchData | undefined> {
       return scraper.scrapeUrl(url)
         .then(resultOrError => {
-          console.log('resultOrError?', resultOrError);
-        return E.match(
-          (_err: string) => undefined,
-          (succ: UrlFetchData) => succ
-        )(resultOrError);
-      });
+          return E.match(
+            (_err: string) => {
+              console.warn('Scraping Result', _err);
+              return undefined;
+            },
+            (succ: UrlFetchData) => succ
+          )(resultOrError);
+        });
     },
     async run(alphaRecordStream: Readable): Promise<Readable> {
       const urlCount = await crawlScheduler.addUrls(alphaRecordStream);
@@ -75,7 +77,7 @@ export async function createSpiderService(): Promise<SpiderService> {
               }
             })
             .catch((error) => putStrLn('Error', error))
-          ;
+            ;
         })
         .toReadableStream();
     },
