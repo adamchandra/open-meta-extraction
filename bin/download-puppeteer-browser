@@ -1,0 +1,4 @@
+#!/bin/sh
+
+export PUPPETEER_DOWNLOAD_PATH=./puppeteer@13.0.0.local-chromium
+node ./common/temp/node_modules/.pnpm/puppeteer@13.0.0/node_modules/puppeteer/install.js

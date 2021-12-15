@@ -8,6 +8,14 @@ import {
   initCrawlScheduler
 } from '@watr/spider';
 
+import {
+  streamPump, putStrLn, delay,
+  AlphaRecord, readAlphaRecStream
+} from '@watr/commonlib';
+
+import * as E from 'fp-ts/Either';
+import { DatabaseContext, insertAlphaRecords } from '~/db/db-api';
+
 function isUrl(str: string) {
   if (typeof str !== 'string') {
     throw new TypeError('Expected a string');
@@ -25,14 +33,6 @@ function isUrl(str: string) {
     return false;
   }
 }
-
-import {
-  streamPump, putStrLn, delay,
-  AlphaRecord, readAlphaRecStream
-} from '@watr/commonlib';
-
-import { DatabaseContext, insertAlphaRecords } from '~/db/db-api';
-import * as E from 'fp-ts/Either';
 
 export interface SpiderService {
   crawlScheduler: CrawlScheduler;
@@ -77,7 +77,7 @@ export async function createSpiderService(): Promise<SpiderService> {
               }
             })
             .catch((error) => putStrLn('Error', error))
-            ;
+          ;
         })
         .toReadableStream();
     },

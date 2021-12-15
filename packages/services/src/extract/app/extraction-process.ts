@@ -233,32 +233,31 @@ export const saveDocumentMetaDataEvidence: (name: string, f: (m: GlobalDocumentM
   clearEvidence(new RegExp(name)),
 );
 
-///////////////
+/// ////////////
 // jquery/css selector and Elem functions
 
 
-export const loadPageFromCache: Arrow<CacheFileKey, Page> =
-  through((cacheKey: CacheFileKey, { browserInstance, fileContentCache, browserPageCache }) => {
-    if (cacheKey in browserPageCache) {
-      return browserPageCache[cacheKey];
-    }
-    if (cacheKey in fileContentCache) {
-      const fileContent = fileContentCache[cacheKey];
-      const page = browserInstance.newPage()
-        .then(async page => {
-          await page.setContent(fileContent, {
-            timeout: 8000,
-            waitUntil: 'domcontentloaded',
-            // waitUntil: 'load',
-          });
-          browserPageCache[cacheKey] = page;
-          return page;
+export const loadPageFromCache: Arrow<CacheFileKey, Page> = through((cacheKey: CacheFileKey, { browserInstance, fileContentCache, browserPageCache }) => {
+  if (cacheKey in browserPageCache) {
+    return browserPageCache[cacheKey];
+  }
+  if (cacheKey in fileContentCache) {
+    const fileContent = fileContentCache[cacheKey];
+    const page = browserInstance.newPage()
+      .then(async page => {
+        await page.setContent(fileContent, {
+          timeout: 8000,
+          waitUntil: 'domcontentloaded',
+          // waitUntil: 'load',
         });
-      return page;
-    }
+        browserPageCache[cacheKey] = page;
+        return page;
+      });
+    return page;
+  }
 
-    return ClientFunc.halt(`cache has no record for key ${cacheKey}`);
-  });
+  return ClientFunc.halt(`cache has no record for key ${cacheKey}`);
+});
 
 export const selectOne: (queryString: string) => Arrow<CacheFileKey, Elem> = (queryString) => compose(
   loadPageFromCache,

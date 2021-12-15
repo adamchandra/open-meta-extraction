@@ -82,10 +82,10 @@ describe('End-to-end Extraction workflows', () => {
       prettyPrint({ exampleNumber, fetchedRecord });
     }));
 
-    console.log('quitting..')
+    console.log('quitting..');
 
     await spiderService.quit();
-    console.log('...quit')
+    console.log('...quit');
   });
 
   it('should update database if fields are extracted but no db entry exists', async () => {

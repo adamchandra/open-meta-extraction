@@ -1,12 +1,11 @@
 import _ from 'lodash';
 
-import { UrlFetchData } from '@watr/spider';
+import { UrlFetchData, BrowserPool } from '@watr/spider';
 import { Logger } from 'winston';
 import { Page, Browser } from 'puppeteer';
 import * as ft from '../core/function-defs';
 
 import { ExtractionEvidence, Field } from '../core/extraction-records';
-import { BrowserPool } from '@watr/spider';
 
 
 export interface NormalForms {

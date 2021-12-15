@@ -126,8 +126,8 @@ export type PerhapsW<A, Env extends BaseEnv> = E.Either<WCI<Env>, W<A, Env>>;
 export type PostHook<A, B, Env extends BaseEnv> = (a: A, eb: Perhaps<B>, env: Env) => void;
 
 export type ClientResult<A> = Eventual<A>
-  | Eventual<Perhaps<A>>
-  | TE.TaskEither<ControlInstruction, A>
+| Eventual<Perhaps<A>>
+| TE.TaskEither<ControlInstruction, A>
   ;
 
 export type ClientFunc<A, B, Env extends BaseEnv> = (a: A, env: Env) => ClientResult<B>;
@@ -336,33 +336,32 @@ const forEachDo: <A, B, Env extends BaseEnv> (arrow: Arrow<A, B, Env>) => Arrow<
 
 
 // Given a single input A, produce an array of Bs by running the given array of functions on the initial A
-const gatherSuccess: <A, B, Env extends BaseEnv> (...arrows: Arrow<A, B, Env>[]) => Arrow<A, B[], Env> =
-  <A, B, Env extends BaseEnv>(...arrows: Arrow<A, B, Env>[]) => (ra: ExtractionResult<A, Env>) => {
-    return pipe(
-      ra,
-      scatterAndSettle(...arrows),
-      TE.chain(([settledBs, env]) => {
-        const bs: B[] = [];
-        _.each(settledBs, (wb) => {
-          if (E.isRight(wb)) {
-            const [b] = wb.right;
-            bs.push(b);
+const gatherSuccess: <A, B, Env extends BaseEnv> (...arrows: Arrow<A, B, Env>[]) => Arrow<A, B[], Env> = <A, B, Env extends BaseEnv>(...arrows: Arrow<A, B, Env>[]) => (ra: ExtractionResult<A, Env>) => {
+  return pipe(
+    ra,
+    scatterAndSettle(...arrows),
+    TE.chain(([settledBs, env]) => {
+      const bs: B[] = [];
+      _.each(settledBs, (wb) => {
+        if (E.isRight(wb)) {
+          const [b] = wb.right;
+          bs.push(b);
+        } else {
+          const [ci] = wb.left;
+          let msg = '';
+          if (typeof ci === 'string') {
+            msg = ci;
           } else {
-            const [ci] = wb.left;
-            let msg = '';
-            if (typeof ci === 'string') {
-              msg = ci;
-            } else {
-              const [code, m] = ci;
-              msg = `${code}: ${m}`;
-            }
-            env.log.log('debug', `gatherSuccess/left = ${msg}`);
+            const [code, m] = ci;
+            msg = `${code}: ${m}`;
           }
-        });
-        return TE.right(asW(bs, env));
-      })
-    );
-  };
+          env.log.log('debug', `gatherSuccess/left = ${msg}`);
+        }
+      });
+      return TE.right(asW(bs, env));
+    })
+  );
+};
 
 
 const scatterAndSettle: <A, B, Env extends BaseEnv> (
@@ -376,9 +375,9 @@ const scatterAndSettle: <A, B, Env extends BaseEnv> (
     });
     const sequenced = () => Async
       .mapSeries<ExtractionResult<B, Env>, PerhapsW<B, Env>>(
-        bbs,
-        Async.asyncify(async (er: ExtractionResult<A, Env>) => er())
-      );
+      bbs,
+      Async.asyncify(async (er: ExtractionResult<A, Env>) => er())
+    );
     const pBsTask = pipe(
       sequenced,
       Task.map((perhapsBs) => asW(perhapsBs, env))
@@ -418,8 +417,7 @@ const __takeWhileSuccess: <A, Env extends BaseEnv> (arrows: Arrow<A, A, Env>[], 
 //   `takeFirstSuccess:`,
 //   __takeFirstSuccess(arrows, arrows.length),
 // );
-const takeFirstSuccess: <A, B, Env extends BaseEnv> (...arrows: Arrow<A, B, Env>[]) => Arrow<A, B, Env> = (...arrows) =>
-  __takeFirstSuccess(arrows, arrows.length)
+const takeFirstSuccess: <A, B, Env extends BaseEnv> (...arrows: Arrow<A, B, Env>[]) => Arrow<A, B, Env> = (...arrows) => __takeFirstSuccess(arrows, arrows.length);
 
 
 const __takeFirstSuccess: <A, B, Env extends BaseEnv> (arrows: Arrow<A, B, Env>[], arrowCount: number) => Arrow<A, B, Env> = (arrows, arrowCount) => (ra) => {
@@ -453,7 +451,7 @@ const __takeFirstSuccess: <A, B, Env extends BaseEnv> (arrows: Arrow<A, B, Env>[
 };
 
 const hook: <A, B, Env extends BaseEnv>(f: (a: A, b: Perhaps<B>, env: Env) => void) =>
-  PostHook<A, B, Env> = (f) => f;
+PostHook<A, B, Env> = (f) => f;
 
 function through<A, B, Env extends BaseEnv>(
   f: ClientFunc<A, B, Env>,
@@ -554,9 +552,9 @@ function filter<A, Env extends BaseEnv>(
 }
 
 export type LogLevel = 'info'
-  | 'debug'
-  | 'warn'
-  | 'error'
+| 'debug'
+| 'warn'
+| 'error'
   ;
 
 
