@@ -3,8 +3,8 @@ import _ from 'lodash';
 import { isLeft, isRight } from 'fp-ts/Either';
 import { prettyPrint, putStrLn, stripMargin } from '@watr/commonlib';
 import Async from 'async';
-import { selectElementAttr, queryOne, queryAll, expandCaseVariations } from './html-queries';
 import { createBrowserPool } from '@watr/spider';
+import { selectElementAttr, queryOne, queryAll, expandCaseVariations } from './html-queries';
 
 const tmpHtml = stripMargin(`
 |<html>
@@ -50,12 +50,11 @@ const tmpHtml = stripMargin(`
 
 
 describe('HTML jquery-like css queries', () => {
-
   const browserPool = createBrowserPool();
 
   afterAll(() => {
     return browserPool.shutdown();
-  })
+  });
 
   it('smokescreen', async () => {
     await browserPool.use(async (b) => {
@@ -65,12 +64,11 @@ describe('HTML jquery-like css queries', () => {
       expect(isRight(attr0)).toBeTruthy();
       expect(isLeft(attr1)).toBeTruthy();
       expect(isLeft(attr2)).toBeTruthy();
-    })
+    });
   });
 
 
   it('should run assorted css queries', async () => {
-
     const examples: [string, RegExp][] = [
       ['div#abstracts > div.abstract > div', /success1/],
       ['div#abstracts > div.abstract > div', /success2/],
@@ -96,11 +94,9 @@ describe('HTML jquery-like css queries', () => {
         expect(isRight(maybeResult)).toBe(true);
       }));
     });
-
   });
 
-  it('should run assorted css multi-queries', async () => {
-
+  it.only('should run assorted css multi-queries', async () => {
     const examples: [string, RegExp[]][] = [
       // ['meta[name=citation_author]', [/Holte/, /Burch/]],
       ['meta[name="dc.Creator"]', [/Adam/]],
@@ -117,7 +113,7 @@ describe('HTML jquery-like css queries', () => {
           const elems = maybeResult.right;
           await Async.forEachOfSeries(elems, Async.asyncify(async (elem, index) => {
             const outerHtml = await elem.evaluate(e => e.outerHTML);
-            // prettyPrint({ query, outerHtml, result: index });
+            prettyPrint({ query, outerHtml, result: index });
             // const regexTest: RegExp = _.get(regexTests, index);
             // expect(regexTest.test(outerHtml)).toBe(true);
           }));
@@ -136,7 +132,6 @@ describe('HTML jquery-like css queries', () => {
   });
 
   it('should downcase attributes', async () => {
-
     const examples: [string, RegExp[]][] = [
       // ['meta[name=citation_author]', [/Holte/, /Burch/]],
       ['meta[name="dc.Creator"]', [/Adam/]],
@@ -145,22 +140,21 @@ describe('HTML jquery-like css queries', () => {
     ];
 
     await browserPool.use(async (browser) => {
-    await Async.eachSeries(examples, Async.asyncify(async ([query,]) => {
-      const maybeResult = await queryAll(browser, tmpHtml, query);
-      if (isRight(maybeResult)) {
-        const elems = maybeResult.right;
-        await Async.forEachOfSeries(elems, Async.asyncify(async (elem, index) => {
-          const outerHtml = await elem.evaluate(e => e.outerHTML);
-          prettyPrint({ query, outerHtml, index });
-          // const regexTest: RegExp = _.get(regexTests, index);
-          // expect(regexTest.test(outerHtml)).toBe(true);
-        }));
-      } else {
-        const error = maybeResult.left;
-        console.log('error', query, error);
-      }
-    }));
-
+      await Async.eachSeries(examples, Async.asyncify(async ([query,]) => {
+        const maybeResult = await queryAll(browser, tmpHtml, query);
+        if (isRight(maybeResult)) {
+          const elems = maybeResult.right;
+          await Async.forEachOfSeries(elems, Async.asyncify(async (elem, index) => {
+            const outerHtml = await elem.evaluate(e => e.outerHTML);
+            prettyPrint({ query, outerHtml, index });
+            // const regexTest: RegExp = _.get(regexTests, index);
+            // expect(regexTest.test(outerHtml)).toBe(true);
+          }));
+        } else {
+          const error = maybeResult.left;
+          console.log('error', query, error);
+        }
+      }));
     });
   });
 });

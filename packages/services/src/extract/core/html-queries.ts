@@ -99,6 +99,31 @@ export async function queryOne(
     });
 }
 
+export async function selectElementAndEval(
+  page: Page,
+  elementSelector: string,
+  evalFunc: (e: Element) => string | null
+): Promise<AttrSelection> {
+  try {
+    const maybeAttr = await page.$eval(elementSelector, evalFunc);
+
+    if (maybeAttr === null) return E.left(`empty selection '${elementSelector}'`);
+
+    // const { attrValue } = maybeAttr;
+    // if (attrValue === null) return E.left(`no attr ${attributeName} in select('${elementSelector}')`);
+
+    return E.right(maybeAttr);
+  } catch (error) {
+    // if (error instanceof puppeteerErrors.TimeoutError) {
+    //   // TODO Do something if this is a timeout.
+    // }
+    if (error instanceof Error) {
+      return E.left(`${error.name}: ${error.message}`);
+    }
+    return E.left(`${error}`);
+  }
+}
+
 export async function selectElementAttrP(
   page: Page,
   elementSelector: string,

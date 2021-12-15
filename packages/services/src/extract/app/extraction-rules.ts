@@ -245,6 +245,21 @@ export const UrlSpecificAttempts = takeFirstSuccess(
       }),
     )),
   ),
+  compose(
+    urlFilter(/n(eur)?ips.cc/),
+    forInputs(/response-body/, compose(
+      gatherSuccess(
+        gatherHighwirePressTags,
+        selectElemTextEvidence('h4 + p'),
+      ),
+      tryEvidenceMapping({
+        citation_title: 'title',
+        citation_author: 'author',
+        citation_pdf_url: 'pdf-link',
+        abstract: 'h4 + p'
+      }),
+    )),
+  ),
 );
 
 

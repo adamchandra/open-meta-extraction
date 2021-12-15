@@ -50,7 +50,7 @@
     "@types/url-parse": "^1.4.5",
     "@types/wrap-ansi": "^8.0.1",
     "@types/yargs": "^17.0.7",
-    "eslint": "^8.4.1",
+    "eslint": "^7.32.0",
     "jest": "^27.4.5"
   }
 }
