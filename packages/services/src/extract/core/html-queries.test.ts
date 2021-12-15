@@ -5,6 +5,7 @@ import { prettyPrint, putStrLn, stripMargin } from '@watr/commonlib';
 import Async from 'async';
 import { createBrowserPool } from '@watr/spider';
 import { selectElementAttr, queryOne, queryAll, expandCaseVariations } from './html-queries';
+import { createLogger, transports, format } from 'winston';
 
 const tmpHtml = stripMargin(`
 |<html>
@@ -50,17 +51,26 @@ const tmpHtml = stripMargin(`
 
 
 describe('HTML jquery-like css queries', () => {
-  const browserPool = createBrowserPool();
+
+  const logger = createLogger({
+    level: 'debug',
+    format: format.json(),
+    transports: [
+      new transports.Console(),
+    ],
+  });
+
+  const browserPool = createBrowserPool(logger);
 
   afterAll(() => {
     return browserPool.shutdown();
   });
 
   it('smokescreen', async () => {
-    await browserPool.use(async (b) => {
-      const attr0 = await selectElementAttr(b, tmpHtml, 'meta[name=citation_title]', 'content');
-      const attr1 = await selectElementAttr(b, tmpHtml, 'meta[name=citation_title]', 'content_');
-      const attr2 = await selectElementAttr(b, tmpHtml, 'meta[name=empty]', 'content');
+    await browserPool.use(async ({ browser }) => {
+      const attr0 = await selectElementAttr(browser, tmpHtml, 'meta[name=citation_title]', 'content');
+      const attr1 = await selectElementAttr(browser, tmpHtml, 'meta[name=citation_title]', 'content_');
+      const attr2 = await selectElementAttr(browser, tmpHtml, 'meta[name=empty]', 'content');
       expect(isRight(attr0)).toBeTruthy();
       expect(isLeft(attr1)).toBeTruthy();
       expect(isLeft(attr2)).toBeTruthy();
@@ -79,7 +89,7 @@ describe('HTML jquery-like css queries', () => {
       ['meta[property="og:description"]', /success:/],
       ['a.show-pdf', /success:pdf/],
     ];
-    await browserPool.use(async (browser) => {
+    await browserPool.use(async ({ browser }) => {
       await Async.eachSeries(examples, Async.asyncify(async ([query, regexTest]) => {
         const maybeResult = await queryOne(browser, tmpHtml, query);
         if (isRight(maybeResult)) {
@@ -105,7 +115,7 @@ describe('HTML jquery-like css queries', () => {
     ];
 
 
-    await browserPool.use(async (browser) => {
+    await browserPool.use(async ({ browser }) => {
       await Async.forEachOfSeries(examples, Async.asyncify(async ([query,], exampleNum) => {
         const maybeResult = await queryAll(browser, tmpHtml, query);
         putStrLn(`Example #${exampleNum}`);
@@ -139,7 +149,7 @@ describe('HTML jquery-like css queries', () => {
       ['meta[name~="dc.creator"],meta[name~="dc.Creator"]', [/Adam/, /adam/]],
     ];
 
-    await browserPool.use(async (browser) => {
+    await browserPool.use(async ({ browser }) => {
       await Async.eachSeries(examples, Async.asyncify(async ([query,]) => {
         const maybeResult = await queryAll(browser, tmpHtml, query);
         if (isRight(maybeResult)) {

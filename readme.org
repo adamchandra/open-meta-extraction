@@ -1,22 +1,32 @@
 * Open Extraction Works
-  A set of services to spider and extract metadata (abstracts, titles, pdf links) from URLs.
+  A set of services to spider and extract metadata (abstracts, titles, authors, pdf links) from URLs.
 
-  Most services may be run individually as command line applications, or as an integrated pipeline with a REST API 
+  Most services may be run individually as command line applications, or as an integrated pipeline with a REST API
 
 ** Commandline Applications
-
+*** Spidering
+*** Field Extraction
+*** Integrated spider/extractor
+*** REST Server Frontend
 
 ** Integrated Pipeline Usage
 
 
-** Production machine setup and [[file:docs/dev-notes.org::*Deployment][Deployment]] (for Integrated Pipeline)
+** Production machine setup and [[file:docs/dev-notes.org::*Deployment][Deployment]]
 *** Requirements
-**** Docker 
 **** Postgres
 
+** Dev Notes, Upcoming fixes and features
+*** Tasks
+- [ ] Fix Browser resource leaks in puppeteer
+  - [ ] Improve logging for browser acquire/page-open/nav/close lifecycle for better error tracing
+- [ ] Add --force/overwrite flags for spider/extractor to ease reprocessing and error fixes
+  - [ ] Add REST endpoints to request all items that have been fixed/reprocessed since last
 
-** Notes on [[file:docs/dev-notes.org::*Development][Development]] setup
 
 
-
-** Adding/Modifying Field Extraction Rules
+* Pros and Cons of running with Database backend
+    The system may be run in a number of different ways, including:
+    - "By hand", running command line apps for the spider, then field extraction, then
+        collecting output into an aggregated JSON file
+    - Inline via Commandline, where spidering and field extraction happen in the same process

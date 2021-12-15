@@ -243,7 +243,7 @@ export const loadPageFromCache: Arrow<CacheFileKey, Page> = through((cacheKey: C
   }
   if (cacheKey in fileContentCache) {
     const fileContent = fileContentCache[cacheKey];
-    const page = browserInstance.newPage()
+    const page = browserInstance.browser.newPage()
       .then(async page => {
         await page.setContent(fileContent, {
           timeout: 8000,
@@ -738,7 +738,7 @@ export async function initExtractionEnv(
   const pathPrefix = path.basename(entryPath).slice(0, 6);
   const logPrefix = [pathPrefix];
 
-  const browserPool = createBrowserPool();
+  const browserPool = createBrowserPool(log);
   const browserInstance = await browserPool.acquire();
 
   const env: ExtractionEnv = {

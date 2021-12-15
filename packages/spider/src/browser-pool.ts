@@ -2,26 +2,46 @@ import gpool from 'generic-pool';
 import {
   Browser,
 } from 'puppeteer';
+import { Logger } from 'winston';
+import { logBrowserEvent } from './page-event';
 
 import { launchBrowser } from './puppet';
 
 export interface BrowserPool {
-  factory: gpool.Factory<Browser>;
-  pool: gpool.Pool<Browser>;
-  acquire(): Promise<Browser>;
-  release(b: Browser): Promise<void>;
-  use<A>(f: (browser: Browser) => A | Promise<A>): Promise<A>;
+  factory: gpool.Factory<BrowserInstance>;
+  pool: gpool.Pool<BrowserInstance>;
+  acquire(): Promise<BrowserInstance>;
+  release(b: BrowserInstance): Promise<void>;
+  use<A>(f: (browser: BrowserInstance) => A | Promise<A>): Promise<A>;
   shutdown(): Promise<void>;
 }
+export interface BrowserInstance {
+  browser: Browser;
+  logPrefix: string;
+  createdAt: Date;
+}
 
-export function createBrowserPool(): BrowserPool {
-  const factory: gpool.Factory<Browser> = {
-    create: launchBrowser,
-    async destroy(browser: Browser): Promise<void> {
-      return browser.close();
+export function createBrowserPool(logger: Logger): BrowserPool {
+  const factory: gpool.Factory<BrowserInstance> = {
+    async create(logPrefix: string = ''): Promise<BrowserInstance> {
+      return launchBrowser().then(browser => {
+        const browserInstance =  {
+          browser,
+          logPrefix,
+          createdAt: new Date()
+        };
+        logBrowserEvent(browserInstance, logger);
+        return browserInstance
+      }).catch(error => {
+        console.log(error);
+        throw error;
+      })
     },
-    async validate(b: Browser): Promise<boolean> {
-      return b.isConnected();
+    async destroy(browserInstance: BrowserInstance): Promise<void> {
+      return browserInstance.browser.close();
+    },
+    async validate(browserInstance: BrowserInstance): Promise<boolean> {
+      return browserInstance.browser.isConnected();
     }
   };
   const opts: gpool.Options = {
@@ -45,13 +65,13 @@ export function createBrowserPool(): BrowserPool {
   return {
     factory,
     pool,
-    acquire(): Promise<Browser> {
+    async acquire(): Promise<BrowserInstance> {
       return pool.acquire();
     },
-    release(b: Browser): Promise<void> {
+    release(b: BrowserInstance): Promise<void> {
       return pool.release(b);
     },
-    async use<A>(f: (browser: Browser) => A | Promise<A>): Promise<A> {
+    async use<A>(f: (browser: BrowserInstance) => A | Promise<A>): Promise<A> {
       return pool.use(f)
         .then(async (a: A | Promise<A>): Promise<A> => {
           return Promise.resolve(a);

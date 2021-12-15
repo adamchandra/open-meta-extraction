@@ -17,6 +17,8 @@ import { getFetchDataFromResponse, UrlFetchData } from './url-fetch-chains';
 import { createScrapingContext } from './scraping-context';
 import { useAnonPlugin, useStealthPlugin } from './puppet';
 import { BrowserPool, createBrowserPool } from './browser-pool';
+import { BrowserInstance } from '.';
+import { Logger } from 'winston';
 
 useStealthPlugin();
 useAnonPlugin();
@@ -28,14 +30,15 @@ export interface Scraper {
 }
 
 export async function initScraper(
+  logger: Logger
 ): Promise<Scraper> {
-  const browserPool = createBrowserPool();
+  const browserPool = createBrowserPool(logger);
 
   return {
     browserPool,
     async scrapeUrl(url: string): Promise<E.Either<string, UrlFetchData>> {
-      const result = await browserPool.use(async (browser: Browser) => {
-        return scrapeUrl(browser, url);
+      const result = await browserPool.use(async (browserInstance: BrowserInstance) => {
+        return scrapeUrl(browserInstance.browser, url);
       });
       return result;
     },
@@ -65,7 +68,7 @@ async function scrapeUrl(
   }
   const page: Page = await browser.newPage();
   try {
-    logPageEvents(scrapingContext, page);
+    logPageEvents(page, scrapingContext.rootLogger);
 
     page.setDefaultNavigationTimeout(11_000);
     page.setDefaultTimeout(11_000);

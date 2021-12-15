@@ -10,8 +10,10 @@
   "scripts": {
     "clean": "rm -rf ./dist",
     "compile": "tsc",
-    "path-rewrite": "../root/node_modules/.bin/babel --config-file ../root/.babelrc-path-alias ./dist -d ./dist",
-    "build": "npm run clean && npm run compile && npm run path-rewrite",
+    "path-rewrite": "../root/bin/fix-path-aliases -f dist",
+    "build": "rushx compile && rushx path-rewrite",
+    "build:watch": "rushx build",
+    "rebuild": "rushx clean && rushx build",
     "lint": "eslint src/",
     "lint:fix": "eslint src/ --fix",
     "test": "jest"

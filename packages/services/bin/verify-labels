@@ -14,7 +14,7 @@ corpus=
 
 # prefix : disables default error handling (recommended)
 # m: means -m arg
-while getopts ":c:y:h" opt; do
+while getopts ":c:h" opt; do
     case $opt in
         c)    corpus=$OPTARG;;
         h)    showhelp $0;;
@@ -34,7 +34,7 @@ jqtitle='if .fields.title.instances == null then "none" else .fields.title.insta
 jqpdflink='if .fields["pdf-link"].instances == null then "none" else .fields["pdf-link"].instances[].value end'
 jqpdfpath='if .fields["pdf-path"].instances == null then "none" else .fields["pdf-path"].instances[].value end'
 
-meta='.responseUrl'
+# meta='.responseUrl'
 
 find $corpus -type f -name 'extraction-records.json' \
      -exec echo "======= Examining {} ===========" ';' \
