@@ -18,12 +18,12 @@ export function getSpiderLoggers(
   const loglevel = 'info';
   const rootLogger = newLogger(
     consoleTransport(loglevel),
-    fileTransport(appShareDir, 'spidering-log.json', loglevel)
+    fileTransport(appShareDir, 'spidering-root.log', loglevel)
   );
 
   const entryLogger = newLogger(
     consoleTransport(loglevel),
-    fileTransport(entryLoggingPath, 'entry-log.json', loglevel)
+    fileTransport(entryLoggingPath, 'spidering-entry.log', loglevel)
   );
 
   return {

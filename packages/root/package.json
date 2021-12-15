@@ -7,7 +7,8 @@
   "author": "Adam Saunders <***REMOVED***>",
   "license": "ISC",
   "scripts": {
-    "build": ""
+    "build": "",
+    "rebuild": ""
   },
   "peerDependencies": {
     "eslint": "^7.32.0",

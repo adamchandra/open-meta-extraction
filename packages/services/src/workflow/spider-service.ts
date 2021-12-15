@@ -15,6 +15,7 @@ import {
 
 import * as E from 'fp-ts/Either';
 import { DatabaseContext, insertAlphaRecords } from '~/db/db-api';
+import { createLogger, transports, format } from 'winston';
 
 function isUrl(str: string) {
   if (typeof str !== 'string') {
@@ -43,7 +44,17 @@ export interface SpiderService {
 }
 
 export async function createSpiderService(): Promise<SpiderService> {
-  const scraper = await initScraper();
+
+  const logger = createLogger({
+    level: 'debug',
+    format: format.json(),
+    transports: [
+      new transports.Console(),
+    ],
+  });
+
+  const scraper = await initScraper(logger);
+
   const crawlScheduler = initCrawlScheduler();
 
   const service: SpiderService = {
