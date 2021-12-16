@@ -5,13 +5,13 @@ import * as TE from 'fp-ts/TaskEither';
 import * as E from 'fp-ts/Either';
 
 import { UrlFetchData, createBrowserPool, useResourceBlockPlugin } from '@watr/spider';
-import { ArtifactSubdir, expandDir, readCorpusTextFile, setLogLabel, writeCorpusTextFile, shaEncodeAsHex, diffByChars } from '@watr/commonlib';
+import { ArtifactSubdir, expandDir, readCorpusTextFile, setLogLabel, writeCorpusTextFile, diffByChars } from '@watr/commonlib';
 import { Logger } from 'winston';
 
 import { Page } from 'puppeteer';
 
 import path from 'path';
-import parseUrl from 'url-parse';
+
 import {
   Arrow,
   ExtractionEnv,
@@ -33,15 +33,14 @@ import {
 
 
 import { ExtractionEvidence, Field } from '../core/extraction-records';
-import { runTidyCmdBuffered } from '~/utils/run-cmd-tidy-html';
+import { runTidyCmdBuffered, runFileCmd } from '~/utils/shell-commands';
 import { Elem, expandCaseVariations, queryAllP, queryOneP, selectElementAttrP } from '../core/html-queries';
 
-import { runFileCmd } from '~/utils/run-cmd-file';
 
 import { GlobalDocumentMetadata } from './ieee-metadata';
 import { AbstractCleaningRules, CleaningRule, CleaningRuleResult } from './data-clean-abstracts';
 
-export type CacheFileKey = string;
+type CacheFileKey = string;
 
 export function _addEvidence(env: ExtractionEnv, evidence: string, weight: number = 0) {
   const e: ExtractionEvidence = {
@@ -59,7 +58,7 @@ function removeEvidence(env: ExtractionEnv, regex: RegExp) {
 }
 
 
-export const addEvidence: <A>(f: (a: A, env: ExtractionEnv) => string) => Arrow<A, A> = (f) => tap((a, env) => {
+const addEvidence: <A>(f: (a: A, env: ExtractionEnv) => string) => Arrow<A, A> = (f) => tap((a, env) => {
   _addEvidence(env, f(a, env));
 });
 
@@ -104,7 +103,7 @@ function saveFieldRecs(env: ExtractionEnv): void {
   );
 }
 
-export const listArtifactFiles: (artifactDir: ArtifactSubdir, regex: RegExp) => Arrow<unknown, CacheFileKey[]> = (dir, regex) => through((_a, env) => {
+const listArtifactFiles: (artifactDir: ArtifactSubdir, regex: RegExp) => Arrow<unknown, CacheFileKey[]> = (dir, regex) => through((_a, env) => {
   const { entryPath } = env;
   const artifactRoot = path.join(entryPath, dir);
   const exDir = expandDir(artifactRoot);
@@ -114,9 +113,9 @@ export const listArtifactFiles: (artifactDir: ArtifactSubdir, regex: RegExp) => 
 }, 'listArtifacts');
 
 
-export const listResponseBodies = listArtifactFiles('.', /response-body|response-frame/);
+const listResponseBodies = listArtifactFiles('.', /response-body|response-frame/);
 
-export const tidyHtmlTask: (filename: string) => TE.TaskEither<string, string[]> = (filepath: string) => {
+const tidyHtmlTask: (filename: string) => TE.TaskEither<string, string[]> = (filepath: string) => {
   const tidyOutputTask = () => runTidyCmdBuffered('./conf/tidy.cfg', filepath)
     .then(([stderr, stdout, _exitCode]) => {
       // Tidy  exit codes = 0: ok, 1: warnings, 2: errors
@@ -131,17 +130,17 @@ export const tidyHtmlTask: (filename: string) => TE.TaskEither<string, string[]>
 };
 
 
-export const listTidiedHtmls: Arrow<unknown, CacheFileKey[]> = through((_z, env) => {
+const listTidiedHtmls: Arrow<unknown, CacheFileKey[]> = through((_z, env) => {
   const { fileContentCache } = env;
   const normType: NormalForm = 'tidy-norm';
   const cacheKeys = _.map(
     _.toPairs(fileContentCache), ([k]) => k
   );
   return _.filter(cacheKeys, k => k.endsWith(normType));
-});
+}, 'list(tidy)');
 
 
-export const runHtmlTidy: Arrow<string, string> = through((artifactPath, env) => {
+const runHtmlTidy: Arrow<string, string> = through((artifactPath, env) => {
   const { fileContentCache, entryPath } = env;
   const normType: NormalForm = 'tidy-norm';
   const cacheKey = `${artifactPath}.${normType}`;
@@ -173,24 +172,25 @@ export const runHtmlTidy: Arrow<string, string> = through((artifactPath, env) =>
   return maybeTidy;
 }, 'runHtmlTidy');
 
-export const verifyFileType: (urlTest: RegExp) => FilterArrow<string> = (typeTest: RegExp) => filter((filename, env) => {
+const verifyFileType: (urlTest: RegExp) => FilterArrow<string> = (typeTest: RegExp) => filter((filename, env) => {
   const file = path.resolve(env.entryPath, filename);
 
   const test = runFileCmd(file).then(a => typeTest.test(a));
   return test;
-}, `/${typeTest.source}/`);
+}, `m/${typeTest.source}/`);
 
-export const readCache: Arrow<CacheFileKey, string> = through((cacheKey: CacheFileKey, { fileContentCache }) => (cacheKey in fileContentCache
-  ? fileContentCache[cacheKey]
-  : ClientFunc.halt(`cache has no record for key ${cacheKey}`)));
+const readCache: Arrow<CacheFileKey, string> = through(
+  (cacheKey: CacheFileKey, { fileContentCache }) => (cacheKey in fileContentCache
+    ? fileContentCache[cacheKey]
+    : ClientFunc.halt(`cache has no record for key ${cacheKey}`)), `readCache`);
 
 
-export const grepLines: (regex: RegExp) => Arrow<CacheFileKey, string[]> = (regex) => compose(
+const grepLines: (regex: RegExp) => Arrow<CacheFileKey, string[]> = (regex) => compose(
   readCache,
   through((content: string) => {
     const lines = _.split(content, '\n');
     return _.filter(lines, l => regex.test(l));
-  })
+  }, `grep(${regex.source})`)
 );
 
 export const selectGlobalDocumentMetaEvidence: () => Arrow<CacheFileKey, unknown> = () => compose(
@@ -203,7 +203,7 @@ export const selectGlobalDocumentMetaEvidence: () => Arrow<CacheFileKey, unknown
   )
 );
 
-export const readGlobalDocumentMetadata: Arrow<CacheFileKey, GlobalDocumentMetadata> = compose(
+const readGlobalDocumentMetadata: Arrow<CacheFileKey, GlobalDocumentMetadata> = compose(
   grepLines(/global\.document\.metadata/i),
   through((lines) => {
     if (lines.length === 0) {
@@ -215,17 +215,11 @@ export const readGlobalDocumentMetadata: Arrow<CacheFileKey, GlobalDocumentMetad
     const lineJson = line.slice(jsonStart, jsonEnd + 1);
     const globalMetadata: GlobalDocumentMetadata = JSON.parse(lineJson);
     return globalMetadata;
-  }));
+  }, 'readGlobalMetadata'));
 
-export const saveDocumentMetaDataAs: (name: string, f: (m: GlobalDocumentMetadata) => string) => Arrow<GlobalDocumentMetadata, unknown> = (name, f) => compose(
-  addEvidence(() => `global.document.metadata:[${name}]`),
-  through((documentMetadata) => f(documentMetadata)),
-  saveFieldAs(name),
-  clearEvidence(/^global.document.metadata:/),
-);
 
-export const saveDocumentMetaDataEvidence: (name: string, f: (m: GlobalDocumentMetadata) => string[]) => Arrow<GlobalDocumentMetadata, unknown> = (name, f) => compose(
-  through((documentMetadata) => f(documentMetadata)),
+const saveDocumentMetaDataEvidence: (name: string, f: (m: GlobalDocumentMetadata) => string[]) => Arrow<GlobalDocumentMetadata, unknown> = (name, f) => compose(
+  through((documentMetadata) => f(documentMetadata), `saveMetaEvidence(${name})`),
   addEvidence(() => name),
   forEachDo(
     saveEvidence(name),
@@ -237,49 +231,50 @@ export const saveDocumentMetaDataEvidence: (name: string, f: (m: GlobalDocumentM
 // jquery/css selector and Elem functions
 
 
-export const loadPageFromCache: Arrow<CacheFileKey, Page> = through((cacheKey: CacheFileKey, { browserInstance, fileContentCache, browserPageCache }) => {
-  if (cacheKey in browserPageCache) {
-    return browserPageCache[cacheKey];
-  }
-  if (cacheKey in fileContentCache) {
-    const fileContent = fileContentCache[cacheKey];
-    const page = browserInstance.browser.newPage()
-      .then(async page => {
-        await page.setContent(fileContent, {
-          timeout: 8000,
-          waitUntil: 'domcontentloaded',
-          // waitUntil: 'load',
+const loadPageFromCache: Arrow<CacheFileKey, Page> =
+  through((cacheKey: CacheFileKey, { browserInstance, fileContentCache, browserPageCache }) => {
+    if (cacheKey in browserPageCache) {
+      return browserPageCache[cacheKey];
+    }
+    if (cacheKey in fileContentCache) {
+      const fileContent = fileContentCache[cacheKey];
+      const page = browserInstance.newPage()
+        .then(async ({ page }) => {
+          await page.setContent(fileContent, {
+            timeout: 8000,
+            waitUntil: 'domcontentloaded',
+            // waitUntil: 'load',
+          });
+          browserPageCache[cacheKey] = page;
+          return page;
         });
-        browserPageCache[cacheKey] = page;
-        return page;
-      });
-    return page;
-  }
+      return page;
+    }
 
-  return ClientFunc.halt(`cache has no record for key ${cacheKey}`);
-});
+    return ClientFunc.halt(`cache has no record for key ${cacheKey}`);
+  }, `loadPageCache`);
 
-export const selectOne: (queryString: string) => Arrow<CacheFileKey, Elem> = (queryString) => compose(
+const selectOne: (queryString: string) => Arrow<CacheFileKey, Elem> = (queryString) => compose(
   loadPageFromCache,
   through((page: Page, { }) => {
     return pipe(
       () => queryOneP(page, queryString),
-      TE.mapLeft((msg) => ['continue', `selectElemAttr error: ${msg}`])
+      TE.mapLeft((msg) => ['continue', msg])
     );
-  })
+  }, `selectOne(${queryString})`)
 );
 
-export const selectAll: (queryString: string) => Arrow<CacheFileKey, Elem[]> = (queryString) => compose(
+const selectAll: (queryString: string) => Arrow<CacheFileKey, Elem[]> = (queryString) => compose(
   loadPageFromCache,
   through((page: Page, { }) => {
     return pipe(
       () => queryAllP(page, queryString),
-      TE.mapLeft((msg) => ['continue', `selectElemAttr error: ${msg}`])
+      TE.mapLeft((msg) => ['continue', msg])
     );
-  })
+  }, `selectAll(${queryString})`)
 );
 
-export const getElemAttr: (attr: string) => Arrow<Elem, string> = (attr: string) => through((elem: Elem, { }) => {
+const getElemAttr: (attr: string) => Arrow<Elem, string> = (attr: string) => through((elem: Elem, { }) => {
   const attrContent: Promise<E.Either<string, string>> = elem.evaluate((e, attrname) => e.getAttribute(attrname), attr)
     .then(text => (text === null
       ? E.left(`getElemAttr: no attr content found in elem attr ${attr}`)
@@ -290,11 +285,11 @@ export const getElemAttr: (attr: string) => Arrow<Elem, string> = (attr: string)
 
   return pipe(
     () => attrContent,
-    TE.mapLeft((msg) => ['continue', `getElemAttr error: ${msg}`]),
+    TE.mapLeft((msg) => ['continue', msg]),
   );
 }, 'getElemAttr');
 
-export const getElemText: Arrow<Elem, string> = through((elem: Elem) => {
+const getElemText: Arrow<Elem, string> = through((elem: Elem) => {
   const textContent: Promise<E.Either<string, string>> = elem.evaluate(e => e.textContent)
     .then(text => (text === null
       ? E.left('no text found in elem')
@@ -302,40 +297,22 @@ export const getElemText: Arrow<Elem, string> = through((elem: Elem) => {
 
   return pipe(
     () => textContent,
-    TE.mapLeft((msg) => ['continue', `selectElemAttr error: ${msg}`]),
+    TE.mapLeft((msg) => ['continue', msg]),
   );
-});
-
-export const matchesText: (regex: RegExp) => FilterArrow<Elem> = (regex) => filter(async (elem: Elem) => {
-  const textContent = await elem.evaluate(e => e.textContent);
-  if (textContent === null) return false;
-  return regex.test(textContent);
-});
-
-export const matchesSelector: (query: string) => FilterArrow<Elem> = (query) => filter(async (elem: Elem) => {
-  const result = await elem.$$(query);
-  return result.length > 0;
-});
+}, 'getElemText');
 
 
-export const selectElemAttr: (queryString: string, contentAttr: string) => Arrow<CacheFileKey, string> = (queryString, contentAttr) => compose(
+const selectElemAttr: (queryString: string, contentAttr: string) => Arrow<CacheFileKey, string> = (queryString, contentAttr) => compose(
   loadPageFromCache,
   through((page: Page, { }) => {
     return pipe(
       () => selectElementAttrP(page, queryString, contentAttr),
-      TE.mapLeft((msg) => ['continue', `selectElemAttr error: ${msg}`])
+      TE.mapLeft((msg) => ['continue', msg])
     );
-  })
+  }, `selectElemAttr(${queryString}, ${contentAttr})`)
 );
 
 
-export const selectElemTextAs: (fieldName: string, queryString: string) => Arrow<CacheFileKey, unknown> = (fieldName, queryString) => compose(
-  addEvidence(() => `select:$(${queryString}))`),
-  selectOne(queryString),
-  getElemText,
-  saveFieldAs(fieldName),
-  clearEvidence(/^select:/),
-);
 
 export const selectElemTextEvidence: (queryString: string) => Arrow<CacheFileKey, unknown> = (queryString) => {
   const evidenceName = `select:$(${queryString})`;
@@ -348,15 +325,8 @@ export const selectElemTextEvidence: (queryString: string) => Arrow<CacheFileKey
   );
 };
 
-export const selectMetaContentAs: (fieldName: string, name: string, attrName?: string) => Arrow<CacheFileKey, unknown> = (fieldName, name, attrName = 'name') => compose(
-  addEvidence(() => `select:$(meta[${attrName}="${name}"]).attr('content')`),
-  selectElemAttr(expandCaseVariations(name, (s) => `meta[${attrName}="${s}"]`), 'content'),
-  saveFieldAs(fieldName),
-  clearEvidence(/^select:/),
-);
 
-
-export const saveEvidence: (evidenceName: string) => Arrow<string, unknown> = (evidenceName) => through((extractedValue: string, env) => {
+const saveEvidence: (evidenceName: string) => Arrow<string, unknown> = (evidenceName) => through((extractedValue: string, env) => {
   const text = _.isString(extractedValue) ? extractedValue.trim() : 'undefined';
   const candidate: FieldCandidate = {
     text,
@@ -399,33 +369,6 @@ export const selectAllElemAttrEvidence: (queryString: string, contentAttr: strin
 };
 
 
-export const selectElemAttrAs: (fieldName: string, queryString: string, contentAttr: string) => Arrow<CacheFileKey, unknown> = (fieldName, queryString, contentAttr) => compose(
-  addEvidence(() => `select:$(${queryString}).attr(${contentAttr})`),
-  selectElemAttr(queryString, contentAttr),
-  saveFieldAs(fieldName),
-  clearEvidence(/^select:/),
-);
-
-export const selectAllElemAttrAs: (fieldName: string, queryString: string, contentAttr: string) => Arrow<CacheFileKey, unknown> = (fieldName, queryString, contentAttr) => compose(
-  addEvidence(() => `select-all:$(${queryString}).attr(${contentAttr})`),
-  selectAll(queryString),
-  forEachDo(compose(
-    getElemAttr(contentAttr),
-    saveFieldAs(fieldName),
-  )),
-  clearEvidence(/^select-all:/),
-);
-
-
-export const selectAllMetaContentAs: (fieldName: string, name: string) => Arrow<CacheFileKey, unknown> = (fieldName, name) => compose(
-  addEvidence(() => `select-all:$(meta[name="${name}"])`),
-  selectAll(expandCaseVariations(name, (s) => `meta[name="${s}"]`)),
-  forEachDo(compose(
-    getElemAttr('content'),
-    saveFieldAs(fieldName),
-  )),
-  clearEvidence(/^select-all:/),
-);
 
 export const selectAllMetaEvidence: (name: string, attrName?: string) => Arrow<CacheFileKey, unknown> = (name, attrName = 'name') => {
   const evidenceName = `select-all:$(meta[${attrName}="${name}"])`;
@@ -444,28 +387,14 @@ export const selectAllMetaEvidence: (name: string, attrName?: string) => Arrow<C
 /// ///////////////
 
 
-export const saveFieldAs: (fieldName: string) => Arrow<string, unknown> = (fieldName) => through((fieldValue: string, env) => {
-  const field: Field = {
-    name: fieldName,
-    evidence: getCurrentEvidenceStrings(env),
-    value: fieldValue.trim()
-  };
-  const candidate: FieldCandidate = {
-    text: fieldValue.trim(),
-    evidence: getCurrentEvidenceStrings(env),
-  };
-  env.fieldCandidates.push(candidate);
-  env.fields.push(field);
-}, `saveField:${fieldName}`);
 
-
-export const urlMatcher: (urlTest: RegExp) => Arrow<unknown, unknown> = (regex) => compose(
-  through((_a, env) => env.metadata.responseUrl),
-  filter((a: string) => regex.test(a), `/${regex.source}/`),
+const urlMatcher: (urlTest: RegExp) => Arrow<unknown, unknown> = (regex) => compose(
+  through((_a, env) => env.metadata.responseUrl, 'urlMatch'),
+  filter((a: string) => regex.test(a), `m/${regex.source}/`),
 );
 
 export const statusFilter: Arrow<unknown, unknown> = compose(
-  through((_a, env) => env.metadata.status),
+  through((_a, env) => env.metadata.status, 'httpStatus'),
   filter((a) => a === '200', 'status=200'),
 );
 
@@ -549,23 +478,15 @@ export const tryEvidenceMapping: (mapping: Record<string, string>) => Arrow<unkn
   );
 };
 
-export const candidatesForEvidence: (env: ExtractionEnv, evstr: string) => FieldCandidate[] = (env, evstr) => {
+const candidatesForEvidence: (env: ExtractionEnv, evstr: string) => FieldCandidate[] = (env, evstr) => {
   const regex = new RegExp(evstr);
   return _.filter(env.fieldCandidates, (fc) => {
     return _.some(fc.evidence, ev => regex.test(ev));
   });
 };
 
-export const textForEvidence: (env: ExtractionEnv, evstr: string) => string | undefined = (env, evstr) => {
-  const regex = new RegExp(evstr);
-  const maybeCandidate = _.find(env.fieldCandidates, (fc) => {
-    return _.some(fc.evidence, ev => regex.test(ev));
-  });
 
-  return maybeCandidate ? maybeCandidate.text : undefined;
-};
-
-export const evidenceExists: (evstr: string) => FilterArrow<unknown> = (evstr) => filter((_a, env) => {
+const evidenceExists: (evstr: string) => FilterArrow<unknown> = (evstr) => filter((_a, env) => {
   if (evstr.endsWith('?')) return true;
   const evRes = _.map(evstr.split('|'), s => new RegExp(s.trim()));
   return _.some(evRes, regex => {
@@ -606,46 +527,8 @@ export const summarizeEvidence: Arrow<unknown, unknown> = tapEnvLR((env) => {
   log.log('info', 'summary: ');
 });
 
-export const summarizeExtraction: Arrow<unknown, unknown> = tap((_a, env) => {
-  const nameValuePairs = _.toPairs(env.fieldRecs);
-  const fieldNames = _.map(nameValuePairs, ([name]) => name);
-  const url = env.metadata.responseUrl;
-  const parsedUrl = parseUrl(url);
-  const { host } = parsedUrl;
-  let { pathname } = parsedUrl;
-  if (pathname.startsWith('/')) pathname = pathname.slice(1);
-  const paths = pathname.split('/');
-  const pathButLast = paths.slice(0, -1);
-  const pathBL = _.join(pathButLast, '/');
-  env.log.log('info', `summary: url       : ${url}`);
-  env.log.log('info', `summary: host      : ${host}`);
-  env.log.log('info', `summary: path-1    : ${pathBL}`);
-  env.log.log('info', `summary: fields    : ${_.join(fieldNames, ', ')}`);
-  _.each(nameValuePairs, ([name, fields]) => {
-    env.log.log('info', `summary:     field: ${name}  count=${fields.length}`);
-    _.each(fields, field => {
-      const evidence = _.join(field.evidence, ' ++ ');
-      env.log.log('info', `summary:      value   : ${field.value} `);
-      env.log.log('info', `summary:      evidence: ${evidence} `);
-    });
-  });
-});
 
-export const dedupFields: Arrow<unknown, unknown> = tap((_a, env) => {
-  const nameValuePairs = _.toPairs(env.fieldRecs);
-  _.each(nameValuePairs, ([name, fields]) => {
-    const hashedFields = _.map(fields, f => {
-      const checksum = f.value ? shaEncodeAsHex(f.value) : '';
-      return [checksum, f] as const;
-    });
-    const uniq = _.uniqBy(hashedFields, ([csum,]) => csum);
-    const uniqFields = _.map(uniq, ([, f]) => f);
-    env.fieldRecs[name].splice(0, env.fieldRecs[name].length, ...uniqFields);
-  });
-});
-
-
-export function applyCleaningRules(rules: CleaningRule[], initialString: string): [string, CleaningRuleResult[]] {
+function applyCleaningRules(rules: CleaningRule[], initialString: string): [string, CleaningRuleResult[]] {
   let currentString = initialString;
   const cleaningResults: CleaningRuleResult[] = [];
   _.each(rules, (rule) => {
@@ -669,56 +552,6 @@ export function applyCleaningRules(rules: CleaningRule[], initialString: string)
   });
   return [currentString, cleaningResults];
 }
-
-export const cleanNamedFields: Arrow<unknown, unknown> = tap((_a, env) => {
-  const nameValuePairs = _.toPairs(env.fieldRecs);
-  _.each(nameValuePairs, ([fieldName, fields]) => {
-    if (fieldName === 'abstract') {
-      _.each(fields, field => {
-        const fieldValue = field.value;
-        let cleaned: string | undefined;
-        if (fieldValue) {
-          const [cleaned0, cleaningRuleResults] = applyCleaningRules(AbstractCleaningRules, fieldValue);
-          const ruleNames = _.map(cleaningRuleResults, r => {
-            return `clean: ${r.rule}`;
-          });
-          cleaned = cleaned0;
-          field.evidence.push(...ruleNames);
-        }
-
-        field.value = cleaned && cleaned.length > 0 ? cleaned : undefined;
-      });
-    }
-  });
-});
-export const cleanFields: Arrow<unknown, unknown> = tap((_a, env) => {
-  const nameValuePairs = _.toPairs(env.fieldRecs);
-  _.each(nameValuePairs, ([name, fields]) => {
-    if (name === 'abstract') {
-      _.each(fields, field => {
-        const fieldValue = field.value;
-        let cleaned: string | undefined;
-        if (fieldValue) {
-          const [cleaned0, cleaningRuleResults] = applyCleaningRules(AbstractCleaningRules, fieldValue);
-          const ruleNames = _.map(cleaningRuleResults, r => {
-            return `clean: ${r.rule}`;
-          });
-          cleaned = cleaned0;
-          field.evidence.push(...ruleNames);
-          const fvTrimmed = fieldValue.trim();
-          // an axiomatic...
-          const isClipped = fvTrimmed.endsWith('...') || fvTrimmed.endsWith('…');
-          if (isClipped) {
-            env.log.log('info', 'clipping abstract ...');
-            field.name = 'abstract-clipped';
-          }
-        }
-
-        field.value = cleaned && cleaned.length > 0 ? cleaned : undefined;
-      });
-    }
-  });
-});
 
 
 export interface ExtractContext {
@@ -763,3 +596,176 @@ export async function initExtractionEnv(
   };
   return env;
 }
+
+
+// const matchesText: (regex: RegExp) => FilterArrow<Elem> = (regex) => filter(async (elem: Elem) => {
+//   const textContent = await elem.evaluate(e => e.textContent);
+//   if (textContent === null) return false;
+//   return regex.test(textContent);
+// });
+
+// const matchesSelector: (query: string) => FilterArrow<Elem> = (query) => filter(async (elem: Elem) => {
+//   const result = await elem.$$(query);
+//   return result.length > 0;
+// });
+
+// const selectElemTextAs: (fieldName: string, queryString: string) => Arrow<CacheFileKey, unknown> = (fieldName, queryString) => compose(
+//   addEvidence(() => `select:$(${queryString}))`),
+//   selectOne(queryString),
+//   getElemText,
+//   saveFieldAs(fieldName),
+//   clearEvidence(/^select:/),
+// );
+
+// const selectMetaContentAs: (fieldName: string, name: string, attrName?: string) => Arrow<CacheFileKey, unknown> = (fieldName, name, attrName = 'name') => compose(
+//   addEvidence(() => `select:$(meta[${attrName}="${name}"]).attr('content')`),
+//   selectElemAttr(expandCaseVariations(name, (s) => `meta[${attrName}="${s}"]`), 'content'),
+//   saveFieldAs(fieldName),
+//   clearEvidence(/^select:/),
+// );
+
+// const selectElemAttrAs: (fieldName: string, queryString: string, contentAttr: string) => Arrow<CacheFileKey, unknown> = (fieldName, queryString, contentAttr) => compose(
+//   addEvidence(() => `select:$(${queryString}).attr(${contentAttr})`),
+//   selectElemAttr(queryString, contentAttr),
+//   saveFieldAs(fieldName),
+//   clearEvidence(/^select:/),
+// );
+
+// const selectAllElemAttrAs: (fieldName: string, queryString: string, contentAttr: string) => Arrow<CacheFileKey, unknown> = (fieldName, queryString, contentAttr) => compose(
+//   addEvidence(() => `select-all:$(${queryString}).attr(${contentAttr})`),
+//   selectAll(queryString),
+//   forEachDo(compose(
+//     getElemAttr(contentAttr),
+//     saveFieldAs(fieldName),
+//   )),
+//   clearEvidence(/^select-all:/),
+// );
+
+
+// const selectAllMetaContentAs: (fieldName: string, name: string) => Arrow<CacheFileKey, unknown> = (fieldName, name) => compose(
+//   addEvidence(() => `select-all:$(meta[name="${name}"])`),
+//   selectAll(expandCaseVariations(name, (s) => `meta[name="${s}"]`)),
+//   forEachDo(compose(
+//     getElemAttr('content'),
+//     saveFieldAs(fieldName),
+//   )),
+//   clearEvidence(/^select-all:/),
+// );
+// const textForEvidence: (env: ExtractionEnv, evstr: string) => string | undefined = (env, evstr) => {
+//   const regex = new RegExp(evstr);
+//   const maybeCandidate = _.find(env.fieldCandidates, (fc) => {
+//     return _.some(fc.evidence, ev => regex.test(ev));
+//   });
+
+//   return maybeCandidate ? maybeCandidate.text : undefined;
+// };
+
+// const summarizeExtraction: Arrow<unknown, unknown> = tap((_a, env) => {
+//   const nameValuePairs = _.toPairs(env.fieldRecs);
+//   const fieldNames = _.map(nameValuePairs, ([name]) => name);
+//   const url = env.metadata.responseUrl;
+//   const parsedUrl = parseUrl(url);
+//   const { host } = parsedUrl;
+//   let { pathname } = parsedUrl;
+//   if (pathname.startsWith('/')) pathname = pathname.slice(1);
+//   const paths = pathname.split('/');
+//   const pathButLast = paths.slice(0, -1);
+//   const pathBL = _.join(pathButLast, '/');
+//   env.log.log('info', `summary: url       : ${url}`);
+//   env.log.log('info', `summary: host      : ${host}`);
+//   env.log.log('info', `summary: path-1    : ${pathBL}`);
+//   env.log.log('info', `summary: fields    : ${_.join(fieldNames, ', ')}`);
+//   _.each(nameValuePairs, ([name, fields]) => {
+//     env.log.log('info', `summary:     field: ${name}  count=${fields.length}`);
+//     _.each(fields, field => {
+//       const evidence = _.join(field.evidence, ' ++ ');
+//       env.log.log('info', `summary:      value   : ${field.value} `);
+//       env.log.log('info', `summary:      evidence: ${evidence} `);
+//     });
+//   });
+// });
+
+// const dedupFields: Arrow<unknown, unknown> = tap((_a, env) => {
+//   const nameValuePairs = _.toPairs(env.fieldRecs);
+//   _.each(nameValuePairs, ([name, fields]) => {
+//     const hashedFields = _.map(fields, f => {
+//       const checksum = f.value ? shaEncodeAsHex(f.value) : '';
+//       return [checksum, f] as const;
+//     });
+//     const uniq = _.uniqBy(hashedFields, ([csum,]) => csum);
+//     const uniqFields = _.map(uniq, ([, f]) => f);
+//     env.fieldRecs[name].splice(0, env.fieldRecs[name].length, ...uniqFields);
+//   });
+// });
+
+// const saveDocumentMetaDataAs: (name: string, f: (m: GlobalDocumentMetadata) => string) => Arrow<GlobalDocumentMetadata, unknown> = (name, f) => compose(
+//   addEvidence(() => `global.document.metadata:[${name}]`),
+//   through((documentMetadata) => f(documentMetadata), `saveMetaAS(${name})`),
+//   saveFieldAs(name),
+//   clearEvidence(/^global.document.metadata:/),
+// );
+
+// const cleanNamedFields: Arrow<unknown, unknown> = tap((_a, env) => {
+//   const nameValuePairs = _.toPairs(env.fieldRecs);
+//   _.each(nameValuePairs, ([fieldName, fields]) => {
+//     if (fieldName === 'abstract') {
+//       _.each(fields, field => {
+//         const fieldValue = field.value;
+//         let cleaned: string | undefined;
+//         if (fieldValue) {
+//           const [cleaned0, cleaningRuleResults] = applyCleaningRules(AbstractCleaningRules, fieldValue);
+//           const ruleNames = _.map(cleaningRuleResults, r => {
+//             return `clean: ${r.rule}`;
+//           });
+//           cleaned = cleaned0;
+//           field.evidence.push(...ruleNames);
+//         }
+
+//         field.value = cleaned && cleaned.length > 0 ? cleaned : undefined;
+//       });
+//     }
+//   });
+// });
+
+// const cleanFields: Arrow<unknown, unknown> = tap((_a, env) => {
+//   const nameValuePairs = _.toPairs(env.fieldRecs);
+//   _.each(nameValuePairs, ([name, fields]) => {
+//     if (name === 'abstract') {
+//       _.each(fields, field => {
+//         const fieldValue = field.value;
+//         let cleaned: string | undefined;
+//         if (fieldValue) {
+//           const [cleaned0, cleaningRuleResults] = applyCleaningRules(AbstractCleaningRules, fieldValue);
+//           const ruleNames = _.map(cleaningRuleResults, r => {
+//             return `clean: ${r.rule}`;
+//           });
+//           cleaned = cleaned0;
+//           field.evidence.push(...ruleNames);
+//           const fvTrimmed = fieldValue.trim();
+//           // an axiomatic...
+//           const isClipped = fvTrimmed.endsWith('...') || fvTrimmed.endsWith('…');
+//           if (isClipped) {
+//             env.log.log('info', 'clipping abstract ...');
+//             field.name = 'abstract-clipped';
+//           }
+//         }
+
+//         field.value = cleaned && cleaned.length > 0 ? cleaned : undefined;
+//       });
+//     }
+//   });
+// });
+
+// const saveFieldAs: (fieldName: string) => Arrow<string, unknown> = (fieldName) => through((fieldValue: string, env) => {
+//   const field: Field = {
+//     name: fieldName,
+//     evidence: getCurrentEvidenceStrings(env),
+//     value: fieldValue.trim()
+//   };
+//   const candidate: FieldCandidate = {
+//     text: fieldValue.trim(),
+//     evidence: getCurrentEvidenceStrings(env),
+//   };
+//   env.fieldCandidates.push(candidate);
+//   env.fields.push(field);
+// }, `saveField:${fieldName}`);

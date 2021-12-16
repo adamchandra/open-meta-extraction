@@ -13,8 +13,8 @@ import {
   putStrLn,
   readAlphaRecStream,
   AlphaRecord,
-  makeHashEncodedPath,
-  radix } from '@watr/commonlib';
+  radix,
+  getHashEncodedPath} from '@watr/commonlib';
 
 import parseUrl from 'url-parse';
 
@@ -346,7 +346,7 @@ export async function runMainBundleExtractedFields(
     .throughF((inputRec: AlphaRecord) => {
       const { url, noteId } = inputRec;
 
-      const entryEncPath = makeHashEncodedPath(url, 3);
+      const entryEncPath = getHashEncodedPath(url);
       const entryPath = entryEncPath.toPath();
       const entryFullpath = path.resolve(corpusRoot, entryPath);
       const canonicalFields = getCanonicalFieldRecord(entryFullpath);

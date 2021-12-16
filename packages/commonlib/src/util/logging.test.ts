@@ -70,4 +70,16 @@ describe('Logging', () => {
     log.debug('debug, world!');
     log.silly('silly, world!');
   });
+  it.only('should create child loggers', () => {
+    const log = getConsoleAndFileLogger(logpath);
+
+    setLogLabel(log, '/foo/bar');
+    log.info('foobar!');
+
+    const childlog = log.child({})
+    setLogLabel(childlog, 'childLabel')
+
+    log.info('foobar/baz');
+    childlog.info('child:bar/baz');
+  });
 });

@@ -35,7 +35,7 @@ const {
   // ExtractionResult,
   asW,
   forEachDo,
-  takeFirstSuccess,
+  eachOrElse,
   takeWhileSuccess,
   gatherSuccess,
 } = fp;
@@ -94,7 +94,7 @@ async function runTakeWhileSuccess(fns: Arrow<string, string>[]): Promise<string
 
 
 async function runTakeFirstSuccess(fns: Arrow<string, string>[]): Promise<string[]> {
-  const res = await takeFirstSuccess(...fns)(initEnv(`input#${dummy += 1}`))();
+  const res = await eachOrElse(...fns)(initEnv(`input#${dummy += 1}`))();
   return getEnvMessages(res);
 }
 
@@ -148,7 +148,7 @@ describe('Extraction Prelude / Primitives', () => {
     // done();
   });
 
-  it('takeFirstSuccess examples', async () => {
+  it('eachOrElse examples', async () => {
     const examples: Array<[Arrow<string, string>[], string[]]> = [
       // Always stop at first emit:
       [[emit('A:okay'), emit('B:bad')],
@@ -232,7 +232,7 @@ describe('Extraction Prelude / Primitives', () => {
 
     const modOkay = (mod: number) => compose(
       filter<number>((n) => n % mod === 0),
-      through((n) => `${n}:okay`)
+      through((n) => `${n}:okay`, 'modOkay')
     );
 
 

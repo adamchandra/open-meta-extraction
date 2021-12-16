@@ -1,11 +1,11 @@
 import _ from 'lodash';
 
-import { flow as fpflow, pipe } from 'fp-ts/function';
+import { flow as fptsFlow, pipe } from 'fp-ts/function';
 
 import parseUrl from 'url-parse';
 import {
   gatherSuccess,
-  takeFirstSuccess,
+  eachOrElse,
   log,
   filter,
 } from './extraction-prelude';
@@ -29,17 +29,18 @@ import {
 } from './extraction-process';
 
 
-// <A extends readonly unknown[]>
-const compose: typeof fpflow = (...fs: []) => <A extends readonly unknown[]>(a: A) => pipe(a, ...fs);
+const compose: typeof fptsFlow = (...fs: []) =>
+  <A extends readonly unknown[]>(a: A) =>
+    pipe(a, ...fs);
 
-export const checkStatusAndNormalize = compose(
+const checkStatusAndNormalize = compose(
   log('info', (_0, env) => `Processing ${env.metadata.responseUrl}`),
   statusFilter,
   normalizeHtmls,
   filter((a) => a.length > 0),
 );
 
-export const addUrlEvidence = tapEnvLR((env) => {
+const addUrlEvidence = tapEnvLR((env) => {
   const parsedUrl = parseUrl(env.metadata.responseUrl);
   const { host } = parsedUrl;
   const paths = parsedUrl.pathname.split('/');
@@ -54,7 +55,7 @@ export const addUrlEvidence = tapEnvLR((env) => {
 });
 
 
-export const gatherHighwirePressTags = gatherSuccess(
+const gatherHighwirePressTags = gatherSuccess(
   selectMetaEvidence('citation_title'),
   selectMetaEvidence('citation_date'),
   selectMetaEvidence('citation_pdf_url'),
@@ -62,7 +63,7 @@ export const gatherHighwirePressTags = gatherSuccess(
   selectAllMetaEvidence('citation_author'),
 );
 
-export const gatherOpenGraphTags = gatherSuccess(
+const gatherOpenGraphTags = gatherSuccess(
   selectMetaEvidence('og:url'),
   selectMetaEvidence('og:url', 'property'),
   selectMetaEvidence('og:title'),
@@ -73,7 +74,7 @@ export const gatherOpenGraphTags = gatherSuccess(
   selectMetaEvidence('og:description', 'property'),
 );
 
-export const gatherDublinCoreTags = gatherSuccess(
+const gatherDublinCoreTags = gatherSuccess(
   selectMetaEvidence('DC.Description'),
   selectMetaEvidence('DC.Title'),
   selectAllMetaEvidence('DC.Creator'),
@@ -82,7 +83,7 @@ export const gatherDublinCoreTags = gatherSuccess(
   selectAllMetaEvidence('DC.Type'),
 );
 
-export const gatherSchemaEvidence = forInputs(
+const gatherSchemaEvidence = forInputs(
   /response-body/,
   gatherSuccess(
     gatherHighwirePressTags,
@@ -97,7 +98,7 @@ export const gatherSchemaEvidence = forInputs(
   ),
 );
 
-export const UrlSpecificAttempts = takeFirstSuccess(
+const UrlSpecificAttempts = eachOrElse(
   compose(
     urlFilter(/ieeexplore.ieee.org/),
     forInputs(/response-body/, compose(
@@ -154,7 +155,7 @@ export const UrlSpecificAttempts = takeFirstSuccess(
         gatherOpenGraphTags,
         selectElemTextEvidence('section#Abs1 > p.Para'),
       ),
-      takeFirstSuccess(
+      eachOrElse(
         compose(
           urlFilter(/\/chapter\//),
           tryEvidenceMapping({ // link.springer.com/chapter
@@ -266,14 +267,14 @@ export const UrlSpecificAttempts = takeFirstSuccess(
 export const AbstractFieldAttempts = compose(
   checkStatusAndNormalize,
 
-  takeFirstSuccess(
+  eachOrElse(
     UrlSpecificAttempts,
     // Url non-specific attempts
     compose(
       addUrlEvidence,
       gatherSchemaEvidence,
       clearEvidence(/^url:/),
-      filter(() => false, 'always fail') // <<- takeFirstSuccess stops at first successful function, so we must fail to continue
+      filter(() => false, 'always fail') // <<- eachOrElse stops at first successful function, so we must fail to continue
     ),
     tryEvidenceMapping({
       citation_title: 'title',

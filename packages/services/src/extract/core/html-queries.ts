@@ -4,10 +4,10 @@ import { pipe } from 'fp-ts/function';
 
 import {
   Page,
-  Browser,
   ElementHandle,
-  // errors as puppeteerErrors
 } from 'puppeteer';
+
+import { BrowserInstance } from '@watr/spider';
 
 export type AttrSelection = E.Either<string, string>;
 
@@ -34,6 +34,21 @@ export function expandCaseVariations(seed: string, sub: (s: string) => string): 
   return expanded;
 }
 
+function formatCSSSelectionError(error: Error, cssSelector: string): string {
+  // if (error instanceof puppeteerErrors.TimeoutError) {
+  //   // TODO Do something if this is a timeout.
+  // }
+  if (error instanceof Error) {
+    const msg = error.message;
+
+    if (/failed.to.find.element.matching.selector/.test(msg)) {
+      return `no match for ${cssSelector}`;
+    }
+    return `${error.message}`;
+  }
+  return `?${error}`;
+}
+
 export async function queryAllP(
   page: Page,
   query: string
@@ -42,19 +57,17 @@ export async function queryAllP(
     const elems: ElementHandle<Element>[] = await page.$$(query);
     return E.right(elems);
   } catch (error) {
-    if (error instanceof Error) {
-      return E.left(`${error.name}: ${error.message}`);
-    }
-    return E.left(`${error}`);
+    const msg = formatCSSSelectionError(error, query);
+    return E.left(msg);
   }
 }
 
 export async function queryAll(
-  browser: Browser,
+  browserInstance: BrowserInstance,
   sourceHtml: string,
   query: string
 ): Promise<ElemSelectAll> {
-  const page: Page = await browser.newPage();
+  const { page } = await browserInstance.newPage();
 
   try {
     await page.setContent(sourceHtml, {
@@ -64,10 +77,8 @@ export async function queryAll(
 
     return await queryAllP(page, query);
   } catch (error) {
-    if (error instanceof Error) {
-      return E.left(`${error.name}: ${error.message}`);
-    }
-    return E.left(`${error}`);
+    const msg = formatCSSSelectionError(error, query);
+    return E.left(msg);
   }
 }
 
@@ -85,7 +96,7 @@ export async function queryOneP(
     });
 }
 export async function queryOne(
-  browser: Browser,
+  browser: BrowserInstance,
   sourceHtml: string,
   query: string
 ): Promise<ElemSelectOne> {
@@ -114,13 +125,8 @@ export async function selectElementAndEval(
 
     return E.right(maybeAttr);
   } catch (error) {
-    // if (error instanceof puppeteerErrors.TimeoutError) {
-    //   // TODO Do something if this is a timeout.
-    // }
-    if (error instanceof Error) {
-      return E.left(`${error.name}: ${error.message}`);
-    }
-    return E.left(`${error}`);
+    const msg = formatCSSSelectionError(error, elementSelector);
+    return E.left(msg);
   }
 }
 
@@ -146,23 +152,18 @@ export async function selectElementAttrP(
 
     return E.right(attrValue);
   } catch (error) {
-    // if (error instanceof puppeteerErrors.TimeoutError) {
-    //   // TODO Do something if this is a timeout.
-    // }
-    if (error instanceof Error) {
-      return E.left(`${error.name}: ${error.message}`);
-    }
-    return E.left(`${error}`);
+    const msg = formatCSSSelectionError(error, elementSelector);
+    return E.left(msg);
   }
 }
 
 export async function selectElementAttr(
-  browser: Browser,
+  browser: BrowserInstance,
   sourceHtml: string,
   elementSelector: string,
   attributeName: string
 ): Promise<AttrSelection> {
-  const page: Page = await browser.newPage();
+  const { page } = await browser.newPage();
   try {
     await page.setContent(sourceHtml, {
       timeout: 4000,
@@ -171,12 +172,7 @@ export async function selectElementAttr(
 
     return await selectElementAttrP(page, elementSelector, attributeName);
   } catch (error) {
-    // if (error instanceof puppeteerErrors.TimeoutError) {
-    //   // TODO Do something if this is a timeout.
-    // }
-    if (error instanceof Error) {
-      return E.left(`${error.name}: ${error.message}`);
-    }
-    return E.left(`${error}`);
+    const msg = formatCSSSelectionError(error, elementSelector);
+    return E.left(msg);
   }
 }

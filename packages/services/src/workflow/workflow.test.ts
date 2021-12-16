@@ -1,14 +1,12 @@
-import 'chai/register-should';
-
 import _ from 'lodash';
-import { getCorpusEntryDirForUrl, prettyPrint, putStrLn, AlphaRecord, setEnv } from '@watr/commonlib';
+import { getCorpusEntryDirForUrl, prettyPrint, AlphaRecord, setEnv } from '@watr/commonlib';
 import fs from 'fs-extra';
 import Async from 'async';
 import { Server } from 'http';
 import { fetchOneRecord, WorkflowServices } from './workflow-services';
 
 // import { createSpiderService } from '~/spidering/spider-service';
-import { getServiceLogger } from '~/utils/basic-logging';
+import { getBasicConsoleLogger  } from '~/utils/basic-logging';
 import { createSpiderService } from './spider-service';
 import { startSpiderableTestServer } from '~/http-servers/extraction-rest-portal/mock-server';
 import { getDBConfig } from '~/db/database';
@@ -37,7 +35,7 @@ describe('End-to-end Extraction workflows', () => {
 
   let server: Server | undefined;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     fs.emptyDirSync(workingDir);
     fs.removeSync(workingDir);
     fs.mkdirSync(workingDir);
@@ -60,9 +58,9 @@ describe('End-to-end Extraction workflows', () => {
 
 
   it('should fetch alpha records', async () => {
-    const log = getServiceLogger('test-run');
+    const log = getBasicConsoleLogger('debug');
 
-    const spiderService = await createSpiderService();
+    const spiderService = await createSpiderService(log);
 
     const workflowServices: WorkflowServices = {
       spiderService,
@@ -76,7 +74,7 @@ describe('End-to-end Extraction workflows', () => {
       // '/404~custom404',
     ];
 
-    await Async.eachOfSeries(exampleUrls, Async.asyncify(async (url, exampleNumber) => {
+    await Async.eachOfSeries(exampleUrls, Async.asyncify(async (url: string, exampleNumber: number) => {
       const alphaRec = mockAlphaRecord(1, url);
       const fetchedRecord = await fetchOneRecord(dbCtx, workflowServices, alphaRec);
       prettyPrint({ exampleNumber, fetchedRecord });
@@ -89,9 +87,9 @@ describe('End-to-end Extraction workflows', () => {
   });
 
   it('should update database if fields are extracted but no db entry exists', async () => {
-    const log = getServiceLogger('test-run');
+    const log = getBasicConsoleLogger('debug');
 
-    const spiderService = await createSpiderService();
+    const spiderService = await createSpiderService(log);
 
     const workflowServices: WorkflowServices = {
       spiderService,
@@ -102,7 +100,7 @@ describe('End-to-end Extraction workflows', () => {
       '/200~withFields',
     ];
 
-    await Async.eachOfSeries(exampleUrls, Async.asyncify(async (_url, exampleNumber) => {
+    await Async.eachOfSeries(exampleUrls, Async.asyncify(async (_url: string, exampleNumber: number) => {
       const alphaRec = mockAlphaRecord(1, _url);
       const { url } = alphaRec;
       await spiderService

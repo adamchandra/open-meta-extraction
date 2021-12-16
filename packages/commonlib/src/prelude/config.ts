@@ -1,5 +1,5 @@
 import path from 'path';
-import { makeHashEncodedPath } from '~/util/hash-encoded-paths';
+import { makeHashEncodedPath, HashEncodedPath } from '~/util/hash-encoded-paths';
 
 
 export const Env = {
@@ -33,9 +33,12 @@ export function getCorpusRootDir(): string {
   return path.resolve(corpusRoot);
 }
 
+export function getHashEncodedPath(url: string): HashEncodedPath {
+  return makeHashEncodedPath(url, 3);
+}
 export function getCorpusEntryDirForUrl(url: string): string {
   const corpusRoot = getCorpusRootDir();
-  const entryEncPath = makeHashEncodedPath(url, 3);
+  const entryEncPath = getHashEncodedPath(url);
   const entryPath = path.resolve(corpusRoot, entryEncPath.toPath());
   return entryPath;
 }
