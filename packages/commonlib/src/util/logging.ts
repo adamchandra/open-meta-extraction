@@ -16,6 +16,7 @@ const { cli } = config;
 
 export type TransportType = 'file' | 'console';
 
+
 export function createConsoleLogger(): Logger {
   return createLogger({
     level: 'info',
@@ -27,11 +28,20 @@ export function createConsoleLogger(): Logger {
 }
 
 export function setLogLabel(log: Logger, label: string) {
+  // setLogLabels(log, label);
   log.format = format.combine(
     format.label({ label, message: true })
   );
 }
 
+// export function setLogLabels(log: Logger, label: string) {
+//   _.each(
+//     log.transports, t => {
+//       // console.log('setting transport', t);
+//       t.format = format.label({ label, message: true })
+//     }
+//   );
+// }
 export function setLogLevel(log: Logger, transportType: TransportType, level: string) {
   _.each(
     log.transports, t => {

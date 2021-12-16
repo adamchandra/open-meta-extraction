@@ -1,11 +1,9 @@
-import 'chai/register-should';
-
 import _ from 'lodash';
 import path from 'path';
 
-import { prettyPrint, throughFunc, } from '@watr/commonlib';
-import { runTidyCmd, runTidyCmdBuffered } from './run-cmd-tidy-html';
-import { runFileCmd } from './run-cmd-file';
+import { throughFunc, } from '@watr/commonlib';
+import { runFileCmd, runTidyCmd, runTidyCmdBuffered } from './shell-commands';
+import { runPandocHtmlToMarkdown } from './shell-commands';
 
 describe('run command-line utils', () => {
   const testDirPath = './test/resources/htmls';
@@ -27,24 +25,33 @@ describe('run command-line utils', () => {
 
     await completePromise;
 
-    const head = lines.slice(0, 10);
-    prettyPrint({ msg: 'tidied file', head });
+    const lines4 = lines.slice(0, 4);
+    const padLeftLens = _.map(lines4, l => l.match(/^[ ]*/g)[0].length);
+    expect(padLeftLens).toStrictEqual([0, 0, 4, 8]);
+
   });
 
   it('should get file types using file cmd', async () => {
     const htmlFile = path.resolve(testDirPath, 'nospace.html');
 
     const fileType = await runFileCmd(htmlFile);
-    prettyPrint({ fileType });
+    expect(fileType).toBe('text/html; charset=utf-8')
   });
 
   it('should handle process err output', async () => {
     const htmlFile = path.resolve(testDirPath, 'nospace.html');
 
-    const [err, out, exitCode] = await runTidyCmdBuffered(configFile, htmlFile);
-    const err4 = err.slice(0, 4);
-    const out4 = out.slice(0, 4);
+    const [,out,] = await runTidyCmdBuffered(configFile, htmlFile);
 
-    prettyPrint({ err4, out4, exitCode });
+    const lines4 = out.slice(0, 4);
+    const padLeftLens = _.map(lines4, l => l.match(/^[ ]*/g)[0].length);
+    expect(padLeftLens).toStrictEqual([0, 0, 4, 8]);
+  });
+
+  it('should convert html -> markdown', async () => {
+    const htmlFile = path.resolve(testDirPath, 'neurips.response_body.html');
+    const lines = await runPandocHtmlToMarkdown(htmlFile);
+
+    expect(lines.length > 0).toBe(true);
   });
 });

@@ -8,7 +8,6 @@ import {
   prettyPrint
 } from '@watr/commonlib';
 import {
-  fetchOneRecord,
   runServicesInlineNoDB,
   WorkflowServices
 } from '~/workflow/workflow-services';

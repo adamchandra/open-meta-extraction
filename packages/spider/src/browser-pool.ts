@@ -1,9 +1,9 @@
 import gpool from 'generic-pool';
 import {
-  Browser,
+  Browser, Page,
 } from 'puppeteer';
 import { Logger } from 'winston';
-import { logBrowserEvent } from './page-event';
+import { logBrowserEvent, logPageEvents } from './page-event';
 
 import { launchBrowser } from './puppet';
 
@@ -19,6 +19,13 @@ export interface BrowserInstance {
   browser: Browser;
   logPrefix: string;
   createdAt: Date;
+  newPage(): Promise<PageInstance>;
+}
+
+export interface PageInstance {
+  page: Page;
+  logPrefix: string;
+  createdAt: Date;
 }
 
 export function createBrowserPool(logger: Logger): BrowserPool {
@@ -28,7 +35,16 @@ export function createBrowserPool(logger: Logger): BrowserPool {
         const browserInstance =  {
           browser,
           logPrefix,
-          createdAt: new Date()
+          createdAt: new Date(),
+          async newPage(): Promise<PageInstance> {
+            const page = await browser.newPage()
+            logPageEvents(page, logger);
+            return {
+              page,
+              logPrefix,
+              createdAt: new Date(),
+            }
+          }
         };
         logBrowserEvent(browserInstance, logger);
         return browserInstance

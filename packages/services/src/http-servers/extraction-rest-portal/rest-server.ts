@@ -20,7 +20,7 @@ export async function startRestPortal(
   const app = new Koa();
   const rootRouter = new Router();
 
-  const spiderService = await createSpiderService();
+  const spiderService = await createSpiderService(log);
   const workflowServices: WorkflowServices = {
     spiderService,
     log,

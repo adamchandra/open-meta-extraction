@@ -6,8 +6,6 @@ import {
   config,
 } from 'winston';
 
-import path from 'path';
-
 const { cli } = config;
 
 export function getServiceLogger(label: string): Logger {
@@ -46,37 +44,36 @@ export function getBasicConsoleLogger(level: string = 'info'): Logger {
 }
 
 
-export function getBasicLogger(
-  workingDirectory: string,
-  logfileName: string,
-  loglevel: string = 'info',
-): Logger {
-  const rootLoggingPath = path.resolve(workingDirectory);
+// export function getBasicLogger(
+//   workingDirectory: string,
+//   logfileName: string,
+//   loglevel: string = 'info',
+// ): Logger {
+//   const rootLoggingPath = path.resolve(workingDirectory);
 
-  const console = new transports.Console({
-    format: format.combine(
-      format.colorize(),
-      format.simple(),
-    ),
-    level: loglevel
-  });
+//   const console = new transports.Console({
+//     format: format.combine(
+//       format.colorize(),
+//       format.simple(),
+//     ),
+//     level: loglevel
+//   });
 
-  const logger = createLogger({
-    levels: cli.levels,
-    transports: [
-      console,
-      new transports.File({
-        filename: logfileName,
-        level: 'silly',
-        format: format.combine(
-          format.timestamp(),
-          format.json()
-        ),
-        dirname: rootLoggingPath,
-        tailable: true,
-      })
-    ],
-  });
-  return logger;
-}
-
+//   const logger = createLogger({
+//     levels: cli.levels,
+//     transports: [
+//       console,
+//       new transports.File({
+//         filename: logfileName,
+//         level: 'silly',
+//         format: format.combine(
+//           format.timestamp(),
+//           format.json()
+//         ),
+//         dirname: rootLoggingPath,
+//         tailable: true,
+//       })
+//     ],
+//   });
+//   return logger;
+// }

@@ -2,10 +2,41 @@ import { arglib, putStrLn } from '@watr/commonlib';
 import { getDBConfig } from '~/db/database';
 import { DatabaseContext, insertNewUrlChains } from '~/db/db-api';
 import { runMainBundleExtractedFields } from '~/extract/run-main';
-import { insertNewAlphaRecords } from './spider-service';
-import { fetchAllDBRecords } from './workflow-services';
+import { createAppLogger } from '~/http-servers/extraction-rest-portal/portal-logger';
+import { createSpiderService, insertNewAlphaRecords } from './spider-service';
+import { fetchAllDBRecords, makeSyntheticAlphaRec, runServicesInlineNoDB, WorkflowServices } from './workflow-services';
 
 const { opt, config, registerCmd } = arglib;
+
+registerCmd(
+  arglib.YArgs,
+  'run-workflow',
+  'Run the full spider -> extractor pipeline',
+  config(
+    opt.cwd,
+    opt.ion('url: URL to process', {
+      type: 'string',
+      required: true
+    })
+  )
+)(async (args: any) => {
+  const { url } = args;
+  const log = createAppLogger();
+  const dbCtx: DatabaseContext = undefined;
+
+  const spiderService = await createSpiderService(log);
+  const workflowServices: WorkflowServices = {
+    spiderService,
+    log,
+    dbCtx
+  };
+
+  const alphaRec = makeSyntheticAlphaRec(url);
+
+  await runServicesInlineNoDB(workflowServices, alphaRec);
+
+  log.info('Done');
+});
 
 registerCmd(
   arglib.YArgs,

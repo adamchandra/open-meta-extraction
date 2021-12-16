@@ -1,7 +1,7 @@
 import _ from 'lodash';
 
 import * as winston from 'winston';
-import { AlphaRecord, getCorpusEntryDirForUrl, prettyPrint } from '@watr/commonlib';
+import { AlphaRecord, getCorpusEntryDirForUrl, getHashEncodedPath, prettyPrint } from '@watr/commonlib';
 import { UrlFetchData } from '@watr/spider';
 import { CanonicalFieldRecords, extractFieldsForEntry, getCanonicalFieldRecord } from '~/extract/run-main';
 
@@ -21,6 +21,17 @@ interface ErrorRecord {
 }
 
 const ErrorRecord = (error: string): ErrorRecord => ({ error });
+
+export function makeSyntheticAlphaRec(url: string): AlphaRecord {
+  const hp  = getHashEncodedPath(url);
+  const title = url;
+  const noteId = hp.hashedSource;
+  return {
+    url,
+    noteId,
+    title,
+  };
+}
 
 export function getCanonicalFieldRecs(alphaRec: AlphaRecord): CanonicalFieldRecords | undefined {
   const { url } = alphaRec;
@@ -184,9 +195,9 @@ export async function fetchAllDBRecords(
   dbCtx: DatabaseContext,
   maxToFetch: number
 ): Promise<void> {
-  const spiderService = await createSpiderService();
-
   const log = getServiceLogger('workflow');
+
+  const spiderService = await createSpiderService(log);
 
   const workflowServices: WorkflowServices = {
     spiderService,
@@ -239,8 +250,6 @@ async function scrapeUrl(
     log.info(msg);
     return ErrorRecord(msg);
   }
-
-  prettyPrint({ metadata });
 
   await commitUrlFetchData(dbCtx, metadata);
 

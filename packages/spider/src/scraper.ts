@@ -6,8 +6,6 @@ import { writeCorpusJsonFile, writeCorpusTextFile, hasCorpusFile, putStrLn } fro
 
 import {
   HTTPResponse,
-  Page,
-  Browser,
   Frame
 } from 'puppeteer';
 
@@ -38,7 +36,7 @@ export async function initScraper(
     browserPool,
     async scrapeUrl(url: string): Promise<E.Either<string, UrlFetchData>> {
       const result = await browserPool.use(async (browserInstance: BrowserInstance) => {
-        return scrapeUrl(browserInstance.browser, url);
+        return scrapeUrl(browserInstance, url);
       });
       return result;
     },
@@ -50,7 +48,7 @@ export async function initScraper(
 }
 
 async function scrapeUrl(
-  browser: Browser,
+  browserInstance: BrowserInstance,
   url: string
 ): Promise<E.Either<string, UrlFetchData>> {
   const scrapingContext = createScrapingContext(url);
@@ -66,7 +64,7 @@ async function scrapeUrl(
     rootLogger.warn(`skipping ${url}: metadata file exists`);
     return;
   }
-  const page: Page = await browser.newPage();
+  const { page }  = await browserInstance.newPage();
   try {
     logPageEvents(page, scrapingContext.rootLogger);
 

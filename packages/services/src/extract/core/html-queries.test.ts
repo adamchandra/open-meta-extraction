@@ -4,7 +4,7 @@ import { isLeft, isRight } from 'fp-ts/Either';
 import { prettyPrint, putStrLn, stripMargin } from '@watr/commonlib';
 import Async from 'async';
 import { createBrowserPool } from '@watr/spider';
-import { selectElementAttr, queryOne, queryAll, expandCaseVariations } from './html-queries';
+import { selectElementAttr, queryOne, queryAll, expandCaseVariations, Elem } from './html-queries';
 import { createLogger, transports, format } from 'winston';
 
 const tmpHtml = stripMargin(`
@@ -67,7 +67,7 @@ describe('HTML jquery-like css queries', () => {
   });
 
   it('smokescreen', async () => {
-    await browserPool.use(async ({ browser }) => {
+    await browserPool.use(async ( browser ) => {
       const attr0 = await selectElementAttr(browser, tmpHtml, 'meta[name=citation_title]', 'content');
       const attr1 = await selectElementAttr(browser, tmpHtml, 'meta[name=citation_title]', 'content_');
       const attr2 = await selectElementAttr(browser, tmpHtml, 'meta[name=empty]', 'content');
@@ -89,7 +89,7 @@ describe('HTML jquery-like css queries', () => {
       ['meta[property="og:description"]', /success:/],
       ['a.show-pdf', /success:pdf/],
     ];
-    await browserPool.use(async ({ browser }) => {
+    await browserPool.use(async (browser) => {
       await Async.eachSeries(examples, Async.asyncify(async ([query, regexTest]) => {
         const maybeResult = await queryOne(browser, tmpHtml, query);
         if (isRight(maybeResult)) {
@@ -106,7 +106,7 @@ describe('HTML jquery-like css queries', () => {
     });
   });
 
-  it.only('should run assorted css multi-queries', async () => {
+  it('should run assorted css multi-queries', async () => {
     const examples: [string, RegExp[]][] = [
       // ['meta[name=citation_author]', [/Holte/, /Burch/]],
       ['meta[name="dc.Creator"]', [/Adam/]],
@@ -115,13 +115,13 @@ describe('HTML jquery-like css queries', () => {
     ];
 
 
-    await browserPool.use(async ({ browser }) => {
-      await Async.forEachOfSeries(examples, Async.asyncify(async ([query,], exampleNum) => {
+    await browserPool.use(async (browser) => {
+      await Async.forEachOfSeries(examples, Async.asyncify(async ([query,], exampleNum: number) => {
         const maybeResult = await queryAll(browser, tmpHtml, query);
         putStrLn(`Example #${exampleNum}`);
         if (isRight(maybeResult)) {
           const elems = maybeResult.right;
-          await Async.forEachOfSeries(elems, Async.asyncify(async (elem, index) => {
+          await Async.forEachOfSeries(elems, Async.asyncify(async (elem: Elem, index: number) => {
             const outerHtml = await elem.evaluate(e => e.outerHTML);
             prettyPrint({ query, outerHtml, result: index });
             // const regexTest: RegExp = _.get(regexTests, index);
@@ -137,8 +137,12 @@ describe('HTML jquery-like css queries', () => {
 
   it('should create all expansions', () => {
     const cases1 = expandCaseVariations('A.B.C', (n) => `meta[name="${n}"]`);
+    const expect1 = 'meta[name="A.B.C"],meta[name="A.B.c"],meta[name="A.b.C"],meta[name="A.b.c"],meta[name="a.B.C"],meta[name="a.B.c"],meta[name="a.b.C"],meta[name="a.b.c"]';
+    expect(cases1).toBe(expect1)
+
     const cases2 = expandCaseVariations('DC.Creator', (n) => `meta[name="${n}"]`);
-    // prettyPrint({ cases1, cases2 });
+    const expect2 = 'meta[name="DC.Creator"],meta[name="DC.creator"],meta[name="Dc.Creator"],meta[name="Dc.creator"],meta[name="dC.Creator"],meta[name="dC.creator"],meta[name="dc.Creator"],meta[name="dc.creator"]';
+    expect(cases2).toBe(expect2)
   });
 
   it('should downcase attributes', async () => {
@@ -149,12 +153,12 @@ describe('HTML jquery-like css queries', () => {
       ['meta[name~="dc.creator"],meta[name~="dc.Creator"]', [/Adam/, /adam/]],
     ];
 
-    await browserPool.use(async ({ browser }) => {
+    await browserPool.use(async (browser) => {
       await Async.eachSeries(examples, Async.asyncify(async ([query,]) => {
         const maybeResult = await queryAll(browser, tmpHtml, query);
         if (isRight(maybeResult)) {
           const elems = maybeResult.right;
-          await Async.forEachOfSeries(elems, Async.asyncify(async (elem, index) => {
+          await Async.forEachOfSeries(elems, Async.asyncify(async (elem: Elem, index: number) => {
             const outerHtml = await elem.evaluate(e => e.outerHTML);
             prettyPrint({ query, outerHtml, index });
             // const regexTest: RegExp = _.get(regexTests, index);

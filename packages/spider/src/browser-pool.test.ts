@@ -1,9 +1,7 @@
-
 import { createConsoleLogger } from '@watr/commonlib';
 import { createLogger, transports, format } from 'winston';
 import { BrowserInstance } from '.';
 import { createBrowserPool } from './browser-pool';
-import { logPageEvents } from './page-event';
 
 describe('browser pooling', () => {
   it.only('borrow/return to pool', async () => {
@@ -20,10 +18,9 @@ describe('browser pooling', () => {
 
     const browserInstance = await browserPool.acquire();
     await browserPool.release(browserInstance);
-    const { browser } = browserInstance;
-    const page = await browser.newPage();
+    // const { browser } = browserInstance;
+    const { page } = await browserInstance.newPage();
 
-    logPageEvents(page, logger);
 
     await page.goto('https://google.com/');
     await page.close();
@@ -38,10 +35,10 @@ describe('browser pooling', () => {
 
     console.log('pos.1');
 
-    await browserPool.use(async (browserInstance: BrowserInstance) => {
+    await browserPool.use(async (_browserInstance: BrowserInstance) => {
       console.log('pos.2');
       throw new Error('problem');
-    }).catch((err) => {
+    }).catch((_err) => {
       console.log('pos.4');
       console.log('but we are okay now...');
     });

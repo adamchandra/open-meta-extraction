@@ -24,6 +24,9 @@
   - [ ] Add REST endpoints to request all items that have been fixed/reprocessed since last
 
 
+- [ ] Run a "tracer bullet" test upon deployment, only allow rest endpoints if tests pass
+- [ ] Command line single url test app
+
 
 * Pros and Cons of running with Database backend
     The system may be run in a number of different ways, including:

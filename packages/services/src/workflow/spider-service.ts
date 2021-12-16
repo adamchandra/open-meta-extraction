@@ -15,25 +15,7 @@ import {
 
 import * as E from 'fp-ts/Either';
 import { DatabaseContext, insertAlphaRecords } from '~/db/db-api';
-import { createLogger, transports, format } from 'winston';
-
-function isUrl(str: string) {
-  if (typeof str !== 'string') {
-    throw new TypeError('Expected a string');
-  }
-
-  const trimmed = str.trim();
-  if (trimmed.includes(' ')) {
-    return false;
-  }
-
-  try {
-    new URL(trimmed);
-    return true;
-  } catch {
-    return false;
-  }
-}
+import { Logger } from 'winston';
 
 export interface SpiderService {
   crawlScheduler: CrawlScheduler;
@@ -43,16 +25,7 @@ export interface SpiderService {
   quit(): Promise<void>;
 }
 
-export async function createSpiderService(): Promise<SpiderService> {
-
-  const logger = createLogger({
-    level: 'debug',
-    format: format.json(),
-    transports: [
-      new transports.Console(),
-    ],
-  });
-
+export async function createSpiderService(logger: Logger): Promise<SpiderService> {
   const scraper = await initScraper(logger);
 
   const crawlScheduler = initCrawlScheduler();
@@ -79,7 +52,7 @@ export async function createSpiderService(): Promise<SpiderService> {
       return streamPump.createPump()
         .viaStream<string>(seedUrlStream)
         .throughF(async (urlString) => {
-          putStrLn(`url ${i} of ${urlCount}`);
+          logger.debug(`url ${i} of ${urlCount}`);
           i += 1;
           return scraper.scrapeUrl(urlString)
             .then((didScrape) => {
@@ -87,7 +60,7 @@ export async function createSpiderService(): Promise<SpiderService> {
                 return delay(1000);
               }
             })
-            .catch((error) => putStrLn('Error', error))
+            .catch((error) => logger.warn('Error', error))
           ;
         })
         .toReadableStream();
@@ -100,25 +73,25 @@ export async function createSpiderService(): Promise<SpiderService> {
   return service;
 }
 
-export async function runLocalSpider(
-  alphaRecordCsv: string,
-): Promise<void> {
-  const spiderService = await createSpiderService();
-  const inputStream = readAlphaRecStream(alphaRecordCsv);
+// export async function runLocalSpider(
+//   alphaRecordCsv: string,
+// ): Promise<void> {
+//   const spiderService = await createSpiderService();
+//   const inputStream = readAlphaRecStream(alphaRecordCsv);
 
-  const urlStream = streamPump.createPump()
-    .viaStream<AlphaRecord>(inputStream)
-    .throughF((inputRec: AlphaRecord) => {
-      const { url } = inputRec;
-      if (!isUrl(url)) {
-        putStrLn(`Warn: filtering non-valid url ${url}`);
-      }
-      return url;
-    })
-    .filter((url) => isUrl(url))
-    .toReadableStream();
-  await spiderService.run(urlStream);
-}
+//   const urlStream = streamPump.createPump()
+//     .viaStream<AlphaRecord>(inputStream)
+//     .throughF((inputRec: AlphaRecord) => {
+//       const { url } = inputRec;
+//       if (!isUrl(url)) {
+//         putStrLn(`Warn: filtering non-valid url ${url}`);
+//       }
+//       return url;
+//     })
+//     .filter((url) => isUrl(url))
+//     .toReadableStream();
+//   await spiderService.run(urlStream);
+// }
 
 export async function insertNewAlphaRecords(
   dbCtx: DatabaseContext,

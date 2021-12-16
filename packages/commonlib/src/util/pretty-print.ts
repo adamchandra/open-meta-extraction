@@ -160,7 +160,7 @@ export function prettyPrint(vsobj: any, options: Partial<InspectOptions> = {}): 
       const indentPad = ''.padEnd(maxlen);
       return `    ${indentPad}${l}`;
     }).join('\n');
-    const continuation = indented.length > 0? `\n${indented}` : '';
+    const continuation = indented.length > 0 ? `\n${indented}` : '';
     return `  ${prefixChar} ${p.padEnd(maxlen)}: ${ins0}${continuation}`;
   }), '\n');
 
@@ -168,15 +168,18 @@ export function prettyPrint(vsobj: any, options: Partial<InspectOptions> = {}): 
   putStrLn(output);
 }
 
+export function prettyFormat(v: any) {
+  if (_.isString(v)) {
+    return v;
+  }
+  return util.inspect(v, inspectOptionDefaults);
+}
+
 export function putStrLn(...vs: any[]) {
-  const fmts = _.map(vs, v => {
-    if (_.isString(v)) {
-      return v;
-    }
-    return util.inspect(v, inspectOptionDefaults);
-  });
+  const fmts = _.map(vs, v => prettyFormat(v));
   const fmt = fmts.join(' ');
   process.stdout.write(fmt);
   process.stdout.write('\n');
 }
+
 
