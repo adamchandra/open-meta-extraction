@@ -23,7 +23,6 @@ describe('Sorted Uniq Counting', () => {
     _.each(examples, (e) => {
       const res = sortedUniqCountBy(e.example);
       expect(res).toEqual(e.expect);
-      console.log(res);
     });
   });
 
@@ -36,7 +35,6 @@ describe('Sorted Uniq Counting', () => {
     _.each(examples, (e) => {
       const res = sortedUniqCountBy(e.example, e.f);
       expect(res).toEqual(e.expect);
-      console.log(res);
     });
   });
 });

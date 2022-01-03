@@ -1,5 +1,3 @@
-//
-// import 'chai';
 
 import _ from 'lodash';
 // import yargs from 'yargs';
@@ -18,7 +16,8 @@ describe('Arglib tests', () => {
       );
       const argtokens = args.split(' ');
       const allargs = _.concat(['testcmd'], argtokens);
-      prettyPrint({ allargs });
+
+      // prettyPrint({ allargs });
 
       YArgs
         .demandCommand(1, 'You need at least one command before moving on')
@@ -30,55 +29,46 @@ describe('Arglib tests', () => {
     });
   }
 
-  test('should properly print out argument errors', (done) => {
-    done();
+  test('should properly print out argument errors', () => {
+    // TODO
   });
 
   test('should register multiple commands', () => {
-    registerCmd(
-      YArgs,
-      'extract-abstracts',
-      'run the abstract field extractors over htmls in corpus',
-      config(
-        opt.cwd,
-        opt.existingDir('corpus-root: root directory for corpus files'),
-        opt.ion('overwrite: force overwrite of existing files', { boolean: false })
-      )
-    )((args: any) => {
-      prettyPrint({ msg: 'success!', args });
-    });
+    const commandNames = _.map(_.range(3), (i) => `Cmd${i}`);
+    const cmdsThatRan: string[] = [];
 
-    const args1 = 'extract-abstracts --cwd . --corpus-root a/b/c --overwrite'.split(' ');
-    // const args1b = 'extract-abstracts --cwd . --corpus-root . --overwrite'.split(' ');
+    _.each(commandNames, (cmdName) => {
+      registerCmd(YArgs, cmdName, `run ${cmdName}`,)(() => {
+        cmdsThatRan.push(cmdName);
+      });
+    })
 
-    registerCmd(
-      YArgs,
-      'c1',
-      'run c1',
-      opt.existingDir('dir: dir 0'),
-    )((args: any) => {
-      prettyPrint({ 'running cmd': args });
-    });
-    // const args2 = 'c1 --dir non-existent'.split(' ');
-
-    YArgs
+    const runner = YArgs
       .demandCommand(1, 'You need at least one command before moving on')
       .fail((msg, err, _yargs) => {
         const errmsg = err ? `${err.name}: ${err.message}` : '';
         prettyPrint({ msg, errmsg });
-      }).parse(args1);
+      });
+
+    _.each(commandNames, (cmdName) => {
+      runner.parse(cmdName)
+    });
+    expect(commandNames).toStrictEqual(cmdsThatRan);
   });
 
 
-  test('should resolve file/directory args', async () => {
-    const result = await runCmd(
-      '--cwd . --corpus-root df',
-      opt.cwd,
-      opt.existingDir('corpus-root: root directory for corpus files'),
-    ).catch(error => {
-      prettyPrint({ caughtErr: error });
-    });
 
-    prettyPrint({ result });
+  test('should resolve file/directory args', () => {
+    // const edir = opt.existingDir('corpus-root: root directory for corpus files');
+    // edir(argv)
+    // const result = await runCmd(
+    //   '--cwd . --corpus-root df',
+    //   opt.cwd,
+    //   opt.existingDir('corpus-root: root directory for corpus files'),
+    // ).catch(error => {
+    //   prettyPrint({ caughtErr: error });
+    // });
+
+    // prettyPrint({ result });
   });
 });

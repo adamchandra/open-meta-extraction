@@ -1,7 +1,4 @@
-//import 'chai';
-
 import _ from 'lodash';
-import { prettyPrint } from './pretty-print';
 
 import {
   createRadix,

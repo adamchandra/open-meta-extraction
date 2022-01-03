@@ -1,8 +1,5 @@
-//import 'chai';
 import _ from 'lodash';
-import { prettyPrint } from './pretty-print';
 import { getQualifiedKey, getQualifiedValue, toIQualifiedPaths, toQualifiedKeyValues, toQualifiedPath } from './to-pairs-deep';
-
 
 describe('toPairsDeep implementation', () => {
   const sampleRec: Record<string, any> = {
