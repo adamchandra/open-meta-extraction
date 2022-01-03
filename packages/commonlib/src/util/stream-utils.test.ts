@@ -1,5 +1,3 @@
-//import 'chai';
-
 
 import pumpify from 'pumpify';
 import util from 'util';

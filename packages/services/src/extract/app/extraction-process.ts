@@ -36,7 +36,6 @@ import { ExtractionEvidence, Field } from '../core/extraction-records';
 import { runTidyCmdBuffered, runFileCmd } from '~/utils/shell-commands';
 import { Elem, expandCaseVariations, queryAllP, queryOneP, selectElementAttrP } from '../core/html-queries';
 
-
 import { GlobalDocumentMetadata } from './ieee-metadata';
 import { AbstractCleaningRules, CleaningRule, CleaningRuleResult } from './data-clean-abstracts';
 

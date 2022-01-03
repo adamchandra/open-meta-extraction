@@ -1,7 +1,7 @@
 * Open Extraction Works
   A set of services to spider and extract metadata (abstracts, titles, authors, pdf links) from URLs.
 
-  Most services may be run individually as command line applications, or as an integrated pipeline with a REST API
+  Services may be run individually as command line applications, or as an integrated pipeline with a REST API
 
 ** Commandline Applications
 *** Spidering

@@ -53,7 +53,7 @@ const tmpHtml = stripMargin(`
 describe('HTML jquery-like css queries', () => {
 
   const logger = createLogger({
-    level: 'debug',
+    level: 'warn',
     format: format.json(),
     transports: [
       new transports.Console(),

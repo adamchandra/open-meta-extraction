@@ -1,5 +1,3 @@
-//
-//import 'chai';
 import _ from 'lodash';
 import path from 'path';
 import fs from 'fs-extra';
@@ -13,8 +11,6 @@ import {
 
 import * as winston from 'winston';
 
-import { Transports, Console, File } from 'winston/lib/winston/transports';
-import { prettyPrint } from './pretty-print';
 import { getConsoleAndFileLogger, setLogLabel, setLogLevel } from './logging';
 
 const { cli } = winston.config;
