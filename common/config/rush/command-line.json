@@ -57,6 +57,14 @@
       "description": "Check dependency version using ncu (npm i -g ncu)",
       "safeForSimultaneousRushProcesses": false
     },
+    {
+      "name": "deps:unused",
+      "commandKind": "global",
+      "shellCommand": "npx depcheck packages/*",
+      "summary": "Check for unused dependencies",
+      "description": "Check for unused dependencies",
+      "safeForSimultaneousRushProcesses": false
+    },
   ],
 
   /**

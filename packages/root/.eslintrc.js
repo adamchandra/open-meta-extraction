@@ -36,10 +36,6 @@ module.exports = {
         },
 
         rules: {
-                '@typescript-eslint/no-this-alias': ['error', {
-                        allowDestructuring: true, // Allow `const { props, state } = this`; false by default
-                        allowedNames: ['self'] // Allow `const self = this`; `[]` by default
-                }],
                 /////////////////
                 /// Desired Rules
                 '@typescript-eslint/lines-between-class-members': ['off'],
@@ -52,6 +48,15 @@ module.exports = {
                 'unicorn/prefer-node-protocol': ['off'],
                 // 'object-curly-newline': ["error", { "multiline": true }],
                 'object-curly-newline': ['off'],
+                'implicit-arrow-linebreak': ['off'],
+                'object-property-newline': ['off'],
+                'unicorn/no-this-assignment': ['off'],
+                'unicorn/no-array-method-this-argument': ['off'],
+                '@typescript-eslint/no-this-alias': ['error', {
+                        allowDestructuring: true, // Allow `const { props, state } = this`; false by default
+                        allowedNames: ['self'] // Allow `const self = this`; `[]` by default
+                }],
+
 
                 // Disabled b/c it interferes with idomatic identical naming of type/const value in io-types decoders
                 // '@typescript-eslint/no-redeclare': ['error', { ignoreDeclarationMerge: true }],

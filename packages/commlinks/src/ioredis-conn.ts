@@ -12,7 +12,7 @@ export const RedisConnectionEvents = [
 ];
 
 export function newRedis(name: string, opts?: Redis.RedisOptions): Redis.Redis {
-  const isDockerized = process.env['DOCKERIZED'] === 'true';
+  const isDockerized = process.env.DOCKERIZED === 'true';
   const host = isDockerized ? 'redis' : 'localhost';
   const allOpts = _.merge({}, { host }, opts);
   const client = new Redis(allOpts);

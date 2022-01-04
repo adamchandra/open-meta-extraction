@@ -2,7 +2,7 @@ import _ from 'lodash';
 import Redis from 'ioredis';
 import Async from 'async';
 import winston from 'winston';
-import { getServiceLogger } from '@watr/commonlib';
+import { getServiceLogger, newIdGenerator } from '@watr/commonlib';
 import {
   MessageHandlers,
   DispatchHandlers,
@@ -17,7 +17,6 @@ import {
 } from './service-defs';
 
 import { newRedis } from './ioredis-conn';
-import { newIdGenerator } from '@watr/commonlib';
 
 export interface ServiceComm<T> {
   name: string;
@@ -65,7 +64,6 @@ function getMessageHandlers<T>(
 const nextId = newIdGenerator(1);
 
 export function newServiceComm<This>(name: string): ServiceComm<This> {
-
   const serviceComm: ServiceComm<This> = {
     name,
     subscriber: newRedis(name),
@@ -89,7 +87,7 @@ export function newServiceComm<This>(name: string): ServiceComm<This> {
       const responseP = new Promise<A>((resolve) => {
         self.addHandler(
           `${yieldId}:.*:${this.name}>yielded`,
-          async function(msg) {
+          async (msg) => {
             if (msg.kind !== 'yielded') return;
             resolve(msg.value);
           });
@@ -102,7 +100,7 @@ export function newServiceComm<This>(name: string): ServiceComm<This> {
     async send(msg: Message): Promise<void> {
       const addr = Address(
         msg, { from: name }
-      )
+      );
       const packedMsg = Message.pack(addr);
 
       if (this.isShutdown) {
@@ -121,12 +119,12 @@ export function newServiceComm<This>(name: string): ServiceComm<This> {
       const all = {
         ...this.dispatchHandlers,
         ...dispatches,
-      }
+      };
       this.dispatchHandlers = all;
     },
 
     addHandlers(messageHandlers: MessageHandlerRec<This>): void {
-      const pairs = _.toPairs(messageHandlers)
+      const pairs = _.toPairs(messageHandlers);
       this.messageHandlers.push(...pairs);
     },
 
@@ -138,8 +136,8 @@ export function newServiceComm<This>(name: string): ServiceComm<This> {
       const self = this;
 
       return new Promise((resolve, reject) => {
-        const subscriber = self.subscriber;
-        const log = self.log;
+        const { subscriber } = self;
+        const { log } = self;
 
         subscriber.on('message', (channel: string, packedMsg: string) => {
           log.verbose(`${name} received> ${packedMsg}`);
@@ -149,24 +147,24 @@ export function newServiceComm<This>(name: string): ServiceComm<This> {
           const handlersForMessage = getMessageHandlers<This>(message, packedMsg, serviceComm, serviceT);
 
           Async.mapSeries(handlersForMessage, async (handler) => handler())
-            .catch((err) => {
-              log.warn(`> ${packedMsg} on ${channel}: ${err}`)
+            .catch((error) => {
+              log.warn(`> ${packedMsg} on ${channel}: ${error}`);
             });
         });
 
         subscriber.subscribe(`${name}`)
           .then(() => log.info(`${name}> connected`))
           .then(() => resolve())
-          .catch((err) => {
-            log.error(`subscribe> ${err}`)
-            reject(`${name} subscribe> ${err}`)
+          .catch((error) => {
+            log.error(`subscribe> ${error}`);
+            reject(new Error(`${name} subscribe> ${error}`));
           });
       });
     },
     async quit(): Promise<void> {
       const self = this;
       return new Promise((resolve) => {
-        self.subscriber.on('end', () => resolve())
+        self.subscriber.on('end', () => resolve());
         self.isShutdown = true;
         self.subscriber.quit();
       });

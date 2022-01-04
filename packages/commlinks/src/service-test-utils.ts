@@ -1,6 +1,6 @@
 import _ from 'lodash';
-import { defineSatelliteService, createSatelliteService, SatelliteService, ServiceHub, createHubService } from './service-hub';
 import Async from 'async';
+import { defineSatelliteService, createSatelliteService, SatelliteService, ServiceHub, createHubService } from './service-hub';
 import { newServiceComm, ServiceComm } from './service-comm';
 import { Message } from './service-defs';
 
@@ -44,22 +44,22 @@ export async function createTestServiceHub(
     const packed = Message.pack(msg);
     const logmsg = `${svcName}: ${packed}`;
     runLog.push(logmsg);
-  }
+  };
 
   const satelliteServices = await Async.map<string, SatelliteService<void>, Error>(
     serviceNames,
     async (serviceName) => {
       const serviceDef = defineSatelliteService<void>(
-        async () => undefined, {
+        async () => {}, {
           async run() {
-            this.log.info(`${this.serviceName} [run]> payload=??? `)
+            this.log.info(`${this.serviceName} [run]> payload=??? `);
           },
-      });
+        });
 
       const satService = await createSatelliteService(hubName, serviceName, serviceDef);
-      satService.commLink.addHandlers( {
-        async '.*'(msg) {
-          recordLogMsgHandler(serviceName)(msg)
+      satService.commLink.addHandlers({
+        '.*': async function(msg) {
+          recordLogMsgHandler(serviceName)(msg);
         }
       });
       return satService;
@@ -67,8 +67,8 @@ export async function createTestServiceHub(
 
   const [hubPool, connectHub] = await createHubService(hubName, serviceNames);
 
-  hubPool.commLink.addHandlers( {
-    async '.*'(msg) {
+  hubPool.commLink.addHandlers({
+    '.*': async function(msg) {
       recordLogMsgHandler(hubPool.name)(msg);
     }
   });
@@ -85,6 +85,6 @@ export function assertAllStringsIncluded(expectedStrings: string[], actualString
       console.log('NO Matching Entry for', str);
     }
     return someMatch;
-  })
+  });
   return atLeastOneMatchPerRegexp;
 }

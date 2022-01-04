@@ -1,4 +1,4 @@
-//import 'chai/register-should';
+// import 'chai/register-should';
 
 import _ from 'lodash';
 import * as Tree from 'fp-ts/lib/Tree';

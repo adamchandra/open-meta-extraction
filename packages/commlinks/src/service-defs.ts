@@ -20,11 +20,10 @@ export interface Dispatch {
 }
 
 
-export const Dispatch = (func: string, arg: any) =>
-  <Dispatch>{
-    kind: 'dispatch',
-    func, arg
-  };
+export const Dispatch = (func: string, arg: any) => <Dispatch>{
+  kind: 'dispatch',
+  func, arg
+};
 
 export interface Yielded {
   kind: 'yielded';
@@ -100,7 +99,7 @@ export const Address = (body: Message | MessageBody, headers: Partial<Headers>) 
     from: '', to: '', id: 0
   };
   return _.merge({}, body, defaultHeaders, headers);
-}
+};
 
 export interface Headers extends Address {
   id: number;
@@ -120,7 +119,7 @@ export const Message = {
     };
     return _.merge({}, body, defaultHeaders, headers);
   }
-}
+};
 
 export function packMessageBody(message: MessageBody): string {
   switch (message.kind) {
@@ -158,22 +157,22 @@ export function packMessageBody(message: MessageBody): string {
 }
 
 export function unpackMessageBody(packedMessage: string): MessageBody {
-  const slashIndex = packedMessage.indexOf('/')
+  const slashIndex = packedMessage.indexOf('/');
   let msgKind = packedMessage;
   let body = '';
 
   if (slashIndex > 0) {
-    msgKind = packedMessage.substr(0, slashIndex);
-    body = packedMessage.substr(slashIndex + 1);
+    msgKind = packedMessage.slice(0, Math.max(0, slashIndex));
+    body = packedMessage.slice(slashIndex + 1);
   }
 
   let unpackedMsg: MessageBody;
 
   switch (msgKind) {
     case 'dispatch': {
-      const divider = body.indexOf(':')
-      const func = body.substr(0, divider);
-      const argstr = body.substr(divider + 1);
+      const divider = body.indexOf(':');
+      const func = body.slice(0, Math.max(0, divider));
+      const argstr = body.slice(divider + 1);
       const arg = parseJson(argstr);
       unpackedMsg = {
         kind: msgKind,
@@ -213,7 +212,7 @@ export function unpackMessageBody(packedMessage: string): MessageBody {
       break;
     default:
       putStrLn(`Default:Could not unpack Message ${packedMessage}`);
-      throw new Error(`Could not unpack Message payload ${packedMessage}`)
+      throw new Error(`Could not unpack Message payload ${packedMessage}`);
   }
 
   return unpackedMsg;
@@ -225,8 +224,8 @@ export function updateHeaders(message: Message, headers: Partial<Headers>): Mess
 
 
 export function unpackHeaders(headers: string): Headers {
-  const [ids, to, from] = headers.split(/:/)
-  const id = parseInt(ids, 10);
+  const [ids, to, from] = headers.split(/:/);
+  const id = Number.parseInt(ids, 10);
   return { id, to, from };
 }
 export function packHeaders(message: Message): string {
@@ -243,9 +242,9 @@ export function packMessage(message: Message): string {
 
 
 export function unpackMessage(packed: string): Message & Address {
-  const divider = packed.indexOf('>')
-  const hdrs = packed.substr(0, divider).trim();
-  const message = packed.substr(divider + 1).trim();
+  const divider = packed.indexOf('>');
+  const hdrs = packed.slice(0, Math.max(0, divider)).trim();
+  const message = packed.slice(divider + 1).trim();
 
   const headers: Headers = unpackHeaders(hdrs);
   const body: MessageBody = unpackMessageBody(message);

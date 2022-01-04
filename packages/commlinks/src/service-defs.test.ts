@@ -21,10 +21,5 @@ describe('Service Communication Hub lifecycle', () => {
       // prettyPrint({ packedMsg, unpackedMsg });
       expect(unpackedMsg).toStrictEqual(addressed);
     });
-
-
-
   });
-
-
 });

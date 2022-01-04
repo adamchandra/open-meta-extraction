@@ -4,7 +4,6 @@ import { diffByChars } from './string-utils';
 import { prettyPrint } from './pretty-print';
 
 describe('String utils', () => {
-
   it('should diff strings', () => {
     const stra = 'the cat in the hat';
     const strb = 'The cat   in the hatchet. [Extra]';

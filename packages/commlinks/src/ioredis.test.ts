@@ -1,11 +1,9 @@
-
 import _ from 'lodash';
 import Redis from 'ioredis';
 import { putStrLn } from '@watr/commonlib';
 
 describe('IORedis library tests and examples', () => {
-
-  it('should do async set/get ', async () => {
+  it('should do async set/get', async () => {
     const rclient = new Redis();
     await rclient.set('mykey', 'my-value')
       .catch((error) => {
@@ -47,7 +45,7 @@ describe('IORedis library tests and examples', () => {
     rclient.publish('exit', 'quit');
   });
 
-  // it.only('pass function arguments', async (done) => {
+  // ('pass function arguments', async (done) => {
 
   //   const exitClient = new Redis();
   //   const rclient = new Redis();
@@ -87,5 +85,4 @@ describe('IORedis library tests and examples', () => {
   //   rclient.publish('exit', 'quit');
 
   // });
-
 });

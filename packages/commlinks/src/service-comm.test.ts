@@ -7,7 +7,7 @@ import { chainServices } from './service-chain';
 import { createTestServices } from './service-test-utils';
 
 
-describe('Redis-based Service Communication ', () => {
+describe('Redis-based Service Communication', () => {
   process.env['service-comm.loglevel'] = 'info';
 
   interface MsgArg {
@@ -17,7 +17,6 @@ describe('Redis-based Service Communication ', () => {
 
 
   it('should push message and promise response', async (done) => {
-
     const testServices = await createTestServices(3);
     const commLinks = _.map(testServices, ts => ts.commLink);
 
@@ -39,7 +38,7 @@ describe('Redis-based Service Communication ', () => {
     const allChains = _.map(_.range(2), n => {
       const initMsg: MsgArg = {
         callees: [],
-        which:n
+        which: n
       };
 
       return commLink0.yield(initMsg);
@@ -48,12 +47,11 @@ describe('Redis-based Service Communication ', () => {
     await Promise.all(allChains)
       .then((results) => {
         prettyPrint({ results });
-      })
+      });
 
 
     const quitting = _.map(testServices, s => s.commLink.quit());
     await Promise.all(quitting);
     done();
   });
-
 });

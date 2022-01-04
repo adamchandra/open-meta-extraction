@@ -182,4 +182,3 @@ export function putStrLn(...vs: any[]) {
   process.stdout.write('\n');
 }
 
-

@@ -72,8 +72,8 @@ describe('Logging', () => {
     setLogLabel(log, '/foo/bar');
     log.info('foobar!');
 
-    const childlog = log.child({})
-    setLogLabel(childlog, 'childLabel')
+    const childlog = log.child({});
+    setLogLabel(childlog, 'childLabel');
 
     log.info('foobar/baz');
     childlog.info('child:bar/baz');
