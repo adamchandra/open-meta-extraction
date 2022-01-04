@@ -1,6 +1,6 @@
 import { runCmdBuffered } from './run-command';
-import { TransformProcess } from '@watr/commonlib';
 import { bufferCmdOutput, runCmd, StdErrAndStdOutLines } from './run-command';
+import { TransformProcess } from './stream-utils';
 
 export async function runFileCmd(
   infile: string

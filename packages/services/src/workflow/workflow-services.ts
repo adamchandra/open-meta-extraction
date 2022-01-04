@@ -3,10 +3,10 @@ import _ from 'lodash';
 import * as winston from 'winston';
 import { AlphaRecord, getCorpusEntryDirForUrl, getHashEncodedPath } from '@watr/commonlib';
 import { UrlFetchData } from '@watr/spider';
-import { CanonicalFieldRecords, extractFieldsForEntry, getCanonicalFieldRecord } from '~/extract/run-main';
+import { CanonicalFieldRecords, extractFieldsForEntry, getCanonicalFieldRecord } from '@watr/field-extractors';
 import { createSpiderService, SpiderService } from './spider-service';
 import { commitUrlFetchData, commitUrlStatus, DatabaseContext, getNextUrlForSpidering, getUrlStatus, insertAlphaRecords, insertNewUrlChains } from '~/db/db-api';
-import { getServiceLogger } from '~/utils/basic-logging';
+import { getServiceLogger } from '@watr/commonlib';
 
 export interface WorkflowServices {
   log: winston.Logger;

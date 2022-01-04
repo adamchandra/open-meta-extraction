@@ -1,6 +1,7 @@
 export * from './corpora/corpus-file-walkers';
 export * from './corpora/dirstream';
 export * from './util/logging';
+export * from './util/basic-logging';
 export * from './util/parse-csv';
 export * from './util/pretty-print';
 export * from './util/stream-utils';
@@ -9,6 +10,8 @@ export * from './util/to-pairs-deep';
 export * from './util/tree-shapers';
 export * from './util/utils';
 export * from './util/hash-encoded-paths';
+export * from './util/run-command';
+export * from './util/shell-commands';
 export * from './prelude/config';
 export * from './prelude/types';
 

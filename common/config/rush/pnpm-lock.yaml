@@ -5,6 +5,7 @@ specifiers:
   '@babel/core': ~7.16.5
   '@rush-temp/commlinks': file:./projects/commlinks.tgz
   '@rush-temp/commonlib': file:./projects/commonlib.tgz
+  '@rush-temp/field-extractors': file:./projects/field-extractors.tgz
   '@rush-temp/root': file:./projects/root.tgz
   '@rush-temp/services': file:./projects/services.tgz
   '@rush-temp/spider': file:./projects/spider.tgz
@@ -57,6 +58,7 @@ specifiers:
   got: ^12.0.0
   io-ts: ^2.2.16
   ioredis: ~4.28.2
+  jest: ^27.4.5
   json-server: ^0.17.0
   koa: ^2.13.4
   koa-body: ^4.2.0
@@ -92,6 +94,7 @@ dependencies:
   '@babel/core': 7.16.5
   '@rush-temp/commlinks': file:projects/commlinks.tgz_ts-node@10.4.0
   '@rush-temp/commonlib': file:projects/commonlib.tgz_ts-node@10.4.0
+  '@rush-temp/field-extractors': file:projects/field-extractors.tgz_ts-node@10.4.0
   '@rush-temp/root': file:projects/root.tgz_bad060d5f9aca5284661d88d739ba15b
   '@rush-temp/services': file:projects/services.tgz
   '@rush-temp/spider': file:projects/spider.tgz_ts-node@10.4.0
@@ -132,7 +135,7 @@ dependencies:
   eslint-config-airbnb-typescript: 16.1.0_db17c1cd823464615d1b2a2ccbaa2bcd
   eslint-plugin-eslint-comments: 3.2.0_eslint@7.32.0
   eslint-plugin-import: 2.25.3_eslint@7.32.0
-  eslint-plugin-jest: 25.3.2_ee3e17627a604bdcd52c4899dc40369c
+  eslint-plugin-jest: 25.3.2_cb89563c1569ba9a7bcfafeae90b710b
   eslint-plugin-jsx-a11y: 6.5.1_eslint@7.32.0
   eslint-plugin-promise: 6.0.0_eslint@7.32.0
   eslint-plugin-react: 7.28.0_eslint@7.32.0
@@ -144,6 +147,7 @@ dependencies:
   got: 12.0.0
   io-ts: 2.2.16_fp-ts@2.11.5
   ioredis: 4.28.2
+  jest: 27.4.5_ts-node@10.4.0
   json-server: 0.17.0
   koa: 2.13.4
   koa-body: 4.2.0
@@ -166,7 +170,7 @@ dependencies:
   sequelize: 6.12.4_pg-hstore@2.3.4+pg@8.7.1
   split: 1.0.1
   through2: 4.0.2
-  ts-jest: 27.1.2_24fdfe484686a30e241d7838d306eeef
+  ts-jest: 27.1.2_74e72b7f85e96f32ccb95040fb15ae13
   ts-node: 10.4.0_bad060d5f9aca5284661d88d739ba15b
   tslib: 2.3.1
   typescript: 4.5.4
@@ -2785,27 +2789,6 @@ packages:
       '@typescript-eslint/experimental-utils': 5.7.0_eslint@7.32.0+typescript@4.5.4
       eslint: 7.32.0
       jest: 27.4.5_ts-node@10.4.0
-    transitivePeerDependencies:
-      - supports-color
-      - typescript
-    dev: false
-
-  /eslint-plugin-jest/25.3.2_ee3e17627a604bdcd52c4899dc40369c:
-    resolution: {integrity: sha512-1aPC7RRJkMCNgklHMDECw8fnzag3JBH53LaxmFkDTR7+PfMCO5V6f8XFRHoT2I+Fr4pVO9cPdRGlf7/haB2O5Q==}
-    engines: {node: ^12.13.0 || ^14.15.0 || >=16.0.0}
-    peerDependencies:
-      '@typescript-eslint/eslint-plugin': ^4.0.0 || ^5.0.0
-      eslint: ^6.0.0 || ^7.0.0 || ^8.0.0
-      jest: '*'
-    peerDependenciesMeta:
-      '@typescript-eslint/eslint-plugin':
-        optional: true
-      jest:
-        optional: true
-    dependencies:
-      '@typescript-eslint/eslint-plugin': 5.8.1_8770ffbed38944eeb584744ab0d5f040
-      '@typescript-eslint/experimental-utils': 5.7.0_eslint@7.32.0+typescript@4.5.4
-      eslint: 7.32.0
     transitivePeerDependencies:
       - supports-color
       - typescript
@@ -6743,40 +6726,6 @@ packages:
     resolution: {integrity: sha512-XrHUvV5HpdLmIj4uVMxHggLbFSZYIn7HEWsqePZcI50pco+MPqJ50wMGY794X7AOOhxOBAjbkqfAbEe/QMp2Lw==}
     dev: false
 
-  /ts-jest/27.1.2_24fdfe484686a30e241d7838d306eeef:
-    resolution: {integrity: sha512-eSOiJOWq6Hhs6Khzk5wKC5sgWIXgXqOCiIl1+3lfnearu58Hj4QpE5tUhQcA3xtZrELbcvAGCsd6HB8OsaVaTA==}
-    engines: {node: ^10.13.0 || ^12.13.0 || ^14.15.0 || >=15.0.0}
-    hasBin: true
-    peerDependencies:
-      '@babel/core': '>=7.0.0-beta.0 <8'
-      '@types/jest': ^27.0.0
-      babel-jest: '>=27.0.0 <28'
-      esbuild: ~0.14.0
-      jest: ^27.0.0
-      typescript: '>=3.8 <5.0'
-    peerDependenciesMeta:
-      '@babel/core':
-        optional: true
-      '@types/jest':
-        optional: true
-      babel-jest:
-        optional: true
-      esbuild:
-        optional: true
-    dependencies:
-      '@babel/core': 7.16.5
-      '@types/jest': 27.4.0
-      bs-logger: 0.2.6
-      fast-json-stable-stringify: 2.1.0
-      jest-util: 27.4.2
-      json5: 2.2.0
-      lodash.memoize: 4.1.2
-      make-error: 1.3.6
-      semver: 7.3.5
-      typescript: 4.5.4
-      yargs-parser: 20.2.9
-    dev: false
-
   /ts-jest/27.1.2_74e72b7f85e96f32ccb95040fb15ae13:
     resolution: {integrity: sha512-eSOiJOWq6Hhs6Khzk5wKC5sgWIXgXqOCiIl1+3lfnearu58Hj4QpE5tUhQcA3xtZrELbcvAGCsd6HB8OsaVaTA==}
     engines: {node: ^10.13.0 || ^12.13.0 || ^14.15.0 || >=15.0.0}
@@ -7391,8 +7340,43 @@ packages:
       - utf-8-validate
     dev: false
 
+  file:projects/field-extractors.tgz_ts-node@10.4.0:
+    resolution: {integrity: sha512-JG+5QSbcv7a4yW/phcEmTatmfF11QEiT4frKRqgUn1BDOxnVU/bKO0UmvTW/pAV9QAHpBFy2HI3FOOvMxeIJmw==, tarball: file:projects/field-extractors.tgz}
+    id: file:projects/field-extractors.tgz
+    name: '@rush-temp/field-extractors'
+    version: 0.0.0
+    dependencies:
+      '@types/async': 3.2.12
+      '@types/chai': 4.3.0
+      '@types/jest': 27.4.0
+      '@types/lodash': 4.14.178
+      '@types/node': 17.0.5
+      '@types/puppeteer': 5.4.4
+      '@types/url-parse': 1.4.6
+      async: 3.2.2
+      chai: 4.3.4
+      eslint: 7.32.0
+      fp-ts: 2.11.5
+      fs-extra: 10.0.0
+      jest: 27.4.5_ts-node@10.4.0
+      lodash: 4.17.21
+      puppeteer: 13.0.1
+      puppeteer-extra: 3.2.3_puppeteer@13.0.1
+      tslib: 2.3.1
+      typescript: 4.5.4
+      url-parse: 1.5.4
+      winston: 3.3.3
+    transitivePeerDependencies:
+      - bufferutil
+      - canvas
+      - node-notifier
+      - supports-color
+      - ts-node
+      - utf-8-validate
+    dev: false
+
   file:projects/root.tgz_bad060d5f9aca5284661d88d739ba15b:
-    resolution: {integrity: sha512-+fAhDggnhKd5okS7hq7k+erbhWHYPjgC6xDW91DtpCdxf+E6+RlQJjC5vL99suf4GwI16NJfErMCUphGg5GIig==, tarball: file:projects/root.tgz}
+    resolution: {integrity: sha512-oaCAjJ/UEiZ7mAN5hj5G8NZ3txukf3uV9pg97oIcXL3We2gP43ClZhe0fQCKeOlTiNiFtRgVjZGTggXImAnOug==, tarball: file:projects/root.tgz}
     id: file:projects/root.tgz
     name: '@rush-temp/root'
     version: 0.0.0
@@ -7433,7 +7417,7 @@ packages:
     dev: false
 
   file:projects/services.tgz:
-    resolution: {integrity: sha512-72c6u4G/xXOIEpKO7v4b5HNvjLaUdLYhvWLk91zHqjav0+j3byhd3Cr5Fip2a/0sBs3fBmBeA3ra2QqSq2VYNA==, tarball: file:projects/services.tgz}
+    resolution: {integrity: sha512-XYGegrJnO3xCyQt3HNfDUGB04AScuYtEAW79EHdaqmmp9K9JZsIhMyynd0ovzOOvA6oVg0dWJZuvWS/s2C3SiQ==, tarball: file:projects/services.tgz}
     name: '@rush-temp/services'
     version: 0.0.0
     dependencies:

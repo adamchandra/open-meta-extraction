@@ -33,7 +33,7 @@ import {
 
 
 import { ExtractionEvidence, Field } from '../core/extraction-records';
-import { runTidyCmdBuffered, runFileCmd } from '~/utils/shell-commands';
+import { runTidyCmdBuffered, runFileCmd } from '@watr/commonlib';
 import { Elem, expandCaseVariations, queryAllP, queryOneP, selectElementAttrP } from '../core/html-queries';
 
 import { GlobalDocumentMetadata } from './ieee-metadata';
