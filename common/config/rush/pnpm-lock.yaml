@@ -54,6 +54,7 @@ specifiers:
   generic-pool: ~3.8.2
   got: ^12.0.0
   io-ts: ^2.2.16
+  ioredis: ~4.28.2
   json-server: ^0.17.0
   koa: ^2.13.4
   koa-body: ^4.2.0
@@ -138,6 +139,7 @@ dependencies:
   generic-pool: 3.8.2
   got: 12.0.0
   io-ts: 2.2.16_fp-ts@2.11.5
+  ioredis: 4.28.2
   json-server: 0.17.0
   koa: 2.13.4
   koa-body: 4.2.0
@@ -1055,6 +1057,12 @@ packages:
 
   /@types/http-errors/1.8.1:
     resolution: {integrity: sha512-e+2rjEwK6KDaNOm5Aa9wNGgyS9oSZU/4pfSMMPYNOfjvFI0WVXm29+ITRFr6aKDvvKo7uU1jV68MW4ScsfDi7Q==}
+    dev: false
+
+  /@types/ioredis/4.28.6:
+    resolution: {integrity: sha512-oD2Dr1lyXgqWC0bQooZlqPGq5lgl/47uSa3YADTLbtnT+RU82nn/9qhejCbuoSmTcqE23vmsdihg2tcA8Vw1Dw==}
+    dependencies:
+      '@types/node': 17.0.5
     dev: false
 
   /@types/istanbul-lib-coverage/2.0.3:
@@ -2076,6 +2084,11 @@ packages:
       mimic-response: 1.0.1
     dev: false
 
+  /cluster-key-slot/1.1.0:
+    resolution: {integrity: sha512-2Nii8p3RwAPiFwsnZvukotvow2rIHM+yQ6ZcBXGHdniadkYGZYiGmkHJIbZPIV9nfv7m/U1IPMVVcAhoWFeklw==}
+    engines: {node: '>=0.10.0'}
+    dev: false
+
   /co-body/5.2.0:
     resolution: {integrity: sha512-sX/LQ7LqUhgyaxzbe7IqwPeTr2yfpfUIQ/dgpKo6ZI4y4lpQA0YxAomWIY+7I7rHWcG02PG+OuPREzMW/5tszQ==}
     dependencies:
@@ -2431,6 +2444,11 @@ packages:
 
   /delegates/1.0.0:
     resolution: {integrity: sha1-hMbhWbgZBP3KWaDvRM2HDTElD5o=}
+    dev: false
+
+  /denque/1.5.1:
+    resolution: {integrity: sha512-XwE+iZ4D6ZUB7mfYRMb5wByE8L74HCn30FBN7sWnXksWc1LO1bPDl67pBR9o/kC4z/xSNAwkMYcGgqDV3BE3Hw==}
+    engines: {node: '>=0.10'}
     dev: false
 
   /depd/1.1.2:
@@ -3718,6 +3736,25 @@ packages:
       fp-ts: 2.11.5
     dev: false
 
+  /ioredis/4.28.2:
+    resolution: {integrity: sha512-kQ+Iv7+c6HsDdPP2XUHaMv8DhnSeAeKEwMbaoqsXYbO+03dItXt7+5jGQDRyjdRUV2rFJbzg7P4Qt1iX2tqkOg==}
+    engines: {node: '>=6'}
+    dependencies:
+      cluster-key-slot: 1.1.0
+      debug: 4.3.3
+      denque: 1.5.1
+      lodash.defaults: 4.2.0
+      lodash.flatten: 4.4.0
+      lodash.isarguments: 3.1.0
+      p-map: 2.1.0
+      redis-commands: 1.7.0
+      redis-errors: 1.2.0
+      redis-parser: 3.0.0
+      standard-as-callback: 2.1.0
+    transitivePeerDependencies:
+      - supports-color
+    dev: false
+
   /ipaddr.js/1.9.1:
     resolution: {integrity: sha512-0KI/607xoxSToH7GjN1FfSbLoU0+btTicjsQSWQlh/hZykN8KpmMf7uYwPW3R+akZ6R/w18ZlXSHBYXiYUPO3g==}
     engines: {node: '>= 0.10'}
@@ -4858,12 +4895,24 @@ packages:
     engines: {node: '>= 4'}
     dev: false
 
+  /lodash.defaults/4.2.0:
+    resolution: {integrity: sha1-0JF4cW/+pN3p5ft7N/bwgCJ0WAw=}
+    dev: false
+
   /lodash.escaperegexp/4.1.2:
     resolution: {integrity: sha1-ZHYsSGGAglGKw99Mz11YhtriA0c=}
     dev: false
 
+  /lodash.flatten/4.4.0:
+    resolution: {integrity: sha1-8xwiIlqWMtK7+OSt2+8kCqdlph8=}
+    dev: false
+
   /lodash.groupby/4.6.0:
     resolution: {integrity: sha1-Cwih3PaDl8OXhVwyOXg4Mt90A9E=}
+    dev: false
+
+  /lodash.isarguments/3.1.0:
+    resolution: {integrity: sha1-L1c9hcaiQon/AGY7SRwdM4/zRYo=}
     dev: false
 
   /lodash.isboolean/3.0.3:
@@ -5375,6 +5424,11 @@ packages:
     engines: {node: '>=8'}
     dependencies:
       p-limit: 2.3.0
+    dev: false
+
+  /p-map/2.1.0:
+    resolution: {integrity: sha512-y3b8Kpd8OAN444hxfBbFfj1FY/RjtTd8tzYwhUqNYXx0fXx2iX4maP4Qr6qhIKbQXI02wTLAda4fYUbDagTUFw==}
+    engines: {node: '>=6'}
     dev: false
 
   /p-try/1.0.0:
@@ -5944,6 +5998,22 @@ packages:
     dev: false
     optional: true
 
+  /redis-commands/1.7.0:
+    resolution: {integrity: sha512-nJWqw3bTFy21hX/CPKHth6sfhZbdiHP6bTawSgQBlKOVRG7EZkfHbbHwQJnrE4vsQf0CMNE+3gJ4Fmm16vdVlQ==}
+    dev: false
+
+  /redis-errors/1.2.0:
+    resolution: {integrity: sha1-62LSrbFeTq9GEMBK/hUpOEJQq60=}
+    engines: {node: '>=4'}
+    dev: false
+
+  /redis-parser/3.0.0:
+    resolution: {integrity: sha1-tm2CjNyv5rS4pCin3vTGvKwxyLQ=}
+    engines: {node: '>=4'}
+    dependencies:
+      redis-errors: 1.2.0
+    dev: false
+
   /regenerator-runtime/0.13.9:
     resolution: {integrity: sha512-p3VT+cOEgxFsRRA9X4lkI1E+k2/CtnKtU4gcxyaCUreilL/vqI6CdZ3wxVUx3UOUg+gnUOQQcRI7BmSI656MYA==}
     dev: false
@@ -6371,6 +6441,10 @@ packages:
     engines: {node: '>=10'}
     dependencies:
       escape-string-regexp: 2.0.0
+    dev: false
+
+  /standard-as-callback/2.1.0:
+    resolution: {integrity: sha512-qoRRSyROncaz1z0mvYqIE4lCd9p2R90i6GxW3uZv5ucSu8tU7B5HXUP1gG8pVZsYNVaXjk8ClXHPttLyxAL48A==}
     dev: false
 
   /statuses/1.5.0:
@@ -7320,7 +7394,7 @@ packages:
     dev: false
 
   file:projects/services.tgz:
-    resolution: {integrity: sha512-gTdcapFRgmoP+g4XHvcC+4xQY+iNT4mCiQGzjCecTHoQcXrksJc4d2zH/WBMspr61yyznjTgTWNukg1+8sHTuA==, tarball: file:projects/services.tgz}
+    resolution: {integrity: sha512-72c6u4G/xXOIEpKO7v4b5HNvjLaUdLYhvWLk91zHqjav0+j3byhd3Cr5Fip2a/0sBs3fBmBeA3ra2QqSq2VYNA==, tarball: file:projects/services.tgz}
     name: '@rush-temp/services'
     version: 0.0.0
     dependencies:
@@ -7329,6 +7403,7 @@ packages:
       '@types/deep-diff': 1.0.1
       '@types/diff': 5.0.2
       '@types/fs-extra': 9.0.13
+      '@types/ioredis': 4.28.6
       '@types/jest': 27.4.0
       '@types/json-server': 0.14.4
       '@types/koa': 2.13.4
@@ -7356,6 +7431,7 @@ packages:
       fs-extra: 10.0.0
       got: 12.0.0
       io-ts: 2.2.16_fp-ts@2.11.5
+      ioredis: 4.28.2
       jest: 27.4.5_ts-node@10.4.0
       json-server: 0.17.0
       koa: 2.13.4

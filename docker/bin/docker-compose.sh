@@ -10,5 +10,6 @@ export GROUP_ID=${GID}
 docker-compose \
     -f $COMPOSE/network.yml \
     -f $COMPOSE/volumes.yml \
-    -f $COMPOSE/service-portal.yml \
-    $@
+    -f $COMPOSE/postgres.yml \
+    -f $COMPOSE/redis.yml \
+    "$@"

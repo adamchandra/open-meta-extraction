@@ -22,6 +22,7 @@ function makeConfig(modulePackage) {
     moduleNameMapper: {
       "^~/(.*)$": tildePathMap,
     },
+    testRunner: "jest-jasmine2",
     moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json", "node"],
     globals: {
       'ts-jest': {
