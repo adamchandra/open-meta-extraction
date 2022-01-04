@@ -10,7 +10,7 @@ import {
 
 import { Server } from 'http';
 import { promisify } from 'util';
-import { startRestWorker } from '~/http-servers/extraction-rest-portal/rest-worker';
+import { startRestWorker } from '~/http-servers/rest-portal/rest-worker';
 import { DatabaseContext, insertNewUrlChains } from '~/db/db-api';
 import { getDBConfig } from '~/db/database';
 // import { createSpiderService, SpiderService } from '~/spidering/spider-service';

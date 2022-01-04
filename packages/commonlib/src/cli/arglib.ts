@@ -7,6 +7,7 @@ import { Argv, Arguments, Options } from 'yargs';
 import yargs from 'yargs';
 
 export const YArgs = yargs;
+export type YArgsT = yargs.Argv;
 
 import { prettyPrint } from '~/util/pretty-print';
 
