@@ -3,7 +3,7 @@ import _ from 'lodash';
 // import { runServiceHub, runService, WorkflowServiceNames } from './inline-workflow';
 import { prettyPrint, AlphaRecord, } from '@watr/commonlib';
 import got from 'got';
-import { chainServices } from '~/service-comm/service-chain';
+import { chainServices } from '@watr/commlinks';
 import { runService, runServiceHub, WorkflowServiceNames } from './workflow-services';
 
 describe('End-to-end Extraction workflows', () => {
