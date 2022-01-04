@@ -6,13 +6,13 @@ import { Server } from 'http';
 import { fetchOneRecord, WorkflowServices } from './workflow-services';
 
 // import { createSpiderService } from '~/spidering/spider-service';
-import { getBasicConsoleLogger  } from '~/utils/basic-logging';
+import { getBasicConsoleLogger  } from '@watr/commonlib';
 import { createSpiderService } from './spider-service';
 import { startSpiderableTestServer } from '~/http-servers/extraction-rest-portal/mock-server';
 import { getDBConfig } from '~/db/database';
 import { DatabaseContext } from '~/db/db-api';
 import { createEmptyDB } from '~/db/db-test-utils';
-import { extractFieldsForEntry } from '~/extract/run-main';
+import { extractFieldsForEntry } from '@watr/field-extractors';
 
 describe('End-to-end Extraction workflows', () => {
   function mockAlphaRecord(n: number, urlPath: string): AlphaRecord {

@@ -1,7 +1,8 @@
 import _ from 'lodash';
 
 import { spawn } from 'child_process';
-import { streamPump, TransformProcess, streamifyProcess } from '@watr/commonlib';
+import { TransformProcess, streamifyProcess } from './stream-utils';
+import { createPump } from './stream-pump';
 
 export type StdErrAndStdOutLines = [string[], string[], number];
 
@@ -10,19 +11,16 @@ export function runCmd(cmd: string, args: string[]): TransformProcess {
   return streamifyProcess(proc);
 }
 
-
 export function bufferCmdOutput(cmdProcess: TransformProcess): Promise<StdErrAndStdOutLines> {
   const { outStream, errStream, completePromise } = cmdProcess;
 
-  const tidyOutput = streamPump
-    .createPump()
+  const tidyOutput = createPump()
     .viaStream<string>(outStream)
     .gather()
     .toPromise()
     .then(ss => ss || []);
 
-  const tidyErrs = streamPump
-    .createPump()
+  const tidyErrs = createPump()
     .viaStream<string>(errStream)
     .gather()
     .toPromise()

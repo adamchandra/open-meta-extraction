@@ -406,6 +406,10 @@
       "projectFolder": "packages/commlinks",
     },
     {
+      "packageName": "@watr/field-extractors",
+      "projectFolder": "packages/field-extractors",
+    },
+    {
       "packageName": "@watr/services",
       "projectFolder": "packages/services",
     },

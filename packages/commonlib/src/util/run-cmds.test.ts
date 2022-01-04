@@ -1,9 +1,9 @@
 import _ from 'lodash';
 import path from 'path';
 
-import { throughFunc, } from '@watr/commonlib';
 import { runFileCmd, runTidyCmd, runTidyCmdBuffered } from './shell-commands';
 import { runPandocHtmlToMarkdown } from './shell-commands';
+import { throughFunc } from './stream-utils';
 
 describe('run command-line utils', () => {
   const testDirPath = './test/resources/htmls';

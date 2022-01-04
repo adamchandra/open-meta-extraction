@@ -2,7 +2,7 @@ import _ from 'lodash';
 import Redis from 'ioredis';
 import Async from 'async';
 import winston from 'winston';
-import { getServiceLogger } from './service-logger';
+import { getServiceLogger } from '@watr/commonlib';
 import {
   MessageHandlers,
   DispatchHandlers,

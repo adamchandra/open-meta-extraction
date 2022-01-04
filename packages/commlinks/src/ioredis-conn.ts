@@ -1,7 +1,6 @@
 import _ from 'lodash';
 import Redis from 'ioredis';
-import { getServiceLogger } from './service-logger';
-
+import { getServiceLogger } from '@watr/commonlib';
 
 export const RedisConnectionEvents = [
   'ready',
