@@ -1,5 +1,5 @@
 import { arglib } from '@watr/commonlib';
-import '~/http-servers/extraction-rest-portal/rest-server';
+import '~/http-servers/rest-portal/rest-server';
 import '~/workflow/workflow-cli';
 import './extraction-cli';
 

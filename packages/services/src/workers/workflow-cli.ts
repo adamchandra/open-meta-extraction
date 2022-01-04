@@ -1,9 +1,9 @@
-import yargs from 'yargs';
+// import yargs from 'yargs';
 import { arglib } from '@watr/commonlib';
 import { runService, WorkflowServiceNames, runServiceHub } from './workflow-services';
 const { opt, config, registerCmd } = arglib;
 
-export function registerCLICommands(yargv: yargs.Argv) {
+export function registerCLICommands(yargv: arglib.YArgsT) {
   const hubName = 'ServiceHub';
   const orderedServices = WorkflowServiceNames;
 
