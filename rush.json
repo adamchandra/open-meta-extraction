@@ -402,6 +402,10 @@
       "projectFolder": "packages/spider",
     },
     {
+      "packageName": "@watr/commlinks",
+      "projectFolder": "packages/commlinks",
+    },
+    {
       "packageName": "@watr/services",
       "projectFolder": "packages/services",
     },

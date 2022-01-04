@@ -73,26 +73,6 @@ export async function createSpiderService(logger: Logger): Promise<SpiderService
   return service;
 }
 
-// export async function runLocalSpider(
-//   alphaRecordCsv: string,
-// ): Promise<void> {
-//   const spiderService = await createSpiderService();
-//   const inputStream = readAlphaRecStream(alphaRecordCsv);
-
-//   const urlStream = streamPump.createPump()
-//     .viaStream<AlphaRecord>(inputStream)
-//     .throughF((inputRec: AlphaRecord) => {
-//       const { url } = inputRec;
-//       if (!isUrl(url)) {
-//         putStrLn(`Warn: filtering non-valid url ${url}`);
-//       }
-//       return url;
-//     })
-//     .filter((url) => isUrl(url))
-//     .toReadableStream();
-//   await spiderService.run(urlStream);
-// }
-
 export async function insertNewAlphaRecords(
   dbCtx: DatabaseContext,
   alphaRecordCsv: string,
