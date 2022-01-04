@@ -1,10 +1,10 @@
 import _ from 'lodash';
 
-import { newServiceComm, ServiceComm } from './service-comm';
 import { delay } from '@watr/commonlib';
 import winston from 'winston';
 import Async from 'async';
-import { Ack, Address,  DispatchHandler, DispatchHandlers, Message, MessageBody, Ping, Quit } from './service-defs';
+import { newServiceComm, ServiceComm } from './service-comm';
+import { Ack, Address, DispatchHandler, DispatchHandlers, Message, MessageBody, Ping, Quit } from './service-defs';
 
 export type LifecycleName = keyof {
   startup: null,
@@ -56,7 +56,6 @@ export async function createSatelliteService<T>(
   satelliteName: string,
   serviceDef: SatelliteServiceDef<T>
 ): Promise<SatelliteService<T>> {
-
   const commLink = newServiceComm<SatelliteService<T>>(satelliteName);
 
   commLink.addDispatches(serviceDef.lifecyleHandlers);
@@ -64,8 +63,7 @@ export async function createSatelliteService<T>(
   return serviceDef
     .cargoInit(commLink)
     .then(async (cargo) => {
-      const logLevel =
-        process.env['${satelliteName}.loglevel']
+      const logLevel = process.env[`${satelliteName}.loglevel`]
         || process.env['service-comm.loglevel']
         || 'info';
 
@@ -89,7 +87,6 @@ export async function createSatelliteService<T>(
 
       commLink.addHandlers({
         async ping(msg) {
-
           return this.sendHub(Ack(msg));
         },
         async push(msg) {
@@ -99,7 +96,7 @@ export async function createSatelliteService<T>(
         async quit(msg) {
           // TODO shutdown cargo?
           return this.sendHub(Ack(msg))
-            .then(() => commLink.quit())
+            .then(() => commLink.quit());
         },
       });
 
@@ -116,7 +113,7 @@ async function messageAllSatellites(
 ): Promise<void> {
   const pinged: string[] = [];
 
-  hubComm.addHandler(`ack/${msg.kind}`, async function(msg: Message) {
+  hubComm.addHandler(`ack/${msg.kind}`, async (msg: Message) => {
     hubComm.log.debug(`${hubComm.name} got ${msg.kind} from satellite ${msg.from}`);
     pinged.push(msg.from);
   });
@@ -145,7 +142,6 @@ export async function createHubService(
   hubName: string,
   orderedServices: string[]
 ): Promise<[ServiceHub, () => Promise<void>]> {
-
   const hubService: ServiceHub = {
     name: hubName,
     commLink: newServiceComm(hubName),

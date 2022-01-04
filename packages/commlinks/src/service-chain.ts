@@ -18,19 +18,19 @@ export function chainServices<S>(
   _.each(serviceComms, (commLink, n) => {
     const isLastService = n === serviceComms.length - 1;
     const isFirstService = n === 0;
-    const nextService = serviceNames[n + 1]
-    const prevService = serviceNames[n - 1]
+    const nextService = serviceNames[n + 1];
+    const prevService = serviceNames[n - 1];
     const currService = commLink.name;
 
     if (isFirstService) {
       commLink.addHandler(
-        `${currService}>push`, async function(msg) {
+        `${currService}>push`, async (msg) => {
           if (msg.kind !== 'push') return;
           commLink.send(Address(msg.msg, { id: msg.id, to: currService }));
         },
       );
       commLink.addHandler(
-        `${nextService}>yield`, async function(msg) {
+        `${nextService}>yield`, async (msg) => {
           if (msg.kind !== 'yield') return;
           commLink.send(Address(Yielded(msg.value), { id: msg.id, to: currService }));
         },
@@ -39,7 +39,7 @@ export function chainServices<S>(
 
     if (!isFirstService) {
       commLink.addHandler(
-        `${nextService}>yield`, async function(msg) {
+        `${nextService}>yield`, async (msg) => {
           if (msg.kind !== 'yield') return;
           commLink.send(Address(msg, { to: prevService }));
         },
@@ -48,14 +48,14 @@ export function chainServices<S>(
 
     if (!isLastService) {
       commLink.addHandler(
-        `${currService}>yield`, async function(msg) {
+        `${currService}>yield`, async (msg) => {
           if (msg.kind !== 'yield') return;
           commLink.send(Address(Dispatch(functionName, msg.value), { id: msg.id, to: nextService }));
         },
       );
     }
     if (isLastService) {
-      commLink.addHandler(`${currService}>yield`, async function(msg) {
+      commLink.addHandler(`${currService}>yield`, async (msg) => {
         if (msg.kind !== 'yield') return;
         commLink.send(Address(msg, { to: prevService }));
       });
@@ -77,6 +77,5 @@ export function chainServices<S>(
         );
       }
     });
-
   });
 }

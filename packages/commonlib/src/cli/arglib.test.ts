@@ -1,7 +1,5 @@
-
 import _ from 'lodash';
-// import yargs from 'yargs';
-import { config, opt, ArgvApp, registerCmd, YArgs } from '~/cli/arglib';
+import { config, ArgvApp, registerCmd, YArgs } from '~/cli/arglib';
 import { prettyPrint } from '~/util/pretty-print';
 
 describe('Arglib tests', () => {
@@ -41,7 +39,7 @@ describe('Arglib tests', () => {
       registerCmd(YArgs, cmdName, `run ${cmdName}`,)(() => {
         cmdsThatRan.push(cmdName);
       });
-    })
+    });
 
     const runner = YArgs
       .demandCommand(1, 'You need at least one command before moving on')
@@ -51,11 +49,10 @@ describe('Arglib tests', () => {
       });
 
     _.each(commandNames, (cmdName) => {
-      runner.parse(cmdName)
+      runner.parse(cmdName);
     });
     expect(commandNames).toStrictEqual(cmdsThatRan);
   });
-
 
 
   test('should resolve file/directory args', () => {

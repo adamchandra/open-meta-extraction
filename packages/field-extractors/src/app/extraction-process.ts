@@ -115,7 +115,7 @@ const listArtifactFiles: (artifactDir: ArtifactSubdir, regex: RegExp) => Arrow<u
 const listResponseBodies = listArtifactFiles('.', /response-body|response-frame/);
 
 const tidyHtmlTask: (filename: string) => TE.TaskEither<string, string[]> = (filepath: string) => {
-  const tidyOutputTask = () => runTidyCmdBuffered('./conf/tidy.cfg', filepath)
+  const tidyOutputTask = () => runTidyCmdBuffered(filepath)
     .then(([stderr, stdout, _exitCode]) => {
       // Tidy  exit codes = 0: ok, 1: warnings, 2: errors
       const hasStdout = _.some(stdout, line => line.trim().length > 0);

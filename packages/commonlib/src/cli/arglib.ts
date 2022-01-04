@@ -3,13 +3,13 @@ import _ from 'lodash';
 import fs from 'fs-extra';
 import path from 'path';
 
-import { Argv, Arguments, Options } from 'yargs';
-import yargs from 'yargs';
-
-export const YArgs = yargs;
-export type YArgsT = yargs.Argv;
+import yargs, { Argv, Arguments, Options } from 'yargs';
 
 import { prettyPrint } from '~/util/pretty-print';
+
+export const YArgs = yargs;
+
+export type YArgsT = yargs.Argv;
 
 export type ArgvApp = (ya: Argv) => Argv;
 
@@ -163,3 +163,4 @@ export const opt = {
 };
 
 // export { default as YArgs } from 'yargs';
+

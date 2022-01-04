@@ -1,9 +1,6 @@
-import 'chai/register-should';
-import { prettyPrint } from '@watr/commonlib';
-
 import _ from 'lodash';
-import {  Message,  } from './service-defs';
-import {  assertAllStringsIncluded, createTestServiceHub } from './service-test-utils';
+
+import { assertAllStringsIncluded, createTestServiceHub } from './service-test-utils';
 
 describe('Service Communication Hub lifecycle', () => {
   process.env['service-comm.loglevel'] = 'info';
@@ -18,9 +15,9 @@ describe('Service Communication Hub lifecycle', () => {
         `service-${svcNum}:ServiceHub>quit`,
         `ServiceHub:service-${svcNum}>ack/quit`,
       ];
-    })
+    });
 
-    const [hub, connectHub,] = await createTestServiceHub(numServices, logMessages);
+    const [hub, connectHub] = await createTestServiceHub(numServices, logMessages);
     await connectHub();
 
     await hub.shutdownSatellites();
@@ -31,5 +28,4 @@ describe('Service Communication Hub lifecycle', () => {
     expect(receivedAllExpectedMessages).toBe(true);
     done();
   });
-
 });
