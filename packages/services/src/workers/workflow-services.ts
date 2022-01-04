@@ -6,7 +6,7 @@ import {
   SatelliteService,
   ServiceHub,
   SatelliteServiceDef
-} from '~/service-comm/service-hub';
+} from '@watr/commlinks';
 
 import { Server } from 'http';
 import { promisify } from 'util';

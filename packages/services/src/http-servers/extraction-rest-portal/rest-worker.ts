@@ -7,7 +7,7 @@ import json from 'koa-json';
 // import { initPortalRouter } from './portal-routes';
 import { Server } from 'http';
 import { createAppLogger } from './portal-logger';
-import { SatelliteServiceComm } from '~/service-comm/service-hub';
+import { SatelliteServiceComm } from '@watr/commlinks';
 import { AlphaRecord, prettyPrint } from '@watr/commonlib';
 
 export async function startRestWorker(serviceComm: SatelliteServiceComm<Server>): Promise<Server> {
