@@ -1,10 +1,7 @@
-import { prettyPrint } from '@watr/commonlib';
-
 import _ from 'lodash';
 import { chainServices } from './service-chain';
 
 import { createTestServices } from './service-test-utils';
-
 
 describe('Redis-based Service Communication', () => {
   process.env['service-comm.loglevel'] = 'info';
@@ -45,7 +42,11 @@ describe('Redis-based Service Communication', () => {
 
     await Promise.all(allChains)
       .then((results) => {
-        prettyPrint({ results });
+        const expected = [
+          { callees: ['service-1', 'service-2'], which: 0 },
+          { callees: ['service-1', 'service-2'], which: 1 }
+        ];
+        expect(results).toStrictEqual(expected);
       });
 
 

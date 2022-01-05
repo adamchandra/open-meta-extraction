@@ -20,10 +20,11 @@ export interface Dispatch {
 }
 
 
-export const Dispatch = (func: string, arg: any) => <Dispatch>{
-  kind: 'dispatch',
-  func, arg
-};
+export const Dispatch = (func: string, arg: any) =>
+  <Dispatch>{
+    kind: 'dispatch',
+    func, arg
+  };
 
 export interface Yielded {
   kind: 'yielded';
