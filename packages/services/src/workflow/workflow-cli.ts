@@ -1,6 +1,5 @@
-// import yargs from 'yargs';
 import { arglib } from '@watr/commonlib';
-import { runService, WorkflowServiceNames, runServiceHub } from './workflow-services';
+import { runService, runServiceHub, WorkflowServiceNames  } from './distributed-workflow';
 const { opt, config, registerCmd } = arglib;
 
 export function registerCLICommands(yargv: arglib.YArgsT) {

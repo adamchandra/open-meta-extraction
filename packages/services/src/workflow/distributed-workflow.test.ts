@@ -1,9 +1,10 @@
 import _ from 'lodash';
-// import { runServiceHub, runService, WorkflowServiceNames } from './inline-workflow';
 import { prettyPrint, AlphaRecord, } from '@watr/commonlib';
 import axios from 'axios';
 import { chainServices } from '@watr/commlinks';
-import { runService, runServiceHub, WorkflowServiceNames } from './workflow-services';
+import { runService, runServiceHub, WorkflowServiceNames  } from './distributed-workflow';
+// import { useEmptyDatabase } from '~/db/db-test-utils';
+//   await useEmptyDatabase(async () => undefined);
 
 describe('End-to-end Extraction workflows', () => {
   const hubName = 'ServiceHub';

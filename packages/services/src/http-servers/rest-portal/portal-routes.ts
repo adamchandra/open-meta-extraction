@@ -7,11 +7,7 @@ import {
   AlphaRecord,
   prettyPrint
 } from '@watr/commonlib';
-import {
-  runServicesInlineNoDB,
-  WorkflowServices
-} from '~/workflow/workflow-services';
-
+import { runServicesInlineNoDB, WorkflowServices } from '~/workflow/inline-workflow';
 
 async function postRecordJson(
   workflowServices: WorkflowServices,
@@ -22,7 +18,7 @@ async function postRecordJson(
   const responseBody: Record<string, string> = {};
   ctx.response.body = responseBody;
 
-  const { log, dbCtx } = workflowServices;
+  const { log } = workflowServices;
 
   if (requestBody) {
     log.info(`got request ${requestBody}`);

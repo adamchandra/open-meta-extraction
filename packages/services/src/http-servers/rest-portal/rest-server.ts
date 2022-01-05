@@ -5,7 +5,7 @@ import { Server } from 'http';
 import { arglib, setEnv } from '@watr/commonlib';
 import { initPortalRouter } from './portal-routes';
 import { createAppLogger } from './portal-logger';
-import { WorkflowServices } from '~/workflow/workflow-services';
+import { WorkflowServices } from '~/workflow/inline-workflow';
 import { createSpiderService } from '~/workflow/spider-service';
 import { getDBConfig } from '~/db/database';
 import { DatabaseContext } from '~/db/db-api';

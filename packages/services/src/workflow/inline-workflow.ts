@@ -141,7 +141,7 @@ export async function fetchOneRecord(
 }
 
 
-export async function fetchNextDBRecord(
+async function fetchNextDBRecord(
   dbCtx: DatabaseContext,
   services: WorkflowServices,
 ): Promise<boolean | ErrorRecord> {

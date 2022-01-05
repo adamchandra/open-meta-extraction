@@ -3,7 +3,7 @@ import { getCorpusEntryDirForUrl, prettyPrint, AlphaRecord, setEnv } from '@watr
 import fs from 'fs-extra';
 import Async from 'async';
 import { Server } from 'http';
-import { fetchOneRecord, WorkflowServices } from './workflow-services';
+import { fetchOneRecord, WorkflowServices } from './inline-workflow';
 
 // import { createSpiderService } from '~/spidering/spider-service';
 import { getBasicConsoleLogger  } from '@watr/commonlib';
@@ -13,18 +13,9 @@ import { getDBConfig } from '~/db/database';
 import { DatabaseContext } from '~/db/db-api';
 import { createEmptyDB } from '~/db/db-test-utils';
 import { extractFieldsForEntry } from '@watr/field-extractors';
+import { mockAlphaRecord } from '@watr/spider';
 
 describe('End-to-end Extraction workflows', () => {
-  function mockAlphaRecord(n: number, urlPath: string): AlphaRecord {
-    return ({
-      noteId: `note-id-${n}`,
-      dblpConfId: `dblp/conf/conf-${n}`, // TODO rename to dblpKey
-      title: `The Title Paper #${n}`,
-      authorId: `auth-${n}`,
-      url: `http://localhost:9100${urlPath}`
-    });
-  }
-
   const workingDir = './test.scratch.d';
   setEnv('AppSharePath', workingDir);
   setEnv('DBPassword', 'watrpasswd');
@@ -74,7 +65,8 @@ describe('End-to-end Extraction workflows', () => {
       // '/404~custom404',
     ];
 
-    await Async.eachOfSeries(exampleUrls, Async.asyncify(async (url: string, exampleNumber: number) => {
+    await Async.eachOfSeries(exampleUrls, Async.asyncify(async (urlPath: string, exampleNumber: number) => {
+      const url = `http://localhost:9100${urlPath}`
       const alphaRec = mockAlphaRecord(1, url);
       const fetchedRecord = await fetchOneRecord(dbCtx, workflowServices, alphaRec);
       prettyPrint({ exampleNumber, fetchedRecord });
@@ -100,9 +92,9 @@ describe('End-to-end Extraction workflows', () => {
       '/200~withFields',
     ];
 
-    await Async.eachOfSeries(exampleUrls, Async.asyncify(async (_url: string, exampleNumber: number) => {
-      const alphaRec = mockAlphaRecord(1, _url);
-      const { url } = alphaRec;
+    await Async.eachOfSeries(exampleUrls, Async.asyncify(async (urlPath: string, exampleNumber: number) => {
+      const url = `http://localhost:9100${urlPath}`
+      const alphaRec = mockAlphaRecord(1, url);
       await spiderService
         .scrape(url)
         .catch((error: Error) => {
