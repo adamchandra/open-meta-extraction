@@ -1,6 +1,5 @@
 import _ from 'lodash';
 
-import 'chai/register-should';
 import { prettyPrint, AlphaRecord } from '@watr/commonlib';
 import Async from 'async';
 import * as T from './db-tables';

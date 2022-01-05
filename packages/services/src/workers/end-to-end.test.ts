@@ -1,8 +1,7 @@
-import 'chai/register-should';
 import _ from 'lodash';
 // import { runServiceHub, runService, WorkflowServiceNames } from './inline-workflow';
 import { prettyPrint, AlphaRecord, } from '@watr/commonlib';
-import got from 'got';
+import axios from 'axios';
 import { chainServices } from '@watr/commlinks';
 import { runService, runServiceHub, WorkflowServiceNames } from './workflow-services';
 
@@ -40,8 +39,7 @@ ztPoaj50mvz,dblp.org/journals/CORR/2020,Private Query Release Assisted by Public
   });
 
 
-
-  it('should run end-to-end', async (done) => {
+  it('should run end-to-end', async () => {
 
     const [hubService, hubConnected] = await runServiceHub(hubName, false, orderedServices);
 
@@ -56,13 +54,12 @@ ztPoaj50mvz,dblp.org/journals/CORR/2020,Private Query Release Assisted by Public
 
     chainServices('run', commLinks);
 
-    const retval = await got.post(
+    const retval = await axios.post(
       'http://localhost:3100/extractor/record.json', {
       json: liveRecs[0]
     });
 
-    prettyPrint({ retval: retval.body });
-
+    prettyPrint({ retval: retval });
   });
 
 });

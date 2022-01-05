@@ -5,13 +5,15 @@
     "outDir": "dist",
     "paths": {
       "~/*": ["src/*"]
-    }
+    },
   },
   "include": [
     "./src/**/*"
   ],
   "references": [
     {"path": "../commonlib"},
+    {"path": "../commlinks"},
+    {"path": "../field-extractors"},
     {"path": "../spider"}
   ]
 }

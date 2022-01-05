@@ -1,4 +1,3 @@
-import 'chai/register-should';
 import path from 'path';
 import _ from 'lodash';
 import { getConsoleAndFileLogger, readCorpusJsonFile } from '@watr/commonlib';

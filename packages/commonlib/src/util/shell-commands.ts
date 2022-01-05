@@ -47,8 +47,6 @@ function tidyOptions(addArgs: string[]) {
 export function runTidyCmd(
   infile: string
 ): TransformProcess {
-
-  // return runCmd('tidy', ['-config', configFile, infile]);
   return runCmd('tidy', tidyOptions([infile]));
 }
 
