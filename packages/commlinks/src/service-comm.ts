@@ -87,7 +87,7 @@ export function newServiceComm<This>(name: string): ServiceComm<This> {
       const responseP = new Promise<A>((resolve) => {
         self.addHandler(
           `${yieldId}:.*:${this.name}>yielded`,
-          async (msg) => {
+          async (msg: Message) => {
             if (msg.kind !== 'yielded') return;
             resolve(msg.value);
           });
@@ -146,7 +146,7 @@ export function newServiceComm<This>(name: string): ServiceComm<This> {
 
           const handlersForMessage = getMessageHandlers<This>(message, packedMsg, serviceComm, serviceT);
 
-          Async.mapSeries(handlersForMessage, async (handler) => handler())
+          Async.mapSeries(handlersForMessage, async (handler: Thunk) => handler())
             .catch((error) => {
               log.warn(`> ${packedMsg} on ${channel}: ${error}`);
             });
@@ -155,9 +155,9 @@ export function newServiceComm<This>(name: string): ServiceComm<This> {
         subscriber.subscribe(`${name}`)
           .then(() => log.info(`${name}> connected`))
           .then(() => resolve())
-          .catch((error) => {
-            log.error(`subscribe> ${error}`);
-            reject(new Error(`${name} subscribe> ${error}`));
+          .catch((error: any) => {
+            const msg = `subscribe> ${error}`;
+            reject(new Error(msg));
           });
       });
     },

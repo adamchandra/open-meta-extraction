@@ -14,7 +14,7 @@ export async function createTestServices(n: number): Promise<Array<TestService>>
 
   const services = await Async.map<string, TestService, Error>(
     serviceNames,
-    async (serviceName) => {
+    async (serviceName: string) => {
       const service: TestService = {
         commLink: newServiceComm(serviceName),
       };
@@ -48,7 +48,7 @@ export async function createTestServiceHub(
 
   const satelliteServices = await Async.map<string, SatelliteService<void>, Error>(
     serviceNames,
-    async (serviceName) => {
+    async (serviceName: string) => {
       const serviceDef = defineSatelliteService<void>(
         async () => {}, {
           async run() {

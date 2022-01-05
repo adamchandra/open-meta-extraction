@@ -97,6 +97,7 @@ export function initPortalRouter(serviceComm: SatelliteServiceComm<Server>): Rou
 
   return apiRouter;
 }
+
 function RecordRequest(alphaRec: { noteId: string; url: string; } & { dblpConfId?: string; title?: string; authorId?: string; }): any {
   throw new Error('Function not implemented.');
 }

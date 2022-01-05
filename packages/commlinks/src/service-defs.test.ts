@@ -1,5 +1,6 @@
 import _ from 'lodash';
 import { Ack, Address, Dispatch, Message, Ping, Quit, Yield } from './service-defs';
+// import { prettyPrint } from '@watr/commonlib';
 
 describe('Service Communication Hub lifecycle', () => {
   process.env['service-comm.loglevel'] = 'warn';

@@ -1,5 +1,4 @@
 import _ from 'lodash';
-
 import * as winston from 'winston';
 import { AlphaRecord, getCorpusEntryDirForUrl, getHashEncodedPath } from '@watr/commonlib';
 import { UrlFetchData } from '@watr/spider';
