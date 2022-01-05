@@ -1,4 +1,3 @@
-import 'chai/register-should';
 import _ from 'lodash';
 
 import { consoleTransport, newLogger } from '@watr/commonlib';

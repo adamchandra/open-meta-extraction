@@ -1,5 +1,3 @@
-import 'chai/register-should';
-
 import _ from 'lodash';
 import { prettyPrint, parseJsonStripMargin } from '@watr/commonlib';
 import { ExtractionRecord } from './extraction-records';

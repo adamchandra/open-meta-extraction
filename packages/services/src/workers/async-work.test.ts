@@ -1,7 +1,10 @@
 import _ from 'lodash';
 import { runServiceHub, runService, WorkflowServiceNames } from './workflow-services';
 import { prettyPrint, AlphaRecord, putStrLn, } from '@watr/commonlib';
-import got from 'got';
+// import got from 'got';
+
+import axios from 'axios';
+
 import { useEmptyDatabase } from '~/db/db-test-utils';
 
 
@@ -39,37 +42,42 @@ jvTLiOGJOg,dblp.org/conf/CC/2020,A study of event frequency profiling with diffe
 
 
   it('should run end-to-end via async service graph', async () => {
-    // await useEmptyDatabase(async () => undefined);
+  //   await useEmptyDatabase(async () => undefined);
 
-    const [hubService, hubConnected] = await runServiceHub(hubName, false, orderedServices);
+  //   const [hubService, hubConnected] = await runServiceHub(hubName, false, orderedServices);
 
-    _.each(
-      orderedServices,
-      (service) => runService(hubName, service, false)
-    );
+  //   _.each(
+  //     orderedServices,
+  //     (service) => runService(hubName, service, false)
+  //   );
 
-    putStrLn('hub/services now connectoed')
+  //   putStrLn('hub/services now connectoed')
 
-    // hubService.commLink.addHandler(
-    //   'inbox', 'FieldBundler:done~step',
-    //   async () => {
-    //     await hubService.shutdownSatellites();
-    //     await hubService.commLink.quit();
-    //     done();
-    //   }
-    // );
+  //   // hubService.commLink.addHandler(
+  //   //   'inbox', 'FieldBundler:done~step',
+  //   //   async () => {
+  //   //     await hubService.shutdownSatellites();
+  //   //     await hubService.commLink.quit();
+  //   //     done();
+  //   //   }
+  //   // );
 
-    const getResponse = await got('http://localhost:3100/extractor/batch.csv');
+  //   const getResponse = await got('http://localhost:3100/extractor/batch.csv');
 
-    prettyPrint({ response: getResponse.body });
 
-    await got.post(
-      'http://localhost:3100/extractor/fields.json', {
-      json: liveRecs
-    });
+  //   prettyPrint({ response: getResponse.body });
+
+    console.log('here');
+    // await got.post(
+    //   'http://localhost:3100/extractor/fields.json', {
+    //   json: liveRecs
+    // });
+    await axios.get('http://google.com/');
+    console.log('there');
+
   });
 
-  // it.only('should run end-to-end via blocking function call', async (done) => {
-  //   done();
-  // });
+  it('should run end-to-end via blocking function call', async (done) => {
+    done();
+  });
 });

@@ -1,3 +1,4 @@
+const preset = require('ts-jest/presets').jsWithTsESM;
 
 function rootPath(packagePath, relpath) {
   if (relpath) {
@@ -14,7 +15,9 @@ function makeConfig(modulePackage) {
   const tsconfig = rootPath(moduleRoot, 'tsconfig.json');
 
   const config = {
-    preset: 'ts-jest',
+    testEnvironment: 'node',
+    bail: true,
+    verbose: true,
     rootDir: '.',
     roots: ['<rootDir>/src'],
     displayName,
@@ -22,14 +25,18 @@ function makeConfig(modulePackage) {
     moduleNameMapper: {
       "^~/(.*)$": tildePathMap,
     },
+    transform: {
+      ...preset.transform,
+    },
     testRunner: "jest-jasmine2",
-    moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json", "node"],
+    moduleFileExtensions: ["ts", "js", "json", "node"],
     globals: {
       'ts-jest': {
         tsconfig,
-        diagnostics: false,
+        diagnostics: true,
         isolatedModules: false,
-        noEmit: true
+        noEmit: true,
+        useESM: true
       }
     },
   };
