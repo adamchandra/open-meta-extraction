@@ -1,5 +1,5 @@
 import _ from 'lodash';
-import { getCorpusEntryDirForUrl, prettyPrint, AlphaRecord, setEnv } from '@watr/commonlib';
+import { getCorpusEntryDirForUrl, prettyPrint, setEnv } from '@watr/commonlib';
 import fs from 'fs-extra';
 import Async from 'async';
 import { Server } from 'http';
