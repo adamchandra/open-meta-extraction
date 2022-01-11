@@ -1,14 +1,13 @@
 import _ from 'lodash';
 import { prettyPrint, AlphaRecord, } from '@watr/commonlib';
 import axios from 'axios';
-import { chainServices } from '@watr/commlinks';
-import { runService, runServiceHub, WorkflowServiceNames  } from './distributed-workflow';
+import { chainServices, createSatelliteService, defineSatelliteService } from '@watr/commlinks';
+import { runServiceHub, WorkflowServiceName, WorkflowServiceNames } from './distributed-workflow';
 // import { useEmptyDatabase } from '~/db/db-test-utils';
 //   await useEmptyDatabase(async () => undefined);
 
 describe('End-to-end Extraction workflows', () => {
   const hubName = 'ServiceHub';
-  const orderedServices = WorkflowServiceNames;
   process.env['service-comm.loglevel'] = 'debug';
   // process.env['UploadIngestor.loglevel'] = 'debug';
   // process.env['Spider.loglevel'] = 'debug';
@@ -23,36 +22,43 @@ describe('End-to-end Extraction workflows', () => {
     });
   });
 
-  const liveAlphaRecs = (`
-ztPoaj50mvz,dblp.org/journals/CORR/2020,Private Query Release Assisted by Public Data,https://arxiv.org/abs/2004.10941
-`).split('\n')
-
-  // jvTLiOGJOg,dblp.org/conf/CC/2020,A study of event frequency profiling with differential privacy,https://doi.org/10.1145/3377555.3377887
-  // nLTHmurMJm6,dblp.org/conf/AISTATS/2019,Linear Queries Estimation with Local Differential Privacy,http://proceedings.mlr.press/v89/bassily19a.html
-  // zm9Tm38yTR,dblp.org/conf/SCAM/2019,Introducing Privacy in Screen Event Frequency Analysis for Android Apps,https://doi.org/10.1109/SCAM.2019.00037
-  // yx79SuEORwC,dblp.org/journals/CORR/2019,Privately Answering Classification Queries in the Agnostic PAC Model,http://arxiv.org/abs/1907.13553
-
-  const liveRecs: AlphaRecord[] = _.flatMap(liveAlphaRecs, rec => {
-    if (rec.trim().length===0) return [];
-    // const [noteId, dblpConfId, title, authorId, url] = rec.split(',');
-    const [noteId, dblpConfId, title, url] = rec.split(',');
-    return [{ noteId, dblpConfId, title, url, }];
-  });
+  // const liveRecs: AlphaRecord[] = _.flatMap(liveAlphaRecs, rec => {
+  //   if (rec.trim().length === 0) return [];
+  //   // const [noteId, dblpConfId, title, authorId, url] = rec.split(',');
+  //   const [noteId, dblpConfId, title, url] = rec.split(',');
+  //   return [{ noteId, dblpConfId, title, url, }];
+  // });
 
 
   it('should run end-to-end', async () => {
 
-    const [hubService, hubConnected] = await runServiceHub(hubName, false, orderedServices);
+    const MockService = defineSatelliteService<void>(
+      async () => undefined, {
+    });
+
+    const serviceChainWorkers: WorkflowServiceName[] = [
+      'MockService',
+      'UploadIngestor',
+      // 'Spider',
+      // 'FieldExtractor',
+      // 'FieldBundler',
+    ];
+
+    const [hubService, hubConnected] = await runServiceHub(hubName, false, serviceChainWorkers);
 
     const satellites = await Promise.all(_.map(
-      orderedServices,
-      (service) => runService(hubName, service, false)
+      serviceChainWorkers,
+      // (service) => runService(hubName, service, false)
+      (service) => createSatelliteService(hubName, service)
     ));
 
     await hubConnected();
 
+    // TODO this won't work in a distributed environment if you have to get the commLink to make the linkage
+    // Should be based on service name and nothing more
     const commLinks = _.map(satellites, ts => ts.commLink);
 
+    // TODO make this chain the services, not the commlinks
     chainServices('run', commLinks);
 
     const retval = await axios.post(

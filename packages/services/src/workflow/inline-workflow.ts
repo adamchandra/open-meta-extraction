@@ -3,7 +3,7 @@ import * as winston from 'winston';
 import { AlphaRecord, getCorpusEntryDirForUrl, getHashEncodedPath } from '@watr/commonlib';
 import { UrlFetchData } from '@watr/spider';
 import { CanonicalFieldRecords, extractFieldsForEntry, getCanonicalFieldRecord } from '@watr/field-extractors';
-import { createSpiderService, SpiderService } from './spider-service';
+import { createSpiderService, SpiderService } from './spider-worker';
 import { commitUrlFetchData, commitUrlStatus, DatabaseContext, getNextUrlForSpidering, getUrlStatus, insertAlphaRecords, insertNewUrlChains } from '~/db/db-api';
 import { getServiceLogger } from '@watr/commonlib';
 

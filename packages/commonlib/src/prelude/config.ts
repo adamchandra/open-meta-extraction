@@ -1,7 +1,6 @@
 import path from 'path';
 import { makeHashEncodedPath, HashEncodedPath } from '~/util/hash-encoded-paths';
 
-
 export const Env = {
   AppSharePath: null,
   DBName: null,
