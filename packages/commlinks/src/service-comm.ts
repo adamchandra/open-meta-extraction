@@ -16,7 +16,7 @@ import {
   Yield,
 } from './service-defs';
 
-import { newRedis } from './ioredis-conn';
+import { newRedisClient } from './ioredis-conn';
 
 export interface ServiceComm<T> {
   name: string;
@@ -66,7 +66,7 @@ const nextId = newIdGenerator(1);
 export function newServiceComm<This>(name: string): ServiceComm<This> {
   const serviceComm: ServiceComm<This> = {
     name,
-    subscriber: newRedis(name),
+    subscriber: newRedisClient(name),
     isShutdown: false,
     log: getServiceLogger(`${name}/comm`),
     messageHandlers: [],

@@ -10,7 +10,12 @@ import { createAppLogger } from './portal-logger';
 import { SatelliteServiceComm } from '@watr/commlinks';
 import { AlphaRecord, prettyPrint } from '@watr/commonlib';
 
-export async function startRestWorker(serviceComm: SatelliteServiceComm<Server>): Promise<Server> {
+export interface RestPortal {
+  server: Server;
+}
+
+// export async function startRestWorker(serviceComm: SatelliteServiceComm<Server>): Promise<Server> {
+export async function startRestWorker(serviceComm: SatelliteServiceComm<RestPortal>): Promise<RestPortal> {
   const log = createAppLogger();
   const app = new Koa();
   const rootRouter = new Router();
@@ -37,14 +42,14 @@ export async function startRestWorker(serviceComm: SatelliteServiceComm<Server>)
   return new Promise((resolve) => {
     const server = app.listen(port, function() {
       log.info(`Koa is listening to http://localhost:${port}`);
-      resolve(server);
+      resolve({ server });
     });
   });
 }
 
 
 async function postRecordJson(
-  serviceComm: SatelliteServiceComm<Server>,
+  serviceComm: SatelliteServiceComm<RestPortal>,
   ctx: Context,
   next: () => Promise<any>
 ): Promise<Router> {
@@ -69,14 +74,6 @@ async function postRecordJson(
   return next();
 }
 
-// async function getBatchCsv(ctx: Context, next: () => Promise<any>): Promise<Router> {
-//   const p = ctx.path;
-//   console.log('getBatchCsv', p);
-//   ctx.response.body = { status: 'ok' };
-
-//   return next();
-// }
-
 async function getRoot(ctx: Context, next: () => Promise<any>): Promise<Router> {
   const p = ctx.path;
   console.log('getRoot', p);
@@ -84,7 +81,7 @@ async function getRoot(ctx: Context, next: () => Promise<any>): Promise<Router> 
 }
 
 
-export function initPortalRouter(serviceComm: SatelliteServiceComm<Server>): Router {
+export function initPortalRouter(serviceComm: SatelliteServiceComm<RestPortal>): Router {
   const apiRouter = new Router({});
   const pathPrefix = '^/extractor'
 
@@ -98,6 +95,7 @@ export function initPortalRouter(serviceComm: SatelliteServiceComm<Server>): Rou
   return apiRouter;
 }
 
+
 function RecordRequest(alphaRec: { noteId: string; url: string; } & { dblpConfId?: string; title?: string; authorId?: string; }): any {
-  throw new Error('Function not implemented.');
+    throw new Error('Function not implemented.');
 }

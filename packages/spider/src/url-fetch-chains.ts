@@ -94,12 +94,13 @@ export function mockUrlFetchData(n: number): UrlFetchData {
 }
 
 
-export function mockAlphaRecord(n: number): AlphaRecord {
+export function mockAlphaRecord(n: number, _url?: string): AlphaRecord {
+  const url = _url === undefined? mockUrl(n) : _url;
   return ({
     noteId: `note-id-${n}`,
     dblpConfId: `dblp/conf/conf-${n}`, // TODO rename to dblpKey
     title: `The Title Paper #${n}`,
     authorId: `auth-${n}`,
-    url: mockUrl(n)
+    url
   });
 }

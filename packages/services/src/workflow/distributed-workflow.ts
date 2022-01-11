@@ -1,4 +1,5 @@
 import _ from 'lodash';
+import path from 'path';
 import {
   createHubService,
   createSatelliteService,
@@ -8,46 +9,44 @@ import {
   SatelliteServiceDef
 } from '@watr/commlinks';
 
-import { Server } from 'http';
 import { promisify } from 'util';
-import { startRestWorker } from '~/http-servers/rest-portal/rest-worker';
+import { RestPortal, startRestWorker } from '~/http-servers/rest-portal/rest-worker';
 import { DatabaseContext, insertNewUrlChains } from '~/db/db-api';
 import { getDBConfig } from '~/db/database';
-// import { createSpiderService, SpiderService } from '~/spidering/spider-service';
-// import { commitMetadata, getNextUrlForSpidering, insertCorpusEntry, insertNewUrlChains } from '~/db/db-api';
-// import { putStrLn } from '@watr/commonlib';
-// import { getNextUrlForSpidering, insertNewUrlChains } from '~/db/db-api';
-// import { createSpiderService } from '~/workflow/spider-service';
+import { AlphaRecord } from '@watr/commonlib';
 
+function getWorkingDir(): string {
+  const appSharePath = process.env['APP_SHARE_PATH'];
+  const workingDir = appSharePath ? appSharePath : 'app-share.d';
+  return workingDir;
+}
 
-// function getWorkingDir(): string {
-//   const appSharePath = process.env['APP_SHARE_PATH'];
-//   const workingDir = appSharePath ? appSharePath : 'app-share.d';
-//   return workingDir;
-// }
-
-type WorkflowServiceName = keyof {
-  RestPortal: null,
+export type WorkflowServiceName = keyof {
+  RestPortalService: null,
   UploadIngestor: null,
   Spider: null,
   FieldExtractor: null,
   FieldBundler: null,
+  MockService: null,
 }
 
 
 export const WorkflowServiceNames: WorkflowServiceName[] = [
-  'RestPortal',
+  'RestPortalService',
   'UploadIngestor',
   'Spider',
   'FieldExtractor',
   'FieldBundler',
+  'MockService',
 ];
-const RestPortal = defineSatelliteService<Server>(
+
+
+const RestPortalService = defineSatelliteService<RestPortal>(
   (serviceComm) => startRestWorker(serviceComm), {
   async shutdown() {
     this.log.debug(`${this.serviceName} [shutdown]> `)
 
-    const server = this.cargo;
+    const { server } = this.cargo;
     const doClose = promisify(server.close).bind(server);
     return doClose().then(() => {
       this.log.debug(`${this.serviceName} [server:shutdown]> `)
@@ -59,23 +58,9 @@ interface UploadIngestorT {
   databaseContext: DatabaseContext,
 }
 
-// const  UploadIngestor2 = defineSatelliteService<void>(
-//     async () => undefined, {
-//     async run(data: WorkflowData): Promise<WorkflowData> {
-//       const workingDir = getWorkingDir();
-//       this.log.info(`[run]> ${data.kind}; working dir = ${workingDir}`)
-
-//       const { alphaRec } = data;
-//       // if we have the data on disk, just return it
-//       const downloadDir = path.resolve(workingDir, 'downloads.d');
-
-//       getExtractedField(downloadDir, alphaRec);
-//       return data;
-//     },
-//   }),
-
 const UploadIngestor = defineSatelliteService<UploadIngestorT>(
-  async () => {
+  async () => undefined, {
+  async init(): Promise<UploadIngestorT> {
     const dbConfig = getDBConfig('production');
     if (dbConfig === undefined) {
       throw new Error('invalid database config; use env.{database,username,password}')
@@ -84,12 +69,24 @@ const UploadIngestor = defineSatelliteService<UploadIngestorT>(
     return {
       databaseContext
     };
-  }, {
+  },
   async step(): Promise<void> {
     this.log.info('[step]> ')
     const { databaseContext } = this.cargo;
     await insertNewUrlChains(databaseContext)
-  }
+  },
+
+  async run(data: WorkflowData): Promise<WorkflowData> {
+    const workingDir = getWorkingDir();
+    this.log.info(`[run]> ${data.kind}; working dir = ${workingDir}`)
+
+    const { alphaRec } = data;
+    // if we have the data on disk, just return it
+    const downloadDir = path.resolve(workingDir, 'downloads.d');
+
+    // getExtractedField(downloadDir, alphaRec);
+    return data;
+  },
 });
 
 const Spider = defineSatelliteService<void>(
@@ -134,18 +131,18 @@ const Spider = defineSatelliteService<void>(
 //   }
 //   });
 
-const registeredServices: Record<WorkflowServiceName, SatelliteServiceDef<any>> = {
-  RestPortal,
-  UploadIngestor,
-  Spider,
-  'FieldExtractor': defineSatelliteService<void>(
-    async () => undefined, {
-  }),
+// const registeredServices: Record<WorkflowServiceName, SatelliteServiceDef<any>> = {
+//   RestPortalService,
+//   UploadIngestor,
+//   Spider,
+//   'FieldExtractor': defineSatelliteService<void>(
+//     async () => undefined, {
+//   }),
 
-  'FieldBundler': defineSatelliteService<void>(
-    async () => undefined, {
-  }),
-};
+//   'FieldBundler': defineSatelliteService<void>(
+//     async () => undefined, {
+//   }),
+// };
 
 export async function runServiceHub(
   hubName: string,
@@ -158,7 +155,7 @@ export async function runServiceHub(
   return createHubService(hubName, orderedServices);
 }
 
-export async function runService(
+export async function runRegisteredService(
   hubName: string,
   serviceName: WorkflowServiceName,
   dockerize: boolean
@@ -170,10 +167,10 @@ export async function runService(
   return createSatelliteService(hubName, serviceName, serviceDef);
 }
 
-// export interface RecordRequest {
-//   kind: 'record-request';
-//   alphaRec: AlphaRecord;
-// }
+export interface RecordRequest {
+  kind: 'record-request';
+  alphaRec: AlphaRecord;
+}
 // export const RecordRequest =
 //   (alphaRec: AlphaRecord): RecordRequest => ({
 //     kind: 'record-request',
@@ -185,9 +182,10 @@ export async function runService(
 //   alphaRec: AlphaRecord;
 // }
 
-// export type WorkflowData =
-//   RecordRequest
-//   ;
+export type WorkflowData =
+  RecordRequest
+  ;
+
 
 // function getWorkingDir(): string {
 //   const appSharePath = process.env['APP_SHARE_PATH'];

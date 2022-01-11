@@ -6,8 +6,9 @@ import { Server } from 'http';
 import { fetchOneRecord, WorkflowServices } from './inline-workflow';
 
 // import { createSpiderService } from '~/spidering/spider-service';
-import { getBasicConsoleLogger  } from '@watr/commonlib';
-import { createSpiderService } from './spider-service';
+// import { getBasicConsoleLogger  } from '@watr/commonlib';
+import { getServiceLogger } from '@watr/commonlib';
+import { createSpiderService } from './spider-worker';
 import { startSpiderableTestServer } from '~/http-servers/rest-portal/mock-server';
 import { getDBConfig } from '~/db/database';
 import { DatabaseContext } from '~/db/db-api';
@@ -49,7 +50,8 @@ describe('End-to-end Extraction workflows', () => {
 
 
   it('should fetch alpha records', async () => {
-    const log = getBasicConsoleLogger('debug');
+    // const log = getBasicConsoleLogger('debug');
+    const log = getServiceLogger('test-service');
 
     const spiderService = await createSpiderService(log);
 
@@ -72,14 +74,13 @@ describe('End-to-end Extraction workflows', () => {
       prettyPrint({ exampleNumber, fetchedRecord });
     }));
 
-    console.log('quitting..');
 
     await spiderService.quit();
-    console.log('...quit');
   });
 
   it('should update database if fields are extracted but no db entry exists', async () => {
-    const log = getBasicConsoleLogger('debug');
+    // const log = getBasicConsoleLogger('debug');
+    const log = getServiceLogger('test-service');
 
     const spiderService = await createSpiderService(log);
 

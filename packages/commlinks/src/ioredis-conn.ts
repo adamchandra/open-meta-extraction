@@ -11,7 +11,7 @@ export const RedisConnectionEvents = [
   'reconnecting'
 ];
 
-export function newRedis(name: string, opts?: Redis.RedisOptions): Redis.Redis {
+export function newRedisClient(name: string, opts?: Redis.RedisOptions): Redis.Redis {
   const isDockerized = process.env.DOCKERIZED === 'true';
   const host = isDockerized ? 'redis' : 'localhost';
   const allOpts = _.merge({}, { host }, opts);
