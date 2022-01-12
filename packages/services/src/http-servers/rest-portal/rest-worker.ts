@@ -7,19 +7,19 @@ import json from 'koa-json';
 // import { initPortalRouter } from './portal-routes';
 import { Server } from 'http';
 import { createAppLogger } from './portal-logger';
-import { SatelliteServiceComm } from '@watr/commlinks';
+import { SatelliteCommLink } from '@watr/commlinks';
 import { AlphaRecord, prettyPrint } from '@watr/commonlib';
 
 export interface RestPortal {
   server: Server;
 }
 
-// export async function startRestWorker(serviceComm: SatelliteServiceComm<Server>): Promise<Server> {
-export async function startRestWorker(serviceComm: SatelliteServiceComm<RestPortal>): Promise<RestPortal> {
+// export async function startRestWorker(commLink: SatelliteCommLink<Server>): Promise<Server> {
+export async function startRestWorker(commLink: SatelliteCommLink<RestPortal>): Promise<RestPortal> {
   const log = createAppLogger();
   const app = new Koa();
   const rootRouter = new Router();
-  const portalRouter = initPortalRouter(serviceComm);
+  const portalRouter = initPortalRouter(commLink);
 
   const port = 3100;
 
@@ -49,7 +49,7 @@ export async function startRestWorker(serviceComm: SatelliteServiceComm<RestPort
 
 
 async function postRecordJson(
-  serviceComm: SatelliteServiceComm<RestPortal>,
+  commLink: SatelliteCommLink<RestPortal>,
   ctx: Context,
   next: () => Promise<any>
 ): Promise<Router> {
@@ -60,8 +60,8 @@ async function postRecordJson(
   if (requestBody) {
     // TODO validate requestBody as AlphaRecord[]
     const alphaRec: AlphaRecord = requestBody;
-    // const extractedFields: string = await serviceComm.yield(alphaRec);
-    const restPortalResponse = await serviceComm.yield(RecordRequest(alphaRec));
+    // const extractedFields: string = await commLink.yield(alphaRec);
+    const restPortalResponse = await commLink.yield(RecordRequest(alphaRec));
     prettyPrint({ restPortalResponse });
 
     responseBody.status = 'ok';
@@ -70,7 +70,7 @@ async function postRecordJson(
     responseBody.status = 'error';
   }
 
-  // await serviceComm.emit('step');
+  // await commLink.emit('step');
   return next();
 }
 
@@ -81,11 +81,11 @@ async function getRoot(ctx: Context, next: () => Promise<any>): Promise<Router> 
 }
 
 
-export function initPortalRouter(serviceComm: SatelliteServiceComm<RestPortal>): Router {
+export function initPortalRouter(commLink: SatelliteCommLink<RestPortal>): Router {
   const apiRouter = new Router({});
   const pathPrefix = '^/extractor'
 
-  const postRecordJson_ = _.curry(postRecordJson)(serviceComm);
+  const postRecordJson_ = _.curry(postRecordJson)(commLink);
 
   apiRouter
     .get(new RegExp(`${pathPrefix}/$`), getRoot)

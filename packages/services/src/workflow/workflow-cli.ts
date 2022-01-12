@@ -1,5 +1,5 @@
 import { arglib } from '@watr/commonlib';
-import { runService, runServiceHub, WorkflowServiceNames  } from './distributed-workflow';
+import { runRegisteredService, runServiceHub, WorkflowServiceNames  } from './distributed-workflow';
 const { opt, config, registerCmd } = arglib;
 
 export function registerCLICommands(yargv: arglib.YArgsT) {
@@ -11,25 +11,20 @@ export function registerCLICommands(yargv: arglib.YArgsT) {
     'start-service',
     'start a named service',
     config(
-      opt.ion('dockerize', { boolean: true, default: false }),
       opt.ion('service-name: name of service to launch', {
         choices: orderedServices
       })
     )
   )((args: any) => {
-    const { serviceName, dockerize } = args;
-    runService(hubName, serviceName, dockerize);
+    const { serviceName } = args;
+    runRegisteredService(hubName, serviceName);
   });
 
   registerCmd(
     yargv,
     'start-service-hub',
     'start the service hub',
-    config(
-      opt.ion('dockerize', { boolean: true, default: false }),
-    )
-  )((args: any) => {
-    const { dockerize } = args;
-    runServiceHub(hubName, dockerize, orderedServices);
+  )(() => {
+    runServiceHub(hubName, orderedServices);
   });
 }

@@ -8,7 +8,7 @@ import { getDBConfig } from './database';
 import { DatabaseContext } from './db-api';
 
 describe('Database Tables Basics', () => {
-  const dbConfig = getDBConfig('test');
+  const dbConfig = getDBConfig();
   const dbCtx: DatabaseContext | undefined = dbConfig? { dbConfig } : undefined;
   expect(dbCtx).toBeDefined;
 

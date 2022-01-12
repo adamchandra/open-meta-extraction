@@ -21,7 +21,6 @@
   "dependencies": {
     "@watr/commonlib": "0.1.0",
     "async": "^3.2.2",
-    "dotenv": "^10.0.0",
     "fp-ts": "2.11.5",
     "lodash": "^4.17.21",
     "puppeteer": "^13.0.1",

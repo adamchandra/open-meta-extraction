@@ -1,22 +1,22 @@
 import _ from 'lodash';
 
-import { ServiceComm } from './service-comm';
+import { CommLink } from './commlink';
 
 import {
   Address,
   Dispatch,
   Yield,
   Yielded
-} from './service-defs';
+} from './message-types';
 
 export function chainServices<S>(
   functionName: string,
-  serviceComms: ServiceComm<S>[]
+  commLinks: CommLink<S>[]
 ): void {
-  const serviceNames = _.map(serviceComms, c => c.name);
+  const serviceNames = _.map(commLinks, c => c.name);
 
-  _.each(serviceComms, (commLink, n) => {
-    const isLastService = n === serviceComms.length - 1;
+  _.each(commLinks, (commLink, n) => {
+    const isLastService = n === commLinks.length - 1;
     const isFirstService = n === 0;
     const nextService = serviceNames[n + 1];
     const prevService = serviceNames[n - 1];

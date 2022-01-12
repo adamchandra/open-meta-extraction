@@ -1,0 +1,13 @@
+* Commlinks
+Commlinks provides a set of message passing primitives, transported over Redis,
+to allow communication between distributed services.
+
+Typical patterns include:
+  - Hub and Satellites, in which a central hub dispatches to and from named endpoints.
+
+  - Chained Services, in which each service executes a function in turn, optionally passing some
+    data to the next service in the chain.
+
+  - Fan Out, in which a service dispatches to several other services
+
+  - Fan In, in which a service awaits and aggregates the results of other services execution

@@ -1,6 +1,5 @@
 import _ from 'lodash';
 import Redis from 'ioredis';
-import { putStrLn } from '@watr/commonlib';
 
 describe('IORedis library tests and examples', () => {
   it('should do async set/get', async () => {
@@ -45,44 +44,4 @@ describe('IORedis library tests and examples', () => {
     rclient.publish('exit', 'quit');
   });
 
-  // ('pass function arguments', async (done) => {
-
-  //   const exitClient = new Redis();
-  //   const rclient = new Redis();
-  //   const subClient = new Redis();
-
-  //   try {
-  //     exitClient.on('message', (channel) => {
-  //       if (channel === 'exit') {
-  //         rclient.quit()
-  //           .then(() => subClient.quit())
-  //           .then(() => exitClient.quit())
-  //           .then(() => done());
-  //       }
-  //     });
-
-  //     await rclient.del('mylist');
-
-
-  //     await rclient.brpop('mylist', 0)
-  //       .then((rval) => {
-  //         putStrLn(`rval ${rval}`);
-  //       });
-
-  //     putStrLn('awaiting pop.. ');
-
-  //     await subClient.rpush('mylist', '{ arg: 0 }');
-
-  //   } catch (error) {
-  //     putStrLn(`Error: ${error}`);
-  //   }
-
-
-  //   // rclient.brpop
-  //   // rclient.brpoplpush
-  //   // rclient.blpop
-
-  //   rclient.publish('exit', 'quit');
-
-  // });
 });

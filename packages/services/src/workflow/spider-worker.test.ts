@@ -1,12 +1,10 @@
 import _ from 'lodash';
-import { getCorpusEntryDirForUrl, prettyPrint, setEnv } from '@watr/commonlib';
+import { getCorpusEntryDirForUrl, prettyPrint } from '@watr/commonlib';
 import fs from 'fs-extra';
 import Async from 'async';
 import { Server } from 'http';
 import { fetchOneRecord, WorkflowServices } from './inline-workflow';
 
-// import { createSpiderService } from '~/spidering/spider-service';
-// import { getBasicConsoleLogger  } from '@watr/commonlib';
 import { getServiceLogger } from '@watr/commonlib';
 import { createSpiderService } from './spider-worker';
 import { startSpiderableTestServer } from '~/http-servers/rest-portal/mock-server';
@@ -18,9 +16,7 @@ import { mockAlphaRecord } from '@watr/spider';
 
 describe('End-to-end Extraction workflows', () => {
   const workingDir = './test.scratch.d';
-  setEnv('AppSharePath', workingDir);
-  setEnv('DBPassword', 'watrpasswd');
-  const dbConfig = getDBConfig('test');
+  const dbConfig = getDBConfig();
   const dbCtx: DatabaseContext | undefined = dbConfig ? { dbConfig } : undefined;
   expect(dbCtx).toBeDefined;
   if (dbConfig === undefined || dbCtx === undefined) return;

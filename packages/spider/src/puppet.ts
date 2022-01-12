@@ -3,8 +3,6 @@ import {
 } from 'puppeteer';
 
 import puppeteer from 'puppeteer-extra';
-import * as dotenv from 'dotenv';
-dotenv.config()
 
 // @ts-ignore
 import AnonPlugin from 'puppeteer-extra-plugin-anonymize-ua';
