@@ -1,12 +1,12 @@
 import _ from 'lodash';
 import Async from 'async';
-import { defineSatelliteService, createSatelliteService, SatelliteService, ServiceHub, createHubService } from './service-hub';
-import { newServiceComm, ServiceComm } from './service-comm';
-import { Message } from './service-defs';
+import { defineSatelliteService, createSatelliteService, SatelliteService, ServiceHub, createHubService } from './hub-connection';
+import { newCommLink, CommLink } from './commlink';
+import { Message } from './message-types';
 
 // Create a Hub/Satellite service network with specified # of satellites
 export interface TestService {
-  commLink: ServiceComm<TestService>;
+  commLink: CommLink<TestService>;
 }
 
 export async function createTestServices(n: number): Promise<Array<TestService>> {
@@ -16,7 +16,7 @@ export async function createTestServices(n: number): Promise<Array<TestService>>
     serviceNames,
     async (serviceName: string) => {
       const service: TestService = {
-        commLink: newServiceComm(serviceName),
+        commLink: newCommLink(serviceName),
       };
 
       service.commLink.addHandlers({

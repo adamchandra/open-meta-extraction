@@ -1,5 +1,5 @@
 import _ from 'lodash';
-import { chainServices } from './service-chain';
+import { chainServices } from './chain-connection';
 
 import { createTestServices } from './service-test-utils';
 

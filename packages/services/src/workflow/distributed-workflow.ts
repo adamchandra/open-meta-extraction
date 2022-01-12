@@ -42,7 +42,7 @@ export const WorkflowServiceNames: WorkflowServiceName[] = [
 
 
 const RestPortalService = defineSatelliteService<RestPortal>(
-  (serviceComm) => startRestWorker(serviceComm), {
+  (commLink) => startRestWorker(commLink), {
   async shutdown() {
     this.log.debug(`${this.serviceName} [shutdown]> `)
 
@@ -59,9 +59,8 @@ interface UploadIngestorT {
 }
 
 const UploadIngestor = defineSatelliteService<UploadIngestorT>(
-  async () => undefined, {
-  async init(): Promise<UploadIngestorT> {
-    const dbConfig = getDBConfig('production');
+  async () => {
+    const dbConfig = getDBConfig();
     if (dbConfig === undefined) {
       throw new Error('invalid database config; use env.{database,username,password}')
     }
@@ -69,7 +68,11 @@ const UploadIngestor = defineSatelliteService<UploadIngestorT>(
     return {
       databaseContext
     };
+  }, {
+  async trace(): Promise<void> {
+    this.log.info('[trace]> ');
   },
+
   async step(): Promise<void> {
     this.log.info('[step]> ')
     const { databaseContext } = this.cargo;
@@ -131,40 +134,52 @@ const Spider = defineSatelliteService<void>(
 //   }
 //   });
 
-// const registeredServices: Record<WorkflowServiceName, SatelliteServiceDef<any>> = {
-//   RestPortalService,
-//   UploadIngestor,
-//   Spider,
-//   'FieldExtractor': defineSatelliteService<void>(
-//     async () => undefined, {
-//   }),
+const registeredServices: Partial<Record<WorkflowServiceName, SatelliteServiceDef<any>>> = {
+  RestPortalService,
+  UploadIngestor,
+  Spider,
+  'FieldExtractor': defineSatelliteService<void>(
+    async () => undefined, {
+  }),
 
-//   'FieldBundler': defineSatelliteService<void>(
-//     async () => undefined, {
-//   }),
-// };
+  'FieldBundler': defineSatelliteService<void>(
+    async () => undefined, {
+  }),
+};
 
 export async function runServiceHub(
   hubName: string,
-  dockerize: boolean,
   orderedServices: string[]
 ): Promise<[ServiceHub, () => Promise<void>]> {
-  if (dockerize) {
-    process.env['DOCKERIZED'] = 'true';
-  }
   return createHubService(hubName, orderedServices);
 }
 
 export async function runRegisteredService(
   hubName: string,
   serviceName: WorkflowServiceName,
-  dockerize: boolean
 ): Promise<SatelliteService<any>> {
-  if (dockerize) {
-    process.env['DOCKERIZED'] = 'true';
-  }
   const serviceDef = registeredServices[serviceName]
   return createSatelliteService(hubName, serviceName, serviceDef);
+}
+
+export async function runServiceHubAndSatellites(
+  hubName: string,
+  satelliteServiceDefs: Record<string, SatelliteServiceDef<any>>
+): Promise<[ServiceHub, () => Promise<void>, Record<string, SatelliteService<any>>]> {
+
+  const serviceNames = _.keys(satelliteServiceDefs);
+
+  const [hubService, hubConnected] = await createHubService(hubName, serviceNames);
+  const servicePromises = _.map(serviceNames, (serviceName) => {
+    return createSatelliteService(hubName, serviceName, satelliteServiceDefs[serviceName]);
+  });
+
+  const satellites: Array<[string, SatelliteService<any>]> = await Promise.all(servicePromises)
+    .then((satellites) => _.map(satellites, s => [s.serviceName, s]));
+
+  const satelliteRecords = _.fromPairs(satellites);
+
+  return [hubService, hubConnected, satelliteRecords];
 }
 
 export interface RecordRequest {

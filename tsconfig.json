@@ -21,7 +21,7 @@
       "@watr/commonlib": ["packages/commonlib/src"],
       "@watr/services": ["packages/services/src"],
       "@watr/commlinks": ["packages/commlinks/src"],
-      "@watr/field-extractors": ["packages//src"],
+      "@watr/field-extractors": ["packages/src"],
       "@watr/spider": ["packages/spider/src"],
       "@watr/root": ["packages/root/src"]
     }

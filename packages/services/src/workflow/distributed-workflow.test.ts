@@ -1,8 +1,8 @@
 import _ from 'lodash';
-import { prettyPrint, AlphaRecord, } from '@watr/commonlib';
+import { prettyPrint, AlphaRecord, initConfig, } from '@watr/commonlib';
 import axios from 'axios';
-import { chainServices, createSatelliteService, defineSatelliteService } from '@watr/commlinks';
-import { runServiceHub, WorkflowServiceName, WorkflowServiceNames } from './distributed-workflow';
+import { chainServices, createSatelliteService, defineSatelliteService, SatelliteService, SatelliteServiceDef } from '@watr/commlinks';
+import { runServiceHub, runServiceHubAndSatellites, WorkflowServiceName, WorkflowServiceNames } from './distributed-workflow';
 // import { useEmptyDatabase } from '~/db/db-test-utils';
 //   await useEmptyDatabase(async () => undefined);
 
@@ -31,42 +31,45 @@ describe('End-to-end Extraction workflows', () => {
 
 
   it('should run end-to-end', async () => {
+    // const conf = initConfig();
+    // prettyPrint({ conf });
 
     const MockService = defineSatelliteService<void>(
       async () => undefined, {
     });
 
-    const serviceChainWorkers: WorkflowServiceName[] = [
-      'MockService',
-      'UploadIngestor',
+    const serviceChainWorkers: Record<string, SatelliteServiceDef<any>> = {
+      MockService,
+      // UploadIngestor,
       // 'Spider',
       // 'FieldExtractor',
       // 'FieldBundler',
-    ];
+    };
 
-    const [hubService, hubConnected] = await runServiceHub(hubName, false, serviceChainWorkers);
+    const [hubService, hubConnected, satelliteRecords] =
+      await runServiceHubAndSatellites(hubName, serviceChainWorkers);
 
-    const satellites = await Promise.all(_.map(
-      serviceChainWorkers,
-      // (service) => runService(hubName, service, false)
-      (service) => createSatelliteService(hubName, service)
-    ));
 
     await hubConnected();
+    const satelliteKeyVals = _.toPairs(satelliteRecords);
 
     // TODO this won't work in a distributed environment if you have to get the commLink to make the linkage
     // Should be based on service name and nothing more
-    const commLinks = _.map(satellites, ts => ts.commLink);
+    const commLinks = _.map(satelliteKeyVals, ([, sat]) => sat.commLink);
 
     // TODO make this chain the services, not the commlinks
     chainServices('run', commLinks);
 
-    const retval = await axios.post(
-      'http://localhost:3100/extractor/record.json', {
-      json: liveRecs[0]
-    });
+    // const retval = await axios.post(
+    //   'http://localhost:3100/extractor/record.json', {
+    //   json: liveRecs[0]
+    // });
+    //
 
-    prettyPrint({ retval: retval });
+    // satelliteRecords['MockRecords'].commLink.yield()
+    // prettyPrint({ retval: retval });
+    await hubService.shutdownSatellites();
+    await hubService.commLink.quit();
   });
 
 });

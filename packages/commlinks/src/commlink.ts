@@ -14,11 +14,11 @@ import {
   MessageHandlerRec,
   MessageHandler,
   Yield,
-} from './service-defs';
+} from './message-types';
 
 import { newRedisClient } from './ioredis-conn';
 
-export interface ServiceComm<T> {
+export interface CommLink<T> {
   name: string;
   log: winston.Logger;
   addHandlers(m: MessageHandlerRec<T>): void;
@@ -41,17 +41,17 @@ export interface ServiceComm<T> {
 function getMessageHandlers<T>(
   message: Message,
   packedMsg: string,
-  serviceComm: ServiceComm<T>,
+  commLink: CommLink<T>,
   serviceT: T
 ): Thunk[] {
-  const { messageHandlers } = serviceComm;
+  const { messageHandlers } = commLink;
 
-  serviceComm.log.silly(`finding message handlers for ${packedMsg}`);
+  commLink.log.silly(`finding message handlers for ${packedMsg}`);
 
   const handlers = _.flatMap(messageHandlers, ([handlerKey, handler]) => {
     const keyMatches = packedMsg.match(handlerKey);
     if (keyMatches !== null) {
-      serviceComm.log.silly(`found message handler ${handlerKey} for ${packedMsg}`);
+      commLink.log.silly(`found message handler ${handlerKey} for ${packedMsg}`);
       const bh = _.bind(handler, serviceT);
       return [() => bh(message)];
     }
@@ -63,8 +63,8 @@ function getMessageHandlers<T>(
 
 const nextId = newIdGenerator(1);
 
-export function newServiceComm<This>(name: string): ServiceComm<This> {
-  const serviceComm: ServiceComm<This> = {
+export function newCommLink<This>(name: string): CommLink<This> {
+  const commLink: CommLink<This> = {
     name,
     subscriber: newRedisClient(name),
     isShutdown: false,
@@ -144,7 +144,7 @@ export function newServiceComm<This>(name: string): ServiceComm<This> {
 
           const message = Message.unpack(packedMsg);
 
-          const handlersForMessage = getMessageHandlers<This>(message, packedMsg, serviceComm, serviceT);
+          const handlersForMessage = getMessageHandlers<This>(message, packedMsg, commLink, serviceT);
 
           Async.mapSeries(handlersForMessage, async (handler: Thunk) => handler())
             .catch((error) => {
@@ -171,5 +171,5 @@ export function newServiceComm<This>(name: string): ServiceComm<This> {
     }
   };
 
-  return serviceComm;
+  return commLink;
 }

@@ -1,5 +1,5 @@
 import _ from 'lodash';
-import { Ack, Address, Dispatch, Message, Ping, Quit, Yield } from './service-defs';
+import { Ack, Address, Dispatch, Message, Ping, Quit, Yield } from './message-types';
 // import { prettyPrint } from '@watr/commonlib';
 
 describe('Service Communication Hub lifecycle', () => {

@@ -12,8 +12,9 @@ export const RedisConnectionEvents = [
 ];
 
 export function newRedisClient(name: string, opts?: Redis.RedisOptions): Redis.Redis {
-  const isDockerized = process.env.DOCKERIZED === 'true';
-  const host = isDockerized ? 'redis' : 'localhost';
+  // const isDockerized = process.env.DOCKERIZED === 'true';
+  // const host = isDockerized ? 'redis' : 'localhost';
+  const host = 'localhost';
   const allOpts = _.merge({}, { host }, opts);
   const client = new Redis(allOpts);
   installEventEchoing(client, name);

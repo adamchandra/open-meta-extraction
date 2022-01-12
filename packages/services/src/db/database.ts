@@ -1,4 +1,4 @@
-import { getEnv } from '@watr/commonlib';
+import { initConfig } from '@watr/commonlib';
 import _ from 'lodash';
 
 import {
@@ -11,22 +11,24 @@ import { defineTables } from './db-tables';
 export interface DBConfig {
   username: string;
   password: string;
-  database: string;
+  dbname: string;
 }
 
-export function getDBConfig(configType: 'test' | 'production'): DBConfig | undefined {
-  const database = getEnv('DBName') || configType === 'test' ? 'open_extraction_testdb' : 'open_extraction';
-  const username = getEnv('DBUser') || 'watrworker';
-  const password = getEnv('DBPassword') || configType === 'test' ? 'watrpasswd' : undefined;
-  if (password === undefined) {
-    return;
-  }
+export function getDBConfig(): DBConfig | undefined {
+  const config = initConfig();
+
+  const username = config.get('db:username');
+  const password = config.get('db:password');
+  const dbname = config.get('db:dbname');
+
   return {
-    database, username, password
+    dbname,
+    username,
+    password
   };
 }
 
-export async function initSequelize(dbConfig: DBConfig): Promise<Sequelize> {
+async function initSequelize(dbConfig: DBConfig): Promise<Sequelize> {
   const sequelize = new Sequelize({
     dialect: 'postgres',
     ...dbConfig,
@@ -93,7 +95,6 @@ export async function openDatabase(dbConfig: DBConfig): Promise<Database> {
       const runT = _.curry(runTransaction)(sql);
 
       const unsafeResetDatabase = async () => {
-        // await sql.drop();
         await sql.dropAllSchemas({});
         return sql
           .sync({ force: true })

@@ -10,7 +10,7 @@ import { getDBConfig } from './database';
 
 
 describe('High-level Database API', () => {
-  const dbConfig = getDBConfig('test');
+  const dbConfig = getDBConfig();
   const dbCtx: DatabaseContext | undefined = dbConfig ? { dbConfig } : undefined;
   expect(dbCtx).toBeDefined;
 

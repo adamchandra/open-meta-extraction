@@ -2,7 +2,7 @@ import Koa, { Context } from 'koa';
 import Router from 'koa-router';
 import json from 'koa-json';
 import { Server } from 'http';
-import { arglib, setEnv } from '@watr/commonlib';
+import { arglib } from '@watr/commonlib';
 import { initPortalRouter } from './portal-routes';
 import { createAppLogger } from './portal-logger';
 import { WorkflowServices } from '~/workflow/inline-workflow';
@@ -65,9 +65,9 @@ registerCmd(
   )
 )((args: any) => {
   const { appShareDir, useDb } = args;
-  setEnv('AppSharePath', appShareDir);
+  // setEnv('AppSharePath', appShareDir);
   if (useDb === true) {
-    const dbConfig = getDBConfig('production');
+    const dbConfig = getDBConfig();
     if (dbConfig === undefined) {
       return;
     }

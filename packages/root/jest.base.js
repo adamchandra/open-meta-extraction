@@ -30,6 +30,7 @@ function makeConfig(modulePackage) {
     },
     testRunner: "jest-jasmine2",
     moduleFileExtensions: ["ts", "js", "json", "node"],
+    setupFilesAfterEnv: ['./test/jest.setup.ts'],
     globals: {
       'ts-jest': {
         tsconfig,
