@@ -66,7 +66,7 @@ describe('End-to-end Extraction workflows', () => {
     // });
     //
 
-    // satelliteRecords['MockRecords'].commLink.yield()
+    // satelliteRecords['MockRecords'].commLink.call()
     // prettyPrint({ retval: retval });
     await hubService.shutdownSatellites();
     await hubService.commLink.quit();

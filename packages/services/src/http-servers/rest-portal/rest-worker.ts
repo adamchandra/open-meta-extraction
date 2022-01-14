@@ -60,8 +60,8 @@ async function postRecordJson(
   if (requestBody) {
     // TODO validate requestBody as AlphaRecord[]
     const alphaRec: AlphaRecord = requestBody;
-    // const extractedFields: string = await commLink.yield(alphaRec);
-    const restPortalResponse = await commLink.yield(RecordRequest(alphaRec));
+    // const extractedFields: string = await commLink.call(alphaRec);
+    const restPortalResponse = await commLink.call('run', RecordRequest(alphaRec));
     prettyPrint({ restPortalResponse });
 
     responseBody.status = 'ok';

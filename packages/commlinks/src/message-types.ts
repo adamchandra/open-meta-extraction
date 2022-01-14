@@ -1,30 +1,57 @@
 import _ from 'lodash';
-import { putStrLn, parseJson } from '@watr/commonlib';
 
 export type Thunk = () => Promise<void>;
 
-export type MessageHandler<This> = (this: This, msg: Message) => Promise<Message | void>;
-export type MessageHandlerDef<This> = [string, MessageHandler<This>];
-export type MessageHandlerRec<This> = Record<string, MessageHandler<This>>;
-export type MessageHandlers<This> = MessageHandlerDef<This>[];
+export type MessageHandler<ClientT> = (this: ClientT, msg: Message) => Promise<Message | void>;
+export type MessageHandlerDef<ClientT> = [MessageQuery, MessageHandler<ClientT>];
+export type DispatchHandler<ClientT, A = any, B = any> = (this: ClientT, a: A) => Promise<B>;
+export type DispatchHandlers<ClientT> = Record<string, DispatchHandler<ClientT>>;
 
-export type DispatchHandler<This, A = any, B = any> = (this: This, a: A) => Promise<B>;
-// export type DispatchHandlerDef<This> = [string, MessageHandler<This>];
-// export type DispatchHandlers<This> = Record<string, DispatchHandler<This>>;
-export type DispatchHandlers<This> = Record<string, DispatchHandler<This>>;
+// Base Message Body, kind=ping/ack/quit/etc..
+//   Qualified Message Body, qual (qualified kind) allows matching on messages
+//   like call/userFunc, ack/ping, etc., where full qualifed message kind
+//   is 'kind/qual'
 
-export interface Dispatch {
-  kind: 'dispatch';
-  func: string;
+//////////
+//
+// export interface AnyKind {
+//   kind: undefined
+// };
+// export const AnyKind: AnyKind = {
+//   kind: undefined
+// };
+
+export interface CallKind {
+  kind: 'call';
+  qual: string;
+}
+export function CallKind(func: string): CallKind {
+  return { kind: 'call', qual: func };
+}
+
+export interface Call extends CallKind {
   arg: any;
 }
 
+export function Call(func: string, arg: any): Call {
+  return { ...CallKind(func), arg };
+}
 
-export const Dispatch = (func: string, arg: any) =>
-  <Dispatch>{
-    kind: 'dispatch',
-    func, arg
-  };
+export interface YieldKind {
+  kind: 'yield';
+  qual: string;
+}
+export function YieldKind(func: string): YieldKind {
+  return { kind: 'yield', qual: func };
+}
+
+export interface Yield extends YieldKind {
+  value: any;
+}
+
+export function Yield(func: string, value: any): Yield {
+  return { ...YieldKind(func), value };
+}
 
 export interface Yielded {
   kind: 'yielded';
@@ -36,82 +63,73 @@ export const Yielded = (value: any) =>
     kind: 'yielded', value
   };
 
-export interface Yield {
-  kind: 'yield';
-  value: any;
-}
-
-export const Yield = (value: any) =>
-  <Yield>{
-    kind: 'yield', value
-  };
-
 export interface Push {
   kind: 'push';
-  msg: MessageBody;
+  msg: Body;
 }
 
-export const Push = (msg: MessageBody) =>
+export const Push = (msg: Body) =>
   <Push>{
     kind: 'push', msg
   };
 
-export interface Ack {
+export interface AckKind {
   kind: 'ack';
+}
+export interface Ack extends AckKind {
   acked: string;
 }
 
-export const Ack = (msg: MessageBody) =>
-  <Ack>{
-    kind: 'ack', acked: msg.kind
-  };
+export function Ack(msg: Body): Ack {
+  return { kind: 'ack', acked: msg.kind };
+}
 
-export type Ping = { kind: 'ping' };
-export const Ping: Ping = { kind: 'ping' };
+export interface PingKind {
+  kind: 'ping';
+}
+export interface Ping extends PingKind { }
+export const PingKind: PingKind = { kind: 'ping' };
+export const Ping: Ping = PingKind;
 
-export type Quit = { kind: 'quit' };
-export const Quit: Quit = { kind: 'quit' };
+export interface QuitKind {
+  kind: 'quit';
+}
+export interface Quit extends QuitKind { }
+export const QuitKind: QuitKind = { kind: 'quit' };
+export const Quit: Quit = QuitKind;
 
 
-export type MessageBody =
-  Yield
+export type BodyKind =
+  CallKind
+  | AckKind
+  | PingKind
+  | QuitKind
+  | YieldKind
+  ;
+
+export type Body =
+  Call
+  | Yield
   | Yielded
-  | Dispatch
   | Push
   | Ping
   | Quit
   | Ack
   ;
 
-export interface AddrTo {
-  to: string;
-}
-
-export interface AddrFrom {
+interface Headers {
   from: string;
-}
-
-export type Address = AddrFrom & AddrTo;
-export const Address = (body: Message | MessageBody, headers: Partial<Headers>) => {
-  if ('from' in body && 'to' in body) {
-    return _.merge({}, body, headers);
-  }
-  const defaultHeaders: Headers = {
-    from: '', to: '', id: 0
-  };
-  return _.merge({}, body, defaultHeaders, headers);
-};
-
-export interface Headers extends Address {
+  to: string;
   id: number;
 }
 
-export type Message = MessageBody & Headers;
+export type MessageKind = BodyKind & Partial<Headers>;
+export type Message = Body & Headers;
 
 export const Message = {
   pack: packMessage,
   unpack: unpackMessage,
-  address(body: Message | MessageBody, headers: Partial<Headers>): Message {
+  address(body: Message | Body, headers: Partial<Headers>): Message {
     if ('from' in body && 'to' in body) {
       return _.merge({}, body, headers);
     }
@@ -122,103 +140,16 @@ export const Message = {
   }
 };
 
-export function packMessageBody(message: MessageBody): string {
-  switch (message.kind) {
-    case 'dispatch': {
-      const { func, arg } = message;
-      const varg = arg === undefined ? '"null"' : JSON.stringify(arg);
-      return `dispatch/${func}:${varg}`;
-    }
-    case 'yield': {
-      const { value } = message;
-      const vstr = JSON.stringify(value);
-      return `yield/${vstr}`;
-    }
-    case 'yielded': {
-      const { value } = message;
-      const vstr = JSON.stringify(value);
-      return `yielded/${vstr}`;
-    }
-    case 'push': {
-      const { msg } = message;
-      const vstr = packMessageBody(msg);
-      return `push/${vstr}`;
-    }
-    case 'ping': {
-      return 'ping';
-    }
-    case 'ack': {
-      const { acked } = message;
-      return `ack/${acked}`;
-    }
-    case 'quit': {
-      return 'quit';
-    }
-  }
+export type MessageQuery = Partial<BodyKind & Headers>;
+
+export function addHeaders<T extends Body | MessageQuery | Message, H extends Headers | Partial<Headers>>(
+  input: T,
+  h: H
+): T extends Message? Message : H extends Headers? Message : MessageQuery  {
+  const output: T = _.merge({}, input, h);
+
+  return <T>output as any;
 }
-
-export function unpackMessageBody(packedMessage: string): MessageBody {
-  const slashIndex = packedMessage.indexOf('/');
-  let msgKind = packedMessage;
-  let body = '';
-
-  if (slashIndex > 0) {
-    msgKind = packedMessage.slice(0, Math.max(0, slashIndex));
-    body = packedMessage.slice(slashIndex + 1);
-  }
-
-  let unpackedMsg: MessageBody;
-
-  switch (msgKind) {
-    case 'dispatch': {
-      const divider = body.indexOf(':');
-      const func = body.slice(0, Math.max(0, divider));
-      const argstr = body.slice(divider + 1);
-      const arg = parseJson(argstr);
-      unpackedMsg = {
-        kind: msgKind,
-        func,
-        arg
-      };
-      break;
-    }
-    case 'yield':
-    case 'yielded': {
-      unpackedMsg = {
-        kind: msgKind,
-        value: parseJson(body)
-      };
-      break;
-    }
-    case 'push': {
-      unpackedMsg = {
-        kind: msgKind,
-        msg: unpackMessageBody(body)
-      };
-      break;
-    }
-
-    case 'ack': {
-      unpackedMsg = {
-        kind: msgKind,
-        acked: body
-      };
-      break;
-    }
-    case 'ping':
-    case 'quit':
-      unpackedMsg = {
-        kind: msgKind,
-      };
-      break;
-    default:
-      putStrLn(`Default:Could not unpack Message ${packedMessage}`);
-      throw new Error(`Could not unpack Message payload ${packedMessage}`);
-  }
-
-  return unpackedMsg;
-}
-
 export function updateHeaders(message: Message, headers: Partial<Headers>): Message {
   return _.assign(message, headers);
 }
@@ -236,22 +167,31 @@ export function packHeaders(message: Message): string {
 }
 
 export function packMessage(message: Message): string {
-  const hdrs = packHeaders(message);
-  const pmsg = packMessageBody(message);
-  return `${hdrs}${pmsg}`;
+  return JSON.stringify(message);
 }
 
 
-export function unpackMessage(packed: string): Message & Address {
-  const divider = packed.indexOf('>');
-  const hdrs = packed.slice(0, Math.max(0, divider)).trim();
-  const message = packed.slice(divider + 1).trim();
+export function unpackMessage(packed: string): Message {
+  return JSON.parse(packed);
+}
 
-  const headers: Headers = unpackHeaders(hdrs);
-  const body: MessageBody = unpackMessageBody(message);
+function undefOrEqual<A>(a1: any, a2: A, prop: string): boolean {
+  const propInA = prop in a1;
+  const propInB = prop in a2;
 
-  return ({
-    ...headers,
-    ...body
-  });
+  return !propInA || (
+    (propInA && propInB)
+    && a1[prop] === a2[prop]
+  );
+}
+
+export function matchMessageToQuery(
+  query: MessageQuery,
+  messageKind: Message
+): boolean {
+  return undefOrEqual(query, messageKind, 'kind')
+    && undefOrEqual(query, messageKind, 'qual')
+    && undefOrEqual(query, messageKind, 'from')
+    && undefOrEqual(query, messageKind, 'to')
+    && undefOrEqual(query, messageKind, 'id')
 }

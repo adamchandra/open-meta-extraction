@@ -4,7 +4,7 @@ import { delay } from '@watr/commonlib';
 import winston from 'winston';
 import Async from 'async';
 import { newCommLink, CommLink } from './commlink';
-import { Ack, Address, DispatchHandler, DispatchHandlers, Message, MessageBody, Ping, Quit } from './message-types';
+import { Ack, DispatchHandler, DispatchHandlers, Message, Body, Ping, Quit, CallKind } from './message-types';
 
 export type LifecycleName = keyof {
   startup: null,
@@ -26,7 +26,7 @@ export interface SatelliteService<CargoT> {
   serviceName: string;
   hubName: string;
   commLink: CommLink<SatelliteService<CargoT>>;
-  sendHub(msg: MessageBody): Promise<void>;
+  sendHub(msg: Body): Promise<void>;
   log: winston.Logger;
   cargo: CargoT;
 }
@@ -56,7 +56,7 @@ export async function createSatelliteService<T>(
 ): Promise<SatelliteService<T>> {
   const commLink = newCommLink<SatelliteService<T>>(satelliteName);
 
-  commLink.addDispatches(serviceDef.lifecyleHandlers);
+  // TODO fixme commLink.addDispatches(serviceDef.lifecyleHandlers);
 
   return serviceDef
     .cargoInit(commLink)
@@ -69,9 +69,9 @@ export async function createSatelliteService<T>(
         ...serviceDef.lifecyleHandlers,
         serviceName: satelliteName,
         hubName,
-        async sendHub(message: MessageBody): Promise<void> {
+        async sendHub(message: Body): Promise<void> {
           return commLink.send(
-            Address(message, { from: satelliteName, to: hubName })
+            Message.address(message, { from: satelliteName, to: hubName })
           );
         },
         log: commLink.log.child({
@@ -83,19 +83,16 @@ export async function createSatelliteService<T>(
 
       await commLink.connect(satService);
 
-      commLink.addHandlers({
-        async ping(msg) {
-          return this.sendHub(Ack(msg));
-        },
-        async push(msg) {
-          if (msg.kind !== 'push') return;
-          return this.sendHub(msg.msg);
-        },
-        async quit(msg) {
-          // TODO shutdown cargo?
-          return this.sendHub(Ack(msg))
-            .then(() => commLink.quit());
-        },
+      commLink.on(CallKind('ping'), async (msg: Message) => {
+        return this.sendHub(Ack(msg));
+      });
+      commLink.on(CallKind('push'), async (msg: Message) => {
+        if (msg.kind !== 'push') return;
+        return this.sendHub(msg.msg);
+      });
+      commLink.on(CallKind('quit'), async (msg: Message) => {
+        return this.sendHub(Ack(msg))
+          .then(() => commLink.quit());
       });
 
       // await runHandler('startup');
@@ -107,14 +104,20 @@ export async function createSatelliteService<T>(
 async function messageAllSatellites(
   hubComm: CommLink<ServiceHub>,
   satelliteNames: string[],
-  msg: MessageBody
+  msg: Body
 ): Promise<void> {
   const pinged: string[] = [];
 
-  hubComm.addHandler(`ack/${msg.kind}`, async (msg: Message) => {
+  hubComm.on({
+    kind: 'ack'
+  }, async (msg: Message) => {
     hubComm.log.debug(`${hubComm.name} got ${msg.kind} from satellite ${msg.from}`);
     pinged.push(msg.from);
-  });
+  })
+  // hubComm.addHandler(`ack/${msg.kind}`, async (msg: Message) => {
+  //   hubComm.log.debug(`${hubComm.name} got ${msg.kind} from satellite ${msg.from}`);
+  //   pinged.push(msg.from);
+  // });
 
   const allPinged = () => _.every(satelliteNames, n => pinged.includes(n));
   const unpinged = () => _.filter(satelliteNames, n => !pinged.includes(n));
@@ -126,7 +129,7 @@ async function messageAllSatellites(
     hubComm.log.info(`${hubComm.name} sending ${msg.kind} to remaining satellites: ${_.join(remaining, ', ')}`);
     await Async.each(
       remaining,
-      async satelliteName => hubComm.send(Address(msg, { to: satelliteName }))
+      async satelliteName => hubComm.send(Message.address(msg, { to: satelliteName }))
     );
 
     return delay(200).then(async () => {

@@ -1,57 +1,34 @@
+import { prettyPrint } from '@watr/commonlib';
 import _ from 'lodash';
-import { chainServices } from './chain-connection';
+import { newCommLink } from './commlink';
+import { Ping, addHeaders, Message } from './message-types';
 
-import { createTestServices } from './service-test-utils';
+describe('CommLink Communication', () => {
+  process.env['service-comm.loglevel'] = 'silly';
 
-describe('Redis-based Service Communication', () => {
-  process.env['service-comm.loglevel'] = 'info';
+  it('should startup/quit', async () => {
+    const commLink0 = newCommLink<undefined>('commlink0');
+    await commLink0.connect(undefined);
 
-  interface MsgArg {
-    callees: string[];
-    which: number;
-  }
+    // TODO rename yield/yielded to relay/return
+    await commLink0.quit();
+  })
 
+  it('should ping/ack', async (done) => {
+    const commNames = _.map(_.range(2), (i) => `commLink-${i}`);
+    const commLinks = _.map(commNames, (name) => newCommLink<undefined>(name));
+    await Promise.all(_.map(commLinks, (commLink) => commLink.connect(undefined)));
 
-  it('should push message and promise response', async (done) => {
-    const testServices = await createTestServices(3);
-    const commLinks = _.map(testServices, ts => ts.commLink);
+    const [comm0, comm1] = commLinks;
+    const ping0 = addHeaders(Ping, { to: comm1.name, from: comm0.name, id: 0 })
+    await comm0.send(ping0)
 
-    chainServices('run', commLinks);
-
-    const commLink0 = commLinks[0];
-
-    _.each(testServices, (service) => {
-      service.commLink.addDispatches({
-        async run(msg: MsgArg) {
-          msg.callees.push(this.commLink.name);
-          this.commLink.log.info(`run msg=${msg.which}, callees=${msg.callees}`);
-          return msg;
-        }
-      });
-    });
+    await comm0.on({ kind: 'ack' }, async (msg: Message) => {
+      prettyPrint({ info: 'comm0 received msg', msg })
+      await Promise.all(_.map(commLinks, (commLink) => commLink.quit()));
+      done();
+    })
 
 
-    const allChains = _.map(_.range(2), n => {
-      const initMsg: MsgArg = {
-        callees: [],
-        which: n
-      };
-
-      return commLink0.yield(initMsg);
-    });
-
-    await Promise.all(allChains)
-      .then((results) => {
-        const expected = [
-          { callees: ['service-1', 'service-2'], which: 0 },
-          { callees: ['service-1', 'service-2'], which: 1 }
-        ];
-        expect(results).toStrictEqual(expected);
-      });
-
-
-    const quitting = _.map(testServices, s => s.commLink.quit());
-    await Promise.all(quitting);
-    done();
-  });
+  })
 });
