@@ -2,7 +2,8 @@ import _ from 'lodash';
 import Async from 'async';
 import { defineSatelliteService, createSatelliteService, SatelliteService, ServiceHub, createHubService } from './hub-connection';
 import { newCommLink, CommLink } from './commlink';
-import { Message } from './message-types';
+import { Message, CallKind } from './message-types';
+import { MessageQuery } from '.';
 
 // Create a Hub/Satellite service network with specified # of satellites
 export interface TestService {
@@ -19,11 +20,15 @@ export async function createTestServices(n: number): Promise<Array<TestService>>
         commLink: newCommLink(serviceName),
       };
 
-      service.commLink.addHandlers({
-        async quit() {
-          await this.commLink.quit();
-        }
+      service.commLink.on(CallKind('quit'), async (_msg: Message) => {
+        await this.commLink.quit();
       });
+
+      // service.commLink.addHandlers({
+      //   async quit() {
+      //     await this.commLink.quit();
+      //   }
+      // });
 
       await service.commLink.connect(service);
       return service;
@@ -32,6 +37,7 @@ export async function createTestServices(n: number): Promise<Array<TestService>>
   return services;
 }
 
+const AnyKind: MessageQuery = {};
 
 export async function createTestServiceHub(
   n: number,
@@ -50,27 +56,29 @@ export async function createTestServiceHub(
     serviceNames,
     async (serviceName: string) => {
       const serviceDef = defineSatelliteService<void>(
-        async () => {}, {
-          async run() {
-            this.log.info(`${this.serviceName} [run]> payload=??? `);
-          },
-        });
+        async () => { }, {
+        async run() {
+          this.log.info(`${this.serviceName} [run]> payload=??? `);
+        },
+      });
 
       const satService = await createSatelliteService(hubName, serviceName, serviceDef);
-      satService.commLink.addHandlers({
-        '.*': async function(msg) {
-          recordLogMsgHandler(serviceName)(msg);
-        }
+
+      satService.commLink.on(AnyKind, async (msg: Message) => {
+        recordLogMsgHandler(serviceName)(msg);
       });
+      // satService.commLink.addHandlers({
+      //   '.*': async function(msg) {
+      //     recordLogMsgHandler(serviceName)(msg);
+      //   }
+      // });
       return satService;
     });
 
   const [hubPool, connectHub] = await createHubService(hubName, serviceNames);
 
-  hubPool.commLink.addHandlers({
-    '.*': async function(msg) {
-      recordLogMsgHandler(hubPool.name)(msg);
-    }
+  hubPool.commLink.on(AnyKind, async (msg: Message) => {
+    recordLogMsgHandler(hubPool.name)(msg);
   });
 
   return [hubPool, connectHub, satelliteServices];

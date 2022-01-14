@@ -3,10 +3,9 @@ import _ from 'lodash';
 import { CommLink } from './commlink';
 
 import {
-  Address,
-  Dispatch,
-  Yield,
-  Yielded
+  Message,
+  Call,
+  Yielded,
 } from './message-types';
 
 export function chainServices<S>(
@@ -23,59 +22,90 @@ export function chainServices<S>(
     const currService = commLink.name;
 
     if (isFirstService) {
-      commLink.addHandler(
-        `${currService}>push`, async (msg) => {
-          if (msg.kind !== 'push') return;
-          commLink.send(Address(msg.msg, { id: msg.id, to: currService }));
-        },
-      );
-      commLink.addHandler(
-        `${nextService}>yield`, async (msg) => {
-          if (msg.kind !== 'yield') return;
-          commLink.send(Address(Yielded(msg.value), { id: msg.id, to: currService }));
-        },
-      );
+      // This just exists to allow calling first commLink with initial message
+      // commLink.addHandler(
+      //   `${currService}>push`, async (msg) => {
+      //     if (msg.kind !== 'push') return;
+      //     commLink.send(Message.address(msg.msg, { id: msg.id, to: currService }));
+      //   },
+      // );
+      commLink.on({
+        kind: 'yield',
+        from: nextService
+      }, async (msg: Message) => {
+        if (msg.kind !== 'yield') return;
+        commLink.send(Message.address(Yielded(msg.value), { id: msg.id, to: currService }));
+      });
+
+      // commLink.addHandler(
+      //   `${nextService}>yield`, async (msg) => {
+      //     if (msg.kind !== 'yield') return;
+      //     commLink.send(Message.address(Yielded(msg.value), { id: msg.id, to: currService }));
+      //   },
+      // );
     }
 
     if (!isFirstService) {
-      commLink.addHandler(
-        `${nextService}>yield`, async (msg) => {
-          if (msg.kind !== 'yield') return;
-          commLink.send(Address(msg, { to: prevService }));
-        },
-      );
+      commLink.on({
+        kind: 'yield',
+        from: nextService
+      }, async (msg: Message) => {
+        if (msg.kind !== 'yield') return;
+        commLink.send(Message.address(msg, { to: prevService }));
+      });
+      // commLink.addHandler(
+      //   `${nextService}>yield`, async (msg) => {
+      //     if (msg.kind !== 'yield') return;
+      //     commLink.send(Message.address(msg, { to: prevService }));
+      //   },
+      // );
     }
 
     if (!isLastService) {
-      commLink.addHandler(
-        `${currService}>yield`, async (msg) => {
-          if (msg.kind !== 'yield') return;
-          commLink.send(Address(Dispatch(functionName, msg.value), { id: msg.id, to: nextService }));
-        },
-      );
+      commLink.on({
+        kind: 'yield',
+        from: currService
+      }, async (msg: Message) => {
+        if (msg.kind !== 'yield') return;
+        commLink.send(Message.address(Call(functionName, msg.value), { id: msg.id, to: nextService }));
+      });
+      // commLink.addHandler(
+      //   `${currService}>yield`, async (msg) => {
+      //     if (msg.kind !== 'yield') return;
+      //     commLink.send(Message.address(Call(functionName, msg.value), { id: msg.id, to: nextService }));
+      //   },
+      // );
     }
     if (isLastService) {
-      commLink.addHandler(`${currService}>yield`, async (msg) => {
+      commLink.on({
+        kind: 'yield',
+        from: currService
+      }, async (msg: Message) => {
         if (msg.kind !== 'yield') return;
-        commLink.send(Address(msg, { to: prevService }));
+        commLink.send(Message.address(msg, { to: prevService }));
       });
+      // commLink.addHandler(`${currService}>yield`, async (msg) => {
+      //   if (msg.kind !== 'yield') return;
+      //   commLink.send(Message.address(msg, { to: prevService }));
+      // });
     }
 
-    commLink.addHandler(`dispatch/${functionName}`, async function(msg) {
-      if (msg.kind !== 'dispatch') return;
-      const { func, arg } = msg;
-      const f = commLink.dispatchHandlers[func];
-      if (f !== undefined) {
-        const bf = _.bind(f, this);
-        const result = await bf(arg);
-        const yld = result === undefined ? null : result;
+    // commLink.on(CallKind(functionName))
+    // commLink.addHandler(`dispatch/${functionName}`, async function(msg) {
+    //   if (msg.kind !== 'dispatch') return;
+    //   const { func, arg } = msg;
+    //   const f = commLink.dispatchHandlers[func];
+    //   if (f !== undefined) {
+    //     const bf = _.bind(f, this);
+    //     const result = await bf(arg);
+    //     const yld = result === undefined ? null : result;
 
-        await commLink.send(
-          Address(
-            Yield(yld), { id: msg.id, to: currService }
-          )
-        );
-      }
-    });
+    //     await commLink.send(
+    //       Message.address(
+    //         Yield(yld), { id: msg.id, to: currService }
+    //       )
+    //     );
+    //   }
+    // });
   });
 }
