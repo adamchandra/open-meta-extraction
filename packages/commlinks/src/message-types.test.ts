@@ -1,16 +1,15 @@
 import _ from 'lodash';
 
 import {
-  Ack,
   Call,
   Message,
   MessageQuery,
-  Ping,
-  Quit,
-  Yield,
+  quit,
+  reply,
   matchMessageToQuery,
   addHeaders,
-  YieldKind
+  ping,
+  ack
 } from './message-types';
 
 import { prettyPrint } from '@watr/commonlib';
@@ -20,11 +19,11 @@ describe('Service Communication Hub lifecycle', () => {
 
   it('should marshall/unmarshall messages', () => {
     const examples = [
-      Yield('myfunc', { someVal: '23' }),
-      Call('my-method', { arg: 0, arg2: '1' }),
-      Ping,
-      Ack(Ping),
-      Quit
+      // Yield('myfunc', { someVal: '23' }),
+      // Call('my-method', { arg: 0, arg2: '1' }),
+      ping,
+      ack(ping),
+      quit
     ];
 
     _.each(examples, example => {
@@ -39,24 +38,24 @@ describe('Service Communication Hub lifecycle', () => {
 
   it('should match messagekinds to messages for filtering', async (done) => {
     const queries: MessageQuery[] = [
-      YieldKind('myfunc'), { id: 0 },
-      addHeaders(YieldKind('myfunc'), { id: 0 }),
-      addHeaders(YieldKind('myfunc'), { id: 1 }),
-      addHeaders(YieldKind('myfunc'), { from: 'me' }),
-      YieldKind('yourfunc'),
+      reply('myfunc'), { id: 0 },
+      addHeaders(reply('myfunc'), { id: 0 }),
+      addHeaders(reply('myfunc'), { id: 1 }),
+      addHeaders(reply('myfunc'), { from: 'me' }),
+      reply('yourfunc'),
       // Message.address(YieldKind('myfunc'), { id: 0 }),
       // Call('my-method', { arg: 0, arg2: '1' }),
       // Ping,
       // Ack(Ping),
     ];
     const messageKinds: Message[] = [
-      Message.address(Yield('myfunc', { foo: 'bar' }), { from: 'me', to: 'you' }),
+      Message.address(reply('myfunc', { foo: 'bar' }), { from: 'me', to: 'you' }),
     ];
     _.each(queries, (query) => {
+      prettyPrint({ msg: 'trying', query });
       _.each(messageKinds, (mkind) => {
-
         const isMatch = matchMessageToQuery(query, mkind);
-        prettyPrint({ isMatch, query, mkind });
+        prettyPrint({ isMatch, mkind });
       });
     });
     done();

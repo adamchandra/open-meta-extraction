@@ -4,7 +4,7 @@ import { delay } from '@watr/commonlib';
 import winston from 'winston';
 import Async from 'async';
 import { newCommLink, CommLink } from './commlink';
-import { Ack, DispatchHandler, DispatchHandlers, Message, Body, Ping, Quit, CallKind } from './message-types';
+import { DispatchHandler, DispatchHandlers, Message, Body, ping, quit } from './message-types';
 
 export type LifecycleName = keyof {
   startup: null,
@@ -83,17 +83,17 @@ export async function createSatelliteService<T>(
 
       await commLink.connect(satService);
 
-      commLink.on(CallKind('ping'), async (msg: Message) => {
-        return this.sendHub(Ack(msg));
-      });
-      commLink.on(CallKind('push'), async (msg: Message) => {
-        if (msg.kind !== 'push') return;
-        return this.sendHub(msg.msg);
-      });
-      commLink.on(CallKind('quit'), async (msg: Message) => {
-        return this.sendHub(Ack(msg))
-          .then(() => commLink.quit());
-      });
+      // commLink.on(PingKind, async (msg: Message) => {
+      //   return this.sendHub(Ack(msg));
+      // });
+      // commLink.on(CallKind('push'), async (msg: Message) => {
+      //   if (msg.kind !== 'push') return;
+      //   return this.sendHub(msg.msg);
+      // });
+      // commLink.on(QuitKind, async (msg: Message) => {
+      //   return this.sendHub(Ack(msg))
+      //     .then(() => commLink.quit());
+      // });
 
       // await runHandler('startup');
 
@@ -147,10 +147,10 @@ export async function createHubService(
     name: hubName,
     commLink: newCommLink(hubName),
     async addSatelliteServices(): Promise<void> {
-      await messageAllSatellites(this.commLink, orderedServices, Ping);
+      await messageAllSatellites(this.commLink, orderedServices, ping);
     },
     async shutdownSatellites(): Promise<void> {
-      await messageAllSatellites(this.commLink, orderedServices, Quit);
+      await messageAllSatellites(this.commLink, orderedServices, quit);
     }
   };
 

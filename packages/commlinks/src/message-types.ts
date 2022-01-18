@@ -14,104 +14,107 @@ export type DispatchHandlers<ClientT> = Record<string, DispatchHandler<ClientT>>
 
 //////////
 //
-// export interface AnyKind {
-//   kind: undefined
-// };
-// export const AnyKind: AnyKind = {
-//   kind: undefined
-// };
-
-export interface CallKind {
+export interface Call {
   kind: 'call';
-  qual: string;
+  func: string;
+  arg: object;
 }
-export function CallKind(func: string): CallKind {
-  return { kind: 'call', qual: func };
-}
-
-export interface Call extends CallKind {
-  arg: any;
-}
-
-export function Call(func: string, arg: any): Call {
-  return { ...CallKind(func), arg };
-}
-
-export interface YieldKind {
-  kind: 'yield';
-  qual: string;
-}
-export function YieldKind(func: string): YieldKind {
-  return { kind: 'yield', qual: func };
-}
-
-export interface Yield extends YieldKind {
-  value: any;
-}
-
-export function Yield(func: string, value: any): Yield {
-  return { ...YieldKind(func), value };
-}
-
-export interface Yielded {
-  kind: 'yielded';
-  value: any;
-}
-
-export const Yielded = (value: any) =>
-  <Yielded>{
-    kind: 'yielded', value
+export function call<
+  S extends string | undefined,
+  V extends object | undefined>(
+  func?: S,
+  arg?: V,
+): S extends string ? (V extends object ? Call : Partial<Call>) : Partial<Call> {
+  return {
+    kind: 'call',
+    func,
+    arg
   };
-
-export interface Push {
-  kind: 'push';
-  msg: Body;
 }
 
-export const Push = (msg: Body) =>
-  <Push>{
-    kind: 'push', msg
+// export interface CallKind {
+//   kind: 'call';
+//   qual: string;
+// }
+// export function CallKind(func: string): CallKind {
+//   return { kind: 'call', qual: func };
+// }
+
+// export interface Call extends CallKind {
+//   arg: any;
+// }
+
+// export function Call(func: string, arg: any): Call {
+//   return { ...CallKind(func), arg };
+// }
+
+export interface Reply {
+  kind: 'reply';
+  call: string;
+  value: object;
+}
+export function reply<
+  S extends string | undefined,
+  V extends object | undefined>(
+  subkind?: S,
+  value?: V,
+): S extends string ? (V extends undefined ? Partial<Reply> : Reply) : Partial<Reply> {
+  return {
+    kind: 'reply',
+    call: subkind,
+    value
   };
-
-export interface AckKind {
-  kind: 'ack';
-}
-export interface Ack extends AckKind {
-  acked: string;
 }
 
-export function Ack(msg: Body): Ack {
-  return { kind: 'ack', acked: msg.kind };
+
+/////////
+// Builtin to commLink
+
+export interface Pong {
+  kind: 'pong';
+  subk: string;
+}
+export function pong<S extends string | undefined>(
+  subkind: S
+): S extends string ? Pong : Partial<Pong> {
+  return {
+    kind: 'pong',
+    subk: subkind
+  };
 }
 
-export interface PingKind {
+
+// Ping
+export interface Ping {
   kind: 'ping';
 }
-export interface Ping extends PingKind { }
-export const PingKind: PingKind = { kind: 'ping' };
-export const Ping: Ping = PingKind;
+export const ping: Ping = { kind: 'ping' };
 
-export interface QuitKind {
+
+// Ack
+export interface Ack {
+  kind: 'ack';
+  subk: string;
+}
+export function ack<S extends Body | undefined>(
+  subkind: S
+): S extends Body ? Ack : Partial<Ack> {
+  return {
+    kind: 'ack',
+    subk: subkind.kind
+  };
+}
+
+
+// Quit
+export interface Quit {
   kind: 'quit';
 }
-export interface Quit extends QuitKind { }
-export const QuitKind: QuitKind = { kind: 'quit' };
-export const Quit: Quit = QuitKind;
-
-
-export type BodyKind =
-  CallKind
-  | AckKind
-  | PingKind
-  | QuitKind
-  | YieldKind
-  ;
+export const quit: Quit = { kind: 'quit' };
 
 export type Body =
   Call
-  | Yield
-  | Yielded
-  | Push
+  | Reply
   | Ping
   | Quit
   | Ack
@@ -123,7 +126,7 @@ interface Headers {
   id: number;
 }
 
-export type MessageKind = BodyKind & Partial<Headers>;
+// export type MessageKind = BodyKind & Partial<Headers>;
 export type Message = Body & Headers;
 
 export const Message = {
@@ -140,12 +143,14 @@ export const Message = {
   }
 };
 
-export type MessageQuery = Partial<BodyKind & Headers>;
+export type MessageQuery = Partial<Message>;
+
+export const AnyKind: MessageQuery = {};
 
 export function addHeaders<T extends Body | MessageQuery | Message, H extends Headers | Partial<Headers>>(
   input: T,
   h: H
-): T extends Message? Message : H extends Headers? Message : MessageQuery  {
+): T extends Message ? Message : H extends Headers ? Message : MessageQuery {
   const output: T = _.merge({}, input, h);
 
   return <T>output as any;
@@ -155,21 +160,20 @@ export function updateHeaders(message: Message, headers: Partial<Headers>): Mess
 }
 
 
-export function unpackHeaders(headers: string): Headers {
-  const [ids, to, from] = headers.split(/:/);
-  const id = Number.parseInt(ids, 10);
-  return { id, to, from };
-}
-export function packHeaders(message: Message): string {
-  const { from, to, id } = message;
-  const hdrs = `${id}:${to}:${from}>`;
-  return hdrs;
-}
+// export function unpackHeaders(headers: string): Headers {
+//   const [ids, to, from] = headers.split(/:/);
+//   const id = Number.parseInt(ids, 10);
+//   return { id, to, from };
+// }
+// export function packHeaders(message: Message): string {
+//   const { from, to, id } = message;
+//   const hdrs = `${id}:${to}:${from}>`;
+//   return hdrs;
+// }
 
 export function packMessage(message: Message): string {
   return JSON.stringify(message);
 }
-
 
 export function unpackMessage(packed: string): Message {
   return JSON.parse(packed);
