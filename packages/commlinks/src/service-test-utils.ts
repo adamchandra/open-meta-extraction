@@ -2,8 +2,7 @@ import _ from 'lodash';
 import Async from 'async';
 import { defineSatelliteService, createSatelliteService, SatelliteService, ServiceHub, createHubService } from './hub-connection';
 import { newCommLink, CommLink } from './commlink';
-import { Message, CallKind } from './message-types';
-import { MessageQuery } from '.';
+import { Message, AnyKind, quit } from './message-types';
 
 // Create a Hub/Satellite service network with specified # of satellites
 export interface TestService {
@@ -20,7 +19,7 @@ export async function createTestServices(n: number): Promise<Array<TestService>>
         commLink: newCommLink(serviceName),
       };
 
-      service.commLink.on(CallKind('quit'), async (_msg: Message) => {
+      service.commLink.on(quit, async (_msg: Message) => {
         await this.commLink.quit();
       });
 
@@ -37,7 +36,6 @@ export async function createTestServices(n: number): Promise<Array<TestService>>
   return services;
 }
 
-const AnyKind: MessageQuery = {};
 
 export async function createTestServiceHub(
   n: number,

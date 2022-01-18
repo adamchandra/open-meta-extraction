@@ -4,8 +4,7 @@ import { CommLink } from './commlink';
 
 import {
   Message,
-  Call,
-  Yielded,
+  call,
 } from './message-types';
 
 export function chainServices<S>(
@@ -30,11 +29,11 @@ export function chainServices<S>(
       //   },
       // );
       commLink.on({
-        kind: 'yield',
+        kind: 'reply',
         from: nextService
       }, async (msg: Message) => {
-        if (msg.kind !== 'yield') return;
-        commLink.send(Message.address(Yielded(msg.value), { id: msg.id, to: currService }));
+        if (msg.kind !== 'reply') return;
+        // TODO commLink.send(Message.address(Yielded(msg.value), { id: msg.id, to: currService }));
       });
 
       // commLink.addHandler(
@@ -47,10 +46,10 @@ export function chainServices<S>(
 
     if (!isFirstService) {
       commLink.on({
-        kind: 'yield',
+        kind: 'reply',
         from: nextService
       }, async (msg: Message) => {
-        if (msg.kind !== 'yield') return;
+        if (msg.kind !== 'reply') return;
         commLink.send(Message.address(msg, { to: prevService }));
       });
       // commLink.addHandler(
@@ -63,11 +62,11 @@ export function chainServices<S>(
 
     if (!isLastService) {
       commLink.on({
-        kind: 'yield',
+        kind: 'reply',
         from: currService
       }, async (msg: Message) => {
-        if (msg.kind !== 'yield') return;
-        commLink.send(Message.address(Call(functionName, msg.value), { id: msg.id, to: nextService }));
+        if (msg.kind !== 'reply') return;
+        commLink.send(Message.address(call(functionName, msg.value), { id: msg.id, to: nextService }));
       });
       // commLink.addHandler(
       //   `${currService}>yield`, async (msg) => {
@@ -78,10 +77,10 @@ export function chainServices<S>(
     }
     if (isLastService) {
       commLink.on({
-        kind: 'yield',
+        kind: 'reply',
         from: currService
       }, async (msg: Message) => {
-        if (msg.kind !== 'yield') return;
+        if (msg.kind !== 'reply') return;
         commLink.send(Message.address(msg, { to: prevService }));
       });
       // commLink.addHandler(`${currService}>yield`, async (msg) => {
