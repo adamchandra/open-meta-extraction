@@ -55,49 +55,51 @@ export async function createSatelliteService<T>(
   serviceDef: SatelliteServiceDef<T>
 ): Promise<SatelliteService<T>> {
 
+  const dummy: SatelliteService<T> = undefined;
+  return dummy;
   // TODO fixme commLink.addDispatches(serviceDef.lifecyleHandlers);
 
-  return serviceDef
-    .cargoInit(commLink)
-    .then(async (cargo) => {
-      const logLevel = process.env[`${satelliteName}.loglevel`]
-        || process.env['service-comm.loglevel']
-        || 'info';
+  // return serviceDef
+  //   .cargoInit(commLink)
+  //   .then(async (cargo) => {
+  //     const logLevel = process.env[`${satelliteName}.loglevel`]
+  //       || process.env['service-comm.loglevel']
+  //       || 'info';
 
-      const satService: SatelliteService<T> = {
-        ...serviceDef.lifecyleHandlers,
-        serviceName: satelliteName,
-        hubName,
-        async sendHub(message: Body): Promise<void> {
-          return commLink.send(
-            Message.address(message, { from: satelliteName, to: hubName })
-          );
-        },
-        log: commLink.log.child({
-          level: logLevel
-        }),
-        commLink,
-        cargo,
-      };
+  //     const satService: SatelliteService<T> = {
+  //       ...serviceDef.lifecyleHandlers,
+  //       serviceName: satelliteName,
+  //       hubName,
+  //       async sendHub(message: Body): Promise<void> {
+  //         return commLink.send(
+  //           Message.address(message, { from: satelliteName, to: hubName })
+  //         );
+  //       },
+  //       log: commLink.log.child({
+  //         level: logLevel
+  //       }),
+  //       commLink,
+  //       cargo,
+  //     };
 
-      await commLink.connect();
+  //     await commLink.connect();
 
-      // commLink.on(PingKind, async (msg: Message) => {
-      //   return this.sendHub(Ack(msg));
-      // });
-      // commLink.on(CallKind('push'), async (msg: Message) => {
-      //   if (msg.kind !== 'push') return;
-      //   return this.sendHub(msg.msg);
-      // });
-      // commLink.on(QuitKind, async (msg: Message) => {
-      //   return this.sendHub(Ack(msg))
-      //     .then(() => commLink.quit());
-      // });
+  //     // commLink.on(PingKind, async (msg: Message) => {
+  //     //   return this.sendHub(Ack(msg));
+  //     // });
+  //     // commLink.on(CallKind('push'), async (msg: Message) => {
+  //     //   if (msg.kind !== 'push') return;
+  //     //   return this.sendHub(msg.msg);
+  //     // });
+  //     // commLink.on(QuitKind, async (msg: Message) => {
+  //     //   return this.sendHub(Ack(msg))
+  //     //     .then(() => commLink.quit());
+  //     // });
 
-      // await runHandler('startup');
+  //     // await runHandler('startup');
 
-      return satService;
-    });
+  //     return satService;
+  //   });
 }
 
 async function messageAllSatellites(
@@ -142,20 +144,22 @@ export async function createHubService(
   hubName: string,
   orderedServices: string[]
 ): Promise<[ServiceHub, () => Promise<void>]> {
-  const hubService: ServiceHub = {
-    name: hubName,
-    commLink: newCommLink(hubName),
-    async addSatelliteServices(): Promise<void> {
-      await messageAllSatellites(this.commLink, orderedServices, ping);
-    },
-    async shutdownSatellites(): Promise<void> {
-      await messageAllSatellites(this.commLink, orderedServices, quit);
-    }
-  };
+  const hubService: ServiceHub = undefined;
+  // const hubService: ServiceHub = {
+  //   name: hubName,
+  //   commLink: newCommLink(hubName),
+  //   async addSatelliteServices(): Promise<void> {
+  //     await messageAllSatellites(this.commLink, orderedServices, ping);
+  //   },
+  //   async shutdownSatellites(): Promise<void> {
+  //     await messageAllSatellites(this.commLink, orderedServices, quit);
+  //   }
+  // };
 
-  const connectedPromise: () => Promise<void> = () =>
-    hubService.commLink.connect(hubService)
-      .then(() => hubService.addSatelliteServices());
+  const connectedPromise: () => Promise<void> = () => undefined;
+  // const connectedPromise: () => Promise<void> = () =>
+  //   hubService.commLink.connect(hubService)
+  //     .then(() => hubService.addSatelliteServices());
 
   return [hubService, connectedPromise];
 }

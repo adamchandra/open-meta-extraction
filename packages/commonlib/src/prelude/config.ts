@@ -1,5 +1,4 @@
 import path from 'path';
-import fs from 'fs';
 import { makeHashEncodedPath, HashEncodedPath } from '~/util/hash-encoded-paths';
 import nconf from 'nconf';
 

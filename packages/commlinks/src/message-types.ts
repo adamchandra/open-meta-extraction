@@ -4,7 +4,7 @@ export type Thunk = () => Promise<void>;
 
 export type MessageHandler<ClientT> = (this: ClientT, msg: Message) => Promise<MessageMod | void>; // TODO remove void
 export type MessageHandlerDef<ClientT> = [MessageQuery, MessageHandler<ClientT>];
-export type CustomHandler<ClientT, A = object, B = object> = (this: ClientT, a: A) => Promise<B>;
+export type CustomHandler<ClientT, A = object, B = any> = (this: ClientT, a: A) => Promise<B>;
 export type CustomHandlers<ClientT> = Record<string, CustomHandler<ClientT>>;
 
 // Base Message Body, kind=ping/ack/quit/etc..

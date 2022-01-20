@@ -1,3 +1,23 @@
+** Building
+Install rush
+> npm -g install rush
+
+Run install/update/build
+> rush install
+> rush update
+> rush build
+
+
+** Use of dotenv
+To ease the process of running node apps from within the various packages, I use
+dotenv (on Linux), with an '.envrc' file in each package folder (spider,
+field-extractor, etc.). This puts the node_packages/.bin directory in PATH,
+along with setting any other required environment variables, which makes running
+tests, linting (jest and eslint), as well as command line apps easier to run when
+developing.
+
+A sample .envrc file is included in the ./docs folder
+
 ** Dev Notes, Upcoming fixes and features
 *** Tasks
 - [ ] Fix Browser resource leaks in puppeteer
@@ -7,7 +27,7 @@
 
 
 - [ ] Run a "tracer bullet" test upon deployment, only allow rest endpoints if tests pass
-- [ ] Command line single url test app
+- [ ] Command line app to spider/extract single URL
 
 
 * Pros and Cons of running with Database backend

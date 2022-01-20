@@ -1,12 +1,12 @@
 {
-    database: {
-        dbname: 'open_extraction_testdb',
-        username: 'watrworker',
-        password: ''
+    "database": {
+        "dbname": "open_extraction_testdb",
+        "username": "watrworker",
+        "password": ""
     },
-    services: {
+    "services": {
     },
-    spider: {
+    "spider": {
 
     }
 }

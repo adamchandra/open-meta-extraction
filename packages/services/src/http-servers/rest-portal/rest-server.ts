@@ -12,7 +12,6 @@ import { DatabaseContext } from '~/db/db-api';
 
 const { opt, config, registerCmd } = arglib;
 
-
 export async function startRestPortal(
   dbCtx: DatabaseContext | undefined
 ): Promise<Server> {
