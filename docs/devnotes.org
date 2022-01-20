@@ -1,0 +1,17 @@
+** Dev Notes, Upcoming fixes and features
+*** Tasks
+- [ ] Fix Browser resource leaks in puppeteer
+  - [ ] Improve logging for browser acquire/page-open/nav/close lifecycle for better error tracing
+- [ ] Add --force/overwrite flags for spider/extractor to ease reprocessing and error fixes
+  - [ ] Add REST endpoints to request all items that have been fixed/reprocessed since last
+
+
+- [ ] Run a "tracer bullet" test upon deployment, only allow rest endpoints if tests pass
+- [ ] Command line single url test app
+
+
+* Pros and Cons of running with Database backend
+    The system may be run in a number of different ways, including:
+    - "By hand", running command line apps for the spider, then field extraction, then
+        collecting output into an aggregated JSON file
+    - Inline via Commandline, where spidering and field extraction happen in the same process
