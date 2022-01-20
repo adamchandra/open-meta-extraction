@@ -1,0 +1,3 @@
+layout_node
+
+export PATH=$PATH:$(pwd)/../../lib

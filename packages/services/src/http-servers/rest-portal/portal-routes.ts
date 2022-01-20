@@ -28,7 +28,6 @@ async function postRecordJson(
       responseBody.status = 'error';
       responseBody.errors = decoded;
     } else {
-      // const responseRec = await fetchOneRecord(dbCtx, workflowServices, decoded);
       const responseRec = await runServicesInlineNoDB(workflowServices, decoded);
       _.merge(responseBody, responseRec);
     }

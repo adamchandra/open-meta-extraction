@@ -3,7 +3,7 @@ import { getCorpusEntryDirForUrl, prettyPrint } from '@watr/commonlib';
 import fs from 'fs-extra';
 import Async from 'async';
 import { Server } from 'http';
-import { fetchOneRecord, WorkflowServices } from './inline-workflow';
+import { runServicesInlineWithDB, WorkflowServices } from './inline-workflow';
 
 import { getServiceLogger } from '@watr/commonlib';
 import { createSpiderService } from './spider-worker';
@@ -66,7 +66,7 @@ describe('End-to-end Extraction workflows', () => {
     await Async.eachOfSeries(exampleUrls, Async.asyncify(async (urlPath: string, exampleNumber: number) => {
       const url = `http://localhost:9100${urlPath}`
       const alphaRec = mockAlphaRecord(1, url);
-      const fetchedRecord = await fetchOneRecord(dbCtx, workflowServices, alphaRec);
+      const fetchedRecord = await runServicesInlineWithDB(dbCtx, workflowServices, alphaRec);
       prettyPrint({ exampleNumber, fetchedRecord });
     }));
 
@@ -101,7 +101,7 @@ describe('End-to-end Extraction workflows', () => {
       const entryPath = getCorpusEntryDirForUrl(url);
       await extractFieldsForEntry(entryPath, log);
 
-      const fetchedRecord = await fetchOneRecord(dbCtx, workflowServices, alphaRec);
+      const fetchedRecord = await runServicesInlineWithDB(dbCtx, workflowServices, alphaRec);
       prettyPrint({ exampleNumber, fetchedRecord });
     }));
 

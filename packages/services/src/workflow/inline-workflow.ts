@@ -19,18 +19,18 @@ interface ErrorRecord {
 
 const ErrorRecord = (error: string): ErrorRecord => ({ error });
 
-export function makeSyntheticAlphaRec(url: string): AlphaRecord {
-  const hp  = getHashEncodedPath(url);
-  const title = url;
-  const noteId = hp.hashedSource;
-  return {
-    url,
-    noteId,
-    title,
-  };
-}
+// function makeSyntheticAlphaRec(url: string): AlphaRecord {
+//   const hp  = getHashEncodedPath(url);
+//   const title = url;
+//   const noteId = hp.hashedSource;
+//   return {
+//     url,
+//     noteId,
+//     title,
+//   };
+// }
 
-export function getCanonicalFieldRecs(alphaRec: AlphaRecord): CanonicalFieldRecords | undefined {
+function getCanonicalFieldRecs(alphaRec: AlphaRecord): CanonicalFieldRecords | undefined {
   const { url } = alphaRec;
   const entryPath = getCorpusEntryDirForUrl(url);
   const fieldRecs = getCanonicalFieldRecord(entryPath);
@@ -83,7 +83,7 @@ export async function runServicesInlineNoDB(
 }
 
 
-export async function fetchOneRecord(
+export async function runServicesInlineWithDB(
   dbCtx: DatabaseContext,
   services: WorkflowServices,
   alphaRec: AlphaRecord,

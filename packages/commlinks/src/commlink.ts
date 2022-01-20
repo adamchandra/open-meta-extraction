@@ -79,7 +79,7 @@ async function runMessageHandlers<ClientT>(
 
 export interface CommLink<ClientT> {
   name: string;
-  client: ClientT;
+  client?: ClientT;
   log: winston.Logger;
 
   // Handle a builtin message
@@ -96,7 +96,7 @@ export interface CommLink<ClientT> {
   isShutdown: boolean;
 }
 
-export function newCommLink<ClientT>(name: string, client: ClientT): CommLink<ClientT> {
+export function newCommLink<ClientT>(name: string, client?: ClientT): CommLink<ClientT> {
   const commLink: CommLink<ClientT> = {
     name,
     client,
