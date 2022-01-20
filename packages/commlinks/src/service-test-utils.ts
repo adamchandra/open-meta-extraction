@@ -5,8 +5,10 @@ import { newCommLink, CommLink } from './commlink';
 import { Message, AnyKind, quit } from './message-types';
 
 // Create a Hub/Satellite service network with specified # of satellites
+export interface CommClient {
+}
 export interface TestService {
-  commLink: CommLink<TestService>;
+  commLink: CommLink<CommClient>;
 }
 
 export async function createTestServices(n: number): Promise<Array<TestService>> {
@@ -15,8 +17,10 @@ export async function createTestServices(n: number): Promise<Array<TestService>>
   const services = await Async.map<string, TestService, Error>(
     serviceNames,
     async (serviceName: string) => {
+      const client: CommClient = {
+      };
       const service: TestService = {
-        commLink: newCommLink(serviceName),
+        commLink: newCommLink(serviceName, client),
       };
 
       service.commLink.on(quit, async (_msg: Message) => {
@@ -29,7 +33,7 @@ export async function createTestServices(n: number): Promise<Array<TestService>>
       //   }
       // });
 
-      await service.commLink.connect(service);
+      await service.commLink.connect();
       return service;
     });
 
@@ -37,50 +41,50 @@ export async function createTestServices(n: number): Promise<Array<TestService>>
 }
 
 
-export async function createTestServiceHub(
-  n: number,
-  runLog: string[]
-): Promise<[ServiceHub, () => Promise<void>, Array<SatelliteService<void>>]> {
-  const hubName = 'ServiceHub';
-  const serviceNames = _.map(_.range(n), (i) => `service-${i}`);
+// export async function createTestServiceHub(
+//   n: number,
+//   runLog: string[]
+// ): Promise<[ServiceHub, () => Promise<void>, Array<SatelliteService<void>>]> {
+//   const hubName = 'ServiceHub';
+//   const serviceNames = _.map(_.range(n), (i) => `service-${i}`);
 
-  const recordLogMsgHandler = (svcName: string) => async (msg: Message) => {
-    const packed = Message.pack(msg);
-    const logmsg = `${svcName}: ${packed}`;
-    runLog.push(logmsg);
-  };
+//   const recordLogMsgHandler = (svcName: string) => async (msg: Message) => {
+//     const packed = Message.pack(msg);
+//     const logmsg = `${svcName}: ${packed}`;
+//     runLog.push(logmsg);
+//   };
 
-  const satelliteServices = await Async.map<string, SatelliteService<void>, Error>(
-    serviceNames,
-    async (serviceName: string) => {
-      const serviceDef = defineSatelliteService<void>(
-        async () => { }, {
-        async run() {
-          this.log.info(`${this.serviceName} [run]> payload=??? `);
-        },
-      });
+//   const satelliteServices = await Async.map<string, SatelliteService<void>, Error>(
+//     serviceNames,
+//     async (serviceName: string) => {
+//       const serviceDef = defineSatelliteService<void>(
+//         async () => { }, {
+//         async run() {
+//           this.log.info(`${this.serviceName} [run]> payload=??? `);
+//         },
+//       });
 
-      const satService = await createSatelliteService(hubName, serviceName, serviceDef);
+//       const satService = await createSatelliteService(hubName, serviceName, serviceDef);
 
-      satService.commLink.on(AnyKind, async (msg: Message) => {
-        recordLogMsgHandler(serviceName)(msg);
-      });
-      // satService.commLink.addHandlers({
-      //   '.*': async function(msg) {
-      //     recordLogMsgHandler(serviceName)(msg);
-      //   }
-      // });
-      return satService;
-    });
+//       satService.commLink.on(AnyKind, async (msg: Message) => {
+//         recordLogMsgHandler(serviceName)(msg);
+//       });
+//       // satService.commLink.addHandlers({
+//       //   '.*': async function(msg) {
+//       //     recordLogMsgHandler(serviceName)(msg);
+//       //   }
+//       // });
+//       return satService;
+//     });
 
-  const [hubPool, connectHub] = await createHubService(hubName, serviceNames);
+//   const [hubPool, connectHub] = await createHubService(hubName, serviceNames);
 
-  hubPool.commLink.on(AnyKind, async (msg: Message) => {
-    recordLogMsgHandler(hubPool.name)(msg);
-  });
+//   hubPool.commLink.on(AnyKind, async (msg: Message) => {
+//     recordLogMsgHandler(hubPool.name)(msg);
+//   });
 
-  return [hubPool, connectHub, satelliteServices];
-}
+//   return [hubPool, connectHub, satelliteServices];
+// }
 
 export function assertAllStringsIncluded(expectedStrings: string[], actualStrings: string[]): boolean {
   const atLeastOneMatchPerRegexp = _.every(expectedStrings, (str) => {

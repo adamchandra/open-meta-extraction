@@ -1,10 +1,13 @@
 import _ from 'lodash';
+import { fromHeader, queryAll } from '.';
 
 import { CommLink } from './commlink';
 
 import {
   Message,
   call,
+  cyield,
+  creturn
 } from './message-types';
 
 export function chainServices<S>(
@@ -21,21 +24,7 @@ export function chainServices<S>(
     const currService = commLink.name;
 
     if (isFirstService) {
-      // This just exists to allow calling first commLink with initial message
-      // commLink.addHandler(
-      //   `${currService}>push`, async (msg) => {
-      //     if (msg.kind !== 'push') return;
-      //     commLink.send(Message.address(msg.msg, { id: msg.id, to: currService }));
-      //   },
-      // );
-      commLink.on({
-        kind: 'reply',
-        from: nextService
-      }, async (msg: Message) => {
-        if (msg.kind !== 'reply') return;
-        // TODO commLink.send(Message.address(Yielded(msg.value), { id: msg.id, to: currService }));
-      });
-
+      // This is no longer needed as the default behavior is to return a promise to result from call()
       // commLink.addHandler(
       //   `${nextService}>yield`, async (msg) => {
       //     if (msg.kind !== 'yield') return;
@@ -46,49 +35,46 @@ export function chainServices<S>(
 
     if (!isFirstService) {
       commLink.on({
-        kind: 'reply',
+        kind: 'creturn',
+        func: functionName,
         from: nextService
       }, async (msg: Message) => {
-        if (msg.kind !== 'reply') return;
+        if (msg.kind !== 'creturn') return;
         commLink.send(Message.address(msg, { to: prevService }));
       });
-      // commLink.addHandler(
-      //   `${nextService}>yield`, async (msg) => {
-      //     if (msg.kind !== 'yield') return;
-      //     commLink.send(Message.address(msg, { to: prevService }));
-      //   },
-      // );
     }
 
     if (!isLastService) {
       commLink.on({
-        kind: 'reply',
-        from: currService
+        kind: 'cyield',
+        func: functionName,
       }, async (msg: Message) => {
-        if (msg.kind !== 'reply') return;
+        if (msg.kind !== 'cyield') return;
         commLink.send(Message.address(call(functionName, msg.value), { id: msg.id, to: nextService }));
       });
-      // commLink.addHandler(
-      //   `${currService}>yield`, async (msg) => {
-      //     if (msg.kind !== 'yield') return;
-      //     commLink.send(Message.address(Call(functionName, msg.value), { id: msg.id, to: nextService }));
-      //   },
-      // );
     }
     if (isLastService) {
+      // TODO this should work without any extra message handling (if yield/return does the right thing)
       commLink.on({
-        kind: 'reply',
-        from: currService
+        kind: 'cyield',
+        func: functionName,
       }, async (msg: Message) => {
-        if (msg.kind !== 'reply') return;
+        if (msg.kind !== 'cyield') return;
         commLink.send(Message.address(msg, { to: prevService }));
       });
-      // commLink.addHandler(`${currService}>yield`, async (msg) => {
-      //   if (msg.kind !== 'yield') return;
-      //   commLink.send(Message.address(msg, { to: prevService }));
-      // });
     }
 
+    commLink.on({
+      kind: 'cyield',
+      func: functionName,
+      from: currService
+    }, async (msg: Message) => {
+      if (msg.kind !== 'cyield') return;
+      const callMessge = Message.address(
+        call(functionName, msg.value), { id: msg.id, to: currService }
+      );
+      await commLink.send(callMessge);
+    });
     // commLink.on(CallKind(functionName))
     // commLink.addHandler(`dispatch/${functionName}`, async function(msg) {
     //   if (msg.kind !== 'dispatch') return;

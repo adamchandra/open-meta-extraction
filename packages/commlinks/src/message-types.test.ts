@@ -1,11 +1,10 @@
 import _ from 'lodash';
 
 import {
-  Call,
   Message,
   MessageQuery,
   quit,
-  reply,
+  creturn,
   matchMessageToQuery,
   addHeaders,
   ping,
@@ -38,18 +37,18 @@ describe('Service Communication Hub lifecycle', () => {
 
   it('should match messagekinds to messages for filtering', async (done) => {
     const queries: MessageQuery[] = [
-      reply('myfunc'), { id: 0 },
-      addHeaders(reply('myfunc'), { id: 0 }),
-      addHeaders(reply('myfunc'), { id: 1 }),
-      addHeaders(reply('myfunc'), { from: 'me' }),
-      reply('yourfunc'),
+      creturn('myfunc'), { id: 0 },
+      addHeaders(creturn('myfunc'), { id: 0 }),
+      addHeaders(creturn('myfunc'), { id: 1 }),
+      addHeaders(creturn('myfunc'), { from: 'me' }),
+      creturn('yourfunc'),
       // Message.address(YieldKind('myfunc'), { id: 0 }),
       // Call('my-method', { arg: 0, arg2: '1' }),
       // Ping,
       // Ack(Ping),
     ];
     const messageKinds: Message[] = [
-      Message.address(reply('myfunc', { foo: 'bar' }), { from: 'me', to: 'you' }),
+      Message.address(creturn('myfunc', { foo: 'bar' }), { from: 'me', to: 'you' }),
     ];
     _.each(queries, (query) => {
       prettyPrint({ msg: 'trying', query });
