@@ -1,9 +1,9 @@
 * Open Extraction Works
-  A set of services to spider and extract metadata (abstracts, titles, authors, pdf links) from URLs.
+  A set of services to spider and extract metadata (abstracts, titles, authors, pdf links) from given URLs.
 
   Services may be run individually as command line applications, or as an integrated pipeline with a REST API
 
-** Commandline Applications
+** Services and Commandline Applications
 *** Spidering
 *** Field Extraction
 *** Integrated spider/extractor
@@ -12,24 +12,12 @@
 ** Integrated Pipeline Usage
 
 
-** Production machine setup and [[file:docs/dev-notes.org::*Deployment][Deployment]]
-*** Requirements
-**** Postgres
+** Production machine setup and deployment
+Full system deployment uses Postgres and Redis. Simplified versions of the system may be run without
+Postgres and/or Redis.
 
-** Dev Notes, Upcoming fixes and features
-*** Tasks
-- [ ] Fix Browser resource leaks in puppeteer
-  - [ ] Improve logging for browser acquire/page-open/nav/close lifecycle for better error tracing
-- [ ] Add --force/overwrite flags for spider/extractor to ease reprocessing and error fixes
-  - [ ] Add REST endpoints to request all items that have been fixed/reprocessed since last
+Running with Postgres enables better tracking and statistics regarding success rate for spidering and metadata gathering.
 
-
-- [ ] Run a "tracer bullet" test upon deployment, only allow rest endpoints if tests pass
-- [ ] Command line single url test app
-
-
-* Pros and Cons of running with Database backend
-    The system may be run in a number of different ways, including:
-    - "By hand", running command line apps for the spider, then field extraction, then
-        collecting output into an aggregated JSON file
-    - Inline via Commandline, where spidering and field extraction happen in the same process
+Running with Redis allows the services to be run in separate node processess, which may be monitored for resource usage,
+script freezing and blocking, and enables batch processing of lists of URLs to be spidered and extracted, rather than
+on-demand through one-at-a-time REST requests.
