@@ -4,7 +4,7 @@ import { delay } from '@watr/commonlib';
 import winston from 'winston';
 import Async from 'async';
 import { newCommLink, CommLink } from './commlink';
-import { DispatchHandler, DispatchHandlers, Message, Body, ping, quit } from './message-types';
+import { CustomHandler, CustomHandlers, Message, Body, ping, quit } from './message-types';
 
 export type LifecycleName = keyof {
   startup: null,
@@ -13,11 +13,11 @@ export type LifecycleName = keyof {
   run: null,
 };
 
-export type LifecycleHandlers<CargoT> = Record<LifecycleName, DispatchHandler<SatelliteService<CargoT>>>;
+export type LifecycleHandlers<CargoT> = Record<LifecycleName, CustomHandler<SatelliteService<CargoT>>>;
 
 export interface SatelliteServiceDef<CargoT> {
   cargoInit: (sc: CommLink<SatelliteService<CargoT>>) => Promise<CargoT>;
-  lifecyleHandlers: DispatchHandlers<SatelliteService<CargoT>>;
+  lifecyleHandlers: CustomHandlers<SatelliteService<CargoT>>;
 }
 
 export type SatelliteCommLink<CargoT> = CommLink<SatelliteService<CargoT>>;
@@ -40,7 +40,7 @@ export interface ServiceHub {
 
 export function defineSatelliteService<CargoT>(
   cargoInit: (sc: CommLink<SatelliteService<CargoT>>) => Promise<CargoT>,
-  lifecyleHandlers: DispatchHandlers<SatelliteService<CargoT>>
+  lifecyleHandlers: CustomHandlers<SatelliteService<CargoT>>
 ): SatelliteServiceDef<CargoT> {
   return {
     cargoInit,
@@ -54,7 +54,6 @@ export async function createSatelliteService<T>(
   satelliteName: string,
   serviceDef: SatelliteServiceDef<T>
 ): Promise<SatelliteService<T>> {
-  const commLink = newCommLink<SatelliteService<T>>(satelliteName);
 
   // TODO fixme commLink.addDispatches(serviceDef.lifecyleHandlers);
 
@@ -81,7 +80,7 @@ export async function createSatelliteService<T>(
         cargo,
       };
 
-      await commLink.connect(satService);
+      await commLink.connect();
 
       // commLink.on(PingKind, async (msg: Message) => {
       //   return this.sendHub(Ack(msg));

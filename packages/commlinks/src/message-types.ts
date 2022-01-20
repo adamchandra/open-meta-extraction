@@ -2,10 +2,10 @@ import _ from 'lodash';
 
 export type Thunk = () => Promise<void>;
 
-export type MessageHandler<ClientT> = (this: ClientT, msg: Message) => Promise<Message | void>;
+export type MessageHandler<ClientT> = (this: ClientT, msg: Message) => Promise<MessageMod | void>; // TODO remove void
 export type MessageHandlerDef<ClientT> = [MessageQuery, MessageHandler<ClientT>];
-export type DispatchHandler<ClientT, A = any, B = any> = (this: ClientT, a: A) => Promise<B>;
-export type DispatchHandlers<ClientT> = Record<string, DispatchHandler<ClientT>>;
+export type CustomHandler<ClientT, A = object, B = object> = (this: ClientT, a: A) => Promise<B>;
+export type CustomHandlers<ClientT> = Record<string, CustomHandler<ClientT>>;
 
 // Base Message Body, kind=ping/ack/quit/etc..
 //   Qualified Message Body, qual (qualified kind) allows matching on messages
@@ -19,11 +19,12 @@ export interface Call {
   func: string;
   arg: object;
 }
+
 export function call<
   S extends string | undefined,
   V extends object | undefined>(
-  func?: S,
-  arg?: V,
+    func?: S,
+    arg?: V,
 ): S extends string ? (V extends object ? Call : Partial<Call>) : Partial<Call> {
   return {
     kind: 'call',
@@ -32,66 +33,50 @@ export function call<
   };
 }
 
-// export interface CallKind {
-//   kind: 'call';
-//   qual: string;
-// }
-// export function CallKind(func: string): CallKind {
-//   return { kind: 'call', qual: func };
-// }
-
-// export interface Call extends CallKind {
-//   arg: any;
-// }
-
-// export function Call(func: string, arg: any): Call {
-//   return { ...CallKind(func), arg };
-// }
-
-export interface Reply {
-  kind: 'reply';
-  call: string;
+export interface CYield {
+  kind: 'cyield';
+  func: string;
   value: object;
 }
-export function reply<
+export function cyield<
   S extends string | undefined,
   V extends object | undefined>(
-  subkind?: S,
-  value?: V,
-): S extends string ? (V extends undefined ? Partial<Reply> : Reply) : Partial<Reply> {
+    func?: S,
+    value?: V,
+): S extends string ? (V extends object ? CYield : Partial<CYield>) : Partial<CYield> {
   return {
-    kind: 'reply',
-    call: subkind,
+    kind: 'cyield',
+    func,
     value
   };
 }
 
+export interface CReturn {
+  kind: 'creturn';
+  func: string;
+  value: object;
+}
+export function creturn<
+  S extends string | undefined,
+  V extends object | undefined>(
+    func?: S,
+    value?: V,
+): S extends string ? (V extends undefined ? Partial<CReturn> : CReturn) : Partial<CReturn> {
+  return {
+    kind: 'creturn',
+    func,
+    value
+  };
+}
 
 /////////
 // Builtin to commLink
 
-export interface Pong {
-  kind: 'pong';
-  subk: string;
-}
-export function pong<S extends string | undefined>(
-  subkind: S
-): S extends string ? Pong : Partial<Pong> {
-  return {
-    kind: 'pong',
-    subk: subkind
-  };
-}
-
-
-// Ping
 export interface Ping {
   kind: 'ping';
 }
 export const ping: Ping = { kind: 'ping' };
 
-
-// Ack
 export interface Ack {
   kind: 'ack';
   subk: string;
@@ -105,19 +90,18 @@ export function ack<S extends Body | undefined>(
   };
 }
 
-
-// Quit
 export interface Quit {
   kind: 'quit';
 }
 export const quit: Quit = { kind: 'quit' };
 
 export type Body =
-  Call
-  | Reply
-  | Ping
-  | Quit
+  Ping
   | Ack
+  | Quit
+  | Call
+  | CReturn
+  | CYield
   ;
 
 interface Headers {
@@ -126,7 +110,22 @@ interface Headers {
   id: number;
 }
 
-// export type MessageKind = BodyKind & Partial<Headers>;
+export type ToHeader = Pick<Headers, 'to'>;
+
+export function fromHeader(s: string): Pick<Headers, 'from'> {
+  return { from: s };
+}
+export function toHeader(s: string): Pick<Headers, 'to'> {
+  return { to: s };
+}
+export function idHeader(id: number): Pick<Headers, 'id'> {
+  return { id };
+}
+
+export function queryAll(...mqs: MessageQuery[]): MessageQuery {
+  return _.merge({}, ...mqs)
+}
+
 export type Message = Body & Headers;
 
 export const Message = {
@@ -144,6 +143,7 @@ export const Message = {
 };
 
 export type MessageQuery = Partial<Message>;
+export type MessageMod = Partial<Message>;
 
 export const AnyKind: MessageQuery = {};
 
@@ -159,18 +159,6 @@ export function updateHeaders(message: Message, headers: Partial<Headers>): Mess
   return _.assign(message, headers);
 }
 
-
-// export function unpackHeaders(headers: string): Headers {
-//   const [ids, to, from] = headers.split(/:/);
-//   const id = Number.parseInt(ids, 10);
-//   return { id, to, from };
-// }
-// export function packHeaders(message: Message): string {
-//   const { from, to, id } = message;
-//   const hdrs = `${id}:${to}:${from}>`;
-//   return hdrs;
-// }
-
 export function packMessage(message: Message): string {
   return JSON.stringify(message);
 }
@@ -179,7 +167,7 @@ export function unpackMessage(packed: string): Message {
   return JSON.parse(packed);
 }
 
-function undefOrEqual<A>(a1: any, a2: A, prop: string): boolean {
+function matchQueryProp<A>(a1: any, a2: A, prop: string): boolean {
   const propInA = prop in a1;
   const propInB = prop in a2;
 
@@ -189,13 +177,33 @@ function undefOrEqual<A>(a1: any, a2: A, prop: string): boolean {
   );
 }
 
+// TODO make this match all props in query, rather than hardcoded names
 export function matchMessageToQuery(
   query: MessageQuery,
   messageKind: Message
 ): boolean {
-  return undefOrEqual(query, messageKind, 'kind')
-    && undefOrEqual(query, messageKind, 'qual')
-    && undefOrEqual(query, messageKind, 'from')
-    && undefOrEqual(query, messageKind, 'to')
-    && undefOrEqual(query, messageKind, 'id')
+  return matchQueryProp(query, messageKind, 'kind')
+    && matchQueryProp(query, messageKind, 'qual')
+    && matchQueryProp(query, messageKind, 'from')
+    && matchQueryProp(query, messageKind, 'to')
+    && matchQueryProp(query, messageKind, 'id')
 }
+
+
+// export interface Response {
+//   kind: 'response';
+//   call: string;
+//   value: object;
+// }
+// export function response<
+//   S extends string | undefined,
+//   V extends object | undefined>(
+//     subkind?: S,
+//     value?: V,
+// ): S extends string ? (V extends undefined ? Partial<Response> : Response) : Partial<Response> {
+//   return {
+//     kind: 'response',
+//     call: subkind,
+//     value
+//   };
+// }

@@ -11,3 +11,6 @@ Typical patterns include:
   - Fan Out, in which a service dispatches to several other services
 
   - Fan In, in which a service awaits and aggregates the results of other services execution
+
+
+
