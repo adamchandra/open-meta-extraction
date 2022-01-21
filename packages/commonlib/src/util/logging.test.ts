@@ -66,7 +66,8 @@ describe('Logging', () => {
     log.debug('debug, world!');
     log.silly('silly, world!');
   });
-  it.only('should create child loggers', () => {
+
+  it('should create child loggers', () => {
     const log = getConsoleAndFileLogger(logpath);
 
     setLogLabel(log, '/foo/bar');

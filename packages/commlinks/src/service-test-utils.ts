@@ -2,7 +2,7 @@ import _ from 'lodash';
 import Async from 'async';
 import { defineSatelliteService, createSatelliteService, SatelliteService, ServiceHub, createHubService } from './hub-connection';
 import { newCommLink, CommLink } from './commlink';
-import { Message, AnyKind, quit } from './message-types';
+import { Message, AnyMessage, quit } from './message-types';
 
 // Create a Hub/Satellite service network with specified # of satellites
 export interface CommClient {
@@ -66,7 +66,7 @@ export async function createTestServices(n: number): Promise<Array<TestService>>
 
 //       const satService = await createSatelliteService(hubName, serviceName, serviceDef);
 
-//       satService.commLink.on(AnyKind, async (msg: Message) => {
+//       satService.commLink.on(AnyMessage, async (msg: Message) => {
 //         recordLogMsgHandler(serviceName)(msg);
 //       });
 //       // satService.commLink.addHandlers({
@@ -79,7 +79,7 @@ export async function createTestServices(n: number): Promise<Array<TestService>>
 
 //   const [hubPool, connectHub] = await createHubService(hubName, serviceNames);
 
-//   hubPool.commLink.on(AnyKind, async (msg: Message) => {
+//   hubPool.commLink.on(AnyMessage, async (msg: Message) => {
 //     recordLogMsgHandler(hubPool.name)(msg);
 //   });
 

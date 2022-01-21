@@ -11,6 +11,6 @@ describe('String utils', () => {
     const diff2 = diffByChars(stra, strb, { brief: false });
     const diff3 = diffByChars(stra, strb,);
 
-    prettyPrint({ diff1, diff2, diff3 });
+    // prettyPrint({ diff1, diff2, diff3 });
   });
 });
