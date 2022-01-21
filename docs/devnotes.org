@@ -7,6 +7,18 @@ Run install/update/build
 > rush update
 > rush build
 
+** Deployment system setup
+n; node version management
+rush
+dotenv
+
+For running headless chrome (via puppeteer)
+> sudo apt install libnss3-dev libatk1.0-0 libatk-bridge2.0-0 libcups2 libgbm1 libpangocairo-1.0-0 libgtk-3-0
+
+HTML Tidy
+> sudo apt install tidy
+> sudo apt install nginx
+
 
 ** Use of dotenv
 To ease the process of running node apps from within the various packages, I use
