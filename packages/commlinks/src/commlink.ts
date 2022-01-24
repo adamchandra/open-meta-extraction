@@ -48,7 +48,6 @@ async function runMessageHandlers<ClientT>(
       const maybeCallback = client[func];
       if (typeof maybeCallback === 'function') {
         commLink.log.debug(`Calling ${func}(${arg})`)
-        // const cb: CustomHandler<ClientT> = _.bind(maybeCallback, client);
         const cb = _.bind(maybeCallback, client);
         const newA = await Promise.resolve(cb(arg));
         const yieldVal: object = typeof newA === 'object' ? newA : {};
@@ -196,11 +195,11 @@ export function newCommLink<ClientT>(name: string, client?: ClientT): CommLink<C
     await commLink.send(reply);
   });
 
-  commLink.on(call(), async (msg: Message) => {
-    if (msg.kind !== 'call') return;
-    const response = await commLink.call(msg.func, msg.arg);
-    prettyPrint({ response });
-  });
+  // commLink.on(call(), async (msg: Message) => {
+  //   if (msg.kind !== 'call') return;
+  //   const response = await commLink.call(msg.func, msg.arg);
+  //   prettyPrint({ response });
+  // });
 
   commLink.on(quit, async (msg: Message) => {
     const reply = addHeaders(ack(msg), { from: msg.to, to: msg.from, id: msg.id });
