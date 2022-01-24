@@ -1,10 +1,14 @@
 import _ from 'lodash';
 import { chainServices } from './chain-connection';
 
-import { createTestServices } from './service-test-utils';
+import { createTestServices, createTestServices0 } from './service-test-utils';
 
 describe('Chained CommLink Connection Patterns', () => {
-  process.env['service-comm.loglevel'] = 'info';
+  process.env['service-comm.loglevel'] = 'silly';
+
+  interface Client {
+    run(msgArg: MsgArg): Promise<MsgArg>;
+  }
 
   interface MsgArg {
     callees: string[];
@@ -13,23 +17,22 @@ describe('Chained CommLink Connection Patterns', () => {
 
 
   it('should push message and promise response', async (done) => {
-    const testServices = await createTestServices(3);
+    const clients = _.map(_.range(2), clientNum => {
+      const client: Client = {
+        async run(msgArg: MsgArg): Promise<MsgArg> {
+          msgArg.callees.push(`client#${clientNum+1}`);
+          return msgArg;
+        }
+      };
+      return client;
+    });
+
+    const testServices = await createTestServices0<Client>(clients);
     const commLinks = _.map(testServices, ts => ts.commLink);
 
     chainServices('run', commLinks);
 
     const commLink0 = commLinks[0];
-
-    // _.each(testServices, (service) => {
-    //   service.commLink.addDispatches({
-    //     async run(msg: MsgArg) {
-    //       msg.callees.push(this.commLink.name);
-    //       this.commLink.log.info(`run msg=${msg.which}, callees=${msg.callees}`);
-    //       return msg;
-    //     }
-    //   });
-    // });
-
 
     const allChains = _.map(_.range(2), n => {
       const initMsg: MsgArg = {
@@ -40,13 +43,11 @@ describe('Chained CommLink Connection Patterns', () => {
       return commLink0.call('run', initMsg);
     });
 
-    // TODO test callAndAwait
-
     await Promise.all(allChains)
       .then((results) => {
         const expected = [
-          { callees: ['service-1', 'service-2'], which: 0 },
-          { callees: ['service-1', 'service-2'], which: 1 }
+          { callees: ['client#1', 'client#2'], which: 0 },
+          { callees: ['client#1', 'client#2'], which: 1 }
         ];
         expect(results).toStrictEqual(expected);
       });
