@@ -1,8 +1,7 @@
 import { prettyPrint } from '@watr/commonlib';
 import _ from 'lodash';
-import { cyield } from '.';
 import { newCommLink } from './commlink';
-import { ping, addHeaders, Message } from './message-types';
+import { ping, addHeaders, Message, cyield } from './message-types';
 
 describe('CommLink Communication', () => {
   process.env['service-comm.loglevel'] = 'silly';

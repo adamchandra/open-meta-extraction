@@ -1,7 +1,7 @@
 import _ from 'lodash';
 import { chainServices } from './chain-connection';
 
-import { createTestServices } from './service-test-utils';
+import { createTestServices } from '~/util/service-test-utils';
 
 describe('Chained CommLink Connection Patterns', () => {
   process.env['service-comm.loglevel'] = 'silly';
