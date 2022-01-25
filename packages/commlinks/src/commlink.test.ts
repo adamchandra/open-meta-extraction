@@ -82,7 +82,7 @@ describe('CommLink Communication', () => {
     done();
   });
 
-  it.only('should allow intercept/modification of yielded values', async (done) => {
+  it('should allow intercept/modification of yielded values', async (done) => {
     const Client = {
       func1(arg: any): void {
         const thisType = typeof this;
