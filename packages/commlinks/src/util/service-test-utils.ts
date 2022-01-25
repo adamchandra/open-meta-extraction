@@ -1,8 +1,9 @@
 import _ from 'lodash';
 import Async from 'async';
-import { defineSatelliteService, createSatelliteService, SatelliteService, ServiceHub, createHubService } from './hub-connection';
-import { newCommLink, CommLink } from './commlink';
-import { Message, quit, AnyMessage } from './message-types';
+import { defineSatelliteService, createSatelliteService, SatelliteService, ServiceHub, createHubService } from '~/patterns/hub-connection';
+import { newCommLink, CommLink } from '~/core/commlink';
+import { Message, quit, AnyMessage } from '~/core/message-types';
+import { prettyFormat } from '@watr/commonlib';
 
 // Create a Hub/Satellite service network with specified # of satellites
 // export interface CommClient {

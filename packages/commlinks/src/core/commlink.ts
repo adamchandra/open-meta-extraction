@@ -1,7 +1,7 @@
 import _ from 'lodash';
 import Redis from 'ioredis';
 import winston from 'winston';
-import { getServiceLogger, newIdGenerator, prettyFormat, prettyPrint } from '@watr/commonlib';
+import { getServiceLogger, newIdGenerator, prettyFormat } from '@watr/commonlib';
 
 import Async from 'async';
 
@@ -173,7 +173,7 @@ export function newCommLink<ClientT>(name: string, client?: ClientT): CommLink<C
         });
 
         subscriber.subscribe(`${name}`)
-          .then(() => log.info(`${name}> connected`))
+          .then(() => log.verbose(`${name}> connected`))
           .then(() => resolve())
           .catch((error: any) => {
             const msg = `subscribe> ${error}`;

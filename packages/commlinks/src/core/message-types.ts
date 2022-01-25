@@ -125,8 +125,6 @@ export type Body =
   | CYield
   ;
 
-type BodyKind = Body['kind'];
-
 interface Headers {
   from: string;
   to: string;

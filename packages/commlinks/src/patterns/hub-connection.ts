@@ -3,8 +3,8 @@ import _ from 'lodash';
 import { delay } from '@watr/commonlib';
 import winston from 'winston';
 import Async from 'async';
-import { newCommLink, CommLink } from './commlink';
-import { CustomHandler, CustomHandlers, Message, Body, ping, quit, ack } from './message-types';
+import { newCommLink, CommLink } from '~/core/commlink';
+import { CustomHandler, CustomHandlers, Message, Body, ping, quit, ack } from '~/core/message-types';
 
 export type LifecycleName = keyof {
   startup: null,
