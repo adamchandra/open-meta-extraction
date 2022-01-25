@@ -1,7 +1,7 @@
 import _ from 'lodash';
 import { chainServices } from './chain-connection';
 
-import { createTestServices, createTestServices0 } from './service-test-utils';
+import { createTestServices } from './service-test-utils';
 
 describe('Chained CommLink Connection Patterns', () => {
   process.env['service-comm.loglevel'] = 'silly';
@@ -27,7 +27,7 @@ describe('Chained CommLink Connection Patterns', () => {
       return client;
     });
 
-    const testServices = await createTestServices0<Client>(clients);
+    const testServices = await createTestServices<Client>(clients);
     const commLinks = _.map(testServices, ts => ts.commLink);
 
     chainServices('run', commLinks);

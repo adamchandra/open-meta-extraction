@@ -99,6 +99,7 @@ export interface CommLink<ClientT> {
   // Handle a builtin message
   on(m: MessageQuery, h: MessageHandler<ClientT, Message>): void;
   send(message: Message): Promise<void>;
+
   // Invoke a client installed function, either locally or on another node over the wire
   call<A extends object>(f: string, a: A, to?: ToHeader): Promise<A>;
   connect(): Promise<void>;
@@ -195,11 +196,6 @@ export function newCommLink<ClientT>(name: string, client?: ClientT): CommLink<C
     await commLink.send(reply);
   });
 
-  // commLink.on(call(), async (msg: Message) => {
-  //   if (msg.kind !== 'call') return;
-  //   const response = await commLink.call(msg.func, msg.arg);
-  //   prettyPrint({ response });
-  // });
 
   commLink.on(quit, async (msg: Message) => {
     const reply = addHeaders(ack(msg), { from: msg.to, to: msg.from, id: msg.id });
