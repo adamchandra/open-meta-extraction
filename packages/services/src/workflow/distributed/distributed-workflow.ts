@@ -30,7 +30,6 @@ export type WorkflowServiceName = keyof {
   MockService: null,
 }
 
-
 export const WorkflowServiceNames: WorkflowServiceName[] = [
   'RestPortalService',
   'UploadIngestor',
