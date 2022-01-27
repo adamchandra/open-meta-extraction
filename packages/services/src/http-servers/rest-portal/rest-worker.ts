@@ -9,12 +9,12 @@ import { Server } from 'http';
 import { createAppLogger } from './portal-logger';
 import { SatelliteCommLink } from '@watr/commlinks';
 import { AlphaRecord, prettyPrint } from '@watr/commonlib';
+import { RecordRequest } from '~/workflow/distributed/workflow-defs';
 
 export interface RestPortal {
   server: Server;
 }
 
-// export async function startRestWorker(commLink: SatelliteCommLink<Server>): Promise<Server> {
 export async function startRestWorker(commLink: SatelliteCommLink<RestPortal>): Promise<RestPortal> {
   const log = createAppLogger();
   const app = new Koa();
@@ -60,17 +60,14 @@ async function postRecordJson(
   if (requestBody) {
     // TODO validate requestBody as AlphaRecord[]
     const alphaRec: AlphaRecord = requestBody;
-    // const extractedFields: string = await commLink.call(alphaRec);
     const restPortalResponse = await commLink.call('run', RecordRequest(alphaRec));
     prettyPrint({ restPortalResponse });
 
     responseBody.status = 'ok';
-    // responseBody.fields = extractedFields;
   } else {
     responseBody.status = 'error';
   }
 
-  // await commLink.emit('step');
   return next();
 }
 
@@ -96,6 +93,3 @@ export function initPortalRouter(commLink: SatelliteCommLink<RestPortal>): Route
 }
 
 
-function RecordRequest(alphaRec: { noteId: string; url: string; } & { dblpConfId?: string; title?: string; authorId?: string; }): any {
-    throw new Error('Function not implemented.');
-}

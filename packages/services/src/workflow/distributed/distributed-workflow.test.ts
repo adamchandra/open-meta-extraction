@@ -1,10 +1,7 @@
 import _ from 'lodash';
-import { prettyPrint, AlphaRecord, initConfig, } from '@watr/commonlib';
-import axios from 'axios';
-import { chainServices, createSatelliteService, defineSatelliteService, SatelliteService, SatelliteServiceDef } from '@watr/commlinks';
-import { runServiceHub, runServiceHubAndSatellites, WorkflowServiceName, WorkflowServiceNames } from './distributed-workflow';
-// import { useEmptyDatabase } from '~/db/db-test-utils';
-//   await useEmptyDatabase(async () => undefined);
+import { AlphaRecord } from '@watr/commonlib';
+import { chainServices, defineSatelliteService, SatelliteServiceDef } from '@watr/commlinks';
+import { runServiceHubAndSatellites } from './distributed-workflow';
 
 describe('End-to-end Extraction workflows', () => {
   const hubName = 'ServiceHub';

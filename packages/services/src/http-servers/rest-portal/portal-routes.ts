@@ -7,7 +7,7 @@ import {
   AlphaRecord,
   prettyPrint
 } from '@watr/commonlib';
-import { runServicesInlineNoDB, WorkflowServices } from '~/workflow/inline-workflow';
+import { runServicesInlineNoDB, WorkflowServices } from '~/workflow/inline/inline-workflow';
 
 async function postRecordJson(
   workflowServices: WorkflowServices,

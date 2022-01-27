@@ -5,8 +5,8 @@ import { Server } from 'http';
 import { arglib } from '@watr/commonlib';
 import { initPortalRouter } from './portal-routes';
 import { createAppLogger } from './portal-logger';
-import { WorkflowServices } from '~/workflow/inline-workflow';
-import { createSpiderService } from '~/workflow/spider-worker';
+import { WorkflowServices } from '~/workflow/inline/inline-workflow';
+import { createSpiderService } from '~/workflow/distributed/spider-worker';
 import { getDBConfig } from '~/db/database';
 import { DatabaseContext } from '~/db/db-api';
 

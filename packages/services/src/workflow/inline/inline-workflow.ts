@@ -1,9 +1,9 @@
 import _ from 'lodash';
 import * as winston from 'winston';
-import { AlphaRecord, getCorpusEntryDirForUrl, getHashEncodedPath } from '@watr/commonlib';
+import { AlphaRecord, getCorpusEntryDirForUrl } from '@watr/commonlib';
 import { UrlFetchData } from '@watr/spider';
 import { CanonicalFieldRecords, extractFieldsForEntry, getCanonicalFieldRecord } from '@watr/field-extractors';
-import { createSpiderService, SpiderService } from './spider-worker';
+import { createSpiderService, SpiderService } from '~/workflow/distributed/spider-worker';
 import { commitUrlFetchData, commitUrlStatus, DatabaseContext, getNextUrlForSpidering, getUrlStatus, insertAlphaRecords, insertNewUrlChains } from '~/db/db-api';
 import { getServiceLogger } from '@watr/commonlib';
 

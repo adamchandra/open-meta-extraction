@@ -6,13 +6,13 @@ import { Server } from 'http';
 import { runServicesInlineWithDB, WorkflowServices } from './inline-workflow';
 
 import { getServiceLogger } from '@watr/commonlib';
-import { createSpiderService } from './spider-worker';
 import { startSpiderableTestServer } from '~/http-servers/rest-portal/mock-server';
 import { getDBConfig } from '~/db/database';
 import { DatabaseContext } from '~/db/db-api';
 import { createEmptyDB } from '~/db/db-test-utils';
 import { extractFieldsForEntry } from '@watr/field-extractors';
 import { mockAlphaRecord } from '@watr/spider';
+import { createSpiderService } from '~/workflow/distributed/spider-worker';
 
 describe('End-to-end Extraction workflows', () => {
   const workingDir = './test.scratch.d';

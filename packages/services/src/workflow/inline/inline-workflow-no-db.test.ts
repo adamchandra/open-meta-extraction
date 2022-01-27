@@ -1,13 +1,12 @@
-//
 import _ from 'lodash';
-import { getCorpusEntryDirForUrl, prettyPrint } from '@watr/commonlib';
+import { prettyPrint } from '@watr/commonlib';
 import fs from 'fs-extra';
 import Async from 'async';
 import { Server } from 'http';
-import { runServicesInlineNoDB, runServicesInlineWithDB, WorkflowServices } from './inline-workflow';
+import { runServicesInlineNoDB,  WorkflowServices } from './inline-workflow';
+import { createSpiderService } from '~/workflow/distributed/spider-worker';
 
 import { getServiceLogger } from '@watr/commonlib';
-import { createSpiderService } from './spider-worker';
 import { startSpiderableTestServer } from '~/http-servers/rest-portal/mock-server';
 import { mockAlphaRecord } from '@watr/spider';
 
