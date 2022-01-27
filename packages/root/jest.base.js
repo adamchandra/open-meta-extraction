@@ -18,6 +18,7 @@ function makeConfig(modulePackage) {
     testEnvironment: 'node',
     bail: true,
     verbose: true,
+    maxWorkers: 1, // forces serial execution
     rootDir: '.',
     roots: ['<rootDir>/src'],
     displayName,
