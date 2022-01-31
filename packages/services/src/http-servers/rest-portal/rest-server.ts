@@ -2,9 +2,8 @@ import Koa, { Context } from 'koa';
 import Router from 'koa-router';
 import json from 'koa-json';
 import { Server } from 'http';
-import { arglib } from '@watr/commonlib';
+import { arglib, getServiceLogger } from '@watr/commonlib';
 import { initPortalRouter } from './portal-routes';
-import { createAppLogger } from './portal-logger';
 import { WorkflowServices } from '~/workflow/inline/inline-workflow';
 import { createSpiderService } from '~/workflow/distributed/spider-worker';
 import { getDBConfig } from '~/db/database';
@@ -15,7 +14,7 @@ const { opt, config, registerCmd } = arglib;
 export async function startRestPortal(
   dbCtx: DatabaseContext | undefined
 ): Promise<Server> {
-  const log = createAppLogger();
+  const log = getServiceLogger('rest-portal');
   const app = new Koa();
   const rootRouter = new Router();
 

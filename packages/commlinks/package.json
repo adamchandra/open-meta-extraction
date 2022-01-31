@@ -22,19 +22,19 @@
     "@watr/commonlib": "0.1.0",
     "async": "^3.2.3",
     "lodash": "^4.17.21",
-    "winston": "^3.4.0",
-    "typescript": "^4.5.4",
-    "ioredis": "~4.28.2"
+    "winston": "^3.5.0",
+    "typescript": "^4.5.5",
+    "ioredis": "~4.28.3"
   },
   "devDependencies": {
     "@watr/root": "0.1.0",
     "@types/async": "^3.2.12",
-    "@types/ioredis": "~4.28.6",
+    "@types/ioredis": "~4.28.7",
     "@types/chai": "^4.3.0",
     "@types/jest": "^27.4.0",
     "@types/lodash": "^4.14.178",
-    "@types/node": "^17.0.5",
-    "chai": "^4.3.4",
+    "@types/node": "^17.0.13",
+    "chai": "^4.3.6",
     "eslint": "^7.32.0",
     "jest": "^27.4.7"
   }

@@ -3,12 +3,7 @@ import Async from 'async';
 import { defineSatelliteService, createSatelliteService, SatelliteService, ServiceHub, createHubService } from '~/patterns/hub-connection';
 import { newCommLink, CommLink } from '~/core/commlink';
 import { Message, quit, AnyMessage } from '~/core/message-types';
-import { prettyFormat } from '@watr/commonlib';
 
-// Create a Hub/Satellite service network with specified # of satellites
-// export interface CommClient {
-//   run(a: any): Promise<any>;
-// }
 export interface TestService<ClientT> {
   commLink: CommLink<ClientT>;
 }

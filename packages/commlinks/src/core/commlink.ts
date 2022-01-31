@@ -23,8 +23,31 @@ import {
 } from './message-types';
 
 import { newRedisClient } from './ioredis-conn';
+import { MessageHandlerFunc } from '..';
 
 const nextId = newIdGenerator(1);
+
+export interface CommLink<ClientT> {
+  name: string;
+  client?: ClientT;
+  log: winston.Logger;
+
+  // Handle a builtin message
+  on(m: MessageQuery, h: MessageHandlerFunc<ClientT, Message>): void;
+  once(m: MessageQuery, h: MessageHandlerFunc<ClientT, Message>): void;
+  send(message: Message): Promise<void>;
+
+  // Invoke a client installed function, either locally or on another node over the wire
+  call<A extends object>(f: string, a: A, to?: ToHeader): Promise<A>;
+  connect(): Promise<void>;
+  quit(): Promise<void>;
+
+  // Internal use:
+  _install(m: MessageQuery, h: MessageHandlerFunc<ClientT, Message>, once: boolean): void;
+  subscriber: Redis.Redis;
+  messageHandlers: MessageHandlerDef<ClientT>[];
+  isShutdown: boolean;
+}
 
 async function runMessageHandlers<ClientT>(
   message: Message,
@@ -34,13 +57,15 @@ async function runMessageHandlers<ClientT>(
 ): Promise<void> {
 
   commLink.log.silly(`finding message handlers for ${packedMsg}`);
-  const matchedHandlers = _.filter(commLink.messageHandlers, ([handlerKind,]) => {
+  const matchedHandlers = _.filter(commLink.messageHandlers, ([handlerKind, handler]) => {
     const matches = matchMessageToQuery(handlerKind, message);
     const hpf = prettyFormat(handlerKind);
-    const matchMsg = matches? 'yes' : 'no';
+    const matchMsg = matches ? 'yes' : 'no';
     commLink.log.silly(`match:${matchMsg} ~= ${hpf}? `);
+    handler.didRun = matches;
     return matches;
   });
+
 
   switch (message.kind) {
     case 'call': {
@@ -66,7 +91,7 @@ async function runMessageHandlers<ClientT>(
 
         const hk = prettyFormat(handlerKind);
         commLink.log.silly(`running handler ${hk} for ${packedMsg}`);
-        const bh = _.bind(handler, client);
+        const bh = _.bind(handler.run, client);
         const maybeNewValue = await bh(currMsg);
         const newV = prettyFormat(maybeNewValue);
         commLink.log.silly(`handler returned ${newV}`);
@@ -79,37 +104,24 @@ async function runMessageHandlers<ClientT>(
       break;
     }
     default: {
-      _.each(matchedHandlers, ([handlerKind, handler]) => {
+      _.each(matchedHandlers, async ([handlerKind, handler]) => {
         const hk = prettyFormat(handlerKind);
         commLink.log.silly(`running handler ${hk} for ${packedMsg}`);
-        const bh = _.bind(handler, client);
-        const mod = bh(message);
+        const bh = _.bind(handler.run, client);
+        const mod = await bh(message);
         return mod;
       });
       break;
     }
   }
+
+  const activeHandlers = _.filter(commLink.messageHandlers, ([, mh]) => {
+    const stale = mh.didRun && mh.once;
+    return !stale;
+  });
+  commLink.messageHandlers = activeHandlers;
 }
 
-export interface CommLink<ClientT> {
-  name: string;
-  client?: ClientT;
-  log: winston.Logger;
-
-  // Handle a builtin message
-  on(m: MessageQuery, h: MessageHandler<ClientT, Message>): void;
-  send(message: Message): Promise<void>;
-
-  // Invoke a client installed function, either locally or on another node over the wire
-  call<A extends object>(f: string, a: A, to?: ToHeader): Promise<A>;
-  connect(): Promise<void>;
-  quit(): Promise<void>;
-
-  // Internal use:
-  subscriber: Redis.Redis;
-  messageHandlers: MessageHandlerDef<ClientT>[];
-  isShutdown: boolean;
-}
 
 export function newCommLink<ClientT>(name: string, client?: ClientT): CommLink<ClientT> {
   const commLink: CommLink<ClientT> = {
@@ -158,8 +170,24 @@ export function newCommLink<ClientT>(name: string, client?: ClientT): CommLink<C
       await publisher.quit();
     },
 
-    on(m: MessageQuery, h: MessageHandler<ClientT, Message>): void {
-      this.messageHandlers.push([m, h]);
+
+    on(m: MessageQuery, h: MessageHandlerFunc<ClientT, Message>): void {
+      this._install(m, h, false);
+    },
+    once(m: MessageQuery, h: MessageHandlerFunc<ClientT, Message>): void {
+      this._install(m, h, true);
+    },
+
+    _install(m: MessageQuery, h: MessageHandlerFunc<ClientT, Message>, once: boolean): void {
+      const mh: MessageHandler<ClientT, Message> = ({
+        didRun: false,
+        once,
+        run(this: ClientT, msg: Message, commLink: CommLink<ClientT>): Promise<Message | void> {
+          const bf = _.bind(h, this);
+          return bf(msg, commLink)
+        }
+      });
+      this.messageHandlers.push([m, mh]);
     },
 
     async connect(): Promise<void> {
@@ -181,6 +209,7 @@ export function newCommLink<ClientT>(name: string, client?: ClientT): CommLink<C
           });
       });
     },
+
     async quit(): Promise<void> {
       const self = this;
       return new Promise((resolve) => {
@@ -195,7 +224,6 @@ export function newCommLink<ClientT>(name: string, client?: ClientT): CommLink<C
     const reply = addHeaders(ack(msg), { from: msg.to, to: msg.from, id: msg.id });
     await commLink.send(reply);
   });
-
 
   commLink.on(quit, async (msg: Message) => {
     const reply = addHeaders(ack(msg), { from: msg.to, to: msg.from, id: msg.id });

@@ -4,14 +4,33 @@ import {
   format,
   Logger,
   config,
+  level
 } from 'winston';
 
 const { cli } = config;
 
-export function getServiceLogger(label: string): Logger {
+export function getLogEnvLevel(): level | undefined {
   const envLogLevel = process.env['service-comm.loglevel'];
-  const logLevel = envLogLevel || 'info';
+  const envLevel = envLogLevel;
+
+  switch (envLevel) {
+    case "error":
+    case "warn":
+    case "info":
+    case "http":
+    case "verbose":
+    case "debug":
+    case "silly":
+      return envLevel;
+  }
+  return undefined;
+}
+
+export function getServiceLogger(label: string): Logger {
   const { cli } = config;
+
+  let logLevel: level = getLogEnvLevel() || 'debug';
+
   return createLogger({
     level: logLevel,
     levels: cli.levels,

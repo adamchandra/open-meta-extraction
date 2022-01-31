@@ -6,9 +6,8 @@ import Router from 'koa-router';
 import json from 'koa-json';
 // import { initPortalRouter } from './portal-routes';
 import { Server } from 'http';
-import { createAppLogger } from './portal-logger';
 import { SatelliteCommLink } from '@watr/commlinks';
-import { AlphaRecord, prettyPrint } from '@watr/commonlib';
+import { AlphaRecord, prettyPrint, getServiceLogger } from '@watr/commonlib';
 import { RecordRequest } from '~/workflow/distributed/workflow-defs';
 
 export interface RestPortal {
@@ -16,7 +15,7 @@ export interface RestPortal {
 }
 
 export async function startRestWorker(commLink: SatelliteCommLink<RestPortal>): Promise<RestPortal> {
-  const log = createAppLogger();
+  const log = getServiceLogger('rest-worker');
   const app = new Koa();
   const rootRouter = new Router();
   const portalRouter = initPortalRouter(commLink);

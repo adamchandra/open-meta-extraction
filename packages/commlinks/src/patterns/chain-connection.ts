@@ -23,3 +23,29 @@ export function chainServices<S>(
 
   });
 }
+
+export interface CallChain {
+  chainFunction: string;
+  orderedServices: string[];
+}
+
+// export function initCallChaining<T>(this: CommLink<T>, arg: CallChain): void {
+//   const { name } = this;
+//   const { chainFunction, orderedServices } = arg;
+//   const i = orderedServices.indexOf(name);
+//   const serviceNotFound = i < 0;
+//   const isLastService = i === orderedServices.length - 1;
+//   const nextService = orderedServices[i + 1];
+//   if (serviceNotFound) {
+//     return;
+//   }
+//   if (isLastService) {
+//     return;
+//   }
+//   this.commLink.on(cyield(chainFunction), async (msg: Message) => {
+//     if (msg.kind !== 'cyield') return;
+//     const r = await this.commLink.call(chainFunction, msg.value, { to: nextService });
+//     return { ...msg, value: r };
+//   });
+
+// }

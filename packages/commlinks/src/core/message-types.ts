@@ -1,17 +1,34 @@
 import _ from 'lodash';
+import { CommLink } from './commlink';
 
 export type Thunk = () => Promise<void>;
 
-export type MessageHandler<ClientT, M extends Message> = (this: ClientT, msg: M) => Promise<M | void>;
-// export type MessageHandler<ClientT> = (this: ClientT, msg: Message) => Promise<MessageMod | void>; // TODO remove void
+export type MessageHandlerFunc<ClientT, M extends Message> =
+  (this: ClientT, msg: M, commLink: CommLink<ClientT>) => Promise<M | void>;
+
+export interface MessageHandler<ClientT, M extends Message> {
+  run(this: ClientT, msg: M, commLink: CommLink<ClientT>): Promise<M | void>;
+  once: boolean;
+  didRun: boolean;
+}
+
+
+export type CustomHandler<ClientT, A = object, B = any> =
+  (this: ClientT, a: A, commLink: CommLink<ClientT>) => Promise<B>;
+
+// export interface CustomHandler<ClientT, A=any, B=any> {
+//   run(this: ClientT, a: A, commLink: CommLink<ClientT>): Promise<B>;
+//   once: boolean;
+// }
 
 export type MessageHandlerDef<ClientT> = [MessageQuery, MessageHandler<ClientT, Message>];
-
-export type CustomHandler<ClientT, A = object, B = any> = (this: ClientT, a: A) => Promise<B>;
 export type CustomHandlers<ClientT> = Record<string, CustomHandler<ClientT>>;
 
-// Helper type : TODO document
-type IfStrObjStr<S, T, U, A, B> = S extends string ? T extends object ? U extends string ? A : B : B : B;
+type IfStr<S, A> = S extends string ? A : Partial<A>;
+type IfObj<S, A> = S extends object ? A : Partial<A>;
+
+type IfStrObj<S, T, A> = IfStr<S, IfObj<T, A>>;
+type IfStrObjStr<S, T, U, A> = IfStrObj<S, T, IfStr<U, A>>;
 
 function filterUndefs<T>(o: T): T {
   const newO = _.clone(o);
@@ -35,12 +52,10 @@ export interface Call {
   arg: object;
 }
 
-export function call<
-  S extends string | undefined,
-  V extends object | undefined>(
-    func?: S,
-    arg?: V,
-): S extends string ? (V extends object ? Call : Partial<Call>) : Partial<Call> {
+export function call(
+  func?: string,
+  arg?: object
+): IfStrObj<typeof func, typeof arg, Call> {
   return filterUndefs({
     kind: 'call',
     func,
@@ -55,15 +70,11 @@ export interface CYield {
   callFrom: string;
 }
 
-
-export function cyield<
-  S extends string | undefined,
-  T extends object | undefined,
-  U extends string | undefined>(
-    func?: S,
-    value?: T,
-    callFrom?: U,
-): IfStrObjStr<S, T, U, CYield, Partial<CYield>> {
+export function cyield(
+    func?: string,
+    value?: object,
+    callFrom?: string,
+): IfStrObjStr<typeof func, typeof value, typeof callFrom,CYield> {
   return filterUndefs({
     kind: 'cyield',
     func,
@@ -77,12 +88,10 @@ export interface CReturn {
   func: string;
   value: object;
 }
-export function creturn<
-  S extends string | undefined,
-  V extends object | undefined>(
-    func?: S,
-    value?: V,
-): S extends string ? (V extends undefined ? Partial<CReturn> : CReturn) : Partial<CReturn> {
+export function creturn(
+    func?: string,
+    value?: object,
+): IfStrObj<typeof func, typeof value, CReturn> {
   return filterUndefs({
     kind: 'creturn',
     func,
