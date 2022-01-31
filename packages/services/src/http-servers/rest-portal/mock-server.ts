@@ -2,8 +2,7 @@ import _ from 'lodash';
 import Koa, { Context } from 'koa';
 import Router from 'koa-router';
 import { Server } from 'http';
-import { delay, prettyPrint, stripMargin } from '@watr/commonlib';
-import { createAppLogger } from './portal-logger';
+import { delay, prettyPrint, stripMargin, getServiceLogger } from '@watr/commonlib';
 
 const withFields = stripMargin(`
 |<html>
@@ -59,7 +58,7 @@ const htmlSamples: Record<string, string> = {
 
 
 export async function startSpiderableTestServer(): Promise<Server> {
-  const log = createAppLogger();
+  const log = getServiceLogger('test-server');
   const app = new Koa();
   const rootRouter = new Router();
 
