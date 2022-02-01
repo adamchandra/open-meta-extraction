@@ -57,6 +57,7 @@ async function runMessageHandlers<ClientT>(
 ): Promise<void> {
 
   commLink.log.silly(`finding message handlers for ${packedMsg}`);
+
   const matchedHandlers = _.filter(commLink.messageHandlers, ([handlerKind, handler]) => {
     const matches = matchMessageToQuery(handlerKind, message);
     const hpf = prettyFormat(handlerKind);
@@ -66,7 +67,6 @@ async function runMessageHandlers<ClientT>(
     return matches;
   });
 
-
   switch (message.kind) {
     case 'call': {
       const { func, arg, id, from } = message;
@@ -74,9 +74,9 @@ async function runMessageHandlers<ClientT>(
       if (typeof maybeCallback === 'function') {
         commLink.log.debug(`Calling ${func}(${arg})`)
         const cb = _.bind(maybeCallback, client);
-        const newA = await Promise.resolve(cb(arg));
-        const yieldVal: object = typeof newA === 'object' ? newA : {};
-        const yieldMsg = cyield(func, yieldVal, from);
+        const newA = await Promise.resolve(cb(arg, commLink));
+        // const yieldVal: object = typeof newA === 'object' ? newA : {};
+        const yieldMsg = cyield(func, newA, from);
         await commLink.send(Message.address(yieldMsg, { id, to: commLink.name }));
       }
       break;
@@ -92,7 +92,7 @@ async function runMessageHandlers<ClientT>(
         const hk = prettyFormat(handlerKind);
         commLink.log.silly(`running handler ${hk} for ${packedMsg}`);
         const bh = _.bind(handler.run, client);
-        const maybeNewValue = await bh(currMsg);
+        const maybeNewValue = await bh(currMsg, commLink);
         const newV = prettyFormat(maybeNewValue);
         commLink.log.silly(`handler returned ${newV}`);
         if (maybeNewValue !== undefined) {
@@ -108,7 +108,7 @@ async function runMessageHandlers<ClientT>(
         const hk = prettyFormat(handlerKind);
         commLink.log.silly(`running handler ${hk} for ${packedMsg}`);
         const bh = _.bind(handler.run, client);
-        const mod = await bh(message);
+        const mod = await bh(message, commLink);
         return mod;
       });
       break;

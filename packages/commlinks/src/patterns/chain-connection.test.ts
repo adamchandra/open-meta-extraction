@@ -1,61 +1,45 @@
 import _ from 'lodash';
-import { chainServices } from './chain-connection';
+import { initCallChaining, createCommChain } from './chain-connection';
 
-import { createTestServices } from '~/util/service-test-utils';
+import { awaitQuit, initCommLinks } from '~/util/service-test-utils';
+import { CommLink } from '~/core/commlink';
+import { prettyPrint } from '@watr/commonlib';
 
 describe('Chained CommLink Connection Patterns', () => {
-  process.env['service-comm.loglevel'] = 'silly';
+  process.env['service-comm.loglevel'] = 'info';
 
-  interface Client {
-    run(msgArg: MsgArg): Promise<MsgArg>;
+  interface CallState {
+    clientFuncs: string[];
   }
 
-  interface MsgArg {
-    callees: string[];
-    which: number;
-  }
+  it('should setup chain-calling pattern', async (done) => {
+    const Client = {
+      initCallChaining,
+      async func1(callState: CallState, commLink: CommLink<typeof Client>): Promise<CallState> {
+        callState.clientFuncs.push(`${commLink.name}.func1()`)
+        return callState;
+      }
+    };
+    const commLinks = await initCommLinks<typeof Client>(5, () => Client)
+    const commNames = _.map(commLinks, (cl) => cl.name)
 
+    const [comm0, comm1] = commLinks;
 
-  it('should push message and promise response', async (done) => {
-    const clients = _.map(_.range(2), clientNum => {
-      const client: Client = {
-        async run(msgArg: MsgArg): Promise<MsgArg> {
-          msgArg.callees.push(`client#${clientNum+1}`);
-          return msgArg;
-        }
-      };
-      return client;
-    });
+    const chainResult = await createCommChain(comm0, 'func1', commNames);
+    prettyPrint({ chainResult })
 
-    const testServices = await createTestServices<Client>(clients);
-    const commLinks = _.map(testServices, ts => ts.commLink);
+    const ret1 = await comm0.call('func1', { clientFuncs: [] }, { to: comm1.name });
 
-    chainServices('run', commLinks);
+    const expected = [
+      'commLink-1.func1()',
+      'commLink-2.func1()',
+      'commLink-3.func1()',
+      'commLink-4.func1()'
+    ];
 
-    const commLink0 = commLinks[0];
+    expect(ret1.clientFuncs).toStrictEqual(expected);
 
-    const allChains = _.map(_.range(2), n => {
-      const initMsg: MsgArg = {
-        callees: [],
-        which: n
-      };
-
-      return commLink0.call('run', initMsg);
-    });
-
-    await Promise.all(allChains)
-      .then((results) => {
-        const expected = [
-          { callees: ['client#1', 'client#2'], which: 0 },
-          { callees: ['client#1', 'client#2'], which: 1 }
-        ];
-        expect(results).toStrictEqual(expected);
-      });
-
-
-    const quitting = _.map(testServices, s => s.commLink.quit());
-    await Promise.all(quitting);
+    await awaitQuit(commLinks)
     done();
   });
-
 });

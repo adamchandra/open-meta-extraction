@@ -12,14 +12,9 @@ export interface MessageHandler<ClientT, M extends Message> {
   didRun: boolean;
 }
 
-
 export type CustomHandler<ClientT, A = object, B = any> =
   (this: ClientT, a: A, commLink: CommLink<ClientT>) => Promise<B>;
 
-// export interface CustomHandler<ClientT, A=any, B=any> {
-//   run(this: ClientT, a: A, commLink: CommLink<ClientT>): Promise<B>;
-//   once: boolean;
-// }
 
 export type MessageHandlerDef<ClientT> = [MessageQuery, MessageHandler<ClientT, Message>];
 export type CustomHandlers<ClientT> = Record<string, CustomHandler<ClientT>>;
