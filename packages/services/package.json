@@ -35,7 +35,7 @@
     "pg-hstore": "^2.3.4",
     "sequelize": "^6.15.0",
     "typescript": "^4.5.5",
-    "winston": "^3.5.0",
+    "winston": "^3.5.1",
     "axios": "~0.25.0",
     "nconf": "~0.11.3"
   },
@@ -51,7 +51,7 @@
     "@types/koa-json": "^2.0.20",
     "@types/koa-router": "^7.4.4",
     "@types/lodash": "^4.14.178",
-    "@types/node": "^17.0.13",
+    "@types/node": "^17.0.14",
     "@types/puppeteer": "^5.4.4",
     "chai": "^4.3.6",
     "eslint": "^7.32.0",

@@ -4,12 +4,11 @@ import {
   format,
   Logger,
   config,
-  level
 } from 'winston';
 
 const { cli } = config;
 
-export function getLogEnvLevel(): level | undefined {
+export function getLogEnvLevel(): string {
   const envLogLevel = process.env['service-comm.loglevel'];
   const envLevel = envLogLevel;
 
@@ -29,7 +28,7 @@ export function getLogEnvLevel(): level | undefined {
 export function getServiceLogger(label: string): Logger {
   const { cli } = config;
 
-  let logLevel: level = getLogEnvLevel() || 'debug';
+  let logLevel = getLogEnvLevel() || 'debug';
 
   return createLogger({
     level: logLevel,
