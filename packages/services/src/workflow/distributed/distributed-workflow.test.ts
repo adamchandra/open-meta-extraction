@@ -1,6 +1,6 @@
 import _ from 'lodash';
 import { AlphaRecord } from '@watr/commonlib';
-import { chainServices, defineSatelliteService, SatelliteServiceDef } from '@watr/commlinks';
+import { defineSatelliteService, SatelliteServiceDef, initCallChaining, createCommChain } from '@watr/commlinks';
 import { runServiceHubAndSatellites } from './distributed-workflow';
 
 describe('End-to-end Extraction workflows', () => {
@@ -55,7 +55,7 @@ describe('End-to-end Extraction workflows', () => {
     const commLinks = _.map(satelliteKeyVals, ([, sat]) => sat.commLink);
 
     // TODO make this chain the services, not the commlinks
-    chainServices('run', commLinks);
+    // chainServices('run', commLinks);
 
     // const retval = await axios.post(
     //   'http://localhost:3100/extractor/record.json', {

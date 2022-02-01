@@ -28,10 +28,11 @@ export function getLogEnvLevel(): string {
 export function getServiceLogger(label: string): Logger {
   const { cli } = config;
 
-  let logLevel = getLogEnvLevel() || 'debug';
+  let logLevel = getLogEnvLevel();
+  const level = logLevel || 'debug';
 
-  return createLogger({
-    level: logLevel,
+  const logger = createLogger({
+    level,
     levels: cli.levels,
     transports: [
       new transports.Console({
@@ -43,6 +44,12 @@ export function getServiceLogger(label: string): Logger {
       })
     ],
   });
+
+  if (logLevel === undefined) {
+    logger.warn('log level could not be deduced from env variables, setting to debug');
+  }
+
+  return logger;
 }
 
 export function getBasicConsoleLogger(level: string = 'info'): Logger {
@@ -60,38 +67,3 @@ export function getBasicConsoleLogger(level: string = 'info'): Logger {
   });
   return logger;
 }
-
-
-// export function getBasicLogger(
-//   workingDirectory: string,
-//   logfileName: string,
-//   loglevel: string = 'info',
-// ): Logger {
-//   const rootLoggingPath = path.resolve(workingDirectory);
-
-//   const console = new transports.Console({
-//     format: format.combine(
-//       format.colorize(),
-//       format.simple(),
-//     ),
-//     level: loglevel
-//   });
-
-//   const logger = createLogger({
-//     levels: cli.levels,
-//     transports: [
-//       console,
-//       new transports.File({
-//         filename: logfileName,
-//         level: 'silly',
-//         format: format.combine(
-//           format.timestamp(),
-//           format.json()
-//         ),
-//         dirname: rootLoggingPath,
-//         tailable: true,
-//       })
-//     ],
-//   });
-//   return logger;
-// }

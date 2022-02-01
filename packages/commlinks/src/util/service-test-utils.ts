@@ -83,3 +83,15 @@ export function assertAllStringsIncluded(expectedStrings: string[], actualString
   });
   return atLeastOneMatchPerRegexp;
 }
+
+export async function initCommLinks<ClientT>(n: number, clientN: (i: number) => ClientT): Promise<CommLink<ClientT>[]> {
+  const commNames = _.map(_.range(n), (i) => `commLink-${i}`);
+  const commLinks = _.map(commNames, (name, i) => newCommLink(name, clientN(i)));
+  return await Promise.all(_.map(commLinks, (commLink) => {
+    return commLink.connect().then(() => commLink);
+  }));
+}
+
+export async function awaitQuit<A>(commLinks: CommLink<A>[]): Promise<void> {
+  await Promise.all(_.map(commLinks, (commLink) => commLink.quit()));
+}
