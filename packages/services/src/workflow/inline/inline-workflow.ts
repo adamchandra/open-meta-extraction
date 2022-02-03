@@ -19,18 +19,7 @@ interface ErrorRecord {
 
 const ErrorRecord = (error: string): ErrorRecord => ({ error });
 
-// function makeSyntheticAlphaRec(url: string): AlphaRecord {
-//   const hp  = getHashEncodedPath(url);
-//   const title = url;
-//   const noteId = hp.hashedSource;
-//   return {
-//     url,
-//     noteId,
-//     title,
-//   };
-// }
-
-function getCanonicalFieldRecs(alphaRec: AlphaRecord): CanonicalFieldRecords | undefined {
+export function getCanonicalFieldRecs(alphaRec: AlphaRecord): CanonicalFieldRecords | undefined {
   const { url } = alphaRec;
   const entryPath = getCorpusEntryDirForUrl(url);
   const fieldRecs = getCanonicalFieldRecord(entryPath);
@@ -135,7 +124,9 @@ export async function runServicesInlineWithDB(
     await commitUrlStatus(dbCtx, url, 'extraction:warning', 'no canonical field record available');
     return ErrorRecord(msg);
   }
-  await (fieldRecs.fields.length === 0 ? commitUrlStatus(dbCtx, url, 'extraction:warning', 'no fields extracted') : commitUrlStatus(dbCtx, url, 'extraction:success', `extracted ${fieldRecs.fields.length} fields`));
+  await (fieldRecs.fields.length === 0
+    ? commitUrlStatus(dbCtx, url, 'extraction:warning', 'no fields extracted')
+    : commitUrlStatus(dbCtx, url, 'extraction:success', `extracted ${fieldRecs.fields.length} fields`));
 
   return fieldRecs;
 }
@@ -194,7 +185,7 @@ export async function fetchAllDBRecords(
 ): Promise<void> {
   const log = getServiceLogger('workflow');
 
-  const spiderService = await createSpiderService(log);
+  const spiderService = await createSpiderService();
 
   const workflowServices: WorkflowServices = {
     spiderService,
@@ -208,7 +199,7 @@ export async function fetchAllDBRecords(
     const fetchResult = await fetchNextDBRecord(dbCtx, workflowServices);
     if (_.isBoolean(fetchResult)) {
       fetchNext = fetchResult;
-    } else {}
+    } else { }
     fetchCount += 1;
     if (maxToFetch > 0 && fetchCount >= maxToFetch) {
       fetchNext = false;

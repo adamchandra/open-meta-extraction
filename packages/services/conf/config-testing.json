@@ -1,8 +1,8 @@
 {
-    "database": {
-        "dbname": "open_extraction_testdb",
+    "db": {
+        "database": "open_extraction_testdb",
         "username": "watrworker",
-        "password": ""
+        "password": "watrpasswd"
     },
     "services": {
     },

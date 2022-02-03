@@ -3,11 +3,15 @@ import { cyield, Message } from '~/core/message-types';
 
 import { CommLink } from '~/core/commlink';
 
-export interface CallChainingArgs {
+export interface CallChainDef {
   chainFunction: string;
   orderedServices: string[];
+}
+
+export interface CallChainingArgs extends CallChainDef {
   logs: string[];
 }
+
 export function callChainingArgs(chainFunction: string, orderedServices: string[]): CallChainingArgs {
   return { chainFunction, orderedServices, logs: [] };
 }

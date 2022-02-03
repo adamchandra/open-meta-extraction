@@ -1,3 +1,4 @@
+import { CustomHandler } from '@watr/commlinks';
 import { AlphaRecord } from '@watr/commonlib';
 
 export type WorkflowServiceName = keyof {
@@ -33,6 +34,15 @@ export const RecordRequest = (alphaRec: AlphaRecord): RecordRequest => ({
 export type WorkflowData =
   RecordRequest
   ;
+
+export interface RequestOneRecWorkflow {
+  log: string[];
+  alphaRec: AlphaRecord;
+}
+
+export type RequestOneRecHandler<ClientT> =
+  CustomHandler<ClientT, RequestOneRecWorkflow, Promise<RequestOneRecWorkflow>>;
+
 
 export function getWorkingDir(): string {
   const appSharePath = process.env['APP_SHARE_PATH'];

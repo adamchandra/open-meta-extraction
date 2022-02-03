@@ -105,7 +105,7 @@ export interface BaseEnv {
 /**
  * Return value with user defined Environment
  */
-export type W<A, Env extends BaseEnv> = [A, Env];
+export type W<A, Env extends BaseEnv> = [a:A, env:Env];
 function asW<A, Env extends BaseEnv>(a: A, w: Env): W<A, Env> {
   return [a, w];
 }
@@ -161,7 +161,6 @@ const EventualResult = {
 export type ExtractionResult<A, Env extends BaseEnv> = TE.TaskEither<WCI<Env>, W<A, Env>>;
 const ExtractionResult = {
   lift: <A, Env extends BaseEnv>(a: Eventual<A>, env: Env): ExtractionResult<A, Env> => () => Promise.resolve<A>(a).then(a0 => E.right(asW(a0, env))),
-
 
   liftW: <A, Env extends BaseEnv>(wa: Eventual<W<A, Env>>): ExtractionResult<A, Env> => () => Promise.resolve<W<A, Env>>(wa).then(wa0 => E.right(wa0)),
 

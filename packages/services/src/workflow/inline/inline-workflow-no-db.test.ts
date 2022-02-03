@@ -36,7 +36,7 @@ describe('End-to-end Extraction workflows', () => {
   it('should fetch alpha records', async () => {
     const log = getServiceLogger('test-service');
 
-    const spiderService = await createSpiderService(log);
+    const spiderService = await createSpiderService();
 
     const workflowServices: WorkflowServices = {
       spiderService,

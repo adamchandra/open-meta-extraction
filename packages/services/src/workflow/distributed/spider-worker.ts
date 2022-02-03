@@ -9,13 +9,14 @@ import {
 } from '@watr/spider';
 
 import {
-  streamPump, putStrLn, delay,
-  AlphaRecord, readAlphaRecStream
+  streamPump,
+  delay,
+  getServiceLogger
 } from '@watr/commonlib';
 
 import * as E from 'fp-ts/Either';
-import { DatabaseContext, insertAlphaRecords } from '~/db/db-api';
-import { Logger } from 'winston';
+import { defineSatelliteService } from '@watr/commlinks';
+import { WorkflowData } from './workflow-defs';
 
 export interface SpiderService {
   crawlScheduler: CrawlScheduler;
@@ -25,8 +26,10 @@ export interface SpiderService {
   quit(): Promise<void>;
 }
 
-export async function createSpiderService(logger: Logger): Promise<SpiderService> {
-  const scraper = await initScraper(logger);
+export async function createSpiderService(): Promise<SpiderService> {
+  const logger = getServiceLogger('spider');
+
+  const scraper = await initScraper();
 
   const crawlScheduler = initCrawlScheduler();
 
@@ -61,7 +64,7 @@ export async function createSpiderService(logger: Logger): Promise<SpiderService
               }
             })
             .catch((error) => logger.warn('Error', error))
-          ;
+            ;
         })
         .toReadableStream();
     },
@@ -72,25 +75,56 @@ export async function createSpiderService(logger: Logger): Promise<SpiderService
 
   return service;
 }
+export const Spider = defineSatelliteService<SpiderService>(
+  'Spider',
+  async () => createSpiderService(), {
+  async runOneAlphaRecNoDB(arg: WorkflowData): Promise<WorkflowData> {
+    //  this.log.info(`[run]> ${data.kind}`)
+    //  const { alphaRec } = data;
+    //  const spider = this.cargo;
+    //  const nextUrl = alphaRec.url;
+    //  const metadata = await spider
+    //    .scrape(nextUrl)
+    //    .catch((error: Error) => {
+    //      putStrLn('Error', error.name, error.message);
+    //      return undefined;
+    //    });
+    //  return data;
+    return arg;
+  },
+  async step() {
+    // this.log.info(`${this.serviceName} [step]> `)
+    // const spider = this.cargo;
+    // let nextUrl = await getNextUrlForSpidering();
+    // while (nextUrl !== undefined) {
+    //   const metadata = await spider
+    //     .scrape(nextUrl)
+    //     .catch((error: Error) => {
+    //       this.log.error('Error', error.name, error.message);
+    //       return undefined;
+    //     });
 
-export async function insertNewAlphaRecords(
-  dbCtx: DatabaseContext,
-  alphaRecordCsv: string,
-): Promise<void> {
-  const inputStream = readAlphaRecStream(alphaRecordCsv);
-
-  putStrLn('Reading CSV Records...');
-  const alphaRecords = await streamPump.createPump()
-    .viaStream<AlphaRecord>(inputStream)
-    .gather()
-    .toPromise();
-  if (alphaRecords === undefined) {
-    putStrLn(`No records found in CSV ${alphaRecordCsv}`);
-    return;
+    //   if (metadata !== undefined) {
+    //     const committedMeta = await commitMetadata(metadata);
+    //     this.log.info(`committing Metadata ${committedMeta}`)
+    //     if (committedMeta) {
+    //       committedMeta.statusCode === 'http:200';
+    //       const corpusEntryStatus = await insertCorpusEntry(committedMeta.url);
+    //       this.log.info(`created new corpus entry ${corpusEntryStatus.entryId}: ${corpusEntryStatus.statusCode}`)
+    //       // await this.commLink.echoBack('step');
+    //     }
+    //   } else {
+    //     this.log.warn(`Metadata is undefined for url ${nextUrl}`);
+    //   }
+    //   nextUrl = await getNextUrlForSpidering();
+    // }
+  },
+  async shutdown() {
+    const spider = this.cargo;
+    return spider.scraper.quit()
+      .then(() => {
+        this.log.debug(`${this.serviceName} [scraper:shutdown]> `)
+      });
   }
+});
 
-  putStrLn(`Inserting ${alphaRecords.length} Records`);
-  const newRecs = await insertAlphaRecords(dbCtx, alphaRecords);
-  const len = newRecs.length;
-  putStrLn(`Inserted ${len} new records`);
-}

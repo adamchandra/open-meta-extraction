@@ -1,42 +1,30 @@
 import _ from 'lodash';
 
 import {
-  createHubService,
+  createServiceHub,
   createSatelliteService,
   SatelliteService,
   ServiceHub,
-  SatelliteServiceDef
+  SatelliteServiceDef,
+  ServiceHubDef
 } from '@watr/commlinks';
 import { WorkflowServiceName } from './workflow-defs';
 import { registeredServices } from './workers';
 
 
-
-// export async function runServiceHub(
-//   hubName: string,
-//   orderedServices: string[]
-// ): Promise<[ServiceHub, () => Promise<void>]> {
-//   return createHubService(hubName, orderedServices);
-// }
-
 export async function runServiceHubAndSatellites(
-  hubName: string,
-  satelliteServiceDefs: Record<string, SatelliteServiceDef<any>>
-): Promise<[ServiceHub, () => Promise<void>, Record<string, SatelliteService<any>>]> {
+  hubDef: ServiceHubDef,
+  satelliteServiceDefs: SatelliteServiceDef<any>[]
+): Promise<[ServiceHub, () => Promise<void>, SatelliteService<any>[]]> {
 
-  const serviceNames = _.keys(satelliteServiceDefs);
 
-  const [hubService, hubConnected] = await createHubService(hubName, serviceNames);
-  const servicePromises = _.map(serviceNames, (serviceName) => {
-    return createSatelliteService(hubName, serviceName, satelliteServiceDefs[serviceName]);
-  });
+  const [hubService, hubConnected] = await createServiceHub(hubDef);
+  const servicePromises = _.map(satelliteServiceDefs, (d) => createSatelliteService(hubDef.name, d));
 
-  const satellites: Array<[string, SatelliteService<any>]> = await Promise.all(servicePromises)
-    .then((satellites) => _.map(satellites, s => [s.serviceName, s]));
+  const satellites: Array<SatelliteService<any>> =
+    await Promise.all(servicePromises);
 
-  const satelliteRecords = _.fromPairs(satellites);
-
-  return [hubService, hubConnected, satelliteRecords];
+  return [hubService, hubConnected, satellites];
 }
 
 
@@ -45,5 +33,5 @@ export async function runRegisteredService(
   serviceName: WorkflowServiceName,
 ): Promise<SatelliteService<any>> {
   const serviceDef = registeredServices[serviceName]
-  return createSatelliteService(hubName, serviceName, serviceDef);
+  return createSatelliteService(hubName, serviceDef);
 }

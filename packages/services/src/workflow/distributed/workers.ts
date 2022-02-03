@@ -1,29 +1,30 @@
 import { promisify } from 'util';
 import { RestPortal, startRestWorker } from '~/http-servers/rest-portal/rest-worker';
-import { DatabaseContext, insertNewUrlChains } from '~/db/db-api';
+import { DatabaseContext } from '~/db/db-api';
 import { getDBConfig } from '~/db/database';
-import path from 'path';
 
 import {
   defineSatelliteService,
   SatelliteServiceDef
 } from '@watr/commlinks';
 
-import { getWorkingDir, WorkflowData, WorkflowServiceName } from './workflow-defs';
+import { WorkflowData, WorkflowServiceName } from './workflow-defs';
+import { createSpiderService, SpiderService } from './spider-worker';
+import { getCanonicalFieldRecs } from '~/workflow/inline/inline-workflow';
 
-interface HubService {
-
-}
-
-const HubService = defineSatelliteService<HubService>(
-  () => undefined, {
-  async shutdown() {
-
-  }
-});
-
-const RestPortalService = defineSatelliteService<RestPortal>(
+export const RestPortalService = defineSatelliteService<RestPortal>(
+  'RestPortal',
   (commLink) => startRestWorker(commLink), {
+  async startup() {
+    // TODO move server start from init (above) to here
+  },
+  async runOneAlphaRec(arg: WorkflowData): Promise<WorkflowData> {
+    return arg;
+  },
+  async runOneAlphaRecNoDB(arg: WorkflowData): Promise<WorkflowData> {
+    return arg;
+  },
+
   async shutdown() {
     this.log.debug(`${this.serviceName} [shutdown]> `)
 
@@ -35,12 +36,15 @@ const RestPortalService = defineSatelliteService<RestPortal>(
   }
 });
 
-interface UploadIngestorT {
+export interface UploadIngestorT {
   databaseContext: DatabaseContext,
 }
 
-const UploadIngestor = defineSatelliteService<UploadIngestorT>(
+// TODO split out the file system parts (ArtifactService)?
+export const UploadIngestor = defineSatelliteService<UploadIngestorT>(
+  'UploadIngestor',
   async () => {
+    // TODO ensure we have access to local filesystem and database
     const dbConfig = getDBConfig();
     if (dbConfig === undefined) {
       throw new Error('invalid database config; use env.{database,username,password}')
@@ -50,149 +54,88 @@ const UploadIngestor = defineSatelliteService<UploadIngestorT>(
       databaseContext
     };
   }, {
-  async trace(): Promise<void> {
-    this.log.info('[trace]> ');
+
+  async runOneAlphaRec(arg: WorkflowData): Promise<WorkflowData> {
+    // insertNewUrlChains(databaseContext)
+    return arg;
   },
+  async runOneAlphaRecNoDB(arg: WorkflowData): Promise<WorkflowData> {
+    const { alphaRec } = arg;
+    const { url } = alphaRec;
 
-  async step(): Promise<void> {
-    this.log.info('[step]> ')
-    const { databaseContext } = this.cargo;
-    await insertNewUrlChains(databaseContext)
-  },
+    this.log.info(`Fetching fields for ${url}`);
 
-  async run(data: WorkflowData): Promise<WorkflowData> {
-    const workingDir = getWorkingDir();
-    this.log.info(`[run]> ${data.kind}; working dir = ${workingDir}`)
+    // First attempt: if we have the data on disk, just return it
+    let fieldRecs = getCanonicalFieldRecs(alphaRec);
 
-    const { alphaRec } = data;
-    // if we have the data on disk, just return it
-    const downloadDir = path.resolve(workingDir, 'downloads.d');
+    if (fieldRecs === undefined) {
+      // Try to spider/extract
+      this.log.info(`No extracted fields found.. spidering ${url}`);
 
-    // getExtractedField(downloadDir, alphaRec);
-    return data;
+      // const metadataOrError = await scrapeUrlNoDB(services, url);
+      // if ('error' in metadataOrError) {
+      //   return metadataOrError;
+      // }
+
+    //   const entryPath = getCorpusEntryDirForUrl(url);
+
+    //   log.info(`Extracting Fields in ${entryPath}`);
+
+    //   await extractFieldsForEntry(entryPath, log);
+
+    //   // try again:
+    //   fieldRecs = getCanonicalFieldRecs(alphaRec);
+    }
+
+    // if (fieldRecs === undefined) {
+    //   const msg = 'No extracted fields available';
+    //   log.info(msg);
+    //   return ErrorRecord(msg);
+    // }
+
+    // return fieldRecs;
+
+
+    return arg;
   },
 });
 
-const Spider = defineSatelliteService<void>(
+
+export const FieldExtractor = defineSatelliteService<void>(
+  'FieldExtractor',
   async () => undefined, {
+  async runOneAlphaRecNoDB(arg: WorkflowData): Promise<WorkflowData> {
+    // this.log.info(`[run]> ${data.kind}`)
+    // const { alphaRec } = data;
+    // const { url } = alphaRec;
+
+    // const workingDir = getWorkingDir();
+    // const corpusRoot = path.resolve(workingDir, 'downloads.d');
+    // const entryEncPath = makeHashEncodedPath(url, 3);
+    // const entryPath = entryEncPath.toPath();
+    // const entryFullpath = path.resolve(corpusRoot, entryPath);
+    // await extractFieldsForEntry(entryFullpath, this.log)
+    // return data;
+    return arg;
+  },
 });
-// const Spider = defineSatelliteService<SpiderService>(
-//   async () => createSpiderService(getWorkingDir()), {
-//   async step() {
-//     this.log.info(`${this.serviceName} [step]> `)
-//     const spider = this.cargo;
-//     let nextUrl = await getNextUrlForSpidering();
-//     while (nextUrl !== undefined) {
-//       const metadata = await spider
-//         .scrape(nextUrl)
-//         .catch((error: Error) => {
-//           putStrLn('Error', error.name, error.message);
-//           return undefined;
-//         });
 
-//       if (metadata !== undefined) {
-//         const committedMeta = await commitMetadata(metadata);
-//         this.log.info(`committing Metadata ${committedMeta}`)
-//         if (committedMeta) {
-//           committedMeta.statusCode === 'http:200';
-//           const corpusEntryStatus = await insertCorpusEntry(committedMeta.url);
-//           this.log.info(`created new corpus entry ${corpusEntryStatus.entryId}: ${corpusEntryStatus.statusCode}`)
-//           // await this.commLink.echoBack('step');
-//         }
-//       } else {
-//         putStrLn(`Metadata is undefined for url ${nextUrl}`);
-//       }
-//       nextUrl = await getNextUrlForSpidering();
-//     }
-//   },
-//   async shutdown() {
-//     this.log.debug(`${this.serviceName} [shutdown]> `)
-//     const spider = this.cargo;
-//     return spider.scraper.quit()
-//       .then(() => {
-//         this.log.debug(`${this.serviceName} [scraper:shutdown]> `)
-//       });
-//   }
-//   });
+export const FieldBundler = defineSatelliteService<void>(
+  'FieldBundler',
+  async () => undefined, {
+  async runOneAlphaRecNoDB(arg: WorkflowData): Promise<WorkflowData> {
+    // this.log.info(`[run]> ${data.kind}`)
+    // const workingDir = getWorkingDir();
+    // const corpusRoot = path.resolve(workingDir, 'downloads.d');
+    // this.log.info(`[run]> ${data.kind}; working dir = ${corpusRoot}`)
+    // const { alphaRec } = data;
+    // // if we have the data on disk, just return it
+    // getExtractedField(corpusRoot, alphaRec);
+    // return data;
+    return arg;
+  },
+});
 
+// TODO remove this
 export const registeredServices: Partial<Record<WorkflowServiceName, SatelliteServiceDef<any>>> = {
-  RestPortalService,
-  UploadIngestor,
-  Spider,
-  'FieldExtractor': defineSatelliteService<void>(
-    async () => undefined, {
-  }),
-
-  'FieldBundler': defineSatelliteService<void>(
-    async () => undefined, {
-  }),
 };
-// const registeredServices: Record<WorkflowServiceName, SatelliteServiceDef<any>> = {
-
-
-//   'Spider': defineSatelliteService<SpiderService>(
-//     async () => createSpiderService(getWorkingDir()), {
-//     async run(data: WorkflowData): Promise<WorkflowData> {
-//       this.log.info(`[run]> ${data.kind}`)
-//       const { alphaRec } = data;
-//       const spider = this.cargo;
-//       const nextUrl = alphaRec.url;
-
-//       const metadata = await spider
-//         .scrape(nextUrl)
-//         .catch((error: Error) => {
-//           putStrLn('Error', error.name, error.message);
-//           return undefined;
-//         });
-
-//       // return metadata;
-
-//       return data;
-//     },
-
-//     async shutdown() {
-//       this.log.debug(`${this.serviceName} [shutdown]> `)
-//       const spider = this.cargo;
-//       return spider.scraper.quit()
-//         .then(() => {
-//           this.log.debug(`${this.serviceName} [scraper:shutdown]> `)
-//         });
-//     }
-//   }),
-
-
-//   'FieldExtractor': defineSatelliteService<void>(
-//     async () => undefined, {
-//     async run(data: WorkflowData): Promise<WorkflowData> {
-//       this.log.info(`[run]> ${data.kind}`)
-//       const { alphaRec } = data;
-//       const { url } = alphaRec;
-
-//       const workingDir = getWorkingDir();
-//       const corpusRoot = path.resolve(workingDir, 'downloads.d');
-//       const entryEncPath = makeHashEncodedPath(url, 3);
-//       const entryPath = entryEncPath.toPath();
-//       const entryFullpath = path.resolve(corpusRoot, entryPath);
-//       await extractFieldsForEntry(entryFullpath, this.log)
-//       return data;
-//     },
-//   }),
-
-//   'FieldBundler': defineSatelliteService<void>(
-//     async () => undefined, {
-//     async run(data: WorkflowData): Promise<WorkflowData> {
-//       this.log.info(`[run]> ${data.kind}`)
-
-//       const workingDir = getWorkingDir();
-//       const corpusRoot = path.resolve(workingDir, 'downloads.d');
-
-//       this.log.info(`[run]> ${data.kind}; working dir = ${corpusRoot}`)
-
-//       const { alphaRec } = data;
-//       // if we have the data on disk, just return it
-//       getExtractedField(corpusRoot, alphaRec);
-
-//       return data;
-//     },
-//   }),
-// };

@@ -1,6 +1,6 @@
 import _ from 'lodash';
 import Async from 'async';
-import { defineSatelliteService, createSatelliteService, SatelliteService, ServiceHub, createHubService } from '~/patterns/hub-connection';
+import { defineSatelliteService, createSatelliteService, SatelliteService, ServiceHub, createServiceHub, defineServiceHub } from '~/patterns/hub-connection';
 import { newCommLink, CommLink } from '~/core/commlink';
 import { Message, quit, AnyMessage } from '~/core/message-types';
 
@@ -48,13 +48,14 @@ export async function createTestServiceHub(
     serviceNames,
     async (serviceName: string) => {
       const serviceDef = defineSatelliteService<void>(
+        serviceName,
         async () => { }, {
         async run() {
           this.log.info(`${this.serviceName} [run]> payload=??? `);
         },
       });
 
-      const satService = await createSatelliteService(hubName, serviceName, serviceDef);
+      const satService = await createSatelliteService(hubName, serviceDef);
 
       satService.commLink.on(AnyMessage, async (msg: Message) => {
         recordLogMsgHandler(serviceName)(msg);
@@ -62,7 +63,9 @@ export async function createTestServiceHub(
       return satService;
     });
 
-  const [hubPool, connectHub] = await createHubService(hubName, serviceNames);
+  const hubService = defineServiceHub(hubName, serviceNames, []);
+
+  const [hubPool, connectHub] = await createServiceHub(hubService);
 
   hubPool.commLink.on(AnyMessage, async (msg: Message) => {
     recordLogMsgHandler(hubPool.name)(msg);
@@ -87,7 +90,7 @@ export function assertAllStringsIncluded(expectedStrings: string[], actualString
 export async function initCommLinks<ClientT>(n: number, clientN: (i: number) => ClientT): Promise<CommLink<ClientT>[]> {
   const commNames = _.map(_.range(n), (i) => `commLink-${i}`);
   const commLinks = _.map(commNames, (name, i) => newCommLink(name, clientN(i)));
-  return await Promise.all(_.map(commLinks, (commLink) => {
+  return await Promise.all(_.map(commLinks, async (commLink) => {
     return commLink.connect().then(() => commLink);
   }));
 }
