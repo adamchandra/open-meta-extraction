@@ -1,21 +1,25 @@
 import _ from 'lodash';
 
-import { delay } from '@watr/commonlib';
+import { delay, getLogEnvLevel } from '@watr/commonlib';
 import winston from 'winston';
 import Async from 'async';
 import { newCommLink, CommLink } from '~/core/commlink';
 import { CustomHandler, CustomHandlers, Message, Body, ping, quit, ack } from '~/core/message-types';
+import { initCallChaining, CallChainDef } from './chain-connection';
 
 export type LifecycleName = keyof {
   startup: null,
   shutdown: null,
-  step: null,
-  run: null,
 };
 
 export type LifecycleHandlers<CargoT> = Record<LifecycleName, CustomHandler<SatelliteService<CargoT>>>;
-
 export type SatelliteCommLink<CargoT> = CommLink<SatelliteService<CargoT>>;
+
+export interface SatelliteServiceDef<CargoT> {
+  name: string;
+  cargoInit: (sc: CommLink<SatelliteService<CargoT>>) => Promise<CargoT>;
+  lifecycleHandlers: CustomHandlers<SatelliteService<CargoT>>;
+}
 
 export interface SatelliteService<CargoT> {
   serviceName: string;
@@ -26,46 +30,98 @@ export interface SatelliteService<CargoT> {
   cargo: CargoT;
 }
 
-export interface SatelliteServiceDef<CargoT> {
-  cargoInit: (sc: CommLink<SatelliteService<CargoT>>) => Promise<CargoT>;
-  lifecyleHandlers: CustomHandlers<SatelliteService<CargoT>>;
-}
 
+export interface ServiceHubDef {
+  name: string;
+  satelliteNames: string[];
+  callChainDefs: CallChainDef[];
+  lifecycleHandlers: CustomHandlers<ServiceHub>;
+}
 export interface ServiceHub {
   name: string;
   commLink: CommLink<ServiceHub>;
+  satelliteNames: string[];
+  callChainDefs: CallChainDef[];
+  messageAll(body: Body): Promise<void>;
   addSatelliteServices(): Promise<void>;
   shutdownSatellites(): Promise<void>;
 }
 
-export function defineSatelliteService<CargoT>(
-  cargoInit: (sc: CommLink<SatelliteService<CargoT>>) => Promise<CargoT>,
-  lifecyleHandlers: CustomHandlers<SatelliteService<CargoT>>
-): SatelliteServiceDef<CargoT> {
+
+export function defineServiceHub(
+  name: string,
+  satelliteNames: string[],
+  callChainDefs: CallChainDef[],
+  lifecycleHandlers: CustomHandlers<ServiceHub> = {}
+): ServiceHubDef {
   return {
-    cargoInit,
-    lifecyleHandlers
+    name,
+    satelliteNames,
+    callChainDefs,
+    lifecycleHandlers
   };
 }
 
+export async function createServiceHub(
+  hubDef: ServiceHubDef,
+): Promise<[ServiceHub, () => Promise<void>]> {
+  const { name, satelliteNames, callChainDefs } = hubDef;
+  const hubService: ServiceHub = {
+    name,
+    satelliteNames,
+    callChainDefs,
+    commLink: newCommLink(name),
+    async messageAll(body: Body): Promise<void> {
+      await messageAllSatellites(this.commLink, this.satelliteNames, body);
+    },
+    async addSatelliteServices(): Promise<void> {
+      return this.messageAll(ping);
+    },
+    async shutdownSatellites(): Promise<void> {
+      return this.messageAll(quit);
+    }
+  };
+
+  const connectedPromise: () => Promise<void> = () =>
+    hubService.commLink.connect()
+      .then(() => hubService.addSatelliteServices());
+
+  return [hubService, connectedPromise];
+}
+
+
+export function defineSatelliteService<CargoT>(
+  name: string,
+  cargoInit: (sc: CommLink<SatelliteService<CargoT>>) => Promise<CargoT>,
+  lifecycleHandlers: CustomHandlers<SatelliteService<CargoT>>
+): SatelliteServiceDef<CargoT> {
+  return {
+    name,
+    cargoInit,
+    lifecycleHandlers
+  };
+}
 
 export async function createSatelliteService<T>(
   hubName: string,
-  satelliteName: string,
   serviceDef: SatelliteServiceDef<T>
 ): Promise<SatelliteService<T>> {
+  const satelliteName = serviceDef.name;
 
   const commLink: CommLink<SatelliteService<T>> = newCommLink<SatelliteService<T>>(satelliteName);
 
   return serviceDef
     .cargoInit(commLink)
     .then(async (cargo) => {
-      const logLevel = process.env[`${satelliteName}.loglevel`]
-        || process.env['service-comm.loglevel']
-        || 'info';
+      const logLevel = getLogEnvLevel();
+
+      const lifecycleHandlers = {
+        ...serviceDef.lifecycleHandlers,
+        initCallChaining,
+      }
 
       const satService: SatelliteService<T> = {
-        ...serviceDef.lifecyleHandlers,
+        ...lifecycleHandlers,
         serviceName: satelliteName,
         hubName,
         async sendHub(message: Body): Promise<void> {
@@ -93,7 +149,6 @@ async function messageAllSatellites(
 ): Promise<void> {
   const pinged: string[] = [];
 
-
   hubComm.on(ack(msg), async (msg: Message) => {
     hubComm.log.debug(`${hubComm.name} got ${msg.kind} from satellite ${msg.from}`);
     pinged.push(msg.from);
@@ -119,24 +174,3 @@ async function messageAllSatellites(
   return tryPing();
 }
 
-export async function createHubService(
-  hubName: string,
-  orderedServices: string[]
-): Promise<[ServiceHub, () => Promise<void>]> {
-  const hubService: ServiceHub = {
-    name: hubName,
-    commLink: newCommLink(hubName),
-    async addSatelliteServices(): Promise<void> {
-      await messageAllSatellites(this.commLink, orderedServices, ping);
-    },
-    async shutdownSatellites(): Promise<void> {
-      await messageAllSatellites(this.commLink, orderedServices, quit);
-    }
-  };
-
-  const connectedPromise: () => Promise<void> = () =>
-    hubService.commLink.connect()
-      .then(() => hubService.addSatelliteServices());
-
-  return [hubService, connectedPromise];
-}

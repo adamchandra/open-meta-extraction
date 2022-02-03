@@ -11,7 +11,7 @@ import { defineTables } from './db-tables';
 export interface DBConfig {
   username: string;
   password: string;
-  dbname: string;
+  database: string;
 }
 
 export function getDBConfig(): DBConfig | undefined {
@@ -19,10 +19,10 @@ export function getDBConfig(): DBConfig | undefined {
 
   const username = config.get('db:username');
   const password = config.get('db:password');
-  const dbname = config.get('db:dbname');
+  const database = config.get('db:database');
 
   return {
-    dbname,
+    database,
     username,
     password
   };
@@ -33,7 +33,6 @@ async function initSequelize(dbConfig: DBConfig): Promise<Sequelize> {
     dialect: 'postgres',
     ...dbConfig,
     logging: false, // logging: console.log,
-    // logging: console.log,
   });
 
   return sequelize

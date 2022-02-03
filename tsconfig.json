@@ -2,6 +2,7 @@
   "compilerOptions": {
     "module": "commonjs",
     "target": "esnext",
+    "lib": ["ESNext"],
     "moduleResolution": "node",
     "allowJs": true,
     "sourceMap": true,
@@ -15,7 +16,7 @@
     "resolveJsonModule": false,
     "types": [
       "node",
-      "jest",
+      "jest"
     ],
     "paths": {
       "@watr/commonlib": ["packages/commonlib/src"],

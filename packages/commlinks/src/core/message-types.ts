@@ -34,7 +34,8 @@ function filterUndefs<T>(o: T): T {
   });
   return newO;
 }
-// Base Message Body, kind=ping/ack/quit/etc..
+
+// TODO correct this documentation: Base Message Body, kind=ping/ack/quit/etc..
 //   Qualified Message Body, qual (qualified kind) allows matching on messages
 //   like call/userFunc, ack/ping, etc., where full qualifed message kind
 //   is 'kind/qual'
@@ -164,11 +165,6 @@ export const Message = {
   pack: packMessage,
   unpack: unpackMessage,
   address(body: Message | Body, headers: Partial<Headers>): Message {
-    // return _.merge({}, body, headers);
-    // return mergeMessages(body, headers)
-    // if ('from' in body && 'to' in body) {
-    //   return _.merge({}, body, headers);
-    // }
     const defaultHeaders: Headers = {
       from: undefined, to: undefined, id: undefined
     };

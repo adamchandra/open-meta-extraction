@@ -2,7 +2,7 @@ import _ from 'lodash';
 
 import * as E from 'fp-ts/Either';
 
-import { writeCorpusJsonFile, writeCorpusTextFile, hasCorpusFile, putStrLn } from '@watr/commonlib';
+import { writeCorpusJsonFile, writeCorpusTextFile, hasCorpusFile, putStrLn, getServiceLogger } from '@watr/commonlib';
 
 import {
   HTTPResponse,
@@ -16,7 +16,6 @@ import { createScrapingContext } from './scraping-context';
 import { useAnonPlugin, useStealthPlugin } from './puppet';
 import { BrowserPool, createBrowserPool } from './browser-pool';
 import { BrowserInstance } from '.';
-import { Logger } from 'winston';
 
 useStealthPlugin();
 useAnonPlugin();
@@ -27,9 +26,8 @@ export interface Scraper {
   quit(): Promise<void>;
 }
 
-export async function initScraper(
-  logger: Logger
-): Promise<Scraper> {
+export async function initScraper(): Promise<Scraper> {
+  const logger = getServiceLogger('scraper');
   const browserPool = createBrowserPool(logger);
 
   return {

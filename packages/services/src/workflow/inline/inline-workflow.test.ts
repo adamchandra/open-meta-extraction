@@ -15,6 +15,8 @@ import { mockAlphaRecord } from '@watr/spider';
 import { createSpiderService } from '~/workflow/distributed/spider-worker';
 
 describe('End-to-end Extraction workflows', () => {
+  const nodeEnv = process.env['NODE_ENV'];
+  prettyPrint({ nodeEnv });
   const workingDir = './test.scratch.d';
   const dbConfig = getDBConfig();
   const dbCtx: DatabaseContext | undefined = dbConfig ? { dbConfig } : undefined;
@@ -24,6 +26,7 @@ describe('End-to-end Extraction workflows', () => {
   let server: Server | undefined;
 
   beforeEach(async () => {
+    prettyPrint({ dbConfig });
     fs.emptyDirSync(workingDir);
     fs.removeSync(workingDir);
     fs.mkdirSync(workingDir);
@@ -46,10 +49,9 @@ describe('End-to-end Extraction workflows', () => {
 
 
   it('should fetch alpha records', async () => {
-    // const log = getBasicConsoleLogger('debug');
     const log = getServiceLogger('test-service');
 
-    const spiderService = await createSpiderService(log);
+    const spiderService = await createSpiderService();
 
     const workflowServices: WorkflowServices = {
       spiderService,
@@ -78,7 +80,7 @@ describe('End-to-end Extraction workflows', () => {
     // const log = getBasicConsoleLogger('debug');
     const log = getServiceLogger('test-service');
 
-    const spiderService = await createSpiderService(log);
+    const spiderService = await createSpiderService();
 
     const workflowServices: WorkflowServices = {
       spiderService,
