@@ -1,7 +1,7 @@
 import _ from 'lodash';
 import Redis from 'ioredis';
 import winston from 'winston';
-import { getServiceLogger, newIdGenerator, prettyFormat, prettyPrint } from '@watr/commonlib';
+import { getServiceLogger, newIdGenerator, prettyFormat } from '@watr/commonlib';
 
 import Async from 'async';
 
@@ -19,11 +19,11 @@ import {
   quit,
   call,
   ToHeader,
-  mergeMessages
+  mergeMessages,
+  MessageHandlerFunc
 } from './message-types';
 
 import { newRedisClient } from './ioredis-conn';
-import { MessageHandlerFunc } from '..';
 
 const nextId = newIdGenerator(1);
 
@@ -39,7 +39,7 @@ export interface CommLink<ClientT> {
 
   // Invoke a client installed function, either locally or on another node over the wire
   call<A, B>(f: string, a: A, to?: ToHeader): Promise<B>;
-  connect(): Promise<void>;
+  connect(client?: ClientT): Promise<void>;
   quit(): Promise<void>;
 
   // Internal use:
@@ -70,12 +70,24 @@ async function runMessageHandlers<ClientT>(
   switch (message.kind) {
     case 'call': {
       const { func, arg, id, from } = message;
+      commLink.log.verbose(`Call Attempt ${commLink.name}.${func}(${prettyFormat(arg)})`)
+      if (client === undefined) {
+        // TODO control whether non-existent client funcs trigger warning/error
+        commLink.log.verbose(`Undefined Client: ${commLink.name}.${func}(...)`)
+        break
+      }
+      if (client[func] === undefined) {
+        const keys = _.keys(client);
+        const kstr = keys.join(', ');
+        // TODO control whether non-existent client funcs trigger warning/error
+        commLink.log.verbose(`Undefined Func ${commLink.name}.${func}(...); keys are ${kstr}`);
+        break
+      }
       const maybeCallback = client[func];
       if (typeof maybeCallback === 'function') {
-        const argv = arg;
-        commLink.log.debug(`Calling ${func}(${prettyFormat(argv)})`)
+        commLink.log.verbose(`Calling ${commLink.name}.${func}(...)`)
         const cb = _.bind(maybeCallback, client);
-        const newA = await Promise.resolve(cb(argv, commLink));
+        const newA = await Promise.resolve(cb(arg, commLink));
         const yieldMsg = cyield(func, newA, from);
         // prettyPrint({ hdr: 'call()', ret: newA, yieldMsg })
         await commLink.send(Message.address(yieldMsg, { id, to: commLink.name }));
@@ -123,10 +135,11 @@ async function runMessageHandlers<ClientT>(
   commLink.messageHandlers = activeHandlers;
 }
 
-export function newCommLink<ClientT>(name: string, client?: ClientT): CommLink<ClientT> {
+export function newCommLink<ClientT>(name: string, maybeClient?: ClientT): CommLink<ClientT> {
+  // const commClient = client !== undefined? client : {};
   const commLink: CommLink<ClientT> = {
     name,
-    client,
+    client: maybeClient,
     subscriber: newRedisClient(name),
     isShutdown: false,
     log: getServiceLogger(`${name}/comm`),
@@ -139,6 +152,7 @@ export function newCommLink<ClientT>(name: string, client?: ClientT): CommLink<C
       const callMessage = Message.address(call(f, a), { to, id });
       const expectedReturn = mergeMessages(creturn(f), { id });
       const returnP = new Promise<B>((resolve, reject) => {
+        // TODO make .on() => .once()
         this.on(expectedReturn, (msg: Message) => {
           if (msg.kind !== 'creturn') {
             reject(new Error('unexpected message type'));
@@ -190,18 +204,20 @@ export function newCommLink<ClientT>(name: string, client?: ClientT): CommLink<C
       this.messageHandlers.push([m, mh]);
     },
 
-    async connect(): Promise<void> {
-      const { subscriber, log, client } = this;
+    async connect(client?: ClientT): Promise<void> {
+      const self = this;
+
+      self.client = client;
 
       return new Promise((resolve, reject) => {
-        subscriber.on('message', (channel: string, packedMsg: string) => {
-          log.verbose(`${name} received> ${packedMsg} on ${channel}`);
+        self.subscriber.on('message', (channel: string, packedMsg: string) => {
+          self.log.verbose(`${name} received> ${packedMsg} on ${channel}`);
           const message = Message.unpack(packedMsg);
-          runMessageHandlers<ClientT>(message, packedMsg, commLink, client);
+          runMessageHandlers<ClientT>(message, packedMsg, commLink, self.client);
         });
 
-        subscriber.subscribe(`${name}`)
-          .then(() => log.verbose(`${name}> connected`))
+        self.subscriber.subscribe(`${name}`)
+          .then(() => self.log.verbose(`${name}> connected`))
           .then(() => resolve())
           .catch((error: any) => {
             const msg = `subscribe> ${error}`;

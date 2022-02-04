@@ -40,7 +40,7 @@ export async function initScraper(): Promise<Scraper> {
     },
     async quit() {
       await browserPool.shutdown();
-      putStrLn('Browser is closed');
+      logger.info('Browser Pool is shutdown');
     }
   };
 }

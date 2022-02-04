@@ -56,11 +56,15 @@ async function postRecordJson(
 
   if (requestBody) {
     // TODO validate requestBody as AlphaRecord[]
-    const alphaRec: AlphaRecord = requestBody;
-    const restPortalResponse = await commLink.call('run', RecordRequest(alphaRec));
-    prettyPrint({ restPortalResponse });
+    const decoded = AlphaRecord.decode(requestBody);
+    if (_.isString(decoded)) {
+      responseBody.status = 'error';
+      responseBody.errors = decoded;
+    } else {
+      const responseRec = await commLink.call('runOneAlphaRecNoDB', RecordRequest(decoded));
+      _.merge(responseBody, responseRec);
+    }
 
-    responseBody.status = 'ok';
   } else {
     responseBody.status = 'error';
   }
