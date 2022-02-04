@@ -6,18 +6,13 @@ import { CanonicalFieldRecords, extractFieldsForEntry, getCanonicalFieldRecord }
 import { createSpiderService, SpiderService } from '~/workflow/distributed/spider-worker';
 import { commitUrlFetchData, commitUrlStatus, DatabaseContext, getNextUrlForSpidering, getUrlStatus, insertAlphaRecords, insertNewUrlChains } from '~/db/db-api';
 import { getServiceLogger } from '@watr/commonlib';
+import { ErrorRecord } from '../common/datatypes';
 
 export interface WorkflowServices {
   log: winston.Logger;
   spiderService: SpiderService;
   dbCtx: DatabaseContext | undefined;
 }
-
-interface ErrorRecord {
-  error: string;
-}
-
-const ErrorRecord = (error: string): ErrorRecord => ({ error });
 
 export function getCanonicalFieldRecs(alphaRec: AlphaRecord): CanonicalFieldRecords | undefined {
   const { url } = alphaRec;

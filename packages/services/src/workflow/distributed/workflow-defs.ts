@@ -21,20 +21,6 @@ export const WorkflowServiceNames: WorkflowServiceName[] = [
   'MockService',
 ];
 
-export interface RecordRequest {
-  kind: 'record-request';
-  alphaRec: AlphaRecord;
-}
-
-export const RecordRequest = (alphaRec: AlphaRecord): RecordRequest => ({
-  kind: 'record-request',
-  alphaRec
-});
-
-export type WorkflowData =
-  RecordRequest
-  ;
-
 export interface RequestOneRecWorkflow {
   log: string[];
   alphaRec: AlphaRecord;
@@ -42,10 +28,3 @@ export interface RequestOneRecWorkflow {
 
 export type RequestOneRecHandler<ClientT> =
   CustomHandler<ClientT, RequestOneRecWorkflow, Promise<RequestOneRecWorkflow>>;
-
-
-export function getWorkingDir(): string {
-  const appSharePath = process.env['APP_SHARE_PATH'];
-  const workingDir = appSharePath ? appSharePath : 'app-share.d';
-  return workingDir;
-}

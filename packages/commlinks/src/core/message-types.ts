@@ -20,10 +20,14 @@ export type MessageHandlerDef<ClientT> = [MessageQuery, MessageHandler<ClientT, 
 export type CustomHandlers<ClientT> = Record<string, CustomHandler<ClientT>>;
 
 type IfStr<S, A> = S extends string ? A : Partial<A>;
-type IfObj<S, A> = S extends object ? A : Partial<A>;
+type IfDefined<S, A> = S extends undefined ? Partial<A> : A;
 
-type IfStrObj<S, T, A> = IfStr<S, IfObj<T, A>>;
-type IfStrObjStr<S, T, U, A> = IfStrObj<S, T, IfStr<U, A>>;
+// type IfObj<S, A> = S extends object ? A : Partial<A>;
+// type IfStrObj<S, T, A> = IfStr<S, IfObj<T, A>>;
+// type IfStrObjStr<S, T, U, A> = IfStrObj<S, T, IfStr<U, A>>;
+
+type IfStrDef<S, T, A> = IfStr<S, IfDefined<T, A>>;
+type IfStrDefStr<S, T, U, A> = IfStrDef<S, T, IfStr<U, A>>;
 
 function filterUndefs<T>(o: T): T {
   const newO = _.clone(o);
@@ -40,41 +44,48 @@ function filterUndefs<T>(o: T): T {
 //   like call/userFunc, ack/ping, etc., where full qualifed message kind
 //   is 'kind/qual'
 
+// export interface Val {
+//   value: unknown;
+// }
+
+type Val = unknown;
 //////////
 //
 export interface Call {
   kind: 'call';
   func: string;
-  arg: object;
+  arg: Val;
 }
 
 export function call(
   func?: string,
-  arg?: object
-): IfStrObj<typeof func, typeof arg, Call> {
+  arg?: unknown
+): IfStrDef<typeof func, typeof arg, Call> {
+  // const v: Val = arg !== undefined ? { value: arg } : undefined;
   return filterUndefs({
     kind: 'call',
     func,
-    arg
+    arg,
   });
 }
 
 export interface CYield {
   kind: 'cyield';
   func: string;
-  value: object;
+  result: Val;
   callFrom: string;
 }
 
 export function cyield(
-    func?: string,
-    value?: object,
-    callFrom?: string,
-): IfStrObjStr<typeof func, typeof value, typeof callFrom,CYield> {
+  func?: string,
+  result?: unknown,
+  callFrom?: string,
+): IfStrDefStr<typeof func, typeof result, typeof callFrom, CYield> {
+  // const v: Val = result !== undefined ? { value: result } : undefined;
   return filterUndefs({
     kind: 'cyield',
     func,
-    value,
+    result,
     callFrom
   });
 }
@@ -82,16 +93,17 @@ export function cyield(
 export interface CReturn {
   kind: 'creturn';
   func: string;
-  value: object;
+  result: Val;
 }
 export function creturn(
-    func?: string,
-    value?: object,
-): IfStrObj<typeof func, typeof value, CReturn> {
+  func?: string,
+  result?: unknown,
+): IfStrDef<typeof func, typeof result, CReturn> {
+  // const v: Val = result !== undefined ? { value: result } : undefined;
   return filterUndefs({
     kind: 'creturn',
     func,
-    value
+    result
   });
 }
 

@@ -2,7 +2,7 @@ import _ from 'lodash';
 import { AlphaRecord, initConfig, prettyPrint } from '@watr/commonlib';
 import { defineSatelliteService, SatelliteServiceDef, initCallChaining, createCommChain, defineServiceHub } from '@watr/commlinks';
 import { runServiceHubAndSatellites } from './distributed-workflow';
-import { UploadIngestor, FieldExtractor } from './workers';
+import { UploadIngestor, FieldExtractor, RestPortalService } from './workers';
 import { Spider } from './spider-worker';
 
 
@@ -35,24 +35,14 @@ describe('End-to-end Extraction workflows', () => {
 
 
     const serviceChainWorkers = [
+      RestPortalService,
       UploadIngestor,
       Spider,
       FieldExtractor,
     ];
     const orderedServices = serviceChainWorkers.map(w => w.name);
-    const chainFunction = 'foo';
 
-    const hubDef = defineServiceHub(
-      'HubService',
-      orderedServices,
-      [{ chainFunction, orderedServices }],
-      {
-        async startup() {
-          const comm = this.commLink;
-          const satelliteNames: string[] = [];
-          const chainResult = await createCommChain(comm, 'func1', satelliteNames);
-        }
-      });
+    const hubDef = defineServiceHub('HubService', orderedServices, [], {});
 
     const [hubService, hubConnected, satelliteRecords] =
       await runServiceHubAndSatellites(hubDef, serviceChainWorkers);

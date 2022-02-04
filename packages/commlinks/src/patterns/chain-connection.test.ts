@@ -3,7 +3,6 @@ import { initCallChaining, createCommChain } from './chain-connection';
 
 import { awaitQuit, initCommLinks } from '~/util/service-test-utils';
 import { CommLink } from '~/core/commlink';
-import { prettyPrint } from '@watr/commonlib';
 
 describe('Chained CommLink Connection Patterns', () => {
   process.env['service-comm.loglevel'] = 'info';
@@ -26,9 +25,18 @@ describe('Chained CommLink Connection Patterns', () => {
     const [comm0, comm1] = commLinks;
 
     const chainResult = await createCommChain(comm0, 'func1', commNames);
-    prettyPrint({ chainResult })
+    // prettyPrint({ chainResult })
 
-    const ret1 = await comm0.call('func1', { clientFuncs: [] }, { to: comm1.name });
+    const chainResultExpected = [
+      'ok:commLink-0; #1/5',
+      'ok:commLink-1; #2/5',
+      'ok:commLink-2; #3/5',
+      'ok:commLink-3; #4/5',
+      'ok:commLink-4; #5/5; isLastService'
+    ];
+    expect(chainResult).toStrictEqual(chainResultExpected)
+
+    const ret1 = await comm0.call<CallState, CallState>('func1', { clientFuncs: [] }, { to: comm1.name });
 
     const expected = [
       'commLink-1.func1()',

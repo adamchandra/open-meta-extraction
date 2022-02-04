@@ -93,8 +93,8 @@ describe('CommLink Communication', () => {
       if (msg.kind !== 'cyield') return;
       return {
         ...msg,
-        value: {
-          ...msg.value,
+        result: {
+          orig: msg.result,
           added: 'field'
         }
       };

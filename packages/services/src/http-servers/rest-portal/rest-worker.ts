@@ -4,11 +4,10 @@ import Koa, { Context } from 'koa';
 import koaBody from 'koa-body';
 import Router from 'koa-router';
 import json from 'koa-json';
-// import { initPortalRouter } from './portal-routes';
 import { Server } from 'http';
 import { SatelliteCommLink } from '@watr/commlinks';
 import { AlphaRecord, prettyPrint, getServiceLogger } from '@watr/commonlib';
-import { RecordRequest } from '~/workflow/distributed/workflow-defs';
+import { RecordRequest } from '~/workflow/common/datatypes';
 
 export interface RestPortal {
   server: Server;
@@ -27,7 +26,6 @@ export async function startRestWorker(commLink: SatelliteCommLink<RestPortal>): 
       ctx.set('Access-Control-Allow-Origin', '*');
       return next();
     }))
-    // .use(koaBody({ multipart: true }))
     .use(portalRouter.routes())
     .use(portalRouter.allowedMethods())
     ;
