@@ -44,24 +44,18 @@ function filterUndefs<T>(o: T): T {
 //   like call/userFunc, ack/ping, etc., where full qualifed message kind
 //   is 'kind/qual'
 
-// export interface Val {
-//   value: unknown;
-// }
-
-type Val = unknown;
 //////////
 //
 export interface Call {
   kind: 'call';
   func: string;
-  arg: Val;
+  arg: unknown;
 }
 
 export function call(
   func?: string,
   arg?: unknown
 ): IfStrDef<typeof func, typeof arg, Call> {
-  // const v: Val = arg !== undefined ? { value: arg } : undefined;
   return filterUndefs({
     kind: 'call',
     func,
@@ -72,7 +66,7 @@ export function call(
 export interface CYield {
   kind: 'cyield';
   func: string;
-  result: Val;
+  result: unknown;
   callFrom: string;
 }
 
@@ -81,7 +75,6 @@ export function cyield(
   result?: unknown,
   callFrom?: string,
 ): IfStrDefStr<typeof func, typeof result, typeof callFrom, CYield> {
-  // const v: Val = result !== undefined ? { value: result } : undefined;
   return filterUndefs({
     kind: 'cyield',
     func,
@@ -93,13 +86,12 @@ export function cyield(
 export interface CReturn {
   kind: 'creturn';
   func: string;
-  result: Val;
+  result: unknown;
 }
 export function creturn(
   func?: string,
   result?: unknown,
 ): IfStrDef<typeof func, typeof result, CReturn> {
-  // const v: Val = result !== undefined ? { value: result } : undefined;
   return filterUndefs({
     kind: 'creturn',
     func,

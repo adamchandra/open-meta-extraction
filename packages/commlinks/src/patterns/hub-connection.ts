@@ -1,10 +1,10 @@
 import _ from 'lodash';
 
-import { delay, getLogEnvLevel } from '@watr/commonlib';
+import { delay, getLogEnvLevel, prettyFormat } from '@watr/commonlib';
 import winston from 'winston';
 import Async from 'async';
 import { newCommLink, CommLink } from '~/core/commlink';
-import { CustomHandler, CustomHandlers, Message, Body, ping, quit, ack } from '~/core/message-types';
+import { CustomHandler, CustomHandlers, Message, Body, ping, quit, ack, call, Ping, Quit } from '~/core/message-types';
 import { initCallChaining, CallChainDef } from './chain-connection';
 
 export type LifecycleName = keyof {
@@ -72,13 +72,14 @@ export async function createServiceHub(
     callChainDefs,
     commLink: newCommLink(name),
     async messageAll(body: Body): Promise<void> {
-      await messageAllSatellites(this.commLink, this.satelliteNames, body);
+      await messageAll(this.commLink, this.satelliteNames, body);
     },
     async addSatelliteServices(): Promise<void> {
-      return this.messageAll(ping);
+      return pingOrQuitAll(this.commLink, this.satelliteNames, ping);
     },
     async shutdownSatellites(): Promise<void> {
-      return this.messageAll(quit);
+      await this.messageAll(call('shutdown'))
+      return pingOrQuitAll(this.commLink, this.satelliteNames, quit);
     }
   };
 
@@ -136,19 +137,20 @@ export async function createSatelliteService<T>(
         cargo,
       };
 
-      await commLink.connect();
+      await commLink.connect(satService);
 
       return satService;
     });
 }
 
-async function messageAllSatellites(
+async function pingOrQuitAll(
   hubComm: CommLink<ServiceHub>,
   satelliteNames: string[],
-  msg: Body
+  msg: Ping | Quit
 ): Promise<void> {
   const pinged: string[] = [];
 
+  // TODO make this .once()
   hubComm.on(ack(msg), async (msg: Message) => {
     hubComm.log.debug(`${hubComm.name} got ${msg.kind} from satellite ${msg.from}`);
     pinged.push(msg.from);
@@ -174,3 +176,18 @@ async function messageAllSatellites(
   return tryPing();
 }
 
+async function messageAll(
+  hubComm: CommLink<ServiceHub>,
+  satelliteNames: string[],
+  msg: Body
+): Promise<void> {
+
+
+  hubComm.log.info(`${hubComm.name} broadcasting ${prettyFormat(msg)} to ${_.join(satelliteNames, ', ')}`);
+  await Async.each(
+    satelliteNames,
+    async satelliteName => hubComm.send(Message.address(msg, { to: satelliteName }))
+  );
+
+
+}

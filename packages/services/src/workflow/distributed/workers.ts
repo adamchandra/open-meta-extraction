@@ -4,7 +4,7 @@ import { DatabaseContext } from '~/db/db-api';
 import { getDBConfig } from '~/db/database';
 
 import {
-  defineSatelliteService,
+  defineSatelliteService, Message,
 } from '@watr/commlinks';
 
 import { getCanonicalFieldRecs } from '~/workflow/inline/inline-workflow';
@@ -22,8 +22,9 @@ export const RestPortalService = defineSatelliteService<RestPortal>(
   async runOneAlphaRec(arg: WorkflowData): Promise<WorkflowData> {
     return arg;
   },
+
   async runOneAlphaRecNoDB(arg: RecordRequest): Promise<CanonicalFieldRecords|ErrorRecord> {
-    const res = await this.commLink.call<RecordRequest, CanonicalFieldRecords | ErrorRecord>(
+    const res: CanonicalFieldRecords | ErrorRecord = await this.commLink.call(
       'runOneAlphaRecNoDB',
       arg,
       { to: UploadIngestor.name }
@@ -79,7 +80,8 @@ export const UploadIngestor = defineSatelliteService<UploadIngestorT>(
       this.log.info(`No extracted fields found.. spidering ${url}`);
 
       const urlFetchData: UrlFetchData | undefined =
-        await this.commLink.call<{ url: string }, UrlFetchData>('scrapeUrl', { url }, { to: 'Spider' });
+        await this.commLink.call('scrapeUrl', { url }, { to: 'Spider' });
+        // await this.commLink.call<{ url: string }, UrlFetchData>('scrapeUrl', { url }, { to: 'Spider' });
 
       if (urlFetchData === undefined) {
         return ErrorRecord(`spider did not successfully scrape url ${url}`);
@@ -88,7 +90,8 @@ export const UploadIngestor = defineSatelliteService<UploadIngestorT>(
       const entryPath = getCorpusEntryDirForUrl(url);
       this.log.info(`Extracting Fields in ${entryPath}`);
 
-      await this.commLink.call<{ url: string }, UrlFetchData>('extractFields', { url }, { to: 'FieldExtractor' });
+      // await this.commLink.call<{ url: string }, UrlFetchData>('extractFields', { url }, { to: 'FieldExtractor' });
+      await this.commLink.call('extractFields', { url }, { to: 'FieldExtractor' });
 
       // try again:
       fieldRecs = getCanonicalFieldRecs(alphaRec);
@@ -104,6 +107,7 @@ export const UploadIngestor = defineSatelliteService<UploadIngestorT>(
   },
 });
 
+// TODO spider/field extractor in same service to share browserPool
 export const FieldExtractor = defineSatelliteService<void>(
   'FieldExtractor',
   async () => undefined, {
