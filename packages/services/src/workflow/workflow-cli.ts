@@ -1,6 +1,6 @@
 import { createServiceHub } from '@watr/commlinks';
 import { arglib } from '@watr/commonlib';
-import { runRegisteredService } from './distributed/distributed-workflow';
+// import { runRegisteredService } from './distributed/distributed-workflow';
 import { WorkflowServiceNames  } from './distributed/workflow-defs';
 const { opt, config, registerCmd } = arglib;
 
@@ -19,7 +19,7 @@ export function registerCLICommands(yargv: arglib.YArgsT) {
     )
   )((args: any) => {
     const { serviceName } = args;
-    runRegisteredService(hubName, serviceName);
+    // TODO runRegisteredService(hubName, serviceName);
   });
 
   registerCmd(

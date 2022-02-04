@@ -8,9 +8,6 @@ import {
   SatelliteServiceDef,
   ServiceHubDef
 } from '@watr/commlinks';
-import { WorkflowServiceName } from './workflow-defs';
-import { registeredServices } from './workers';
-
 
 export async function runServiceHubAndSatellites(
   hubDef: ServiceHubDef,
@@ -28,10 +25,10 @@ export async function runServiceHubAndSatellites(
 }
 
 
-export async function runRegisteredService(
-  hubName: string,
-  serviceName: WorkflowServiceName,
-): Promise<SatelliteService<any>> {
-  const serviceDef = registeredServices[serviceName]
-  return createSatelliteService(hubName, serviceDef);
-}
+// TODO export async function runRegisteredService(
+//   hubName: string,
+//   serviceName: WorkflowServiceName,
+// ): Promise<SatelliteService<any>> {
+//   const serviceDef = registeredServices[serviceName]
+//   return createSatelliteService(hubName, serviceDef);
+// }

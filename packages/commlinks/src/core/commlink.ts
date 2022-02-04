@@ -1,7 +1,7 @@
 import _ from 'lodash';
 import Redis from 'ioredis';
 import winston from 'winston';
-import { getServiceLogger, newIdGenerator, prettyFormat } from '@watr/commonlib';
+import { getServiceLogger, newIdGenerator, prettyFormat, prettyPrint } from '@watr/commonlib';
 
 import Async from 'async';
 
@@ -38,7 +38,7 @@ export interface CommLink<ClientT> {
   send(message: Message): Promise<void>;
 
   // Invoke a client installed function, either locally or on another node over the wire
-  call<A extends object>(f: string, a: A, to?: ToHeader): Promise<A>;
+  call<A, B>(f: string, a: A, to?: ToHeader): Promise<B>;
   connect(): Promise<void>;
   quit(): Promise<void>;
 
@@ -72,11 +72,12 @@ async function runMessageHandlers<ClientT>(
       const { func, arg, id, from } = message;
       const maybeCallback = client[func];
       if (typeof maybeCallback === 'function') {
-        commLink.log.debug(`Calling ${func}(${arg})`)
+        const argv = arg;
+        commLink.log.debug(`Calling ${func}(${prettyFormat(argv)})`)
         const cb = _.bind(maybeCallback, client);
-        const newA = await Promise.resolve(cb(arg, commLink));
-        // const yieldVal: object = typeof newA === 'object' ? newA : {};
+        const newA = await Promise.resolve(cb(argv, commLink));
         const yieldMsg = cyield(func, newA, from);
+        // prettyPrint({ hdr: 'call()', ret: newA, yieldMsg })
         await commLink.send(Message.address(yieldMsg, { id, to: commLink.name }));
       }
       break;
@@ -94,12 +95,12 @@ async function runMessageHandlers<ClientT>(
         const bh = _.bind(handler.run, client);
         const maybeNewValue = await bh(currMsg, commLink);
         const newV = prettyFormat(maybeNewValue);
-        commLink.log.silly(`handler returned ${newV}`);
+        commLink.log.silly(`handler returned ${prettyFormat(newV)}`);
         if (maybeNewValue !== undefined) {
           currMsg = maybeNewValue
         }
       });
-      const returnMsg = Message.address(creturn(func, currMsg.value), { id, from: commLink.name, to: callFrom });
+      const returnMsg = Message.address(creturn(func, currMsg.result), { id, from: commLink.name, to: callFrom });
       await commLink.send(returnMsg);
       break;
     }
@@ -122,7 +123,6 @@ async function runMessageHandlers<ClientT>(
   commLink.messageHandlers = activeHandlers;
 }
 
-
 export function newCommLink<ClientT>(name: string, client?: ClientT): CommLink<ClientT> {
   const commLink: CommLink<ClientT> = {
     name,
@@ -132,20 +132,20 @@ export function newCommLink<ClientT>(name: string, client?: ClientT): CommLink<C
     log: getServiceLogger(`${name}/comm`),
     messageHandlers: [],
 
-    async call<A extends object>(f: string, a: A, toHdr?: ToHeader): Promise<A> {
+    async call<A, B>(f: string, a: A, toHdr?: ToHeader): Promise<B> {
       const id = nextId();
       const to = toHdr !== undefined ? toHdr.to : name;
       // call remote function
       const callMessage = Message.address(call(f, a), { to, id });
       const expectedReturn = mergeMessages(creturn(f), { id });
-      const returnP = new Promise<A>((resolve, reject) => {
+      const returnP = new Promise<B>((resolve, reject) => {
         this.on(expectedReturn, (msg: Message) => {
           if (msg.kind !== 'creturn') {
             reject(new Error('unexpected message type'));
             return;
           }
-          const avalue: A = msg.value as A;
-          resolve(avalue);
+          const bvalue: B = msg.result as B;
+          resolve(bvalue);
         });
       });
       await this.send(callMessage);

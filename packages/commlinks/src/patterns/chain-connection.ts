@@ -2,6 +2,7 @@ import _ from 'lodash';
 import { cyield, Message } from '~/core/message-types';
 
 import { CommLink } from '~/core/commlink';
+import { prettyPrint } from '@watr/commonlib';
 
 export interface CallChainDef {
   chainFunction: string;
@@ -32,10 +33,14 @@ export function initCallChaining<ClientT>(arg: CallChainingArgs, commLink: CommL
     arg.logs.push(`ok:${name}; #${i+1}/${orderedServices.length}; isLastService`);
     return arg;
   }
+
   commLink.on(cyield(chainFunction), async (msg: Message) => {
     if (msg.kind !== 'cyield') return;
-    const r = await commLink.call(chainFunction, msg.value, { to: nextService });
-    return { ...msg, value: r };
+    const retVal = msg.result;
+    const r = await commLink.call(chainFunction, retVal, { to: nextService });
+    const output = { ...msg, result: r  };
+    // prettyPrint({ hdr: 'callChaining.yield', messageIn: msg, fnRet: r, messageOut: output })
+    return output;
   });
   arg.logs.push(`ok:${name}; #${i+1}/${orderedServices.length}`);
   return arg;
@@ -49,7 +54,7 @@ export async function createCommChain<ClientT>(
 ): Promise<string[]> {
 
   const allLogs = await Promise.all(_.map(orderedServices, async (n) => {
-    const res =  await localComm.call('initCallChaining', callChainingArgs(chainFunction, orderedServices), { to: n });
+    const res =  await localComm.call<CallChainingArgs, CallChainingArgs>('initCallChaining', callChainingArgs(chainFunction, orderedServices), { to: n });
     return res.logs;
   }));
 

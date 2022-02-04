@@ -5,12 +5,13 @@ import { getDBConfig } from '~/db/database';
 
 import {
   defineSatelliteService,
-  SatelliteServiceDef
 } from '@watr/commlinks';
 
-import { WorkflowData, WorkflowServiceName } from './workflow-defs';
-import { createSpiderService, SpiderService } from './spider-worker';
 import { getCanonicalFieldRecs } from '~/workflow/inline/inline-workflow';
+import { UrlFetchData } from '@watr/spider';
+import { getCorpusEntryDirForUrl } from '@watr/commonlib';
+import { CanonicalFieldRecords, extractFieldsForEntry } from '@watr/field-extractors';
+import { ErrorRecord, RecordRequest, WorkflowData } from '../common/datatypes';
 
 export const RestPortalService = defineSatelliteService<RestPortal>(
   'RestPortal',
@@ -21,8 +22,13 @@ export const RestPortalService = defineSatelliteService<RestPortal>(
   async runOneAlphaRec(arg: WorkflowData): Promise<WorkflowData> {
     return arg;
   },
-  async runOneAlphaRecNoDB(arg: WorkflowData): Promise<WorkflowData> {
-    return arg;
+  async runOneAlphaRecNoDB(arg: RecordRequest): Promise<CanonicalFieldRecords|ErrorRecord> {
+    const res = await this.commLink.call<RecordRequest, CanonicalFieldRecords | ErrorRecord>(
+      'runOneAlphaRecNoDB',
+      arg,
+      { to: UploadIngestor.name }
+    );
+    return res;
   },
 
   async shutdown() {
@@ -59,7 +65,8 @@ export const UploadIngestor = defineSatelliteService<UploadIngestorT>(
     // insertNewUrlChains(databaseContext)
     return arg;
   },
-  async runOneAlphaRecNoDB(arg: WorkflowData): Promise<WorkflowData> {
+
+  async runOneAlphaRecNoDB(arg: RecordRequest): Promise<CanonicalFieldRecords | ErrorRecord> {
     const { alphaRec } = arg;
     const { url } = alphaRec;
 
@@ -69,73 +76,39 @@ export const UploadIngestor = defineSatelliteService<UploadIngestorT>(
     let fieldRecs = getCanonicalFieldRecs(alphaRec);
 
     if (fieldRecs === undefined) {
-      // Try to spider/extract
       this.log.info(`No extracted fields found.. spidering ${url}`);
 
-      // const metadataOrError = await scrapeUrlNoDB(services, url);
-      // if ('error' in metadataOrError) {
-      //   return metadataOrError;
-      // }
+      const urlFetchData: UrlFetchData | undefined =
+        await this.commLink.call<{ url: string }, UrlFetchData>('scrapeUrl', { url }, { to: 'Spider' });
 
-    //   const entryPath = getCorpusEntryDirForUrl(url);
+      if (urlFetchData === undefined) {
+        return ErrorRecord(`spider did not successfully scrape url ${url}`);
+      }
 
-    //   log.info(`Extracting Fields in ${entryPath}`);
+      const entryPath = getCorpusEntryDirForUrl(url);
+      this.log.info(`Extracting Fields in ${entryPath}`);
 
-    //   await extractFieldsForEntry(entryPath, log);
+      await this.commLink.call<{ url: string }, UrlFetchData>('extractFields', { url }, { to: 'FieldExtractor' });
 
-    //   // try again:
-    //   fieldRecs = getCanonicalFieldRecs(alphaRec);
+      // try again:
+      fieldRecs = getCanonicalFieldRecs(alphaRec);
     }
 
-    // if (fieldRecs === undefined) {
-    //   const msg = 'No extracted fields available';
-    //   log.info(msg);
-    //   return ErrorRecord(msg);
-    // }
+    if (fieldRecs === undefined) {
+      const msg = 'No extracted fields available';
+      this.log.info(msg);
+      return ErrorRecord(msg);
+    }
 
-    // return fieldRecs;
-
-
-    return arg;
+    return fieldRecs;
   },
 });
-
 
 export const FieldExtractor = defineSatelliteService<void>(
   'FieldExtractor',
   async () => undefined, {
-  async runOneAlphaRecNoDB(arg: WorkflowData): Promise<WorkflowData> {
-    // this.log.info(`[run]> ${data.kind}`)
-    // const { alphaRec } = data;
-    // const { url } = alphaRec;
-
-    // const workingDir = getWorkingDir();
-    // const corpusRoot = path.resolve(workingDir, 'downloads.d');
-    // const entryEncPath = makeHashEncodedPath(url, 3);
-    // const entryPath = entryEncPath.toPath();
-    // const entryFullpath = path.resolve(corpusRoot, entryPath);
-    // await extractFieldsForEntry(entryFullpath, this.log)
-    // return data;
-    return arg;
+  async extractFields(arg: { url: string }): Promise<void> {
+    const entryPath = getCorpusEntryDirForUrl(arg.url);
+    await extractFieldsForEntry(entryPath, this.log)
   },
 });
-
-export const FieldBundler = defineSatelliteService<void>(
-  'FieldBundler',
-  async () => undefined, {
-  async runOneAlphaRecNoDB(arg: WorkflowData): Promise<WorkflowData> {
-    // this.log.info(`[run]> ${data.kind}`)
-    // const workingDir = getWorkingDir();
-    // const corpusRoot = path.resolve(workingDir, 'downloads.d');
-    // this.log.info(`[run]> ${data.kind}; working dir = ${corpusRoot}`)
-    // const { alphaRec } = data;
-    // // if we have the data on disk, just return it
-    // getExtractedField(corpusRoot, alphaRec);
-    // return data;
-    return arg;
-  },
-});
-
-// TODO remove this
-export const registeredServices: Partial<Record<WorkflowServiceName, SatelliteServiceDef<any>>> = {
-};

@@ -16,7 +16,6 @@ import {
 
 import * as E from 'fp-ts/Either';
 import { defineSatelliteService } from '@watr/commlinks';
-import { WorkflowData } from './workflow-defs';
 
 export interface SpiderService {
   crawlScheduler: CrawlScheduler;
@@ -75,25 +74,23 @@ export async function createSpiderService(): Promise<SpiderService> {
 
   return service;
 }
+
 export const Spider = defineSatelliteService<SpiderService>(
   'Spider',
   async () => createSpiderService(), {
-  async runOneAlphaRecNoDB(arg: WorkflowData): Promise<WorkflowData> {
-    //  this.log.info(`[run]> ${data.kind}`)
-    //  const { alphaRec } = data;
-    //  const spider = this.cargo;
-    //  const nextUrl = alphaRec.url;
-    //  const metadata = await spider
-    //    .scrape(nextUrl)
-    //    .catch((error: Error) => {
-    //      putStrLn('Error', error.name, error.message);
-    //      return undefined;
-    //    });
-    //  return data;
-    return arg;
+
+  async scrapeUrl(arg: { url: string }): Promise<UrlFetchData | undefined> {
+    const spider = this.cargo;
+    const fetchData: UrlFetchData | undefined = await spider
+      .scrape(arg.url)
+      .catch((error: Error) => {
+        this.log.error(`${error.name}: ${error.message}`);
+        return undefined;
+      });
+     return fetchData;
   },
-  async step() {
-    // this.log.info(`${this.serviceName} [step]> `)
+
+  async scrapeUrls() {
     // const spider = this.cargo;
     // let nextUrl = await getNextUrlForSpidering();
     // while (nextUrl !== undefined) {
