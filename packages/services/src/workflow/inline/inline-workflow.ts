@@ -14,10 +14,18 @@ export interface WorkflowServices {
   dbCtx: DatabaseContext | undefined;
 }
 
-export function getCanonicalFieldRecs(alphaRec: AlphaRecord): CanonicalFieldRecords | undefined {
-  const { url } = alphaRec;
+export function getCanonicalFieldRecsForURL(url: string): CanonicalFieldRecords | undefined {
   const entryPath = getCorpusEntryDirForUrl(url);
   const fieldRecs = getCanonicalFieldRecord(entryPath);
+  if (fieldRecs === undefined) {
+    return;
+  }
+  return fieldRecs;
+}
+
+export function getCanonicalFieldRecs(alphaRec: AlphaRecord): CanonicalFieldRecords | undefined {
+  const { url } = alphaRec;
+  const fieldRecs = getCanonicalFieldRecsForURL(url);
   if (fieldRecs === undefined) {
     return;
   }

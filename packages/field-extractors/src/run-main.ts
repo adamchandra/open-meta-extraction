@@ -11,10 +11,8 @@ import {
   setLogLabel,
   expandDir,
   putStrLn,
-  readAlphaRecStream,
-  AlphaRecord,
   radix,
-  getHashEncodedPath} from '@watr/commonlib';
+} from '@watr/commonlib';
 
 import parseUrl from 'url-parse';
 
@@ -334,81 +332,6 @@ export function getCanonicalFieldRecord(
   return records;
 }
 
-export async function runMainBundleExtractedFields(
-  corpusRoot: string,
-  alphaRecordCsv: string,
-): Promise<void> {
-  const inputStream = readAlphaRecStream(alphaRecordCsv);
-
-
-  const urlStream = streamPump.createPump()
-    .viaStream<AlphaRecord>(inputStream)
-    .throughF((inputRec: AlphaRecord) => {
-      const { url, noteId } = inputRec;
-
-      const entryEncPath = getHashEncodedPath(url);
-      const entryPath = entryEncPath.toPath();
-      const entryFullpath = path.resolve(corpusRoot, entryPath);
-      const canonicalFields = getCanonicalFieldRecord(entryFullpath);
-
-      if (canonicalFields) {
-        return ({
-          url,
-          noteId,
-          fields: canonicalFields.fields
-        });
-      }
-
-      return ({
-        url,
-        noteId,
-        fields: undefined
-      });
-    }).gather();
-
-  const result = await urlStream.toPromise();
-
-  if (!result) {
-    putStrLn(`no records found using ${alphaRecordCsv} in ${corpusRoot}`);
-    return;
-  }
-  const inputCSVBasename = path.basename(alphaRecordCsv, '.csv');
-  const outputFilename = `${inputCSVBasename}.extracted-fields.json`;
-  fs.writeJsonSync(outputFilename, result);
-}
-
-// const groundTruthFilename = 'ground-truth-labels.json';
-
-// export async function runMainUpdateGroundTruths(
-//   corpusRoot: string,
-// ): Promise<void> {
-//   const dirEntryStream = walkScrapyCacheCorpus(corpusRoot);
-//   const logpath = corpusRoot;
-//   const log = getBasicLogger(logpath, 'ground-truth-update-log.json');
-
-//   const pumpBuilder = streamPump.createPump()
-//     .viaStream<string>(dirEntryStream)
-//     .initEnv<ExtractionAppContext>(() => ({
-//       log,
-//     }))
-//     .tap((entryPath: string, ctx) => {
-//       const extractionRecord = readExtractionRecord(entryPath);
-//       const existingGroundTruths = readCorpusJsonFile(entryPath, 'ground-truth', groundTruthFilename);
-//       if (extractionRecord) {
-//         if (existingGroundTruths) {
-//           ctx.log.warn('TODO Make sure ground truth data does not conflict with extraction record ');
-//           return;
-//         }
-//         const initGroundTruth = initGroundTruthAssertions(extractionRecord);
-//         ctx.log.warn(`initializing ground-truth for ${entryPath}`);
-//         writeCorpusJsonFile(entryPath, 'ground-truth', groundTruthFilename, initGroundTruth);
-//       }
-//     });
-
-//   return pumpBuilder.toPromise()
-//     .then(() => undefined);
-// }
-//
 import { arglib } from '@watr/commonlib';
 
 const { opt, config, registerCmd } = arglib;

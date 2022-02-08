@@ -87,7 +87,7 @@ export const Spider = defineSatelliteService<SpiderService>(
         this.log.error(`${error.name}: ${error.message}`);
         return undefined;
       });
-     return fetchData;
+    return fetchData;
   },
 
   async scrapeUrls() {
@@ -116,6 +116,9 @@ export const Spider = defineSatelliteService<SpiderService>(
     //   nextUrl = await getNextUrlForSpidering();
     // }
   },
+
+  async networkReady() { },
+  async startup() { },
   async shutdown() {
     const spider = this.cargo;
     return spider.scraper.quit()

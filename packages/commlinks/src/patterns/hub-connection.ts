@@ -4,21 +4,28 @@ import { delay, getLogEnvLevel, prettyFormat } from '@watr/commonlib';
 import winston from 'winston';
 import Async from 'async';
 import { newCommLink, CommLink } from '~/core/commlink';
-import { CustomHandler, CustomHandlers, Message, Body, ping, quit, ack, call, Ping, Quit } from '~/core/message-types';
+import { CustomHandler, CustomHandlers, Message, Body, ping, quit, ack, call, Ping, Quit, creturn, MessageQuery } from '~/core/message-types';
+
 import { initCallChaining, CallChainDef } from './chain-connection';
 
 export type LifecycleName = keyof {
+  networkReady: null,
   startup: null,
   shutdown: null,
 };
 
-export type LifecycleHandlers<CargoT> = Record<LifecycleName, CustomHandler<SatelliteService<CargoT>>>;
+type LifecycleHandlers<ClientT> = Record<LifecycleName, CustomHandler<ClientT>>;
+type SatelliteHandlers<ClientT> =
+  CustomHandlers<SatelliteService<ClientT>>
+  & LifecycleHandlers<SatelliteService<ClientT>>;
+
 export type SatelliteCommLink<CargoT> = CommLink<SatelliteService<CargoT>>;
 
 export interface SatelliteServiceDef<CargoT> {
   name: string;
   cargoInit: (sc: CommLink<SatelliteService<CargoT>>) => Promise<CargoT>;
-  lifecycleHandlers: CustomHandlers<SatelliteService<CargoT>>;
+  // lifecycleHandlers: CustomHandlers<SatelliteService<CargoT>>;
+  lifecycleHandlers: SatelliteHandlers<CargoT>;
 }
 
 export interface SatelliteService<CargoT> {
@@ -42,11 +49,9 @@ export interface ServiceHub {
   commLink: CommLink<ServiceHub>;
   satelliteNames: string[];
   callChainDefs: CallChainDef[];
-  messageAll(body: Body): Promise<void>;
   addSatelliteServices(): Promise<void>;
   shutdownSatellites(): Promise<void>;
 }
-
 
 export function defineServiceHub(
   name: string,
@@ -71,20 +76,19 @@ export async function createServiceHub(
     satelliteNames,
     callChainDefs,
     commLink: newCommLink(name),
-    async messageAll(body: Body): Promise<void> {
-      await messageAll(this.commLink, this.satelliteNames, body);
-    },
     async addSatelliteServices(): Promise<void> {
-      return pingOrQuitAll(this.commLink, this.satelliteNames, ping);
+      await pingAndAwait(this.commLink, this.satelliteNames)
+      await callAndAwait(this.commLink, this.satelliteNames, 'networkReady');
+      await callAndAwait(this.commLink, this.satelliteNames, 'startup');
     },
     async shutdownSatellites(): Promise<void> {
-      await this.messageAll(call('shutdown'))
-      return pingOrQuitAll(this.commLink, this.satelliteNames, quit);
+      await callAndAwait(this.commLink, this.satelliteNames, 'shutdown');
+      return quitAndAwait(this.commLink, this.satelliteNames);
     }
   };
 
   const connectedPromise: () => Promise<void> = () =>
-    hubService.commLink.connect()
+    hubService.commLink.connect(hubService)
       .then(() => hubService.addSatelliteServices());
 
   return [hubService, connectedPromise];
@@ -94,7 +98,7 @@ export async function createServiceHub(
 export function defineSatelliteService<CargoT>(
   name: string,
   cargoInit: (sc: CommLink<SatelliteService<CargoT>>) => Promise<CargoT>,
-  lifecycleHandlers: CustomHandlers<SatelliteService<CargoT>>
+  lifecycleHandlers: SatelliteHandlers<CargoT>
 ): SatelliteServiceDef<CargoT> {
   return {
     name,
@@ -143,27 +147,44 @@ export async function createSatelliteService<T>(
     });
 }
 
-async function pingOrQuitAll(
+async function pingAndAwait(hubComm: CommLink<ServiceHub>, satelliteNames: string[]): Promise<void> {
+  return messageAndAwait(hubComm, satelliteNames, ping, ack(ping))
+}
+async function quitAndAwait(hubComm: CommLink<ServiceHub>, satelliteNames: string[]): Promise<void> {
+  return messageAndAwait(hubComm, satelliteNames, quit, ack(quit))
+}
+
+async function callAndAwait(
   hubComm: CommLink<ServiceHub>,
   satelliteNames: string[],
-  msg: Ping | Quit
+  func: string
 ): Promise<void> {
-  const pinged: string[] = [];
+  return messageAndAwait(hubComm, satelliteNames, call(func), creturn(func))
+}
+
+async function messageAndAwait(
+  hubComm: CommLink<ServiceHub>,
+  satelliteNames: string[],
+  msg: Body,
+  waitQuery: MessageQuery
+): Promise<void> {
+  const answered: string[] = [];
 
   // TODO make this .once()
-  hubComm.on(ack(msg), async (msg: Message) => {
+  hubComm.on(waitQuery, async (msg: Message) => {
     hubComm.log.debug(`${hubComm.name} got ${msg.kind} from satellite ${msg.from}`);
-    pinged.push(msg.from);
+    answered.push(msg.from);
   });
 
-  const allPinged = () => _.every(satelliteNames, n => pinged.includes(n));
-  const unpinged = () => _.filter(satelliteNames, n => !pinged.includes(n));
+  const allAnswered = () => _.every(satelliteNames, n => answered.includes(n));
+  const unanswered = () => _.filter(satelliteNames, n => !answered.includes(n));
   const tryPing: () => Promise<void> = async () => {
-    if (allPinged()) {
+    if (allAnswered()) {
+      hubComm.log.info(`Done: ${hubComm.name} received all ${prettyFormat(msg)}`);
       return;
     }
-    const remaining = unpinged();
-    hubComm.log.info(`${hubComm.name} sending ${msg.kind} to remaining satellites: ${_.join(remaining, ', ')}`);
+    const remaining = unanswered();
+    hubComm.log.info(`${hubComm.name} sending ${prettyFormat(msg)} to remaining satellites: ${_.join(remaining, ', ')}`);
     await Async.each(
       remaining,
       async satelliteName => hubComm.send(Message.address(msg, { to: satelliteName }))
@@ -174,20 +195,4 @@ async function pingOrQuitAll(
     });
   };
   return tryPing();
-}
-
-async function messageAll(
-  hubComm: CommLink<ServiceHub>,
-  satelliteNames: string[],
-  msg: Body
-): Promise<void> {
-
-
-  hubComm.log.info(`${hubComm.name} broadcasting ${prettyFormat(msg)} to ${_.join(satelliteNames, ', ')}`);
-  await Async.each(
-    satelliteNames,
-    async satelliteName => hubComm.send(Message.address(msg, { to: satelliteName }))
-  );
-
-
 }
