@@ -1,6 +1,6 @@
 import _ from 'lodash';
 import Koa, { Context } from 'koa';
-import Router from 'koa-router';
+import Router from '@koa/router';
 import { Server } from 'http';
 import { delay, prettyPrint, stripMargin, getServiceLogger } from '@watr/commonlib';
 

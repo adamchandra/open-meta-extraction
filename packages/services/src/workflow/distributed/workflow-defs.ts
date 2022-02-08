@@ -4,7 +4,7 @@ import { AlphaRecord } from '@watr/commonlib';
 export type WorkflowServiceName = keyof {
   RestPortalService: null,
   HubService: null,
-  UploadIngestor: null,
+  WorkflowConductor: null,
   Spider: null,
   FieldExtractor: null,
   FieldBundler: null,
@@ -14,7 +14,7 @@ export type WorkflowServiceName = keyof {
 export const WorkflowServiceNames: WorkflowServiceName[] = [
   'RestPortalService',
   'HubService',
-  'UploadIngestor',
+  'WorkflowConductor',
   'Spider',
   'FieldExtractor',
   'FieldBundler',

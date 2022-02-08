@@ -3,6 +3,7 @@ lockfileVersion: 5.3
 specifiers:
   '@babel/cli': ~7.16.8
   '@babel/core': ~7.16.12
+  '@koa/router': ~10.1.1
   '@rush-temp/commlinks': file:./projects/commlinks.tgz
   '@rush-temp/commonlib': file:./projects/commonlib.tgz
   '@rush-temp/field-extractors': file:./projects/field-extractors.tgz
@@ -19,7 +20,6 @@ specifiers:
   '@types/json-server': ^0.14.4
   '@types/koa': ^2.13.4
   '@types/koa-json': ^2.0.20
-  '@types/koa-router': ^7.4.4
   '@types/lodash': ^4.14.178
   '@types/nconf': ~0.10.1
   '@types/node': ^17.0.14
@@ -57,7 +57,6 @@ specifiers:
   koa: ^2.13.4
   koa-body: ^4.2.0
   koa-json: ^2.0.2
-  koa-router: ^10.1.1
   lodash: ^4.17.21
   logform: ^2.3.2
   nconf: ~0.11.3
@@ -83,6 +82,7 @@ specifiers:
 dependencies:
   '@babel/cli': 7.16.8_@babel+core@7.16.12
   '@babel/core': 7.16.12
+  '@koa/router': 10.1.1
   '@rush-temp/commlinks': file:projects/commlinks.tgz_ts-node@10.4.0
   '@rush-temp/commonlib': file:projects/commonlib.tgz_ts-node@10.4.0
   '@rush-temp/field-extractors': file:projects/field-extractors.tgz_ts-node@10.4.0
@@ -99,7 +99,6 @@ dependencies:
   '@types/json-server': 0.14.4
   '@types/koa': 2.13.4
   '@types/koa-json': 2.0.20
-  '@types/koa-router': 7.4.4
   '@types/lodash': 4.14.178
   '@types/nconf': 0.10.1
   '@types/node': 17.0.14
@@ -137,7 +136,6 @@ dependencies:
   koa: 2.13.4
   koa-body: 4.2.0
   koa-json: 2.0.2
-  koa-router: 10.1.1
   lodash: 4.17.21
   logform: 2.3.2
   nconf: 0.11.3
@@ -813,6 +811,19 @@ packages:
       chalk: 4.1.2
     dev: false
 
+  /@koa/router/10.1.1:
+    resolution: {integrity: sha512-ORNjq5z4EmQPriKbR0ER3k4Gh7YGNhWDL7JBW+8wXDrHLbWYKYSJaOJ9aN06npF5tbTxe2JBOsurpJDAvjiXKw==}
+    engines: {node: '>= 8.0.0'}
+    dependencies:
+      debug: 4.3.3
+      http-errors: 1.8.1
+      koa-compose: 4.1.0
+      methods: 1.1.2
+      path-to-regexp: 6.2.0
+    transitivePeerDependencies:
+      - supports-color
+    dev: false
+
   /@nicolo-ribaudo/chokidar-2/2.1.8-no-fsevents.3:
     resolution: {integrity: sha512-s88O1aVtXftvp5bCPB7WnmXc5IwOZZ7YPuwNPt+GtOOXpPvad1LfbmjYv+qII7zP6RU2QGnqve27dnLycEnyEQ==}
     requiresBuild: true
@@ -1120,6 +1131,12 @@ packages:
       '@types/keygrip': 1.0.2
       '@types/koa-compose': 3.2.5
       '@types/node': 17.0.14
+    dev: false
+
+  /@types/koa__router/8.0.11:
+    resolution: {integrity: sha512-WXgKWpBsbS14kzmzD9LeFapOIa678h7zvUHxDwXwSx4ETKXhXLVUAToX6jZ/U7EihM7qwyD9W/BZvB0MRu7MTQ==}
+    dependencies:
+      '@types/koa': 2.13.4
     dev: false
 
   /@types/lodash/4.14.178:
@@ -7287,16 +7304,18 @@ packages:
     dev: false
 
   file:projects/services.tgz:
-    resolution: {integrity: sha512-HRu40r2Syh2hD0zycy733EdImDnYzW6wXToGEB6fit/42nCgGwR9W6yT6uc/mKqHt4uCVsWwvhuWj5SZhiEf6Q==, tarball: file:projects/services.tgz}
+    resolution: {integrity: sha512-FbhDlbVXor8Lpu1YLTlXJLrJvDHZOK1sBw5jUJmmqmonHv4JVg/E7aq8XrBuk+xEewrDk58e2i9VD3/uxI1RMA==, tarball: file:projects/services.tgz}
     name: '@rush-temp/services'
     version: 0.0.0
     dependencies:
+      '@koa/router': 10.1.1
       '@types/async': 3.2.12
       '@types/chai': 4.3.0
       '@types/fs-extra': 9.0.13
       '@types/jest': 27.4.0
       '@types/json-server': 0.14.4
       '@types/koa': 2.13.4
+      '@types/koa__router': 8.0.11
       '@types/koa-json': 2.0.20
       '@types/koa-router': 7.4.4
       '@types/lodash': 4.14.178

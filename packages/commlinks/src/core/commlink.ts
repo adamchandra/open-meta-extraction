@@ -205,6 +205,12 @@ export function newCommLink<ClientT>(name: string, maybeClient?: ClientT): CommL
     },
 
     async connect(client?: ClientT): Promise<void> {
+      // if (this.client !== undefined) {
+      //   return;
+      // }
+      // if (this.client === undefined) {
+      //   return;
+      // }
       const self = this;
 
       self.client = client;

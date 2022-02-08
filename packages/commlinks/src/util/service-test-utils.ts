@@ -53,6 +53,12 @@ export async function createTestServiceHub(
         async run() {
           this.log.info(`${this.serviceName} [run]> payload=??? `);
         },
+        async networkReady() {
+        },
+        async startup() {
+        },
+        async shutdown() {
+        },
       });
 
       const satService = await createSatelliteService(hubName, serviceDef);
