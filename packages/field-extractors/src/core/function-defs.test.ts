@@ -1,6 +1,6 @@
 import _ from 'lodash';
 
-import { consoleTransport, newLogger } from '@watr/commonlib';
+import { newConsoleTransport, newLogger } from '@watr/commonlib';
 import * as TE from 'fp-ts/TaskEither';
 import { isRight } from 'fp-ts/Either';
 import Async from 'async';
@@ -61,7 +61,7 @@ const emitL = (msg: string) => tapLeft<string>((_a, env) => env.messages.push(ms
 
 
 function initEnv<A>(a: A): ExtractionResult<A> {
-  const logger = newLogger(consoleTransport('info'));
+  const logger = newLogger(newConsoleTransport('info'));
   const env0: EnvT = {
     ns: [],
     b: true,

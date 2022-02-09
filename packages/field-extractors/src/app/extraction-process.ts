@@ -4,9 +4,8 @@ import { flow as compose, pipe } from 'fp-ts/function';
 import * as TE from 'fp-ts/TaskEither';
 import * as E from 'fp-ts/Either';
 
-import { UrlFetchData, createBrowserPool, useResourceBlockPlugin } from '@watr/spider';
+import {  useResourceBlockPlugin } from '@watr/spider';
 import { ArtifactSubdir, expandDir, readCorpusTextFile, setLogLabel, writeCorpusTextFile, diffByChars } from '@watr/commonlib';
-import { Logger } from 'winston';
 
 import { Page } from 'puppeteer';
 
@@ -28,7 +27,8 @@ import {
   takeWhileSuccess,
   log,
   gatherSuccess,
-  FieldCandidate
+  FieldCandidate,
+  ExtractionSharedEnv
 } from './extraction-prelude';
 
 
@@ -388,12 +388,12 @@ export const selectAllMetaEvidence: (name: string, attrName?: string) => Arrow<C
 
 
 const urlMatcher: (urlTest: RegExp) => Arrow<unknown, unknown> = (regex) => compose(
-  through((_a, env) => env.metadata.responseUrl, 'urlMatch'),
+  through((_a, env) => env.urlFetchData.responseUrl, 'urlMatch'),
   filter((a: string) => regex.test(a), `m/${regex.source}/`),
 );
 
 export const statusFilter: Arrow<unknown, unknown> = compose(
-  through((_a, env) => env.metadata.status, 'httpStatus'),
+  through((_a, env) => env.urlFetchData.status, 'httpStatus'),
   filter((a) => a === '200', 'status=200'),
 );
 
@@ -499,7 +499,7 @@ const evidenceExists: (evstr: string) => FilterArrow<unknown> = (evstr) => filte
 
 export const summarizeEvidence: Arrow<unknown, unknown> = tapEnvLR((env) => {
   const { fieldCandidates, log } = env;
-  const url = env.metadata.responseUrl;
+  const url = env.urlFetchData.responseUrl;
 
   log.log('info', `summary: URL= ${url}`);
 
@@ -552,25 +552,17 @@ function applyCleaningRules(rules: CleaningRule[], initialString: string): [stri
   return [currentString, cleaningResults];
 }
 
-
-export interface ExtractContext {
-  log: Logger;
-  entryPath: string;
-}
-
 useResourceBlockPlugin();
 
 export async function initExtractionEnv(
   entryPath: string,
-  ctx: ExtractContext,
-  metadata: UrlFetchData,
+  sharedEnv: ExtractionSharedEnv,
 ): Promise<ExtractionEnv> {
-  const { log } = ctx;
+  const { log, browserPool } = sharedEnv;
 
   const pathPrefix = path.basename(entryPath).slice(0, 6);
   const logPrefix = [pathPrefix];
 
-  const browserPool = createBrowserPool(log);
   const browserInstance = await browserPool.acquire();
 
   const env: ExtractionEnv = {
@@ -579,7 +571,7 @@ export async function initExtractionEnv(
     browserInstance,
     ns: logPrefix,
     entryPath,
-    metadata,
+    // urlFetchData,
     fields: [],
     fieldRecs: {},
     fieldCandidates: [],

@@ -34,14 +34,14 @@ const compose: typeof fptsFlow = (...fs: []) =>
     pipe(a, ...fs);
 
 const checkStatusAndNormalize = compose(
-  log('info', (_0, env) => `Processing ${env.metadata.responseUrl}`),
+  log('info', (_0, env) => `Processing ${env.urlFetchData.responseUrl}`),
   statusFilter,
   normalizeHtmls,
   filter((a) => a.length > 0),
 );
 
 const addUrlEvidence = tapEnvLR((env) => {
-  const parsedUrl = parseUrl(env.metadata.responseUrl);
+  const parsedUrl = parseUrl(env.urlFetchData.responseUrl);
   const { host } = parsedUrl;
   const paths = parsedUrl.pathname.split('/');
   const [, p1, p2] = paths.slice(0, -1);

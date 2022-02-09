@@ -1,19 +1,9 @@
-import { createConsoleLogger } from '@watr/commonlib';
-import { createLogger, transports, format } from 'winston';
-import { BrowserInstance } from '.';
-import { createBrowserPool } from './browser-pool';
+import { getServiceLogger } from '@watr/commonlib';
+import { BrowserInstance, createBrowserPool } from './browser-pool';
 
 describe('browser pooling', () => {
   it.only('borrow/return to pool', async () => {
-    // const logger = createConsoleLogger();
-    const logger = createLogger({
-      level: 'debug',
-      format: format.json(),
-      transports: [
-        new transports.Console(),
-      ],
-    });
-
+    const logger = getServiceLogger('browser-pool');
     const browserPool = createBrowserPool(logger);
 
     const browserInstance = await browserPool.acquire();
@@ -30,7 +20,7 @@ describe('browser pooling', () => {
 
   it('shutdown on error', async () => {
     console.log('pos.0');
-    const logger = createConsoleLogger();
+    const logger = getServiceLogger('browser-pool');
     const browserPool = createBrowserPool(logger);
 
     console.log('pos.1');

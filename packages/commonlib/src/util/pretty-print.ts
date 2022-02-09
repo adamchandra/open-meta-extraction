@@ -168,11 +168,12 @@ export function prettyPrint(vsobj: any, options: Partial<InspectOptions> = {}): 
   putStrLn(output);
 }
 
-export function prettyFormat(v: any) {
+export function prettyFormat(v: any, options: Partial<InspectOptions> = {}) {
   if (_.isString(v)) {
     return v;
   }
-  return util.inspect(v, inspectOptionDefaults);
+  const opts: InspectOptions = _.merge({}, inspectOptionDefaults, options);
+  return util.inspect(v, opts);
 }
 
 export function putStrLn(...vs: any[]) {

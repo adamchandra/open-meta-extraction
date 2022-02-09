@@ -2,34 +2,7 @@ import _ from 'lodash';
 import path from 'path';
 import fs from 'fs-extra';
 
-import {
-  createLogger,
-  transports,
-  format,
-  Logger,
-} from 'winston';
-
-import * as winston from 'winston';
-
-import { getConsoleAndFileLogger, setLogLabel, setLogLevel } from './logging';
-
-const { cli } = winston.config;
-
-export function getBasicConsoleLogger(level: string = 'info'): Logger {
-  const console = new transports.Console({
-    format: format.combine(
-      format.colorize(),
-      format.simple(),
-    ),
-    level
-  });
-
-  const logger = createLogger({
-    levels: cli.levels,
-    transports: [console],
-  });
-  return logger;
-}
+import { getConsoleAndFileLogger, setLogLabel, setLogLevel } from './basic-logging';
 
 describe('Logging', () => {
   const tmpdir = './test.tmp.d';

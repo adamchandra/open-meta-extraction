@@ -1,3 +1,8 @@
+import _ from 'lodash';
+import path from 'path';
+
+import * as winston from 'winston';
+
 import {
   createLogger,
   transports,
@@ -52,18 +57,86 @@ export function getServiceLogger(label: string): Logger {
   return logger;
 }
 
-export function getBasicConsoleLogger(level: string = 'info'): Logger {
-  const console = new transports.Console({
+export type TransportType = 'file' | 'console';
+
+export function setLogLabel(log: Logger, label: string) {
+  // setLogLabels(log, label);
+  log.format = format.combine(
+    format.label({ label, message: true })
+  );
+}
+
+// export function setLogLabels(log: Logger, label: string) {
+//   _.each(
+//     log.transports, t => {
+//       // console.log('setting transport', t);
+//       t.format = format.label({ label, message: true })
+//     }
+//   );
+// }
+
+export function setLogLevel(log: Logger, transportType: TransportType, level: string) {
+  _.each(
+    log.transports, t => {
+      const setLevel =
+        ((transportType === 'file') && (t instanceof transports.File))
+        || ((transportType === 'console') && (t instanceof transports.Console))
+        ;
+
+      if (setLevel) {
+        t.level = level;
+      }
+    }
+  );
+}
+
+export function newConsoleTransport(level: string): transports.ConsoleTransportInstance {
+  return new transports.Console({
     format: format.combine(
       format.colorize(),
       format.simple(),
     ),
     level
   });
+}
+
+export function newLogger(...transports: winston.transport[]): Logger {
+  return createLogger({
+    levels: cli.levels,
+    transports,
+  });
+}
+
+export function newFileTransport(dirname: string, filename: string, level: string): transports.FileTransportInstance {
+  return new transports.File({
+    filename,
+    level,
+    format: format.combine(
+      format.timestamp(),
+      format.json()
+    ),
+    dirname,
+    tailable: true,
+  });
+}
+
+export function getConsoleAndFileLogger(
+  logfilePath: string,
+  level: string = 'info',
+): Logger {
+  const rootLoggingPath = path.dirname(logfilePath);
+  const logfile = path.basename(logfilePath);
+
+  const consoleTransport = newConsoleTransport(level);
+
+  const fileTransport = newFileTransport(rootLoggingPath, logfile, level);
 
   const logger = createLogger({
-    levels: cli.levels,
-    transports: [console],
+    levels: config.cli.levels,
+    transports: [
+      consoleTransport,
+      fileTransport
+    ],
   });
   return logger;
 }

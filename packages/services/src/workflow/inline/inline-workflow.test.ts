@@ -10,7 +10,7 @@ import { startSpiderableTestServer } from '~/http-servers/rest-portal/mock-serve
 import { getDBConfig } from '~/db/database';
 import { DatabaseContext } from '~/db/db-api';
 import { createEmptyDB } from '~/db/db-test-utils';
-import { extractFieldsForEntry } from '@watr/field-extractors';
+import { extractFieldsForEntry, initExtractionEnv, readUrlFetchData } from '@watr/field-extractors';
 import { mockAlphaRecord } from '@watr/spider';
 import { createSpiderService } from '~/workflow/distributed/spider-worker';
 
@@ -77,10 +77,10 @@ describe('End-to-end Extraction workflows', () => {
   });
 
   it('should update database if fields are extracted but no db entry exists', async () => {
-    // const log = getBasicConsoleLogger('debug');
     const log = getServiceLogger('test-service');
 
     const spiderService = await createSpiderService();
+    const browserPool = spiderService.scraper.browserPool;
 
     const workflowServices: WorkflowServices = {
       spiderService,
@@ -101,7 +101,15 @@ describe('End-to-end Extraction workflows', () => {
         });
 
       const entryPath = getCorpusEntryDirForUrl(url);
-      await extractFieldsForEntry(entryPath, log);
+
+      const urlFetchData = readUrlFetchData(entryPath);
+      const sharedEnv = {
+        log,
+        browserPool,
+        urlFetchData
+      };
+      const exEnv = await initExtractionEnv(entryPath, sharedEnv);
+      await extractFieldsForEntry(exEnv);
 
       const fetchedRecord = await runServicesInlineWithDB(dbCtx, workflowServices, alphaRec);
       prettyPrint({ exampleNumber, fetchedRecord });

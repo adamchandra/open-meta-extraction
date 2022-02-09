@@ -40,6 +40,21 @@ export const AlphaRecord = {
   }
 };
 
+const URLRecordCodec = io.type({
+  url: io.string,
+});
+export const URLRecord = {
+  decode(input: unknown): URLRecord | string {
+    const decoded = URLRecordCodec.decode(input);
+    if (isRight(decoded)) return decoded.right;
+
+    const paths = getPaths(decoded);
+    const err = _.join(paths, '; ');
+    return `Error parsing url record at paths: ${err}`;
+  }
+}
+
+export type URLRecord = io.TypeOf<typeof URLRecordCodec>;
 
 const getPaths = <A>(v: io.Validation<A>): Array<string> => {
   return pipe(
