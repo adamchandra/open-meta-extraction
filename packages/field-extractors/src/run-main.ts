@@ -17,20 +17,19 @@ import {
 import parseUrl from 'url-parse';
 
 import path from 'path';
-import { Logger } from 'winston';
-
 
 import fs from 'fs-extra';
 
 import * as TE from 'fp-ts/TaskEither';
 import * as E from 'fp-ts/Either';
 import Async from 'async';
-import { UrlFetchData } from '@watr/spider';
-import { ExtractContext, initExtractionEnv } from './app/extraction-process';
+import { createBrowserPool, UrlFetchData } from '@watr/spider';
+import { initExtractionEnv } from './app/extraction-process';
 import {
   Arrow,
   PerhapsW,
-  ExtractionEnv
+  ExtractionEnv,
+  ExtractionSharedEnv
 } from './app/extraction-prelude';
 import { AbstractFieldAttempts } from './app/extraction-rules';
 
@@ -138,24 +137,18 @@ export async function runMainInitFilters(
 }
 
 export async function runFieldExtractor(
-  ctx: ExtractContext,
-  metadata: UrlFetchData,
+  exEnv: ExtractionEnv,
   extractionPipeline: Arrow<unknown, unknown>
 ): Promise<PerhapsW<unknown>> {
-  const { entryPath } = ctx;
+  const { urlFetchData, browserPool, browserPageCache, browserInstance } = exEnv;
 
-  const env = await initExtractionEnv(entryPath, ctx, metadata);
-  const res = await extractionPipeline(TE.right([metadata, env]))();
+  const res = await extractionPipeline(TE.right([urlFetchData, exEnv]))();
 
-  const browserPages = _.map(_.toPairs(env.browserPageCache), ([, p]) => p);
+  const browserPages = _.map(_.toPairs(browserPageCache), ([, p]) => p);
 
-  await Async.each(browserPages, Async.asyncify(async page => page.close()));
+  await Async.each(browserPages, Async.asyncify(async (page) => page.close()));
 
-  await env.browserPool.release(
-    env.browserInstance
-  );
-
-  await env.browserPool.shutdown();
+  await browserPool.release(browserInstance);
 
   return res;
 }
@@ -169,7 +162,7 @@ export async function runMainExtractFields(
   pathFilter: string,
   urlFilter: string,
 ): Promise<void> {
-  const logFilename = 'test-extractor-log.json';
+  const logFilename = 'field-extractor-log.json';
   const logfilePath = path.join(logpath, logFilename);
   const log = getConsoleAndFileLogger(logfilePath, logLevel);
 
@@ -180,80 +173,61 @@ export async function runMainExtractFields(
   const pumpBuilder = streamPump.createPump()
     .viaStream<string>(dirEntryStream)
     .filter((entryPath) => entryPath !== undefined)
-    .initEnv<ExtractContext>((entryPath) => {
-    const entry = entryPath || '';
-    setLogLabel(log, entry);
-
-    return {
-      entryPath: entry,
-      log,
-    };
-  })
-    .filter((entryPath) => entryPath !== '')
     .filter((entryPath) => {
       const pathRE = new RegExp(pathFilter);
       return pathRE.test(entryPath);
     })
-    .throughF((entryPath) => readCorpusJsonFile<UrlFetchData>(entryPath, '.', 'metadata.json'))
-    .filter((metadata) => {
-      if (metadata === undefined) return false;
-      const url = metadata.responseUrl;
+    .initEnv<ExtractionSharedEnv>((entryPath) => {
+      setLogLabel(log, entryPath);
+      const urlFetchData = readUrlFetchData(entryPath);
+      const browserPool = createBrowserPool(log);
+
+      return {
+        log,
+        urlFetchData,
+        browserPool,
+      };
+    })
+    .throughF<ExtractionEnv>(async (entryPath, sharedEnv) => {
+      return await initExtractionEnv(entryPath, sharedEnv);
+    })
+    .filter((exEnv) => {
+      const { urlFetchData } = exEnv;
+      if (urlFetchData === undefined) return false;
+
+      const url = urlFetchData.responseUrl;
       const re = new RegExp(urlFilter);
       return re.test(url);
     })
-    .tap(async (metadata, ctx) => {
-      if (metadata === undefined) return;
-      const { entryPath } = ctx;
-
-      ensureArtifactDirectories(entryPath);
-
-      const res = await runFieldExtractor(ctx, metadata, AbstractFieldAttempts);
-
-      if (E.isRight(res)) {
-        ctx.log.info('writing extraction records');
-        const [, env] = res.right;
-        writeExtractionRecords(env, ['Extraction Success']);
-      } else {
-        const [ci, env] = res.left;
-        ctx.log.error('error extracting records');
-        writeExtractionRecords(env, ['Extraction Failure', `${ci}`]);
-      }
+    .tap(async (exEnv) => {
+      await extractFieldsForEntry(exEnv);
     });
 
   return pumpBuilder.toPromise()
-    .then(() => {});
+    .then(() => { });
+}
+
+export function readUrlFetchData(entryPath: string,): UrlFetchData | undefined {
+  return readCorpusJsonFile<UrlFetchData>(entryPath, '.', 'metadata.json');
 }
 
 export async function extractFieldsForEntry(
-  entryPath: string,
-  log: Logger,
+  exEnv: ExtractionEnv,
 ): Promise<void> {
+  const { log, entryPath } = exEnv;
   log.info(`extracting field in ${entryPath}`);
-
-  const metadata = readCorpusJsonFile<UrlFetchData>(entryPath, '.', 'metadata.json');
-  if (metadata === undefined) {
-    log.info(`no metadata found for ${entryPath}`);
-    return;
-  }
-
-  // setLogLabel(log, entryPath);
-
-  const ctx: ExtractContext = {
-    entryPath,
-    log,
-  };
 
   ensureArtifactDirectories(entryPath);
 
-  const res = await runFieldExtractor(ctx, metadata, AbstractFieldAttempts);
+  const res = await runFieldExtractor(exEnv, AbstractFieldAttempts);
 
   if (E.isRight(res)) {
-    ctx.log.info('writing extraction records');
+    log.info('writing extraction records');
     const [, env] = res.right;
     writeExtractionRecords(env, ['Extraction Success']);
   } else {
     const [ci, env] = res.left;
-    ctx.log.error('error extracting records');
+    log.error('error extracting records');
     writeExtractionRecords(env, ['Extraction Failure', `${ci}`]);
   }
 }

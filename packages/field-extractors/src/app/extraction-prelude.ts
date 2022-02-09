@@ -20,19 +20,22 @@ export interface FieldCandidate {
   evidence: string[];
 }
 
-
-export type ExtractionEnv = {
+export interface ExtractionSharedEnv {
   log: Logger;
+  browserPool: BrowserPool;
+  urlFetchData?: UrlFetchData;
+};
+
+
+export interface ExtractionEnv extends ExtractionSharedEnv {
   ns: string[];
   entryPath: string;
-  metadata: UrlFetchData;
   fieldRecs: Record<string, Field[]>;
   fields: Field[];
   evidence: ExtractionEvidence[];
   fieldCandidates: FieldCandidate[];
   fileContentCache: Record<string, string>;
   browserPageCache: Record<string, Page>;
-  browserPool: BrowserPool;
   browserInstance: BrowserInstance;
   enterNS(ns: string[]): void;
   exitNS(ns: string[]): void;

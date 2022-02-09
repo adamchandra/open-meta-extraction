@@ -57,17 +57,21 @@ describe('End-to-end Extraction workflows', () => {
     const url = `http://localhost:9100/200~withFields`;
     const alphaRec = mockAlphaRecord(1, url);
 
-    console.log('posting...')
-    const retval = await axios.post(
-      'http://localhost:3100/extractor/record.json',
-      alphaRec
+    // const retval = await axios.post('http://localhost:3100/extractor/record.json',
+    //   alphaRec
+    // );
+    // prettyPrint({ data: retval.data });
+
+    const urlval = await axios.post(
+      'http://localhost:3100/extractor/url',
+      { url }
     );
 
-    const returnData = retval.data;
-    prettyPrint({ returnData });
+    prettyPrint({ data: urlval.data });
 
-    expect(returnData).toHaveProperty('fields');
-    expect(returnData.fields.length > 0).toBe(true);
+    // const returnData = retval.data;
+    // expect(returnData).toHaveProperty('fields');
+    // expect(returnData.fields.length > 0).toBe(true);
 
     await hubService.shutdownSatellites();
     await hubService.commLink.quit();

@@ -4,7 +4,7 @@ import { delay, getLogEnvLevel, prettyFormat } from '@watr/commonlib';
 import winston from 'winston';
 import Async from 'async';
 import { newCommLink, CommLink } from '~/core/commlink';
-import { CustomHandler, CustomHandlers, Message, Body, ping, quit, ack, call, Ping, Quit, creturn, MessageQuery } from '~/core/message-types';
+import { CustomHandler, CustomHandlers, Message, Body, ping, quit, ack, call, creturn, MessageQuery } from '~/core/message-types';
 
 import { initCallChaining, CallChainDef } from './chain-connection';
 
@@ -24,7 +24,6 @@ export type SatelliteCommLink<CargoT> = CommLink<SatelliteService<CargoT>>;
 export interface SatelliteServiceDef<CargoT> {
   name: string;
   cargoInit: (sc: CommLink<SatelliteService<CargoT>>) => Promise<CargoT>;
-  // lifecycleHandlers: CustomHandlers<SatelliteService<CargoT>>;
   lifecycleHandlers: SatelliteHandlers<CargoT>;
 }
 
@@ -95,8 +94,7 @@ export async function createServiceHub(
 }
 
 
-export function defineSatelliteService<CargoT>(
-  name: string,
+export function defineSatelliteService<CargoT>(name: string,
   cargoInit: (sc: CommLink<SatelliteService<CargoT>>) => Promise<CargoT>,
   lifecycleHandlers: SatelliteHandlers<CargoT>
 ): SatelliteServiceDef<CargoT> {

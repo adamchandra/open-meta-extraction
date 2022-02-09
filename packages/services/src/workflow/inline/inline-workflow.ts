@@ -1,8 +1,8 @@
 import _ from 'lodash';
 import * as winston from 'winston';
 import { AlphaRecord, getCorpusEntryDirForUrl } from '@watr/commonlib';
-import { UrlFetchData } from '@watr/spider';
-import { CanonicalFieldRecords, extractFieldsForEntry, getCanonicalFieldRecord } from '@watr/field-extractors';
+import { createBrowserPool, UrlFetchData } from '@watr/spider';
+import { CanonicalFieldRecords, extractFieldsForEntry, getCanonicalFieldRecord, readUrlFetchData, initExtractionEnv } from '@watr/field-extractors';
 import { createSpiderService, SpiderService } from '~/workflow/distributed/spider-worker';
 import { commitUrlFetchData, commitUrlStatus, DatabaseContext, getNextUrlForSpidering, getUrlStatus, insertAlphaRecords, insertNewUrlChains } from '~/db/db-api';
 import { getServiceLogger } from '@watr/commonlib';
@@ -54,12 +54,20 @@ export async function runServicesInlineNoDB(
     if ('error' in metadataOrError) {
       return metadataOrError;
     }
+    const browserPool = createBrowserPool(log);
 
     const entryPath = getCorpusEntryDirForUrl(url);
 
     log.info(`Extracting Fields in ${entryPath}`);
 
-    await extractFieldsForEntry(entryPath, log);
+    const urlFetchData = readUrlFetchData(entryPath);
+    const sharedEnv = {
+      log,
+      browserPool,
+      urlFetchData
+    }
+    const exEnv = await initExtractionEnv(entryPath, sharedEnv);
+    await extractFieldsForEntry(exEnv);
 
     // try again:
     fieldRecs = getCanonicalFieldRecs(alphaRec);
@@ -111,11 +119,19 @@ export async function runServicesInlineWithDB(
       return metadataOrError;
     }
 
+    const browserPool = createBrowserPool(log);
     const entryPath = getCorpusEntryDirForUrl(url);
 
     log.info(`Extracting Fields in ${entryPath}`);
 
-    await extractFieldsForEntry(entryPath, log);
+    const urlFetchData = readUrlFetchData(entryPath);
+    const sharedEnv = {
+      log,
+      browserPool,
+      urlFetchData
+    }
+    const exEnv = await initExtractionEnv(entryPath, sharedEnv);
+    await extractFieldsForEntry(exEnv);
 
     // try again:
     fieldRecs = getCanonicalFieldRecs(alphaRec);
@@ -167,7 +183,17 @@ async function fetchNextDBRecord(
     await commitUrlFetchData(dbCtx, metadataOrError);
 
     log.info(`Extracting Fields in ${entryPath}`);
-    await extractFieldsForEntry(entryPath, log);
+    const urlFetchData = readUrlFetchData(entryPath);
+
+    const browserPool = services.spiderService.scraper.browserPool;
+    const sharedEnv = {
+      log,
+      browserPool,
+      urlFetchData
+    }
+    // TODO clean up the circularity of initializing browserPool for spider/field extractor:
+    const exEnv = await initExtractionEnv(entryPath, sharedEnv);
+    await extractFieldsForEntry(exEnv);
   }
 
   // try again:

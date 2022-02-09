@@ -1,4 +1,5 @@
 import { AlphaRecord } from "@watr/commonlib";
+import { boolean } from "fp-ts";
 
 export interface RecordRequest {
   kind: 'record-request';
@@ -30,9 +31,9 @@ export interface ErrorRecord {
 
 export const ErrorRecord = (error: string): ErrorRecord => ({ error });
 
-function isUrl(instr: unknown) {
+export function isUrl(instr: unknown): boolean {
   if (typeof instr !== 'string') {
-    throw new TypeError('Expected a string');
+    return false;
   }
   const str = instr.trim();
   if (typeof str === 'string') {

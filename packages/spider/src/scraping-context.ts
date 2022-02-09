@@ -2,8 +2,8 @@ import path from 'path';
 
 import { Logger } from 'winston';
 import {
-  consoleTransport,
-  fileTransport,
+  newConsoleTransport,
+  newFileTransport,
   getAppSharedDir,
   getCorpusRootDir,
   HashEncodedPath,
@@ -33,13 +33,13 @@ export function getSpiderLoggers(
 
   const loglevel = 'info';
   const rootLogger = newLogger(
-    consoleTransport(loglevel),
-    fileTransport(appShareDir, 'spidering-root.log', loglevel)
+    newConsoleTransport(loglevel),
+    newFileTransport(appShareDir, 'spidering-root.log', loglevel)
   );
 
   const entryLogger = newLogger(
-    consoleTransport(loglevel),
-    fileTransport(entryLoggingPath, 'spidering-entry.log', loglevel)
+    newConsoleTransport(loglevel),
+    newFileTransport(entryLoggingPath, 'spidering-entry.log', loglevel)
   );
 
   return {

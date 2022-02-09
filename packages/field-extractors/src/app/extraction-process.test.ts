@@ -1,14 +1,16 @@
 import path from 'path';
 import _ from 'lodash';
-import { getConsoleAndFileLogger, readCorpusJsonFile } from '@watr/commonlib';
+import { getConsoleAndFileLogger } from '@watr/commonlib';
 import fs from 'fs-extra';
 import cproc from 'child_process';
 import Async from 'async';
 
-
-import { UrlFetchData } from '@watr/spider';
+import { createBrowserPool } from '@watr/spider';
 import { AbstractFieldAttempts } from './extraction-rules';
 import { runFieldExtractor } from '../run-main';
+import { readUrlFetchData } from '..';
+import { initExtractionEnv } from './extraction-process';
+import { ExtractionSharedEnv } from './extraction-prelude';
 
 describe('Field Extraction Pipeline', () => {
   const testCorpus = './test/resources/spidered-corpus';
@@ -34,15 +36,23 @@ describe('Field Extraction Pipeline', () => {
     const logLevel = 'debug';
     const logfilePath = testScratchDir;
     const log = getConsoleAndFileLogger(logfilePath, logLevel);
+    const browserPool = createBrowserPool(log);
     await Async.mapSeries(examples, Async.asyncify(async example => {
       const entryPath = path.join(testScratchDir, 'spidered-corpus', example);
-      const metadata = readCorpusJsonFile<UrlFetchData>(entryPath, '.', 'metadata.json');
-      expect(metadata).toBeDefined();
-      if (metadata === undefined) {
-        console.log('ERROR: no metadata found');
+      const urlFetchData = readUrlFetchData(entryPath);
+      expect(urlFetchData).toBeDefined();
+      if (urlFetchData === undefined) {
+        console.log('ERROR: no urlFetchData found');
         return;
       }
-      return runFieldExtractor({ entryPath, log }, metadata, AbstractFieldAttempts);
+      const sharedEnv: ExtractionSharedEnv = {
+        log, browserPool, urlFetchData
+      };
+      const env = await initExtractionEnv(entryPath, sharedEnv);
+      return runFieldExtractor(env, AbstractFieldAttempts);
     }));
+
+    await browserPool.shutdown()
+
   });
 });

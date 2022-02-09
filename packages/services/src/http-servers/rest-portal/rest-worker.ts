@@ -6,8 +6,8 @@ import Router from '@koa/router';
 import json from 'koa-json';
 import { Server } from 'http';
 import { SatelliteCommLink } from '@watr/commlinks';
-import { AlphaRecord, getServiceLogger, prettyPrint } from '@watr/commonlib';
-import { RecordRequest } from '~/workflow/common/datatypes';
+import { AlphaRecord, getServiceLogger, prettyFormat, prettyPrint, URLRecord } from '@watr/commonlib';
+import { isUrl, RecordRequest, URLRequest } from '~/workflow/common/datatypes';
 import { Logger } from 'winston';
 
 export class RestPortal {
@@ -50,7 +50,7 @@ function getCommLink(ctx: Koa.DefaultContext): SatelliteCommLink<RestPortal> {
   return ctx.commLink;
 }
 function getLog(ctx: Koa.DefaultContext): Logger {
-  return ctx.commLink;
+  return ctx.log;
 }
 
 export async function createRestServer(): Promise<RestPortal> {
@@ -59,6 +59,14 @@ export async function createRestServer(): Promise<RestPortal> {
   const portalRouter = new Router({
     prefix: '/extractor'
   });
+
+  app.use(async (ctx, next) => {
+    const log = getLog(ctx);
+    const { method, path } = ctx;
+    log.info(`${method} ${path}`)
+    await next();
+    log.info(`completed: ${method} ${path}`)
+  })
 
   portalRouter
     .get('/', getRoot)
@@ -93,10 +101,24 @@ export async function createRestServer(): Promise<RestPortal> {
 async function postURL(ctx: Context): Promise<void> {
   const commLink = getCommLink(ctx);
   const requestBody = ctx.request.body;
-  const body = ctx.body;
+  const responseBody: Record<string, string> = {};
+  ctx.response.body = responseBody;
+  if (requestBody === undefined) {
+    responseBody.status = 'error';
+    responseBody.errors = 'Empty request body';
+    return;
+  }
+  const decoded = URLRecord.decode(requestBody);
+  if (_.isString(decoded)) {
+    responseBody.status = 'error';
+    responseBody.errors = `Request is not a valid url (${prettyFormat(requestBody, { colors: false })})`;
+    return;
+  }
 
-  prettyPrint({ body, requestBody });
-  ctx.response.body = { msg: 'okay' };
+  const url = decoded.url;
+  const responseRec = await commLink.call('runOneURLNoDB', URLRequest(url));
+
+  _.merge(responseBody, responseRec);
 }
 
 async function postRecordJson(ctx: Context): Promise<void> {
