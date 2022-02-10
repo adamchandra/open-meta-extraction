@@ -75,8 +75,8 @@ export async function createSpiderService(): Promise<SpiderService> {
   return service;
 }
 
-export const Spider = defineSatelliteService<SpiderService>(
-  'Spider',
+export const SpiderService = defineSatelliteService<SpiderService>(
+  'SpiderService',
   async () => createSpiderService(), {
 
   async scrapeUrl(arg: { url: string }): Promise<UrlFetchData | undefined> {

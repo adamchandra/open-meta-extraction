@@ -1,9 +1,9 @@
 import _ from 'lodash';
-import { AlphaRecord, initConfig, prettyPrint } from '@watr/commonlib';
+import { prettyPrint } from '@watr/commonlib';
 import { defineServiceHub } from '@watr/commlinks';
 import { runServiceHubAndSatellites } from './distributed-workflow';
-import { WorkflowConductor, FieldExtractor, RestPortalService } from './workers';
-import { Spider } from './spider-worker';
+import { WorkflowConductor, FieldExtractor, RestService } from './workers';
+import { SpiderService } from './spider-worker';
 import { startSpiderableTestServer } from '~/http-servers/rest-portal/mock-server';
 import fs from 'fs-extra';
 import { Server } from 'http';
@@ -40,9 +40,9 @@ describe('End-to-end Extraction workflows', () => {
 
   it('should run end-to-end', async () => {
     const serviceChainWorkers = [
-      RestPortalService,
+      RestService,
       WorkflowConductor,
-      Spider,
+      SpiderService,
       FieldExtractor,
     ];
     const orderedServices = serviceChainWorkers.map(w => w.name);

@@ -135,7 +135,7 @@ export function registerCmd(
   name: string,
   description: string,
   ...fs: ArgvApp[]
-): (cb: (parsedArgs: any) => void) => void {
+): (cb: (parsedArgs: any) => void | Promise<void>) => void {
   return (cb: (parsedArgs: any) => void) => {
     useYargs.command(
       name, description, config(...fs), (argv: any) => {

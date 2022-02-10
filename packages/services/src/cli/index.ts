@@ -1,7 +1,7 @@
 import { arglib } from '@watr/commonlib';
-import '~/http-servers/rest-portal/rest-server';
-import '~/workflow/workflow-cli';
+import { registerCLICommands } from '~/workflow/workflow-cli';
 
+registerCLICommands(arglib.YArgs)
 
 arglib.YArgs
   .demandCommand(1, 'You need at least one command before moving on')

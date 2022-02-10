@@ -1,5 +1,4 @@
 import _ from 'lodash';
-
 import * as E from 'fp-ts/Either';
 
 import { writeCorpusJsonFile, writeCorpusTextFile, hasCorpusFile, putStrLn, getServiceLogger } from '@watr/commonlib';
