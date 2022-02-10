@@ -6,8 +6,8 @@ import Router from '@koa/router';
 import json from 'koa-json';
 import { Server } from 'http';
 import { SatelliteCommLink } from '@watr/commlinks';
-import { AlphaRecord, getServiceLogger, prettyFormat, prettyPrint, URLRecord } from '@watr/commonlib';
-import { isUrl, RecordRequest, URLRequest } from '~/workflow/common/datatypes';
+import { AlphaRecord, getServiceLogger, prettyFormat, URLRecord } from '@watr/commonlib';
+import { RecordRequest, URLRequest } from '~/workflow/common/datatypes';
 import { Logger } from 'winston';
 
 export class RestPortal {
@@ -15,10 +15,11 @@ export class RestPortal {
   app: Koa;
   server: Server | undefined;
   log: Logger;
+
   public constructor(app: Koa, port: number) {
     this.app = app;
     this.port = port;
-    this.log = getServiceLogger('RestPortal');
+    this.log = getServiceLogger('RestService');
   }
 
   async run(): Promise<void> {
@@ -26,9 +27,10 @@ export class RestPortal {
       return;
     }
     const log = this.log;
+    const port = this.port;
 
-    this.server = this.app.listen(this.port, function() {
-      log.info(`Koa is listening to http://localhost:${this.port}`);
+    this.server = this.app.listen(port, function() {
+      log.info(`Koa is listening to http://localhost:${port}`);
     });
   }
   async close(): Promise<void> {

@@ -17,12 +17,13 @@ import { ErrorRecord, RecordRequest, URLRequest, WorkflowData } from '../common/
 
 import { Logger } from 'winston';
 import { ExtractionSharedEnv } from '@watr/field-extractors/src/app/extraction-prelude';
+import { SpiderService } from './spider-worker';
 
-export const RestPortalService = defineSatelliteService<RestPortal>(
-  'RestPortal',
+export const RestService = defineSatelliteService<RestPortal>(
+  'RestService',
   () => createRestServer(), {
   async networkReady() {
-    // Do configuratino post-connection w/hub, but before workflow initiates
+    // Do configuration post-connection w/hub, but before workflow initiates
   },
   async startup() {
     this.cargo.setCommLink(this.commLink);
@@ -100,8 +101,7 @@ export const WorkflowConductor = defineSatelliteService<WorkflowConductorT>(
       this.log.info(`No extracted fields found.. spidering ${url}`);
 
       const urlFetchData: UrlFetchData | undefined =
-        await this.commLink.call('scrapeUrl', { url }, { to: 'Spider' });
-      // await this.commLink.call<{ url: string }, UrlFetchData>('scrapeUrl', { url }, { to: 'Spider' });
+        await this.commLink.call('scrapeUrl', { url }, { to: SpiderService.name });
 
       if (urlFetchData === undefined) {
         return ErrorRecord(`spider did not successfully scrape url ${url}`);
@@ -110,8 +110,7 @@ export const WorkflowConductor = defineSatelliteService<WorkflowConductorT>(
       const entryPath = getCorpusEntryDirForUrl(url);
       this.log.info(`Extracting Fields in ${entryPath}`);
 
-      // await this.commLink.call<{ url: string }, UrlFetchData>('extractFields', { url }, { to: 'FieldExtractor' });
-      await this.commLink.call('extractFields', { url }, { to: 'FieldExtractor' });
+      await this.commLink.call('extractFields', { url }, { to: FieldExtractor.name });
 
       // try again:
       fieldRecs = getCanonicalFieldRecsForURL(url);
@@ -141,7 +140,6 @@ export const WorkflowConductor = defineSatelliteService<WorkflowConductorT>(
 
 interface FieldExtractor extends ExtractionSharedEnv {
   log: Logger;
-  // corpusRoot: string;
   browserPool: BrowserPool;
 
 }

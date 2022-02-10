@@ -558,7 +558,7 @@ export async function initExtractionEnv(
   entryPath: string,
   sharedEnv: ExtractionSharedEnv,
 ): Promise<ExtractionEnv> {
-  const { log, browserPool } = sharedEnv;
+  const { log, browserPool, urlFetchData  } = sharedEnv;
 
   const pathPrefix = path.basename(entryPath).slice(0, 6);
   const logPrefix = [pathPrefix];
@@ -571,7 +571,7 @@ export async function initExtractionEnv(
     browserInstance,
     ns: logPrefix,
     entryPath,
-    // urlFetchData,
+    urlFetchData,
     fields: [],
     fieldRecs: {},
     fieldCandidates: [],

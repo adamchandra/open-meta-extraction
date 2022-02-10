@@ -2,23 +2,19 @@ import { CustomHandler } from '@watr/commlinks';
 import { AlphaRecord } from '@watr/commonlib';
 
 export type WorkflowServiceName = keyof {
-  RestPortalService: null,
+  RestService: null,
   HubService: null,
   WorkflowConductor: null,
   Spider: null,
   FieldExtractor: null,
-  FieldBundler: null,
-  MockService: null,
 }
 
 export const WorkflowServiceNames: WorkflowServiceName[] = [
-  'RestPortalService',
+  'RestService',
   'HubService',
   'WorkflowConductor',
   'Spider',
   'FieldExtractor',
-  'FieldBundler',
-  'MockService',
 ];
 
 export interface RequestOneRecWorkflow {

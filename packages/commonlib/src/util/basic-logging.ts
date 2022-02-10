@@ -34,7 +34,7 @@ export function getServiceLogger(label: string): Logger {
   const { cli } = config;
 
   let logLevel = getLogEnvLevel();
-  const level = logLevel || 'debug';
+  const level = logLevel || 'silly';
 
   const logger = createLogger({
     level,

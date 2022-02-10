@@ -30,6 +30,7 @@ export interface ExtractionSharedEnv {
 export interface ExtractionEnv extends ExtractionSharedEnv {
   ns: string[];
   entryPath: string;
+  urlFetchData: UrlFetchData;
   fieldRecs: Record<string, Field[]>;
   fields: Field[];
   evidence: ExtractionEvidence[];
