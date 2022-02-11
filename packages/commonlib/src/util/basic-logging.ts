@@ -18,13 +18,13 @@ export function getLogEnvLevel(): string {
   const envLevel = envLogLevel;
 
   switch (envLevel) {
-    case "error":
-    case "warn":
-    case "info":
-    case "http":
-    case "verbose":
-    case "debug":
-    case "silly":
+    case 'error':
+    case 'warn':
+    case 'info':
+    case 'http':
+    case 'verbose':
+    case 'debug':
+    case 'silly':
       return envLevel;
   }
   return undefined;
@@ -34,7 +34,7 @@ export function getServiceLogger(label: string): Logger {
   const { cli } = config;
 
   let logLevel = getLogEnvLevel();
-  const level = logLevel || 'silly';
+  const level = logLevel || 'debug';
 
   const logger = createLogger({
     level,
@@ -51,7 +51,7 @@ export function getServiceLogger(label: string): Logger {
   });
 
   if (logLevel === undefined) {
-    logger.warn('log level could not be deduced from env variables, setting to debug');
+    logger.warn(`log level could not be deduced from env variables, setting to ${level}`);
   }
 
   return logger;

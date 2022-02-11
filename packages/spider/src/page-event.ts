@@ -11,9 +11,10 @@ import {
   Dialog,
   BrowserEmittedEvents,
 } from 'puppeteer';
-import { Logger } from 'winston';
-import { BrowserInstance } from '.';
 
+import { Logger } from 'winston';
+
+import { BrowserInstance } from './browser-pool';
 
 const pageEvents: Array<keyof PageEventObject> = [
   'close',
@@ -46,36 +47,38 @@ export function logBrowserEvent(browserInstance: BrowserInstance, logger: Logger
     BrowserEmittedEvents.TargetDestroyed,
     BrowserEmittedEvents.Disconnected,
   ]
+  const pid = browser.process().pid;
   _.each(events, (event) => {
     browser.on(event, (e) => {
       const ttype = e?._targetInfo?.type;
       const turl = e?._targetInfo?.url;
-      logger.info(`browserEvent: ${event}, targetType: ${ttype}, targetUrl: ${turl}`);
+      logger.debug(`Browser#${pid}: browserEvent: ${event}, targetType: ${ttype}, targetUrl: ${turl}`);
     });
   });
 }
 
 export function logPageEvents(page: Page, logger: Logger) {
 
+  const pid = page.browser().process().pid;
   _.each(pageEvents, e => {
     page.on(e, (_data: any) => {
       switch (e) {
         case 'domcontentloaded':
         case 'load':
         case 'close': {
-          logger.debug(`pageEvent: ${e}`);
+          logger.debug(`Browser#${pid}/pageEvent: ${e}`);
           break;
         }
         case 'console': {
           const data: ConsoleMessage = _data;
           const text = data.text();
-          logger.debug(`pageEvent: ${e}: ${text}`);
+          logger.debug(`Browser#${pid}/pageEvent: ${e}: ${text}`);
           break;
         }
         case 'dialog': {
           const data: Dialog = _data;
           const message = data.message();
-          logger.debug(`pageEvent: ${e}: ${message}`);
+          logger.debug(`Browser#${pid}/pageEvent: ${e}: ${message}`);
           break;
         }
         case 'pageerror':
@@ -83,24 +86,24 @@ export function logPageEvents(page: Page, logger: Logger) {
           const data: Error = _data;
           const { message } = data;
           const { name } = data;
-          logger.debug(`pageEvent: ${e}: ${name} / ${message}`);
+          logger.debug(`Browser#${pid}/pageEvent: ${e}: ${name} / ${message}`);
           break;
         }
         case 'frameattached':
         case 'framedetached':
         case 'framenavigated': {
           // const data: Frame = _data;
-          logger.debug(`pageEvent: ${e}`);
+          logger.debug(`Browser#${pid}/pageEvent: ${e}`);
           break;
         }
         case 'metrics': {
           const data: { title: string, metrics: Metrics } = _data;
-          logger.debug(`pageEvent: ${e}: ${data.title} / ${data.metrics}`);
+          logger.debug(`Browser#${pid}/pageEvent: ${e}: ${data.title} / ${data.metrics}`);
           break;
         }
         case 'popup': {
           // const data: Page = _data;
-          logger.debug(`pageEvent: ${e}`);
+          logger.debug(`Browser#${pid}/pageEvent: ${e}`);
           break;
         }
         case 'request':
@@ -108,24 +111,24 @@ export function logPageEvents(page: Page, logger: Logger) {
         case 'requestfinished': {
           const data: HTTPRequest = _data;
           const url = data.url();
-          logger.debug(`pageEvent: ${e}: ${url}`);
+          logger.debug(`Browser#${pid}/pageEvent: ${e}: ${url}`);
           break;
         }
         case 'response': {
           const data: HTTPResponse = _data;
           const url = data.url();
-          logger.debug(`pageEvent: ${e}: ${url}`);
+          logger.debug(`Browser#${pid}/pageEvent: ${e}: ${url}`);
           break;
         }
         case 'workercreated':
         case 'workerdestroyed': {
           const data: WebWorker = _data;
           const url = data.url();
-          logger.debug(`pageEvent: ${e}: ${url}`);
+          logger.debug(`Browser#${pid}/pageEvent: ${e}: ${url}`);
           break;
         }
         default:
-          logger.debug(`Unknown event: ${e}`);
+          logger.debug(`Browser#${pid}/Unknown event: ${e}`);
       }
     });
   });
