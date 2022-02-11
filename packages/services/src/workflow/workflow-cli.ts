@@ -12,7 +12,7 @@ export function registerCLICommands(yargv: arglib.YArgsT) {
     SpiderService,
     FieldExtractor
   };
-  const orderedServices = _.keys(availableServices) ;
+  const orderedServices = _.keys(availableServices);
   const HubService = defineServiceHub('HubService', orderedServices, [], {});
 
   registerCmd(
@@ -24,18 +24,45 @@ export function registerCLICommands(yargv: arglib.YArgsT) {
         choices: _.concat(orderedServices, [HubService.name])
       })
     )
-  )(async (args: any) => {
+  )((args: any) => {
     const { serviceName } = args;
+    // return new Promise((resolve) => {
     if (orderedServices.includes(serviceName)) {
       const serviceDef = availableServices[serviceName];
-      const service = await createSatelliteService(HubService.name, serviceDef);
-      // TODO make sure promise resolves
+      return createSatelliteService(HubService.name, serviceDef)
+        .then((service) => sigtraps(() => {
+          return service.commLink.quit();
+        }))
+        .catch(error => {
+          console.log(`Error: ${error}`)
+        });
     }
     if (serviceName === HubService.name) {
-
-      const [hubService, hubConnected] = await createServiceHub(HubService);
-      await hubConnected();
+      return createServiceHub(HubService)
+        .then(([hubService, hubConnected]) => {
+          return hubConnected()
+            .then(() => sigtraps(async () => {
+              await hubService.shutdownSatellites();
+              await hubService.commLink.quit();
+            }));
+        })
+        .catch(error => {
+          console.log(`Error: ${error}`)
+        });
     }
-    // TODO runRegisteredService(hubName, serviceName);
+  });
+  // });
+}
+
+async function sigtraps(cb: () => Promise<void>): Promise<void> {
+  return new Promise((resolve) => {
+    process.on('SIGINT', function() {
+      console.log('got SIGINT')
+      cb().then(resolve);
+    });
+    process.on('SIGTERM', function() {
+      console.log('got SIGTERM')
+      cb().then(resolve);
+    });
   });
 }

@@ -17,6 +17,7 @@ export interface BrowserPool {
 }
 export interface BrowserInstance {
   browser: Browser;
+  pid(): number;
   logPrefix: string;
   createdAt: Date;
   newPage(): Promise<PageInstance>;
@@ -28,17 +29,20 @@ export interface PageInstance {
   createdAt: Date;
 }
 
-export function createBrowserPool(logger: Logger): BrowserPool {
+export function createBrowserPool(log: Logger): BrowserPool {
   const factory: gpool.Factory<BrowserInstance> = {
     async create(logPrefix: string = ''): Promise<BrowserInstance> {
       return launchBrowser().then(browser => {
-        const browserInstance =  {
+        const browserInstance: BrowserInstance = {
           browser,
+          pid(): number {
+            return browser.process().pid;
+          },
           logPrefix,
           createdAt: new Date(),
           async newPage(): Promise<PageInstance> {
             const page = await browser.newPage()
-            logPageEvents(page, logger);
+            logPageEvents(page, log);
             return {
               page,
               logPrefix,
@@ -46,24 +50,38 @@ export function createBrowserPool(logger: Logger): BrowserPool {
             }
           }
         };
-        logBrowserEvent(browserInstance, logger);
-        return browserInstance
+        logBrowserEvent(browserInstance, log);
+        browser.process().on('close', (_signum: number, signame: NodeJS.Signals) => {
+          log.warn(`Browser#${browserInstance.pid()} onClose: ${signame}`);
+        });
+        browser.process().on('error', (_signum: number, signame: NodeJS.Signals) => {
+          log.warn(`Browser#${browserInstance.pid()} onError: ${signame}`);
+        });
+        browser.process().on('exit', (_signum: number, signame: NodeJS.Signals) => {
+          log.warn(`Browser#${browserInstance.pid()} onExit: ${signame}`);
+        });
+        return browserInstance;
       }).catch(error => {
         console.log(error);
         throw error;
       })
     },
     async destroy(browserInstance: BrowserInstance): Promise<void> {
-      return browserInstance.browser.close();
+      const browser = browserInstance.browser;
+      return browser.close()
+        .then(async () => {
+          log.debug(`Browser#${browserInstance.pid()} closed`);
+        })
+        .catch(async (error) => {
+          log.warn(`Browser#${browserInstance.pid()} close error: ${error}`);
+        });
     },
-    async validate(browserInstance: BrowserInstance): Promise<boolean> {
-      return browserInstance.browser.isConnected();
-    }
+    // async validate(browserInstance: BrowserInstance): Promise<boolean> { }
   };
   const opts: gpool.Options = {
     max: 5, // maximum size of the pool
     min: 1, // minimum size of the pool
-    testOnBorrow: true, // should the pool validate resources before giving them to clients. Requires that factory.validate is specified.
+    testOnBorrow: false, // should the pool validate resources before giving them to clients. Requires that factory.validate is specified.
     autostart: true, // boolean, should the pool start creating resources, initialize the evictor, etc once the constructor is called. If false, the pool can be started by calling pool.start, otherwise the first call to acquire will start the pool. (default true)
     idleTimeoutMillis: 30000, // the minimum amount of time that an object may sit idle in the pool before it is eligible for eviction due to idle time. Supercedes softIdleTimeoutMillis Default: 30000
     // maxWaitingClients: maximum number of queued requests allowed, additional acquire calls will be callback with an err in a future cycle of the event loop.
@@ -78,14 +96,25 @@ export function createBrowserPool(logger: Logger): BrowserPool {
   };
 
   const pool = gpool.createPool(factory, opts);
+
   return {
     factory,
     pool,
     async acquire(): Promise<BrowserInstance> {
       return pool.acquire();
     },
-    release(b: BrowserInstance): Promise<void> {
-      return pool.release(b);
+    async release(b: BrowserInstance): Promise<void> {
+      // Using destroy here b/c browsers that hang or are killed unexpectedly
+      // are not able to reliably recover into a good state, and it is
+      // difficult to detect whether a released browser is in a good or
+      // bad state
+      log.debug(`releasing (via destroy) Browser#${b.pid()}`);
+      return pool.destroy(b).catch(error => {
+        log.warn(`...destroy() error: Browser#${b.pid()}: ${error}`);
+      });
+      // return pool.release(b).catch(error => {
+      //   log.warn(`...release() error: Browser#${b.pid()}: ${error}`);
+      // });
     },
     async use<A>(f: (browser: BrowserInstance) => A | Promise<A>): Promise<A> {
       return pool.use(f)

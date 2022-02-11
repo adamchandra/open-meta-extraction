@@ -8,11 +8,12 @@ Run install/update/build
 > rush build
 
 ** Deployment system setup
-n; node version management
-rush
+n (node version management)
+rush (npm)
 dotenv
+pm2 (npm)
 
-For running headless chrome (via puppeteer)
+Chrome (runs headless via puppeteer)
 > sudo apt install libnss3-dev libatk1.0-0 libatk-bridge2.0-0 libcups2 libgbm1 libpangocairo-1.0-0 libgtk-3-0
 
 HTML Tidy
