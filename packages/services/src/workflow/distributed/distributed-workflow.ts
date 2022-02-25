@@ -23,12 +23,3 @@ export async function runServiceHubAndSatellites(
 
   return [hubService, hubConnected, satellites];
 }
-
-
-// TODO export async function runRegisteredService(
-//   hubName: string,
-//   serviceName: WorkflowServiceName,
-// ): Promise<SatelliteService<any>> {
-//   const serviceDef = registeredServices[serviceName]
-//   return createSatelliteService(hubName, serviceDef);
-// }

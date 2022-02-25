@@ -27,6 +27,7 @@ export interface SatelliteServiceDef<CargoT> {
   lifecycleHandlers: SatelliteHandlers<CargoT>;
 }
 
+
 export interface SatelliteService<CargoT> {
   serviceName: string;
   hubName: string;
@@ -94,7 +95,8 @@ export async function createServiceHub(
 }
 
 
-export function defineSatelliteService<CargoT>(name: string,
+export function defineSatelliteService<CargoT>(
+  name: string,
   cargoInit: (sc: CommLink<SatelliteService<CargoT>>) => Promise<CargoT>,
   lifecycleHandlers: SatelliteHandlers<CargoT>
 ): SatelliteServiceDef<CargoT> {

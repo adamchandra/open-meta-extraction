@@ -4,9 +4,13 @@
         "username": "watrworker",
         "password": "watrpasswd"
     },
+    "openreview": {
+        "restApi": "http://localhost:9100/api.openreview.net",
+        "restUser": "openreviewUser",
+        "restPassword": "openreviewPassword"
+    },
     "services": {
     },
     "spider": {
-
     }
 }
