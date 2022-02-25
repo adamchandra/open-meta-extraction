@@ -29,35 +29,6 @@ function getEnv(key: EnvKey): string | undefined {
   return process.env[key];
 }
 
-function setEnv(key: EnvKey, value: string): void {
-  process.env[key] = value;
-}
-
-// export function initConfig() {
-//   const isLoaded = process.env['configInit'] != undefined;
-//   if (isLoaded) {
-//     return;
-//   }
-//   const runMode = getEnv('RunMode');
-//   const envFile = `.env-${runMode}`;
-//   const envResolved = path.resolve(envFile);
-//   if (fs.existsSync(envResolved)) {
-//     process.env['configFile'] = envResolved;
-//     const conf = dotenv.config({ path: envResolved });
-//     process.env['configState'] = 'loaded';
-//     if (conf.parsed !== undefined) {
-//       const parsed = conf.parsed;
-//       process.env['configState'] = 'parsed';
-//       parsed
-//     }
-//     if (conf.error) {
-//       process.env['configState'] = 'error';
-//       console.log(conf.error);
-//     }
-//   }
-//   process.env['configInit'] = 'okay';
-// }
-
 // Root directory for storing application data
 export function getAppSharedDir(): string {
   const appSharePath = getEnv('AppSharePath');

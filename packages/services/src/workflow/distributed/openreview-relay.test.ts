@@ -1,5 +1,5 @@
 import _ from 'lodash';
-import { prettyPrint } from '@watr/commonlib';
+import { initConfig, prettyPrint } from '@watr/commonlib';
 import { defineServiceHub } from '@watr/commlinks';
 import { runServiceHubAndSatellites } from './distributed-workflow';
 import { WorkflowConductor, FieldExtractor, RestService } from './workers';
@@ -7,12 +7,10 @@ import { SpiderService } from './spider-worker';
 import { startSpiderableTestServer } from '~/http-servers/rest-portal/mock-server';
 import fs from 'fs-extra';
 import { Server } from 'http';
-import { mockAlphaRecord } from '@watr/spider';
-import axios from 'axios';
-
+import { OpenReviewRelayService } from './openreview-relay';
 
 describe('End-to-end Distributed Extraction workflows', () => {
-  process.env['service-comm.loglevel'] = 'debug';
+  process.env['service-comm.loglevel'] = 'info';
   const workingDir = './test.scratch.d';
 
   let server: Server | undefined;
@@ -40,10 +38,10 @@ describe('End-to-end Distributed Extraction workflows', () => {
 
   it('should run end-to-end', async () => {
     const serviceChainWorkers = [
-      RestService,
       WorkflowConductor,
       SpiderService,
       FieldExtractor,
+      OpenReviewRelayService
     ];
     const orderedServices = serviceChainWorkers.map(w => w.name);
 
@@ -54,27 +52,7 @@ describe('End-to-end Distributed Extraction workflows', () => {
 
     await hubConnected();
 
-    const url = `http://localhost:9100/200~withFields`;
-    const alphaRec = mockAlphaRecord(1, url);
-
-    // const retval = await axios.post('http://localhost:3100/extractor/record.json',
-    //   alphaRec
-    // );
-    // prettyPrint({ data: retval.data });
-
-    const urlval = await axios.post(
-      'http://localhost:3100/extractor/url',
-      { url }
-    );
-
-    prettyPrint({ data: urlval.data });
-
-    // const returnData = retval.data;
-    // expect(returnData).toHaveProperty('fields');
-    // expect(returnData.fields.length > 0).toBe(true);
-
     await hubService.shutdownSatellites();
     await hubService.commLink.quit();
   });
-
 });

@@ -22,10 +22,6 @@ export type CustomHandlers<ClientT> = Record<string, CustomHandler<ClientT>>;
 type IfStr<S, A> = S extends string ? A : Partial<A>;
 type IfDefined<S, A> = S extends undefined ? Partial<A> : A;
 
-// type IfObj<S, A> = S extends object ? A : Partial<A>;
-// type IfStrObj<S, T, A> = IfStr<S, IfObj<T, A>>;
-// type IfStrObjStr<S, T, U, A> = IfStrObj<S, T, IfStr<U, A>>;
-
 type IfStrDef<S, T, A> = IfStr<S, IfDefined<T, A>>;
 type IfStrDefStr<S, T, U, A> = IfStrDef<S, T, IfStr<U, A>>;
 

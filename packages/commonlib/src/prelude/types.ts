@@ -43,6 +43,7 @@ export const AlphaRecord = {
 const URLRecordCodec = io.type({
   url: io.string,
 });
+
 export const URLRecord = {
   decode(input: unknown): URLRecord | string {
     const decoded = URLRecordCodec.decode(input);

@@ -1,0 +1,17 @@
+{
+    "db": {
+        "database": "open_extraction",
+        "username": "watrworker",
+        "password": ""
+    },
+    "openreview": {
+        "restApi": "https://api.openreview.net",
+        "restUser": "",
+        "restPassword": ""
+    },
+    "services": {
+    },
+    "spider": {
+
+    }
+}

@@ -1,8 +1,9 @@
 import _ from 'lodash';
 import Koa, { Context } from 'koa';
+import koaBody from 'koa-body';
 import Router from '@koa/router';
 import { Server } from 'http';
-import { delay, prettyPrint, stripMargin, getServiceLogger } from '@watr/commonlib';
+import { delay, prettyPrint, stripMargin, getServiceLogger, prettyFormat } from '@watr/commonlib';
 
 const withFields = stripMargin(`
 |<html>
@@ -56,39 +57,95 @@ const htmlSamples: Record<string, string> = {
   custom404: '<html><body>404 Not Found</body></html>'
 };
 
+const log = getServiceLogger('test-server');
+
+function openreviewRouter(): Router<Koa.DefaultState, Koa.DefaultContext> {
+  const router = new Router({
+    prefix: '/api.openreview.net'
+  });
+
+  async function postLogin(ctx: Context): Promise<void> {
+    const { user, password } = ctx.request.body;
+    log.info(`user: ${user}: password: ${password}`);
+    // interface Credentials {
+    ctx.response.body = {
+      token: 'mock-token',
+      user: { id: 29 }
+    };
+  }
+
+  async function getNotes(ctx: Context): Promise<void> {
+    const fmt = prettyFormat(ctx.request.query, { colors: false })
+    log.info(fmt);
+    ctx.response.body = {
+      notes: [],
+      count: 0
+    };
+  }
+
+  router.post('/login', koaBody(), postLogin);
+
+  router.get('/notes', getNotes);
+
+  return router;
+}
+
+function htmlRouter(): Router<Koa.DefaultState, Koa.DefaultContext> {
+  const router = new Router({
+    prefix: '/htmls'
+  });
+
+  // TODO regex not working here...
+  router.get('/', async (ctx: Context, next: () => Promise<any>) => {
+    const { response, path } = ctx;
+    prettyPrint({ testServer: path });
+    const [status, respKey, maybeTimeout] = path.slice(1).split(/~/);
+    const timeout = maybeTimeout ? Number.parseInt(maybeTimeout) : 0;
+    prettyPrint({ status, respKey, timeout });
+
+    response.type = 'html';
+    response.status = Number.parseInt(status, 10);
+    response.body = htmlSamples[respKey] || 'Unknown';
+    return delay(timeout)
+      .then(() => next());
+  });
+
+  return router;
+}
+
+function rootRouter(): Router<Koa.DefaultState, Koa.DefaultContext> {
+  const router = new Router({});
+
+  router.use('/', ((ctx: Context) => {
+    ctx.set('Access-Control-Allow-Origin', '*');
+  }));
+
+  return router;
+}
 
 export async function startSpiderableTestServer(): Promise<Server> {
-  const log = getServiceLogger('test-server');
   const app = new Koa();
-  const rootRouter = new Router();
 
   const port = 9100;
 
-  rootRouter
-    .use('/', ((ctx: Context, next) => {
-      ctx.set('Access-Control-Allow-Origin', '*');
-      return next();
-    }))
-    .get(
-      /\/.+/,
-      (ctx: Context, next: () => Promise<any>) => {
-        const { response, path } = ctx;
-        prettyPrint({ testServer: path });
-        const [status, respKey, maybeTimeout] = path.slice(1).split(/~/);
-        const timeout = maybeTimeout? Number.parseInt(maybeTimeout) : 0;
-        prettyPrint({ status, respKey, timeout });
+  const root = rootRouter();
+  app.use(root.routes());
+  app.use(root.allowedMethods());
 
-        response.type = 'html';
-        response.status = Number.parseInt(status, 10);
-        response.body = htmlSamples[respKey] || 'Unknown';
-        return delay(timeout)
-          .then(() => next());
-      });
+  app.use(async (ctx, next) => {
+    const auth = ctx.headers.authorization
+    log.info(`${ctx.method} ${ctx.path} auth: ${auth}`)
+    await next();
+    log.info(`END ${ctx.method} ${ctx.path} ${ctx.status}`)
+  });
 
-  app
-    .use(rootRouter.routes())
-    .use(rootRouter.allowedMethods())
-  ;
+  const orouter = openreviewRouter();
+  app.use(orouter.routes());
+  app.use(orouter.allowedMethods());
+
+  const hrouter = htmlRouter();
+  app.use(hrouter.routes());
+  app.use(hrouter.allowedMethods());
 
   return new Promise((resolve) => {
     const server = app.listen(port, () => {

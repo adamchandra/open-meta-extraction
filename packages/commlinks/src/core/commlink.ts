@@ -20,13 +20,16 @@ import {
   call,
   ToHeader,
   mergeMessages,
-  MessageHandlerFunc
+  MessageHandlerFunc,
+  CustomHandler
 } from './message-types';
 
 import { newRedisClient } from './ioredis-conn';
 
 const nextId = newIdGenerator(1);
 
+
+// export interface CommLink<ClientT, K extends keyof ClientT = FuncTypeKeys<ClientT>  > {
 export interface CommLink<ClientT> {
   name: string;
   client?: ClientT;
@@ -38,6 +41,7 @@ export interface CommLink<ClientT> {
   send(message: Message): Promise<void>;
 
   // Invoke a client installed function, either locally or on another node over the wire
+  // call<A, B>(f: string, a: A, to?: ToHeader): Promise<B>;
   call<A, B>(f: string, a: A, to?: ToHeader): Promise<B>;
   connect(client?: ClientT): Promise<void>;
   quit(): Promise<void>;
@@ -135,9 +139,12 @@ async function runMessageHandlers<ClientT>(
   commLink.messageHandlers = activeHandlers;
 }
 
-export function newCommLink<ClientT>(name: string, maybeClient?: ClientT): CommLink<ClientT> {
-  // const commClient = client !== undefined? client : {};
-  const commLink: CommLink<ClientT> = {
+export function newCommLink<ClientT>(
+  name: string,
+  maybeClient?: ClientT
+): CommLink<ClientT> {
+
+  const commLink: CommLink<ClientT>  = {
     name,
     client: maybeClient,
     subscriber: newRedisClient(name),
@@ -205,12 +212,6 @@ export function newCommLink<ClientT>(name: string, maybeClient?: ClientT): CommL
     },
 
     async connect(client?: ClientT): Promise<void> {
-      // if (this.client !== undefined) {
-      //   return;
-      // }
-      // if (this.client === undefined) {
-      //   return;
-      // }
       const self = this;
 
       self.client = client;

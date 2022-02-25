@@ -1,12 +1,42 @@
 import { prettyPrint } from '@watr/commonlib';
 import _ from 'lodash';
 import { awaitQuit, initCommLinks } from '~/util/service-test-utils';
-import { newCommLink, CommLink } from './commlink';
+import { newCommLink } from './commlink';
 import { ping, addHeaders, Message, cyield } from './message-types';
 
 describe('CommLink Communication', () => {
 
   process.env['service-comm.loglevel'] = 'info';
+
+  it('should compile', async (done) => {
+    interface MyClient {
+      func1(arg: any): void;
+      func2(arg: any): void;
+    }
+    const Client: MyClient = {
+      func1(arg: any): void {
+        const thisType = typeof this;
+        prettyPrint({ msg: 'called func1', arg, thisType });
+        return { ...arg, msg: 'func1' };
+      },
+      func2(arg: any): void {
+        prettyPrint({ msg: 'called func2', arg });
+        return { ...arg, msg: 'func2' };
+      }
+    };
+
+    const commLink = newCommLink<MyClient>('MyClient', Client);
+
+    // comm1.on()
+      // // don't compile!!
+    // const ret0 = await comm0.call('no-func1', { foo: 'bar' });
+    const ret0 = await commLink.call('func1', { foo: 'bar' });
+    prettyPrint({ ret0 });
+
+    // await awaitQuit([commLink])
+    done();
+  });
+
 
   it('should startup/quit', async () => {
     const commLink0 = newCommLink<undefined>('commlink0', undefined);
@@ -43,10 +73,12 @@ describe('CommLink Communication', () => {
         return { ...arg, msg: 'func2' };
       }
     };
-    const commLinks = await initCommLinks(2, () => Client)
+    const commLinks = await initCommLinks<typeof Client>(2, () => Client)
 
     const [comm0, comm1] = commLinks;
     // comm1.on()
+      // // don't compile!!
+    // const ret0 = await comm0.call('no-func1', { foo: 'bar' });
     const ret0 = await comm0.call('func1', { foo: 'bar' });
     prettyPrint({ ret0 });
 
