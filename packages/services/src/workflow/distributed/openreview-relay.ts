@@ -27,8 +27,9 @@ interface Credentials {
 }
 
 interface NoteContent {
-  'abstract': string;
-  html: string; // this is a URL
+  'abstract'?: string;
+  html?: string; // this is a URL
+  venueid: string;
 }
 interface Note {
   id: string;
@@ -38,6 +39,18 @@ interface Notes {
   notes: Note[];
   count: number;
 }
+
+interface NoteBatch {
+  notes: Note[];
+  initialOffset: number;
+  finalOffset: number;
+  availableNoteCount: number;
+  summary: Record<string, number>;
+  errors: string[];
+}
+
+type NumNumNum = [number, number, number];
+
 // interface QueryFields {
 //   invitation: 'dblp.org/-/record';
 //   sort: 'number:desc';
@@ -100,7 +113,6 @@ class OpenReviewRelay {
 
 
   async doUpdateNote(): Promise<void> {
-
   }
 
   async apiGET<R>(url: string, query: Record<string, string | number>, retries: number = 0): Promise<R | undefined> {
@@ -118,38 +130,180 @@ class OpenReviewRelay {
         if (retries > 1) {
           return undefined;
         }
-        return this.apiGET(url, query, retries+1);
+        return this.apiGET(url, query, retries + 1);
       });
   }
 
-  async doFetchNotes(): Promise<Notes> {
-    const offset = 0;
+  async doFetchNotes(offset: number): Promise<Notes> {
     return this.apiGET<Notes>('/notes', { invitation: 'dblp.org/-/record', sort: 'number:desc', offset })
   }
 
   async doRunRelay(): Promise<void> {
-    const { notes, count } = await this.doFetchNotes();
+    let offset = 0;
+    const batchSize = 1000;
+    const noteBatch = await this.createNoteBatch(offset, batchSize);
 
-    Async.eachOfSeries(notes, async (note: Note) => {
-      const abs = note.content['abstract'];
-      if (abs !== undefined) {
+    const { notes } = noteBatch;
+
+    const foundAbstracts: Note[] = [];
+    const allErrors: string[] = [];
+
+    const byHostSuccFailSkipCounts: Record<string, NumNumNum> = {};
+
+    await Async.eachOfSeries(notes, Async.asyncify(async (note: Note) => {
+      const [maybeAbs, errors] = await this.attemptExtractNote(note, byHostSuccFailSkipCounts);
+      allErrors.push(...errors);
+      if (maybeAbs===undefined) {
         return;
       }
-      const url = note.content['html'];
-      const arg = URLRequest(url);
-      const res: CanonicalFieldRecords | ErrorRecord = await this.commLink.call(
-        'runOneURLNoDB', arg, { to: WorkflowConductor.name }
-      );
-      if ('error' in res) {
+      foundAbstracts.push(note);
+    }));
 
-        return;
-      }
-      res.fields
-    })
+    prettyPrint({ byHostSuccFailSkipCounts, allErrors });
   }
 
+  async attemptExtractNote(note: Note, byHostSuccFailSkipCounts: Record<string, NumNumNum>): Promise<[string|undefined, string[]]> {
+    const errors: string[] = [];
 
+    const abs = note.content['abstract'];
+    const urlstr = note.content['html'];
+    const url = toUrl(urlstr);
+    if (typeof url === 'string') {
+      errors.push(url)
+      return [undefined, errors];
+    }
+    const [prevSucc, prevFail, prevSkip] = _.get(byHostSuccFailSkipCounts, url.hostname, [0, 0, 0] as const);
+    const arg = URLRequest(urlstr);
+
+    if (prevFail > 3) {
+      // don't keep processing failed domains
+      errors.push('Previous failure count > 3; skipping.')
+      byHostSuccFailSkipCounts[url.hostname] = [prevSucc, prevFail, prevSkip + 1];
+      return [undefined, errors];
+    }
+
+    const res: CanonicalFieldRecords | ErrorRecord = await this.commLink.call(
+      'runOneURLNoDB', arg, { to: WorkflowConductor.name }
+    );
+
+    if ('error' in res) {
+      errors.push(res.error);
+      byHostSuccFailSkipCounts[url.hostname] = [prevSucc, prevFail + 1, prevSkip];
+      return [undefined, errors];
+    }
+
+    const abstracts = res.fields.filter((rec, i) => {
+      rec.name === 'abstract'
+    });
+    const abstractsClipped = res.fields.filter((rec, i) => {
+      rec.name === 'abstract-clipped'
+    });
+
+    const hasAbstract = abstracts.length > 0 || abstractsClipped.length > 0;
+    if (!hasAbstract) {
+      byHostSuccFailSkipCounts[url.hostname] = [prevSucc, prevFail + 1, prevSkip];
+      return;
+    }
+
+    byHostSuccFailSkipCounts[url.hostname] = [prevSucc + 1, prevFail, prevSkip];
+    const abstrct = abstracts[0] || abstractsClipped[0];
+    // note.content.abstract = abstrct.value;
+    // foundAbstracts.push(note);
+
+    return [abstrct.value, errors];
+  }
+
+  async createNoteBatch(_offset: number, batchSize: number): Promise<NoteBatch> {
+    const log = this.commLink.log;
+    let offset = _offset;
+
+    const notesWithUrlNoAbs: Note[] = [];
+    const notesWithAbstracts: Note[] = [];
+    const notesWithoutUrls: Note[] = [];
+    log.info(`CreateNoteBatch: starting...`)
+    let availableNoteCount = 0;
+
+    await Async.doUntil(
+      Async.asyncify(async function(): Promise<number> {
+        try {
+          const nextNotes: Notes = await this.doFetchNotes(offset);
+
+          const { notes, count } = nextNotes;
+
+          log.info(`fetched ${notes.length} (of ${count}) notes.`)
+
+          availableNoteCount = count;
+          offset += notes.length;
+
+          notes.forEach(note => {
+            const { id, content } = note;
+            const abs = content.abstract;
+            const { html, venueid } = content;
+            if (html === undefined) {
+              notesWithoutUrls.push(note);
+              return;
+            }
+            if (abs === undefined) {
+              notesWithUrlNoAbs.push(note);
+              return;
+            }
+            notesWithAbstracts.push(note);
+          });
+          return notes.length;
+        } catch (error) {
+          return Promise.reject(error);
+        }
+      }),
+      Async.asyncify(async function test(fetchLength: number): Promise<boolean> {
+        log.info(`testing fetchLength = ${fetchLength}`)
+        const atBatchLimit = notesWithUrlNoAbs.length >= batchSize;
+        const doneFetching = fetchLength === 0;
+        return doneFetching || atBatchLimit;
+      })
+    );
+    const notesWithUrlNoAbsLen = notesWithUrlNoAbs.length;
+    const notesWithAbstractsLen = notesWithAbstracts.length;
+    const notesWithoutUrlsLen = notesWithoutUrls.length;
+
+    const noteCounts: Record<string, number> = {
+      notesWithUrlNoAbsLen,
+      notesWithAbstractsLen,
+      notesWithoutUrlsLen
+    };
+
+    const byHostCounts: Record<string, number> = {};
+
+    const errors: string[] = [];
+
+    notesWithUrlNoAbs.forEach(note => {
+      const html = note.content.html;
+      if (html === undefined) return;
+      const url = toUrl(html);
+      if (typeof url === 'string') {
+        errors.push(url);
+        return;
+      }
+      const { hostname } = url;
+      const prevCount = byHostCounts[hostname];
+      const newCount = prevCount === undefined ? 1 : prevCount + 1;
+      byHostCounts[hostname] = newCount;
+    });
+
+    const summary = _.merge(noteCounts, byHostCounts);
+
+    const noteBatch: NoteBatch = {
+      notes: notesWithUrlNoAbs,
+      initialOffset: _offset,
+      finalOffset: offset,
+      availableNoteCount,
+      summary,
+      errors
+    }
+
+    return noteBatch;
+  }
 }
+
 
 
 // Pull data from OpenReview into abstract finder and post the
@@ -177,6 +331,25 @@ export const OpenReviewRelayService = defineSatelliteService<OpenReviewRelay>(
   }
 });
 
+
+function toUrl(instr: unknown): URL | string {
+  if (typeof instr !== 'string') {
+    return 'toURL error: input must be string';
+  }
+  const str = instr.trim();
+  if (typeof str === 'string') {
+    if (instr.includes(' ')) {
+      return 'toURL error: input string has spaces';
+    }
+
+    try {
+      return new URL(str); // eslint-disable-line no-new
+    } catch (error) {
+      return `toURL error: new URL() threw ${error}`;
+    }
+  }
+
+}
 
 // # We use the Super User, but we are going to create a separate user just for this script
 // client = openreview.Client(baseurl = 'https://api.openreview.net', username = 'OpenReview.net', password = '')
@@ -225,5 +398,3 @@ export const OpenReviewRelayService = defineSatelliteService<OpenReviewRelay>(
 //                         r=client.post_note(note)
 //         else:
 //             print('Error', url, response)
-
-
