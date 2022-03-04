@@ -34,12 +34,13 @@ export class RestPortal {
     });
   }
   async close(): Promise<void> {
-    if (this.server === undefined) {
+    const server = this.server;
+    if (server === undefined) {
       return;
     }
     return new Promise((resolve) => {
-      this.server.on('close', () => resolve(undefined));
-      this.server.close();
+      server.on('close', () => resolve(undefined));
+      server.close();
     });
   }
   async setCommLink(commLink: SatelliteCommLink<RestPortal>): Promise<void> {

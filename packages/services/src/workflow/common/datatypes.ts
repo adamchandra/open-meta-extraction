@@ -1,5 +1,4 @@
 import { AlphaRecord } from "@watr/commonlib";
-import { boolean } from "fp-ts";
 
 export interface RecordRequest {
   kind: 'record-request';
@@ -31,22 +30,22 @@ export interface ErrorRecord {
 
 export const ErrorRecord = (error: string): ErrorRecord => ({ error });
 
-export function isUrl(instr: unknown): boolean {
+export function toUrl(instr: unknown): URL | string {
   if (typeof instr !== 'string') {
-    return false;
+    return 'toURL error: input must be string';
   }
   const str = instr.trim();
-  if (typeof str === 'string') {
-    if (instr.includes(' ')) {
-      return false;
-    }
-
-    try {
-      new URL(str); // eslint-disable-line no-new
-      return true;
-    } catch {
-      return false;
-    }
+  if (instr.includes(' ')) {
+    return 'toURL error: input string has spaces';
   }
 
+  try {
+    return new URL(str); // eslint-disable-line no-new
+  } catch (error) {
+    return `toURL error: new URL() threw ${error}`;
+  }
+}
+
+export function isUrl(instr: unknown): boolean {
+  return typeof toUrl(instr) !== 'string';
 }

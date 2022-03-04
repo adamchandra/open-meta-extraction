@@ -45,19 +45,6 @@ export interface ServiceHubDef {
   lifecycleHandlers: CustomHandlers<ServiceHub>;
 }
 
-// interface ServiceHubFunctions extends CustomHandlers<ServiceHub> {
-//   // addSatelliteServices(): Promise<void>;
-//   // shutdownSatellites(): Promise<void>;
-//   addSatelliteServices: CustomHandler<ServiceHub, void, void>;
-//   shutdownSatellites: CustomHandler<ServiceHub, void, void>;
-// }
-
-// interface ServiceHubMethods<Q extends object> extends CustomHandlers<Q> {
-//   addSatelliteServices(a: unknown, commLink: CommLink<Q>): Promise<void>;
-//   // addSatelliteServices(): Promise<void>;
-//   shutdownSatellites(): Promise<void>;
-// }
-
 export interface ServiceHub {
   name: string;
   commLink: CommLink<ServiceHub>;
@@ -87,18 +74,6 @@ export async function createServiceHub(
   hubDef: ServiceHubDef,
 ): Promise<[ServiceHub, () => Promise<void>]> {
   const { name, satelliteNames, callChainDefs } = hubDef;
-
-  // const methods: ServiceHubMethods = {
-  //   async addSatelliteServices(_a: unknown, commLink: CommLink<ServiceHubMethods>): Promise<void> {
-  //     await pingAndAwait(commLink, this.satelliteNames)
-  //     await callAndAwait(commLink, this.satelliteNames, 'networkReady');
-  //     await callAndForget(commLink, this.satelliteNames, 'startup');
-  //   },
-  //   async shutdownSatellites(): Promise<void> {
-  //     await callAndAwait(this.commLink, this.satelliteNames, 'shutdown');
-  //     return quitAndAwait(this.commLink, this.satelliteNames);
-  //   }
-  // };
 
   const hubService: ServiceHub = {
     name,
@@ -152,7 +127,6 @@ export async function createSatelliteService<T>(
 
       const lifecycleHandlers = {
         ...cargo,
-        // ...serviceDef.lifecycleHandlers,
         initCallChaining,
       }
 

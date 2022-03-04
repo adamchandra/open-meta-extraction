@@ -5,26 +5,6 @@ import { defineSatelliteService, createSatelliteService, SatelliteService, Servi
 import { newCommLink, CommLink } from '~/core/commlink';
 import { Message, AnyMessage, CustomHandlers, CustomHandler } from '~/core/message-types';
 
-// export async function createTestServices<ClientT>(clients: ClientT[]): Promise<Array<CommLink<ClientT>>> {
-//   const services = await Async.map<ClientT, CommLink<ClientT>, Error>(
-//     clients,
-//     async (client, i) => {
-//       const serviceName = `service-${i}`;
-//       const commLink = newCommLink<ClientT>(serviceName)
-//         .withClient(client);
-
-
-//       commLink.on(quit, async function(this: ClientT, _msg: Message, comm): Promise<void> {
-//         await comm.quit();
-//       });
-
-//       await commLink.connect();
-//       return commLink;
-//     });
-
-//   return services;
-// }
-
 interface LifecycleHandlers<T> {
   networkReady: CustomHandler<T, unknown, void>;
   startup: CustomHandler<T, unknown, void>;
@@ -49,11 +29,8 @@ export async function createTestServiceHub(
   const hubName = 'ServiceHub';
   const serviceNames = _.map(_.range(n), (i) => `service-${i}`);
 
-  const recordLogMsgHandler = (svcName: string) => async (msg: Message) => {
-    const packed = Message.pack(msg);
-
+  const recordLogMsgHandler = (_: string) => async (msg: Message) => {
     const { from, to, kind } = msg;
-    // const logmsg = `${svcName}: ${packed}`;
     const logmsg = `${from} -[${kind}]-> ${to}`;
     runLog.push(logmsg);
   };
