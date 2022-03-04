@@ -36,7 +36,10 @@ export function createBrowserPool(log: Logger): BrowserPool {
         const browserInstance: BrowserInstance = {
           browser,
           pid(): number {
-            return browser.process().pid;
+            const proc = browser.process();
+            if (proc === null) return -1;
+            const pid = proc.pid;
+            return pid === undefined ? -1 : pid;
           },
           logPrefix,
           createdAt: new Date(),
@@ -51,15 +54,18 @@ export function createBrowserPool(log: Logger): BrowserPool {
           }
         };
         logBrowserEvent(browserInstance, log);
-        browser.process().on('close', (_signum: number, signame: NodeJS.Signals) => {
-          log.warn(`Browser#${browserInstance.pid()} onClose: ${signame}`);
-        });
-        browser.process().on('error', (_signum: number, signame: NodeJS.Signals) => {
-          log.warn(`Browser#${browserInstance.pid()} onError: ${signame}`);
-        });
-        browser.process().on('exit', (_signum: number, signame: NodeJS.Signals) => {
-          log.warn(`Browser#${browserInstance.pid()} onExit: ${signame}`);
-        });
+        const bproc = browser.process();
+        if (bproc !== null) {
+          bproc.on('close', (_signum: number, signame: NodeJS.Signals) => {
+            log.warn(`Browser#${browserInstance.pid()} onClose: ${signame}`);
+          });
+          bproc.on('error', (_signum: number, signame: NodeJS.Signals) => {
+            log.warn(`Browser#${browserInstance.pid()} onError: ${signame}`);
+          });
+          bproc.on('exit', (_signum: number, signame: NodeJS.Signals) => {
+            log.warn(`Browser#${browserInstance.pid()} onExit: ${signame}`);
+          });
+        }
         return browserInstance;
       }).catch(error => {
         console.log(error);

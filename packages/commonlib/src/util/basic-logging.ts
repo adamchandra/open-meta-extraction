@@ -27,7 +27,7 @@ export function getLogEnvLevel(): string {
     case 'silly':
       return envLevel;
   }
-  return undefined;
+  return 'debug';
 }
 
 export function getServiceLogger(label: string): Logger {

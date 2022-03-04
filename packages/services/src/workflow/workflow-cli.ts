@@ -3,14 +3,16 @@ import { createSatelliteService, createServiceHub, defineServiceHub } from '@wat
 import { arglib } from '@watr/commonlib';
 import { SpiderService } from './distributed/spider-worker';
 import { FieldExtractor, RestService, WorkflowConductor } from './distributed/workers';
+import { OpenReviewRelayService } from './distributed/openreview-relay';
 const { opt, config, registerCmd } = arglib;
 
 export function registerCLICommands(yargv: arglib.YArgsT) {
   const availableServices = {
-    RestService,
+    // RestService,
     WorkflowConductor,
     SpiderService,
-    FieldExtractor
+    FieldExtractor,
+    OpenReviewRelayService
   };
   const orderedServices = _.keys(availableServices);
   const HubService = defineServiceHub('HubService', orderedServices, [], {});

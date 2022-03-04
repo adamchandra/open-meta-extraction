@@ -1,4 +1,5 @@
 import _ from 'lodash';
+// @ts-ignore
 import pumpify from 'pumpify';
 import { Stream, Readable } from 'stream';
 import { throughFunc, tapStream, filterStream, throughAccum, initEnv, WithEnv, unEnv, isWithEnv } from './stream-utils';

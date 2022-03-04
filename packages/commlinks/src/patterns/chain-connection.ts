@@ -30,20 +30,21 @@ export function initCallChaining<ClientT>(arg: CallChainingArgs, commLink: CommL
     return arg;
   }
   if (isLastService) {
-    arg.logs.push(`ok:${name}; #${i+1}/${orderedServices.length}; isLastService`);
+    arg.logs.push(`ok:${name}; #${i + 1}/${orderedServices.length}; isLastService`);
     return arg;
   }
 
   commLink.on(cyield(chainFunction), async (msg: Message) => {
     if (msg.kind !== 'cyield') return;
     const retVal = msg.result;
-    //TODO:  const r = await commLink.call(chainFunction, retVal, { to: nextService });
-    //TODO:  const output = { ...msg, result: r  };
-    //TODO:  prettyPrint({ hdr: 'callChaining.yield', messageIn: msg, fnRet: r, messageOut: output })
-    //TODO:  return output;
 
+    const r = await commLink.call(chainFunction, retVal, { id: msg.id, to: nextService });
+    const output = { ...msg, result: r  };
+    // prettyPrint({ hdr: 'callChaining.yield', messageIn: msg, fnRet: r, messageOut: output })
+    return output;
   });
-  arg.logs.push(`ok:${name}; #${i+1}/${orderedServices.length}`);
+
+  arg.logs.push(`ok:${name}; #${i + 1}/${orderedServices.length}`);
   return arg;
 }
 
@@ -55,10 +56,8 @@ export async function createCommChain<ClientT>(
 ): Promise<string[]> {
 
   const allLogs = await Promise.all(_.map(orderedServices, async (n) => {
-    // TODO :const res =  await localComm.call<CallChainingArgs, CallChainingArgs>('initCallChaining', callChainingArgs(chainFunction, orderedServices), { to: n });
-    // TODO :return res.logs;
-
-    return [];
+    const res = await localComm.call<CallChainingArgs, CallChainingArgs>('initCallChaining', callChainingArgs(chainFunction, orderedServices), { to: n });
+    return res.logs;
   }));
 
   return _.flatten(allLogs);

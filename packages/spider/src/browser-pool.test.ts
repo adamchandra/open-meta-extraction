@@ -80,9 +80,11 @@ describe('browser pooling', () => {
         logger.info(`httpResponseP error: ${error}`);
       });
 
-      const browserPid = browser.browser.process().pid;
-
-      process.kill(browserPid, 'SIGKILL');
+      const bproc = browser.browser.process();
+      const pid = bproc?.pid;
+      if (bproc !== null && pid !== undefined) {
+        process.kill(pid, 'SIGKILL');
+      }
 
       await browserPool.release(browser);
     }

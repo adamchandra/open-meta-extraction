@@ -1,65 +1,70 @@
 import _ from 'lodash';
+
 import Async from 'async';
 import { defineSatelliteService, createSatelliteService, SatelliteService, ServiceHub, createServiceHub, defineServiceHub } from '~/patterns/hub-connection';
 import { newCommLink, CommLink } from '~/core/commlink';
-import { Message, quit, AnyMessage } from '~/core/message-types';
+import { Message, AnyMessage, CustomHandlers, CustomHandler } from '~/core/message-types';
 
-export interface TestService<ClientT> {
-  commLink: CommLink<ClientT>;
+// export async function createTestServices<ClientT>(clients: ClientT[]): Promise<Array<CommLink<ClientT>>> {
+//   const services = await Async.map<ClientT, CommLink<ClientT>, Error>(
+//     clients,
+//     async (client, i) => {
+//       const serviceName = `service-${i}`;
+//       const commLink = newCommLink<ClientT>(serviceName)
+//         .withClient(client);
+
+
+//       commLink.on(quit, async function(this: ClientT, _msg: Message, comm): Promise<void> {
+//         await comm.quit();
+//       });
+
+//       await commLink.connect();
+//       return commLink;
+//     });
+
+//   return services;
+// }
+
+interface LifecycleHandlers<T> {
+  networkReady: CustomHandler<T, unknown, void>;
+  startup: CustomHandler<T, unknown, void>;
+  shutdown: CustomHandler<T, unknown, void>;
 }
 
-export async function createTestServices<ClientT>(clients: ClientT[]): Promise<Array<TestService<ClientT>>> {
-
-  const indexedClients = _.zip(clients, _.range(clients.length));
-  const services = await Async.map<[ClientT, number], TestService<ClientT>, Error>(
-    indexedClients,
-    async ([client, i]) => {
-      const serviceName = `service-${i}`;
-      const service: TestService<ClientT> = {
-        commLink: newCommLink(serviceName, client),
-      };
-
-      service.commLink.on(quit, async (_msg: Message) => {
-        await this.commLink.quit();
-      });
-
-      await service.commLink.connect();
-      return service;
-    });
-
-  return services;
+function lifeCycleHandlers<T>(): LifecycleHandlers<T> {
+  return {
+    async networkReady() {
+    },
+    async startup() {
+    },
+    async shutdown() {
+    }
+  }
 }
-
 
 export async function createTestServiceHub(
   n: number,
   runLog: string[]
-): Promise<[ServiceHub, () => Promise<void>, Array<SatelliteService<void>>]> {
+): Promise<[ServiceHub, () => Promise<void>, Array<SatelliteService<LifecycleHandlers<void>>>]> {
   const hubName = 'ServiceHub';
   const serviceNames = _.map(_.range(n), (i) => `service-${i}`);
 
   const recordLogMsgHandler = (svcName: string) => async (msg: Message) => {
     const packed = Message.pack(msg);
-    const logmsg = `${svcName}: ${packed}`;
+
+    const { from, to, kind } = msg;
+    // const logmsg = `${svcName}: ${packed}`;
+    const logmsg = `${from} -[${kind}]-> ${to}`;
     runLog.push(logmsg);
   };
 
-  const satelliteServices = await Async.map<string, SatelliteService<void>, Error>(
+  const satelliteServices = await Async.map<string, SatelliteService<LifecycleHandlers<void>>, Error>(
     serviceNames,
     async (serviceName: string) => {
-      const serviceDef = defineSatelliteService<void>(
+      const serviceDef = defineSatelliteService<LifecycleHandlers<void>>(
         serviceName,
-        async () => { }, {
-        async run() {
-          this.log.info(`${this.serviceName} [run]> payload=??? `);
-        },
-        async networkReady() {
-        },
-        async startup() {
-        },
-        async shutdown() {
-        },
-      });
+        async () => { return lifeCycleHandlers() },
+      );
 
       const satService = await createSatelliteService(hubName, serviceDef);
 
@@ -69,7 +74,7 @@ export async function createTestServiceHub(
       return satService;
     });
 
-  const hubService = defineServiceHub(hubName, serviceNames, []);
+  const hubService = defineServiceHub(hubName, serviceNames, [], {});
 
   const [hubPool, connectHub] = await createServiceHub(hubService);
 
@@ -93,9 +98,13 @@ export function assertAllStringsIncluded(expectedStrings: string[], actualString
   return atLeastOneMatchPerRegexp;
 }
 
-export async function initCommLinks<ClientT>(n: number, clientN: (i: number) => ClientT): Promise<CommLink<ClientT>[]> {
+export async function initCommLinks<ClientT extends CustomHandlers<ClientT>>(n: number, clientN: (i: number) => ClientT): Promise<CommLink<ClientT>[]> {
   const commNames = _.map(_.range(n), (i) => `commLink-${i}`);
-  const commLinks = _.map(commNames, (name, i) => newCommLink(name, clientN(i)));
+  const commLinks = _.map(
+    commNames, (name, i) => {
+      return newCommLink<ClientT>(name).withMethods(clientN(i))
+    });
+
   return await Promise.all(_.map(commLinks, async (commLink) => {
     return commLink.connect().then(() => commLink);
   }));

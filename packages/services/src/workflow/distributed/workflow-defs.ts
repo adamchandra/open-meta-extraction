@@ -5,16 +5,18 @@ export type WorkflowServiceName = keyof {
   RestService: null,
   HubService: null,
   WorkflowConductor: null,
-  Spider: null,
+  SpiderService: null,
   FieldExtractor: null,
+  OpenReviewRelayService: null
 }
 
 export const WorkflowServiceNames: WorkflowServiceName[] = [
   'RestService',
   'HubService',
   'WorkflowConductor',
-  'Spider',
+  'SpiderService',
   'FieldExtractor',
+  'OpenReviewRelayService'
 ];
 
 export interface RequestOneRecWorkflow {

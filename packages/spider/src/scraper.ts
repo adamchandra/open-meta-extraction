@@ -1,7 +1,7 @@
 import _ from 'lodash';
 import * as E from 'fp-ts/Either';
 
-import { writeCorpusJsonFile, writeCorpusTextFile, hasCorpusFile, putStrLn, getServiceLogger } from '@watr/commonlib';
+import { writeCorpusJsonFile, writeCorpusTextFile, hasCorpusFile, getServiceLogger } from '@watr/commonlib';
 
 import {
   HTTPResponse,
@@ -59,7 +59,7 @@ async function scrapeUrl(
 
   if (hasUrlFetchData) {
     rootLogger.warn(`skipping ${url}: metadata file exists`);
-    return;
+    return E.left(`skipping ${url}: metadata file exists`);
   }
   const { page }  = await browserInstance.newPage();
   try {
@@ -88,7 +88,7 @@ async function scrapeUrl(
 
     if (!response) {
       rootLogger.warn(`no response ${url}`);
-      return;
+      return E.left(`no response scraping ${url}`);
     }
 
     rootLogger.info('successful navigation to page');

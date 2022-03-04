@@ -13,6 +13,7 @@ export const Env = {
 export function initConfig(): typeof nconf {
   const envMode = getEnv('NODE_ENV');
   const envFile = `config-${envMode}.json`;
+  console.log(`initConfig(file=conf/${envFile})`)
 
   nconf.file({ file: envFile, dir: 'conf', search: true });
 

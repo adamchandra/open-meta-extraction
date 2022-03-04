@@ -1,29 +1,30 @@
+import { WorkflowServiceName } from "~/workflow/distributed/workflow-defs";
+
+function appDef(name: string): Record<string, any> {
+  return {
+    name,
+    script: "./dist/src/cli/index.js",
+    args: `start-service --service-name=${name}`,
+    env_development: {
+      NODE_ENV: "development"
+    },
+    env_production: {
+      NODE_ENV: "production"
+    }
+  };
+}
+
+export const appNames: WorkflowServiceName[] = [
+  // 'RestService',
+  'HubService',
+  'WorkflowConductor',
+  'SpiderService',
+  'FieldExtractor',
+  'OpenReviewRelayService'
+];
+
+const apps = appNames.map(name => appDef(name));
+
 module.exports = {
-  apps: [
-    {
-      name: "RestService",
-      script: "./dist/src/cli/index.js",
-      args: "start-service --service-name=RestService"
-    },
-    {
-      name: "WorkflowConductor",
-      script: "./dist/src/cli/index.js",
-      args: "start-service --service-name=WorkflowConductor"
-    },
-    {
-      name: "SpiderService",
-      script: "./dist/src/cli/index.js",
-      args: "start-service --service-name=SpiderService"
-    },
-    {
-      name: "FieldExtractor",
-      script: "./dist/src/cli/index.js",
-      args: "start-service --service-name=FieldExtractor"
-    },
-    {
-      name: "HubService",
-      script: "./dist/src/cli/index.js",
-      args: "start-service --service-name=HubService"
-    },
-  ]
+  apps
 };

@@ -123,7 +123,8 @@ const tidyHtmlTask: (filename: string) => TE.TaskEither<string, string[]> = (fil
         return E.right<string, string[]>(stdout);
       }
       const errString = _.find(stderr, l => l.trim().length > 0);
-      return E.left<string, string[]>(errString);
+      const err = errString !== undefined? errString : 'unknown error';
+      return E.left<string, string[]>(err);
     });
   return tidyOutputTask;
 };
@@ -559,6 +560,7 @@ export async function initExtractionEnv(
   sharedEnv: ExtractionSharedEnv,
 ): Promise<ExtractionEnv> {
   const { log, browserPool, urlFetchData  } = sharedEnv;
+  if (urlFetchData === undefined) throw new Error('error state: urlFetchData is undefined');
 
   const pathPrefix = path.basename(entryPath).slice(0, 6);
   const logPrefix = [pathPrefix];

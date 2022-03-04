@@ -146,7 +146,7 @@ export async function runFieldExtractor(
 
   const browserPages = _.map(_.toPairs(browserPageCache), ([, p]) => p);
 
-  await Async.each(browserPages, Async.asyncify(async (page) => page.close()));
+  await Async.each(browserPages, Async.asyncify(async (page: Page) => page.close()));
 
   await browserPool.release(browserInstance);
 
@@ -178,6 +178,7 @@ export async function runMainExtractFields(
       return pathRE.test(entryPath);
     })
     .initEnv<ExtractionSharedEnv>((entryPath) => {
+      if (entryPath === undefined) throw new Error('invalid state: entryPath is undefined');
       setLogLabel(log, entryPath);
       const urlFetchData = readUrlFetchData(entryPath);
       const browserPool = createBrowserPool(log);
@@ -307,6 +308,7 @@ export function getCanonicalFieldRecord(
 }
 
 import { arglib } from '@watr/commonlib';
+import { Page } from 'puppeteer';
 
 const { opt, config, registerCmd } = arglib;
 

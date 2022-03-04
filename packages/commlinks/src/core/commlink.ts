@@ -1,4 +1,4 @@
-import _ from 'lodash';
+import _, { keyBy } from 'lodash';
 import Redis from 'ioredis';
 import winston from 'winston';
 import { getServiceLogger, newIdGenerator, prettyFormat } from '@watr/commonlib';
@@ -10,26 +10,27 @@ import {
   MessageHandler,
   MessageHandlerDef,
   creturn,
-  cyield,
   matchMessageToQuery,
   MessageQuery,
   addHeaders,
   ping,
   ack,
   quit,
-  call,
-  ToHeader,
   mergeMessages,
   MessageHandlerFunc,
+  myield,
+  mreturn,
+  mcall,
+  Body,
+  Headers,
+  CYield,
   CustomHandler
 } from './message-types';
 
 import { newRedisClient } from './ioredis-conn';
 
-const nextId = newIdGenerator(1);
+export const nextMessageId = newIdGenerator(1);
 
-
-// export interface CommLink<ClientT, K extends keyof ClientT = FuncTypeKeys<ClientT>  > {
 export interface CommLink<ClientT> {
   name: string;
   client?: ClientT;
@@ -38,18 +39,20 @@ export interface CommLink<ClientT> {
   // Handle a builtin message
   on(m: MessageQuery, h: MessageHandlerFunc<ClientT, Message>): void;
   once(m: MessageQuery, h: MessageHandlerFunc<ClientT, Message>): void;
-  send(message: Message): Promise<void>;
+  send(message: Body & Partial<Headers>): Promise<void>;
 
   // Invoke a client installed function, either locally or on another node over the wire
-  // call<A, B>(f: string, a: A, to?: ToHeader): Promise<B>;
-  call<A, B>(f: string, a: A, to?: ToHeader): Promise<B>;
-  connect(client?: ClientT): Promise<void>;
+  call<A, B>(f: string, a: A, hdrs?: Partial<Headers>): Promise<B>;
   quit(): Promise<void>;
+
+  withMethods(handlers: ClientT): CommLink<ClientT>;
+  connect(): Promise<void>;
 
   // Internal use:
   _install(m: MessageQuery, h: MessageHandlerFunc<ClientT, Message>, once: boolean): void;
   subscriber: Redis.Redis;
   messageHandlers: MessageHandlerDef<ClientT>[];
+  methodHandlers: Partial<ClientT>;
   isShutdown: boolean;
 }
 
@@ -57,7 +60,7 @@ async function runMessageHandlers<ClientT>(
   message: Message,
   packedMsg: string,
   commLink: CommLink<ClientT>,
-  client: ClientT
+  client: Partial<ClientT>,
 ): Promise<void> {
 
   commLink.log.silly(`finding message handlers for ${packedMsg}`);
@@ -75,24 +78,21 @@ async function runMessageHandlers<ClientT>(
     case 'call': {
       const { func, arg, id, from } = message;
       commLink.log.verbose(`Call Attempt ${commLink.name}.${func}(${prettyFormat(arg)})`)
-      if (client === undefined) {
-        // TODO control whether non-existent client funcs trigger warning/error
-        commLink.log.verbose(`Undefined Client: ${commLink.name}.${func}(...)`)
-        break
-      }
-      if (client[func] === undefined) {
+
+      const maybeCallback = _.get(client, func);
+
+      if (maybeCallback === undefined) {
         const keys = _.keys(client);
         const kstr = keys.join(', ');
         // TODO control whether non-existent client funcs trigger warning/error
         commLink.log.verbose(`Undefined Func ${commLink.name}.${func}(...); keys are ${kstr}`);
         break
       }
-      const maybeCallback = client[func];
       if (typeof maybeCallback === 'function') {
         commLink.log.verbose(`Calling ${commLink.name}.${func}(...)`)
         const cb = _.bind(maybeCallback, client);
         const newA = await Promise.resolve(cb(arg, commLink));
-        const yieldMsg = cyield(func, newA, from);
+        const yieldMsg: CYield = myield(func, newA, from);
         // prettyPrint({ hdr: 'call()', ret: newA, yieldMsg })
         await commLink.send(Message.address(yieldMsg, { id, to: commLink.name }));
       }
@@ -116,7 +116,7 @@ async function runMessageHandlers<ClientT>(
           currMsg = maybeNewValue
         }
       });
-      const returnMsg = Message.address(creturn(func, currMsg.result), { id, from: commLink.name, to: callFrom });
+      const returnMsg = Message.address(mreturn(func, currMsg.result), { id, to: callFrom });
       await commLink.send(returnMsg);
       break;
     }
@@ -140,27 +140,32 @@ async function runMessageHandlers<ClientT>(
 }
 
 export function newCommLink<ClientT>(
-  name: string,
-  maybeClient?: ClientT
+  name: string
 ): CommLink<ClientT> {
 
-  const commLink: CommLink<ClientT>  = {
+  const commLink: CommLink<ClientT> = {
     name,
-    client: maybeClient,
+    // client,
     subscriber: newRedisClient(name),
     isShutdown: false,
     log: getServiceLogger(`${name}/comm`),
     messageHandlers: [],
+    methodHandlers: {},
 
-    async call<A, B>(f: string, a: A, toHdr?: ToHeader): Promise<B> {
-      const id = nextId();
-      const to = toHdr !== undefined ? toHdr.to : name;
+    async call<A, B>(f: string, a: A, hdrs: Partial<Headers> = {}): Promise<B> {
+      const self = this;
+
+      const to = hdrs.to !== undefined ? hdrs.to : name;
+      const from = name;
+      const id = hdrs.id !== undefined ? hdrs.id : nextMessageId();
       // call remote function
-      const callMessage = Message.address(call(f, a), { to, id });
+      const callMessage = Message.address(mcall(f, a), { to, from, id });
+
       const expectedReturn = mergeMessages(creturn(f), { id });
       const returnP = new Promise<B>((resolve, reject) => {
+        // prettyPrint({ m: 'calling', callMessage, expectedReturn })
         // TODO make .on() => .once()
-        this.on(expectedReturn, (msg: Message) => {
+        self.once(expectedReturn, async (msg: Message) => {
           if (msg.kind !== 'creturn') {
             reject(new Error('unexpected message type'));
             return;
@@ -173,17 +178,42 @@ export function newCommLink<ClientT>(
       return returnP;
     },
 
-    async send(msg: Message): Promise<void> {
-      const addr = Message.address(
-        msg, { from: name }
-      );
-      const packedMsg = Message.pack(addr);
+    async connect(): Promise<void> {
+      const self = this;
+
+      return new Promise((resolve, reject) => {
+        self.subscriber.on('message', (channel: string, packedMsg: string) => {
+          self.log.verbose(`${name} received> ${packedMsg} on ${channel}`);
+          const message = Message.unpack(packedMsg);
+          runMessageHandlers<ClientT>(message, packedMsg, commLink, self.methodHandlers);
+        });
+
+        self.subscriber.subscribe(`${name}`)
+          .then(() => self.log.verbose(`${name}> connected`))
+          .then(() => resolve())
+          .catch((error: any) => {
+            const msg = `subscribe> ${error}`;
+            reject(new Error(msg));
+          });
+      });
+    },
+
+    withMethods(handlers: ClientT): CommLink<ClientT> {
+      this.methodHandlers = handlers;
+      return this;
+    },
+
+    async send(msg: Body & Partial<Headers>): Promise<void> {
+      const from = name;
+      const to = msg.to !== undefined ? msg.to : name;
+      const id = msg.id !== undefined && msg.id > 0 ? msg.id : nextMessageId();
+      const finalMsg = _.merge({}, msg, { from, to, id });
+      const packedMsg = Message.pack(finalMsg);
 
       if (this.isShutdown) {
         this.log.warn(`${name}> shutdown; not sending message ${packedMsg}`);
         return;
       }
-      const { to } = msg;
 
       const publisher = this.subscriber.duplicate();
       await publisher.publish(to, packedMsg);
@@ -209,28 +239,6 @@ export function newCommLink<ClientT>(
         }
       });
       this.messageHandlers.push([m, mh]);
-    },
-
-    async connect(client?: ClientT): Promise<void> {
-      const self = this;
-
-      self.client = client;
-
-      return new Promise((resolve, reject) => {
-        self.subscriber.on('message', (channel: string, packedMsg: string) => {
-          self.log.verbose(`${name} received> ${packedMsg} on ${channel}`);
-          const message = Message.unpack(packedMsg);
-          runMessageHandlers<ClientT>(message, packedMsg, commLink, self.client);
-        });
-
-        self.subscriber.subscribe(`${name}`)
-          .then(() => self.log.verbose(`${name}> connected`))
-          .then(() => resolve())
-          .catch((error: any) => {
-            const msg = `subscribe> ${error}`;
-            reject(new Error(msg));
-          });
-      });
     },
 
     async quit(): Promise<void> {
