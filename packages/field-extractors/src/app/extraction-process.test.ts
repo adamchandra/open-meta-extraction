@@ -37,7 +37,7 @@ describe('Field Extraction Pipeline', () => {
     const logfilePath = testScratchDir;
     const log = getConsoleAndFileLogger(logfilePath, logLevel);
     const browserPool = createBrowserPool(log);
-    await Async.mapSeries(examples, Async.asyncify(async example => {
+    await Async.mapSeries(examples, Async.asyncify(async (example: string) => {
       const entryPath = path.join(testScratchDir, 'spidered-corpus', example);
       const urlFetchData = readUrlFetchData(entryPath);
       expect(urlFetchData).toBeDefined();

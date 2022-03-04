@@ -9,15 +9,21 @@ import {
 describe('Service Communication Hub lifecycle', () => {
   process.env['service-comm.loglevel'] = 'info';
 
-  it('should startup, link, and shutdown service hub with satellites', async (done) => {
+  it('should startup, link, and shutdown service hub with satellites', async () => {
     const logMessages: string[] = [];
-    const numServices = 3;
-    const expectedMessages = _.flatMap(_.range(numServices), svcNum => {
+    const numServices = 2;
+    const expectedMessages = _.flatMap(_.range(numServices), n => {
       return [
-        `service-${svcNum}: {"kind":"ping","from":"ServiceHub","to":"service-${svcNum}"}`,
-        `ServiceHub: {"kind":"ack","subk":"ping","from":"service-${svcNum}","to":"ServiceHub"}`,
-        `service-${svcNum}: {"kind":"quit","from":"ServiceHub","to":"service-${svcNum}"}`,
-        `ServiceHub: {"kind":"ack","subk":"quit","from":"service-${svcNum}","to":"ServiceHub"}`,
+        `ServiceHub -[ping]-> service-${n}`,
+        `service-${n} -[ack]-> ServiceHub`,
+        `service-${n} -[cyield]-> service-${n}`,
+        `service-${n} -[creturn]-> ServiceHub`,
+        `service-${n} -[cyield]-> service-${n}`,
+        `service-${n} -[creturn]-> ServiceHub`,
+        `service-${n} -[cyield]-> service-${n}`,
+        `service-${n} -[creturn]-> ServiceHub`,
+        `ServiceHub -[quit]-> service-${n}`,
+        `service-${n} -[ack]-> ServiceHub`,
       ];
     });
 
@@ -31,6 +37,5 @@ describe('Service Communication Hub lifecycle', () => {
     // prettyPrint({ expectedMessages, logMessages })
     const receivedAllExpectedMessages = assertAllStringsIncluded(expectedMessages, logMessages);
     expect(receivedAllExpectedMessages).toBe(true);
-    done();
   });
 });

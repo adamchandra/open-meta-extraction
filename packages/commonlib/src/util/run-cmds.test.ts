@@ -24,7 +24,12 @@ describe('run command-line utils', () => {
     await completePromise;
 
     const lines4 = lines.slice(0, 4);
-    const padLeftLens = _.map(lines4, l => l.match(/^[ ]*/g)[0].length);
+
+    const padLeftLens = _.map(lines4, l => {
+      const m = l.match(/^[ ]*/g);
+      if (m === null) return -1;
+      return m[0].length;
+    });
     // console.log({ lines4  })
     expect(padLeftLens).toStrictEqual([0, 0, 4, 8]);
   });
@@ -42,7 +47,11 @@ describe('run command-line utils', () => {
     const [,out,] = await runTidyCmdBuffered(htmlFile);
 
     const lines4 = out.slice(0, 4);
-    const padLeftLens = _.map(lines4, l => l.match(/^[ ]*/g)[0].length);
+    const padLeftLens = _.map(lines4, l => {
+      const m = l.match(/^[ ]*/g);
+      if (m === null) return -1;
+      return m[0].length;
+    });
     expect(padLeftLens).toStrictEqual([0, 0, 4, 8]);
   });
 

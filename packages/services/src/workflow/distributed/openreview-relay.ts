@@ -1,7 +1,11 @@
 import _ from 'lodash';
 
-import axios from 'axios';
 import Async from 'async';
+
+import axios from 'axios';
+import { AxiosError } from 'axios';
+type ErrorTypes = AxiosError | unknown;
+
 
 import {
   AxiosRequestConfig,
@@ -15,7 +19,8 @@ import {
 import { ErrorRecord, URLRequest } from '../common/datatypes';
 import { CanonicalFieldRecords } from '@watr/field-extractors';
 import { WorkflowConductor } from './workers';
-import { initConfig, prettyPrint } from '@watr/commonlib';
+import { initConfig, prettyFormat, prettyPrint } from '@watr/commonlib';
+
 
 interface User {
   id: string;
@@ -100,6 +105,10 @@ class OpenReviewRelay {
     }
     const user = config.get('openreview:restUser');
     const password = config.get('openreview:restPassword');
+    this.commLink.log.info(`User/Password: ${user} ${password}`)
+    if (user === undefined || password === undefined) {
+      return Promise.reject(new Error(`Openreview API: user or password not defined`))
+    }
     const creds = await this.postLogin(user, password);
     this.credentials = creds;
     return creds;
@@ -107,8 +116,9 @@ class OpenReviewRelay {
 
   async postLogin(user: string, password: string): Promise<Credentials> {
     return this.configAxios()
-      .post("/login", { user, password })
-      .then(r => r.data);
+      .post("/login", { id: user, password })
+      .then(r => r.data)
+      .catch(displayRestError)
   }
 
 
@@ -120,11 +130,10 @@ class OpenReviewRelay {
       .get(url, { params: query })
       .then(response => {
         const { data } = response;
-        prettyPrint({ data })
         return data;
       })
       .catch(error => {
-        prettyPrint({ msg: 'error!', errorType: typeof Error })
+        displayRestError(error);
         this.credentials = undefined;
         this.commLink.log.warn(`apiGET ${url}: retries=${retries} `)
         if (retries > 1) {
@@ -139,6 +148,7 @@ class OpenReviewRelay {
   }
 
   async doRunRelay(): Promise<void> {
+    this.commLink.log.info('relay.doRunRelay()');
     let offset = 0;
     const batchSize = 1000;
     const noteBatch = await this.createNoteBatch(offset, batchSize);
@@ -151,6 +161,7 @@ class OpenReviewRelay {
     const byHostSuccFailSkipCounts: Record<string, NumNumNum> = {};
 
     await Async.eachOfSeries(notes, Async.asyncify(async (note: Note) => {
+      this.commLink.log.info('doRunRelay/attemptExtractNote');
       const [maybeAbs, errors] = await this.attemptExtractNote(note, byHostSuccFailSkipCounts);
       allErrors.push(...errors);
       if (maybeAbs===undefined) {
@@ -160,9 +171,11 @@ class OpenReviewRelay {
     }));
 
     prettyPrint({ byHostSuccFailSkipCounts, allErrors });
+    this.commLink.log.info('DONE: relay.doRunRelay()');
   }
 
   async attemptExtractNote(note: Note, byHostSuccFailSkipCounts: Record<string, NumNumNum>): Promise<[string|undefined, string[]]> {
+    this.commLink.log.debug(`attemptExtractNote(${note.id})`);
     const errors: string[] = [];
 
     const abs = note.content['abstract'];
@@ -182,9 +195,13 @@ class OpenReviewRelay {
       return [undefined, errors];
     }
 
+    this.commLink.log.debug(`attemptExtractNote: runOneURLNoDB()`);
     const res: CanonicalFieldRecords | ErrorRecord = await this.commLink.call(
       'runOneURLNoDB', arg, { to: WorkflowConductor.name }
     );
+
+    const pfres = prettyFormat(res)
+    this.commLink.log.debug(`runOneURLNoDB() => ${pfres}`);
 
     if ('error' in res) {
       errors.push(res.error);
@@ -192,6 +209,7 @@ class OpenReviewRelay {
       return [undefined, errors];
     }
 
+    this.commLink.log.debug(`attemptExtractNote().1`);
     const abstracts = res.fields.filter((rec, i) => {
       rec.name === 'abstract'
     });
@@ -199,23 +217,27 @@ class OpenReviewRelay {
       rec.name === 'abstract-clipped'
     });
 
+    this.commLink.log.debug(`attemptExtractNote().2`);
     const hasAbstract = abstracts.length > 0 || abstractsClipped.length > 0;
     if (!hasAbstract) {
+      errors.push('no abstract found');
       byHostSuccFailSkipCounts[url.hostname] = [prevSucc, prevFail + 1, prevSkip];
-      return;
+      // return [undefined, errors];
+      return ;
     }
 
+    this.commLink.log.debug(`attemptExtractNote().3`);
     byHostSuccFailSkipCounts[url.hostname] = [prevSucc + 1, prevFail, prevSkip];
     const abstrct = abstracts[0] || abstractsClipped[0];
-    // note.content.abstract = abstrct.value;
-    // foundAbstracts.push(note);
 
+    this.commLink.log.debug(`attemptExtractNote().4`);
     return [abstrct.value, errors];
   }
 
   async createNoteBatch(_offset: number, batchSize: number): Promise<NoteBatch> {
     const log = this.commLink.log;
     let offset = _offset;
+    const self = this;
 
     const notesWithUrlNoAbs: Note[] = [];
     const notesWithAbstracts: Note[] = [];
@@ -226,7 +248,7 @@ class OpenReviewRelay {
     await Async.doUntil(
       Async.asyncify(async function(): Promise<number> {
         try {
-          const nextNotes: Notes = await this.doFetchNotes(offset);
+          const nextNotes: Notes = await self.doFetchNotes(offset);
 
           const { notes, count } = nextNotes;
 
@@ -317,10 +339,11 @@ export const OpenReviewRelayService = defineSatelliteService<OpenReviewRelay>(
     await this.cargo
       .getCredentials()
       .catch(error => {
-        this.log.warn(`Error: ${error}`);
+        this.log.error(`Error: ${error}`);
       });
   },
   async startup() {
+    this.commLink.log.info('relay startup');
     await this.cargo
       .doRunRelay()
       .catch(error => {
@@ -349,6 +372,25 @@ function toUrl(instr: unknown): URL | string {
     }
   }
 
+}
+
+function isAxiosError(error: unknown): error is AxiosError {
+  return error['isAxiosError'] !== undefined && error['isAxiosError'];
+}
+
+function displayRestError(error: ErrorTypes): void {
+  if (isAxiosError(error)) {
+    console.log('HTTP Request Error: ');
+    const { response } = error;
+    if (response !== undefined) {
+      const { status, statusText, data } = response;
+      console.log(`Error: ${status}/${statusText}`);
+      console.log(data);
+    }
+    return;
+  }
+
+  console.log(error);
 }
 
 // # We use the Super User, but we are going to create a separate user just for this script

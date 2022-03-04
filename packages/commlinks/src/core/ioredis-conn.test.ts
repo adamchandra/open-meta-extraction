@@ -19,29 +19,34 @@ describe('IORedis library tests and examples', () => {
     return rclient.quit();
   });
 
-  it('should do pub/sub', async (done) => {
+  it('should do pub/sub', (done) => {
     const rclient = new Redis();
     const subClient = new Redis();
 
-    await subClient.subscribe('topic.foo');
-    await subClient.subscribe('exit');
 
-    subClient.on('message', (channel, message) => {
-      if (channel === 'exit') {
-        expect(message).toEqual('quit');
-      }
-      if (channel === 'topic.foo') {
-        expect(message).toEqual('foo.msg');
-      }
-      if (channel === 'exit' && message === 'quit') {
-        rclient.quit()
-          .then(() => subClient.quit())
-          .then(() => done());
-      }
-    });
+    const go = async () => {
 
-    await rclient.publish('topic.foo', 'foo.msg');
-    rclient.publish('exit', 'quit');
+      await subClient.subscribe('topic.foo');
+      await subClient.subscribe('exit');
+
+      subClient.on('message', (channel, message) => {
+        if (channel === 'exit') {
+          expect(message).toEqual('quit');
+        }
+        if (channel === 'topic.foo') {
+          expect(message).toEqual('foo.msg');
+        }
+        if (channel === 'exit' && message === 'quit') {
+          rclient.quit()
+            .then(() => subClient.quit())
+            .then(() => done());
+        }
+      });
+
+      await rclient.publish('topic.foo', 'foo.msg');
+      rclient.publish('exit', 'quit');
+    }
+    go();
   });
 
 });

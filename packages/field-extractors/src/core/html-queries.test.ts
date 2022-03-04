@@ -6,6 +6,7 @@ import Async from 'async';
 import { createBrowserPool } from '@watr/spider';
 import { selectElementAttr, queryOne, queryAll, expandCaseVariations, Elem } from './html-queries';
 import { createLogger, transports, format } from 'winston';
+import { TypeOfExpression } from 'typescript';
 
 const tmpHtml = stripMargin(`
 |<html>
@@ -67,7 +68,7 @@ describe('HTML jquery-like css queries', () => {
   });
 
   it('smokescreen', async () => {
-    await browserPool.use(async ( browser ) => {
+    await browserPool.use(async (browser) => {
       const attr0 = await selectElementAttr(browser, tmpHtml, 'meta[name=citation_title]', 'content');
       const attr1 = await selectElementAttr(browser, tmpHtml, 'meta[name=citation_title]', 'content_');
       const attr2 = await selectElementAttr(browser, tmpHtml, 'meta[name=empty]', 'content');
@@ -77,9 +78,10 @@ describe('HTML jquery-like css queries', () => {
     });
   });
 
+  type ExampleType = [string, RegExp];
 
   it('should run assorted css queries', async () => {
-    const examples: [string, RegExp][] = [
+    const examples: ExampleType[] = [
       ['div#abstracts > div.abstract > div', /success1/],
       ['div#abstracts > div.abstract > div', /success2/],
       ['section.abstract > p.para', /success:/],
@@ -89,8 +91,11 @@ describe('HTML jquery-like css queries', () => {
       ['meta[property="og:description"]', /success:/],
       ['a.show-pdf', /success:pdf/],
     ];
+
     await browserPool.use(async (browser) => {
-      await Async.eachSeries(examples, Async.asyncify(async ([query, regexTest]) => {
+
+      await Async.eachSeries(examples, Async.asyncify(async (ex: ExampleType) => {
+        const [query, regexTest] = ex;
         const maybeResult = await queryOne(browser, tmpHtml, query);
         if (isRight(maybeResult)) {
           const elem = maybeResult.right;
@@ -116,7 +121,8 @@ describe('HTML jquery-like css queries', () => {
 
 
     await browserPool.use(async (browser) => {
-      await Async.forEachOfSeries(examples, Async.asyncify(async ([query,], exampleNum: number) => {
+      await Async.forEachOfSeries(examples, Async.asyncify(async (ex: ExampleType, exampleNum: number) => {
+        const [query, regexTest] = ex;
         const maybeResult = await queryAll(browser, tmpHtml, query);
         putStrLn(`Example #${exampleNum}`);
         if (isRight(maybeResult)) {
@@ -154,7 +160,8 @@ describe('HTML jquery-like css queries', () => {
     ];
 
     await browserPool.use(async (browser) => {
-      await Async.eachSeries(examples, Async.asyncify(async ([query,]) => {
+      await Async.eachSeries(examples, Async.asyncify(async (ex: ExampleType) => {
+        const [query, regexTest] = ex;
         const maybeResult = await queryAll(browser, tmpHtml, query);
         if (isRight(maybeResult)) {
           const elems = maybeResult.right;

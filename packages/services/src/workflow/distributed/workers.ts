@@ -1,6 +1,3 @@
-import { promisify } from 'util';
-import { RestPortal, createRestServer } from '~/http-servers/rest-portal/rest-worker';
-
 import _ from 'lodash';
 import { DatabaseContext } from '~/db/db-api';
 import { getDBConfig } from '~/db/database';
@@ -19,48 +16,52 @@ import { Logger } from 'winston';
 import { ExtractionSharedEnv } from '@watr/field-extractors/src/app/extraction-prelude';
 import { SpiderService } from './spider-worker';
 
-export const RestService = defineSatelliteService<RestPortal>(
-  'RestService',
-  () => createRestServer(), {
-  async networkReady() {
-    // Do configuration post-connection w/hub, but before workflow initiates
-  },
-  async startup() {
-    this.cargo.setCommLink(this.commLink);
-    return this.cargo.run();
-  },
-  async shutdown() {
-    this.log.debug(`${this.serviceName} [shutdown]> `)
+// export const RestService = defineSatelliteService<RestPortal>(
+//   'RestService',
+//   () => createRestServer(), {
+//   async networkReady() {
+//     // Do configuration post-connection w/hub, but before workflow initiates
+//   },
+//   async startup() {
+//     this.cargo.setCommLink(this.commLink);
+//     return this.cargo.run();
+//   },
+//   async shutdown() {
+//     this.log.debug(`${this.serviceName} [shutdown]> `)
 
-    const { server } = this.cargo;
-    const doClose = promisify(server.close).bind(server);
-    return doClose().then(() => {
-      this.log.debug(`${this.serviceName} [server:shutdown]> `)
-    });
-  },
-  async runOneAlphaRec(arg: WorkflowData): Promise<WorkflowData> {
-    return arg;
-  },
+//     const { server } = this.cargo;
+//     if (server === undefined) {
+//       this.log.debug(`${this.serviceName} [server:shutdown]> server is undefined`)
+//       return;
+//     }
+//     const doClose = promisify(server.close).bind(server);
+//     return doClose().then(() => {
+//       this.log.debug(`${this.serviceName} [server:shutdown]> `)
+//     });
+//   },
+//   async runOneAlphaRec(arg: WorkflowData): Promise<WorkflowData> {
+//     return arg;
+//   },
 
-  async runOneAlphaRecNoDB(arg: RecordRequest): Promise<CanonicalFieldRecords | ErrorRecord> {
-    const res: CanonicalFieldRecords | ErrorRecord = await this.commLink.call(
-      'runOneAlphaRecNoDB',
-      arg,
-      { to: WorkflowConductor.name }
-    );
-    return res;
-  },
+//   async runOneAlphaRecNoDB(arg: RecordRequest): Promise<CanonicalFieldRecords | ErrorRecord> {
+//     const res: CanonicalFieldRecords | ErrorRecord = await this.commLink.call(
+//       'runOneAlphaRecNoDB',
+//       arg,
+//       { to: WorkflowConductor.name }
+//     );
+//     return res;
+//   },
 
-  async runOneURLNoDB(arg: URLRequest): Promise<CanonicalFieldRecords | ErrorRecord> {
-    const res: CanonicalFieldRecords | ErrorRecord = await this.commLink.call(
-      'runOneURLNoDB',
-      arg,
-      { to: WorkflowConductor.name }
-    );
-    return res;
-  },
+//   async runOneURLNoDB(arg: URLRequest): Promise<CanonicalFieldRecords | ErrorRecord> {
+//     const res: CanonicalFieldRecords | ErrorRecord = await this.commLink.call(
+//       'runOneURLNoDB',
+//       arg,
+//       { to: WorkflowConductor.name }
+//     );
+//     return res;
+//   },
 
-});
+// });
 
 export interface WorkflowConductorT {
   databaseContext: DatabaseContext,
@@ -129,8 +130,12 @@ export const WorkflowConductor = defineSatelliteService<WorkflowConductorT>(
     const { alphaRec } = arg;
     const { url } = alphaRec;
 
-    const fieldRecs: CanonicalFieldRecords | undefined =
+    const fieldRecs: CanonicalFieldRecords | ErrorRecord =
       await this.commLink.call('runOneURLNoDB', { url });
+
+    if ('error' in fieldRecs) {
+      return fieldRecs;
+    }
 
     Object.assign(fieldRecs, alphaRec);
 

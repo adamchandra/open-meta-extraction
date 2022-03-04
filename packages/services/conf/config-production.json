@@ -2,12 +2,12 @@
     "db": {
         "database": "open_extraction",
         "username": "watrworker",
-        "password": ""
+        "password": "watrpassword"
     },
     "openreview": {
         "restApi": "https://api.openreview.net",
-        "restUser": "",
-        "restPassword": ""
+        "restUser": "saunders@cs.umass.edu",
+        "restPassword": "***REMOVED***"
     },
     "services": {
     },

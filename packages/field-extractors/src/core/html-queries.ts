@@ -36,7 +36,7 @@ export function expandCaseVariations(seed: string, sub: (s: string) => string): 
   return expanded;
 }
 
-function formatCSSSelectionError(error: Error, cssSelector: string): string {
+function formatCSSSelectionError(error: unknown, cssSelector: string): string {
   // if (error instanceof puppeteerErrors.TimeoutError) {
   //   // TODO Do something if this is a timeout.
   // }

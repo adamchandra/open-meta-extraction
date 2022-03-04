@@ -8,10 +8,12 @@ import {
   matchMessageToQuery,
   addHeaders,
   ping,
-  ack
+  ack,
+  mreturn
 } from './message-types';
 
 import { prettyPrint } from '@watr/commonlib';
+import { preflightCheck } from '..';
 
 describe('Service Communication Hub lifecycle', () => {
   process.env['service-comm.loglevel'] = 'warn';
@@ -35,7 +37,7 @@ describe('Service Communication Hub lifecycle', () => {
     });
   });
 
-  it('should match messagekinds to messages for filtering', async (done) => {
+  it('should match messagekinds to messages for filtering', (done) => {
     const queries: MessageQuery[] = [
       creturn('myfunc'), { id: 0 },
       addHeaders(creturn('myfunc'), { id: 0 }),
@@ -48,7 +50,7 @@ describe('Service Communication Hub lifecycle', () => {
       // Ack(Ping),
     ];
     const messageKinds: Message[] = [
-      Message.address(creturn('myfunc', { foo: 'bar' }), { from: 'me', to: 'you' }),
+      Message.address(mreturn('myfunc', { foo: 'bar' }), { from: 'me', to: 'you' }),
     ];
     _.each(queries, (query) => {
       prettyPrint({ msg: 'trying', query });

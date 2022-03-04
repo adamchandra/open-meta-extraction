@@ -113,8 +113,10 @@ describe('Extraction Prelude / Primitives', () => {
   // it('should create basic arrows/results', async (done) => {});
   // it('tap() composition', async (done) => { });
 
+  type ExampleType = [Arrow<string, string>[], string[]];
+
   it('takeWhileSuccess examples', async () => {
-    const examples: Array<[Arrow<string, string>[], string[]]> = [
+    const examples: ExampleType[] = [
       [[emit('A:okay'), fbad_, emit('B:bad')],
         ['A:okay']],
       [[emit('A:okay'), emit('B:okay'), fbad_, emit('B:bad')],
@@ -126,7 +128,8 @@ describe('Extraction Prelude / Primitives', () => {
     ];
 
 
-    await Async.eachOf(examples, Async.asyncify(async ([example, expectedMessages]) => {
+    await Async.eachOf(examples, Async.asyncify(async (ex: ExampleType) => {
+      const [example, expectedMessages] = ex;
       // console.log('p.1')
       const messages = await runTakeWhileSuccess(example);
       // console.log('p.2')
@@ -170,7 +173,8 @@ describe('Extraction Prelude / Primitives', () => {
     ];
 
 
-    await Async.eachOf(examples, Async.asyncify(async ([example, expectedMessages], _n) => {
+    await Async.eachOf(examples, Async.asyncify(async (ex: ExampleType) => {
+      const [example, expectedMessages] = ex;
       const messages = await runTakeFirstSuccess(example);
       const haveExpectedMessages = _.every(expectedMessages, em => messages.includes(em));
       const haveBadMessages = _.some(messages, msg => /bad/.test(msg));
@@ -198,7 +202,9 @@ describe('Extraction Prelude / Primitives', () => {
     ];
 
 
-    await Async.eachOf(examples, Async.asyncify(async ([example, expectedMessages], _n) => {
+    await Async.eachOf(examples, Async.asyncify(async (ex: ExampleType) => {
+
+      const [example, expectedMessages] = ex;
       console.log('p.1');
       const messages = await runGatherSuccess(example);
       console.log('p.2');
@@ -235,7 +241,8 @@ describe('Extraction Prelude / Primitives', () => {
     );
 
 
-    await Async.eachOf(expected, Async.asyncify(async (exp, _n) => {
+
+    await Async.eachOf(expected, Async.asyncify(async (exp: string[], _n: number) => {
       if (typeof _n !== 'number') {
         fail('_n != "number"');
       }

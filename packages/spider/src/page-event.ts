@@ -47,7 +47,14 @@ export function logBrowserEvent(browserInstance: BrowserInstance, logger: Logger
     BrowserEmittedEvents.TargetDestroyed,
     BrowserEmittedEvents.Disconnected,
   ]
-  const pid = browser.process().pid;
+
+  const bproc = browser.process();
+  const pid = bproc?.pid;
+  if (bproc !== null && pid !== undefined) {
+    logger.error('logBrowserEvent(): browser.process().pid is undefined');
+    return;
+  }
+
   _.each(events, (event) => {
     browser.on(event, (e) => {
       const ttype = e?._targetInfo?.type;
@@ -59,7 +66,13 @@ export function logBrowserEvent(browserInstance: BrowserInstance, logger: Logger
 
 export function logPageEvents(page: Page, logger: Logger) {
 
-  const pid = page.browser().process().pid;
+  const bproc = page.browser().process();
+  const pid = bproc?.pid;
+  if (bproc !== null && pid !== undefined) {
+    logger.error('logBrowserEvent(): browser.process().pid is undefined');
+    return;
+  }
+
   _.each(pageEvents, e => {
     page.on(e, (_data: any) => {
       switch (e) {

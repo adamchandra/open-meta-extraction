@@ -12,12 +12,22 @@ export interface MessageHandler<ClientT, M extends Message> {
   didRun: boolean;
 }
 
-export type CustomHandler<ClientT, A = object, B = any> =
+export type CustomHandler<ClientT, A, B> =
   (this: ClientT, a: A, commLink: CommLink<ClientT>) => Promise<B>;
 
 
 export type MessageHandlerDef<ClientT> = [MessageQuery, MessageHandler<ClientT, Message>];
-export type CustomHandlers<ClientT> = Record<string, CustomHandler<ClientT>>;
+
+export interface CustomHandlers<ClientT> {
+  [k: string]: CustomHandler<ClientT, any, any>;
+}
+
+export type CustomHandlers2<ClientT> = {
+  [P in keyof ClientT]: CustomHandler<ClientT, any, any>;
+}
+// export type CustomHandlers<ClientT> = {
+//   [Prop in keyof ClientT]: ClientT[Prop] extends CustomHandler<ClientT, unknown, unknown>? ClientT[Prop] : never;
+// }
 
 type IfStr<S, A> = S extends string ? A : Partial<A>;
 type IfDefined<S, A> = S extends undefined ? Partial<A> : A;
@@ -25,14 +35,15 @@ type IfDefined<S, A> = S extends undefined ? Partial<A> : A;
 type IfStrDef<S, T, A> = IfStr<S, IfDefined<T, A>>;
 type IfStrDefStr<S, T, U, A> = IfStrDef<S, T, IfStr<U, A>>;
 
-function filterUndefs<T>(o: T): T {
-  const newO = _.clone(o);
+function filterUndefs<T>(o: object): T {
+  const newRec: Record<string, any> = {};
   _.each(_.keys(o), k => {
-    if (newO[k] === undefined) {
-      delete newO[k];
+    const v = _.get(o, k);
+    if (v !== undefined) {
+      newRec[k] = v;
     }
   });
-  return newO;
+  return newRec as T;
 }
 
 // TODO correct this documentation: Base Message Body, kind=ping/ack/quit/etc..
@@ -58,6 +69,13 @@ export function call(
     arg,
   });
 }
+export function mcall(func: string, arg: unknown): Call {
+  return {
+    kind: 'call',
+    func,
+    arg,
+  };
+}
 
 export interface CYield {
   kind: 'cyield';
@@ -78,21 +96,36 @@ export function cyield(
     callFrom
   });
 }
+export function myield(func: string, result: unknown, callFrom: string): CYield {
+  return {
+    kind: 'cyield',
+    func,
+    result,
+    callFrom
+  };
+}
 
 export interface CReturn {
   kind: 'creturn';
   func: string;
   result: unknown;
 }
+
 export function creturn(
-  func?: string,
-  result?: unknown,
-): IfStrDef<typeof func, typeof result, CReturn> {
-  return filterUndefs({
+  func: string,
+): Partial<CReturn> {
+  return {
+    kind: 'creturn',
+    func,
+  };
+}
+
+export function mreturn(func: string, result: unknown): CReturn {
+  return {
     kind: 'creturn',
     func,
     result
-  });
+  };
 }
 
 /////////
@@ -107,7 +140,7 @@ export interface Ack {
   kind: 'ack';
   subk: string;
 }
-export function ack<S extends Body | undefined>(
+export function ack<S extends Body>(
   subkind: S
 ): S extends Body ? Ack : Partial<Ack> {
   return {
@@ -115,6 +148,15 @@ export function ack<S extends Body | undefined>(
     subk: subkind.kind
   };
 }
+// export function ack<S extends Body | undefined>(
+//   subkind: S
+// ): S extends Body ? Ack : Partial<Ack> {
+//   const subk = subkind===undefined? undefined : subkind.kind;
+//   return {
+//     kind: 'ack',
+//     subk: subkind.kind
+//   };
+// }
 
 export interface Quit {
   kind: 'quit';
@@ -130,12 +172,14 @@ export type Body =
   | CYield
   ;
 
-interface Headers {
+export interface Headers {
   from: string;
   to: string;
   id: number;
 }
 
+
+export type PHeaders = Partial<Headers>;
 export type ToHeader = Pick<Headers, 'to'>;
 
 export function fromHeader(s: string): Pick<Headers, 'from'> {
@@ -150,7 +194,6 @@ export function idHeader(id: number): Pick<Headers, 'id'> {
   return { id };
 }
 
-
 export function queryAll(...mqs: MessageQuery[]): MessageQuery {
   return _.merge({}, ...mqs)
 }
@@ -161,19 +204,36 @@ export function mergeMessages(...mqs: MessageQuery[]): MessageQuery {
   return _.merge({}, ...mqs)
 }
 
+export function isMessage(m: Body | Message): m is Message {
+  return 'kind' in m;
+}
+
+export type Addressed = Body & Pick<Headers, 'to'>;
+type FromAndId = Pick<Headers, 'id' | 'from'>;
+type PartAddressed = Body & PHeaders;
+
+export function preflightCheck(msg: PartAddressed): Message | undefined {
+  if (msg.to === undefined) return undefined;
+  if (msg.from === undefined) return undefined;
+  if (msg.id === undefined) return undefined;
+  return _.merge({}, msg, { from: msg.from, to: msg.to, id: msg.id });
+}
+
 export const Message = {
   pack: packMessage,
   unpack: unpackMessage,
   address(body: Message | Body, headers: Partial<Headers>): Message {
+    const from = 'from' in body? body.from : '';
+    const to = 'to' in body? body.to : '';
+    const id = 'id' in body? body.id : -1;
     const defaultHeaders: Headers = {
-      from: undefined, to: undefined, id: undefined
+      from, to, id
     };
     return _.merge({}, body, defaultHeaders, headers);
-  }
+  },
 };
 
 export type MessageQuery = Partial<Message>;
-export type MessageMod = Partial<Message>;
 
 export const AnyMessage: MessageQuery = {};
 
@@ -197,7 +257,7 @@ export function unpackMessage(packed: string): Message {
   return JSON.parse(packed);
 }
 
-function matchQueryProp<A>(a1: any, a2: A, prop: string): boolean {
+function matchQueryProp(a1: any, a2: any, prop: string): boolean {
   const propInA = prop in a1;
   const propInB = prop in a2;
 
