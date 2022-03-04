@@ -16,10 +16,11 @@ import {
   CommLink,
   defineSatelliteService, SatelliteService
 } from '@watr/commlinks';
-import { ErrorRecord, URLRequest } from '../common/datatypes';
+import { ErrorRecord, toUrl, URLRequest } from '../common/datatypes';
 import { CanonicalFieldRecords } from '@watr/field-extractors';
 import { WorkflowConductor } from './workers';
 import { initConfig, prettyFormat, prettyPrint } from '@watr/commonlib';
+import { Logger } from 'winston';
 
 
 interface User {
@@ -69,8 +70,28 @@ const OpenReviewAPIBase = config.get('openreview:restApi');
 class OpenReviewRelay {
   credentials?: Credentials;
   commLink: CommLink<SatelliteService<OpenReviewRelay>>;
+  log: Logger;
   constructor(commLink: CommLink<SatelliteService<OpenReviewRelay>>) {
     this.commLink = commLink;
+    this.log = commLink.log;
+  }
+
+  async networkReady() {
+    await this
+      .getCredentials()
+      .catch(error => {
+        this.log.error(`Error: ${error}`);
+      });
+  }
+  async startup() {
+    this.commLink.log.info('relay startup');
+    await this
+      .doRunRelay()
+      .catch(error => {
+        this.log.warn(`Error: ${error}`);
+      });
+  }
+  async shutdown() {
   }
 
   configRequest(): AxiosRequestConfig {
@@ -143,7 +164,7 @@ class OpenReviewRelay {
       });
   }
 
-  async doFetchNotes(offset: number): Promise<Notes> {
+  async doFetchNotes(offset: number): Promise<Notes | undefined> {
     return this.apiGET<Notes>('/notes', { invitation: 'dblp.org/-/record', sort: 'number:desc', offset })
   }
 
@@ -164,7 +185,7 @@ class OpenReviewRelay {
       this.commLink.log.info('doRunRelay/attemptExtractNote');
       const [maybeAbs, errors] = await this.attemptExtractNote(note, byHostSuccFailSkipCounts);
       allErrors.push(...errors);
-      if (maybeAbs===undefined) {
+      if (maybeAbs === undefined) {
         return;
       }
       foundAbstracts.push(note);
@@ -174,12 +195,16 @@ class OpenReviewRelay {
     this.commLink.log.info('DONE: relay.doRunRelay()');
   }
 
-  async attemptExtractNote(note: Note, byHostSuccFailSkipCounts: Record<string, NumNumNum>): Promise<[string|undefined, string[]]> {
+  async attemptExtractNote(note: Note, byHostSuccFailSkipCounts: Record<string, NumNumNum>): Promise<[string | undefined, string[]]> {
     this.commLink.log.debug(`attemptExtractNote(${note.id})`);
     const errors: string[] = [];
 
     const abs = note.content['abstract'];
     const urlstr = note.content['html'];
+    if (!_.isString(urlstr)) {
+      errors.push(`note.content.html is undefined`)
+      return [undefined, errors];
+    }
     const url = toUrl(urlstr);
     if (typeof url === 'string') {
       errors.push(url)
@@ -210,7 +235,7 @@ class OpenReviewRelay {
     }
 
     this.commLink.log.debug(`attemptExtractNote().1`);
-    const abstracts = res.fields.filter((rec, i) => {
+    const abstracts = res.fields.filter((rec) => {
       rec.name === 'abstract'
     });
     const abstractsClipped = res.fields.filter((rec, i) => {
@@ -222,8 +247,7 @@ class OpenReviewRelay {
     if (!hasAbstract) {
       errors.push('no abstract found');
       byHostSuccFailSkipCounts[url.hostname] = [prevSucc, prevFail + 1, prevSkip];
-      // return [undefined, errors];
-      return ;
+      return [undefined, errors];
     }
 
     this.commLink.log.debug(`attemptExtractNote().3`);
@@ -248,7 +272,10 @@ class OpenReviewRelay {
     await Async.doUntil(
       Async.asyncify(async function(): Promise<number> {
         try {
-          const nextNotes: Notes = await self.doFetchNotes(offset);
+          const nextNotes = await self.doFetchNotes(offset);
+          if (nextNotes === undefined) {
+            return Promise.reject(new Error('doFetchNotes() return undefined'));
+          }
 
           const { notes, count } = nextNotes;
 
@@ -258,9 +285,9 @@ class OpenReviewRelay {
           offset += notes.length;
 
           notes.forEach(note => {
-            const { id, content } = note;
+            const { content } = note;
             const abs = content.abstract;
-            const { html, venueid } = content;
+            const { html } = content;
             if (html === undefined) {
               notesWithoutUrls.push(note);
               return;
@@ -334,48 +361,11 @@ export const OpenReviewRelayService = defineSatelliteService<OpenReviewRelay>(
   'OpenReviewRelayService',
   async (commLink) => {
     return new OpenReviewRelay(commLink);
-  }, {
-  async networkReady() {
-    await this.cargo
-      .getCredentials()
-      .catch(error => {
-        this.log.error(`Error: ${error}`);
-      });
-  },
-  async startup() {
-    this.commLink.log.info('relay startup');
-    await this.cargo
-      .doRunRelay()
-      .catch(error => {
-        this.log.warn(`Error: ${error}`);
-      });
-  },
-  async shutdown() {
-  }
-});
+  });
 
 
-function toUrl(instr: unknown): URL | string {
-  if (typeof instr !== 'string') {
-    return 'toURL error: input must be string';
-  }
-  const str = instr.trim();
-  if (typeof str === 'string') {
-    if (instr.includes(' ')) {
-      return 'toURL error: input string has spaces';
-    }
-
-    try {
-      return new URL(str); // eslint-disable-line no-new
-    } catch (error) {
-      return `toURL error: new URL() threw ${error}`;
-    }
-  }
-
-}
-
-function isAxiosError(error: unknown): error is AxiosError {
-  return error['isAxiosError'] !== undefined && error['isAxiosError'];
+function isAxiosError(error: any): error is AxiosError {
+  return  error['isAxiosError'] !== undefined && error['isAxiosError'];
 }
 
 function displayRestError(error: ErrorTypes): void {

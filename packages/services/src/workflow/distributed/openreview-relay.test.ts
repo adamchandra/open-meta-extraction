@@ -2,7 +2,7 @@ import _ from 'lodash';
 import { initConfig, prettyPrint } from '@watr/commonlib';
 import { defineServiceHub } from '@watr/commlinks';
 import { runServiceHubAndSatellites } from './distributed-workflow';
-import { WorkflowConductor, FieldExtractor, RestService } from './workers';
+import { WorkflowConductor, FieldExtractor } from './workers';
 import { SpiderService } from './spider-worker';
 import { startSpiderableTestServer } from '~/http-servers/rest-portal/mock-server';
 import fs from 'fs-extra';

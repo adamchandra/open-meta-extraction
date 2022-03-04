@@ -27,10 +27,14 @@ describe('REST Worker Endpoints', () => {
 
   afterEach(async () => {
     const pClose1 = new Promise((resolve) => {
+      if (testServer === undefined) return;
       testServer.on('close', () => resolve(undefined));
       testServer.close();
     });
-    return pClose1.then(() => restPortal.close())
+    return pClose1.then(() => {
+      if (restPortal === undefined) return;
+      return restPortal.close()
+    })
   });
 
   it('should run end-to-end', async () => {
