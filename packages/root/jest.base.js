@@ -1,4 +1,4 @@
-const preset = require('ts-jest/presets').jsWithTsESM;
+// const preset = require('ts-jest/presets').jsWithTsESM;
 
 function rootPath(packagePath, relpath) {
   if (relpath) {
@@ -27,7 +27,7 @@ function makeConfig(modulePackage) {
       "^~/(.*)$": tildePathMap,
     },
     transform: {
-      ...preset.transform,
+      "\\.tsx?$": "ts-jest"
     },
     testRunner: "jest-jasmine2",
     moduleFileExtensions: ["ts", "js", "json", "node"],

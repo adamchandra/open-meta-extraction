@@ -4,7 +4,7 @@
   "private": false,
   "description": "Services and workflow for spidering, field extraction in support of the OpenReview project",
   "keywords": [],
-  "author": "Adam Saunders <***REMOVED***>",
+  "author": "Adam Saunders <saunders@cs.umass.edu>",
   "license": "ISC",
   "main": "dist/src/index",
   "scripts": {

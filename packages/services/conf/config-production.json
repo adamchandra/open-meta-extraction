@@ -6,7 +6,7 @@
     },
     "openreview": {
         "restApi": "https://api.openreview.net",
-        "restUser": "***REMOVED***",
+        "restUser": "saunders@cs.umass.edu",
         "restPassword": "***REMOVED***"
     },
     "services": {

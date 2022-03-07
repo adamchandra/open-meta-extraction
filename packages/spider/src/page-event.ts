@@ -1,3 +1,4 @@
+import { prettyPrint } from '@watr/commonlib';
 import _ from 'lodash';
 
 import {
@@ -50,8 +51,9 @@ export function logBrowserEvent(browserInstance: BrowserInstance, logger: Logger
 
   const bproc = browser.process();
   const pid = bproc?.pid;
-  if (bproc !== null && pid !== undefined) {
-    logger.error('logBrowserEvent(): browser.process().pid is undefined');
+  if (bproc === null || pid === undefined) {
+    // prettyPrint({ bproc, pid })
+    logger.error('logBrowserEvents(): browser.process().pid is undefined');
     return;
   }
 
@@ -68,8 +70,8 @@ export function logPageEvents(page: Page, logger: Logger) {
 
   const bproc = page.browser().process();
   const pid = bproc?.pid;
-  if (bproc !== null && pid !== undefined) {
-    logger.error('logBrowserEvent(): browser.process().pid is undefined');
+  if (bproc === null || pid === undefined) {
+    logger.error('logPageEvents(): browser.process().pid is undefined');
     return;
   }
 

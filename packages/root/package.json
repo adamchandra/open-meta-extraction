@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "description": "testing and linting dependencies",
   "keywords": [],
-  "author": "Adam Saunders <***REMOVED***>",
+  "author": "Adam Saunders <saunders@cs.umass.edu>",
   "license": "ISC",
   "scripts": {
     "build": "",

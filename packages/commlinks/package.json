@@ -4,7 +4,7 @@
   "private": false,
   "description": "Communication Services backed by Redis",
   "keywords": [],
-  "author": "Adam Saunders <***REMOVED***>",
+  "author": "Adam Saunders <saunders@cs.umass.edu>",
   "license": "ISC",
   "main": "dist/src/index",
   "scripts": {

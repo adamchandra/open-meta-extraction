@@ -4,7 +4,7 @@
   "private": false,
   "description": "Spidering/Scraping for OpenReview",
   "keywords": [],
-  "author": "Adam Saunders <***REMOVED***>",
+  "author": "Adam Saunders <saunders@cs.umass.edu>",
   "license": "ISC",
   "main": "dist/src/index",
   "scripts": {
