@@ -5,6 +5,7 @@ import Async from 'async';
 
 describe('browser pooling', () => {
   process.env['service-comm.loglevel'] = 'info';
+
   it('borrow/return to pool', async () => {
     const logger = getServiceLogger('browser-pool');
     const browserPool = createBrowserPool(logger);
@@ -47,46 +48,48 @@ describe('browser pooling', () => {
     'badcastcrash',
     'crash',
     'crashdump',
-    'gpuclean',
-    'gpucrash',
-    'gpuhang',
+    // 'gpuclean',
+    // 'gpucrash',
+    // 'gpuhang',
     'hang',
-    'inducebrowsercrashforrealz',
+    // 'inducebrowsercrashforrealz',
     'kill',
     'memory-exhaust',
-    'memory-pressure-critical',
-    'memory-pressure-moderate',
-    'ppapiflashcrash',
+    // 'memory-pressure-critical',
+    // 'memory-pressure-moderate',
+    // 'ppapiflashcrash',
     'ppapiflashhang',
-    'quit',
-    'restart',
+    // 'quit',
+    // 'restart',
     'shorthang',
-    'webuijserror',
+    // 'webuijserror',
   ]
 
-  it('force kill on hang/timeout', async () => {
+  it.only('force kill on hang/timeout', async () => {
     const logger = getServiceLogger('browser-pool');
     const browserPool = createBrowserPool(logger);
 
     const attemptOne = async (url: string) => {
+      putStrLn(`attempting ${url}`);
       const browser = await browserPool.acquire();
+      putStrLn(`acquired browser`);
       const pageInstance = await browser.newPage();
+      putStrLn(`acquired page`);
       const { page } = pageInstance;
-      const httpResponseP = page.goto(`chrome://${url}`);
+      putStrLn(`navigating...`);
+      const httpResponseP = page.goto(`chrome://${url}`, { timeout: 2000 });
 
-      httpResponseP.then(async () => {
-        logger.info('finished page.goto()');
+      const resp = httpResponseP.then(async () => {
+        logger.info(`finished page.goto( ${url} )`);
       }).catch(error => {
-        logger.info(`httpResponseP error: ${error}`);
+        logger.info(`httpResponse: ${error}`);
       });
 
-      const bproc = browser.browser.process();
-      const pid = bproc?.pid;
-      if (bproc !== null && pid !== undefined) {
-        process.kill(pid, 'SIGKILL');
-      }
-
+      putStrLn('await resp')
+      await resp;
+      putStrLn('await release')
       await browserPool.release(browser);
+      putStrLn('/done attempt')
     }
 
     await Async.forEachSeries(debugUrls, async (dbgUrl) => {

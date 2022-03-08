@@ -13,6 +13,7 @@ import { initExtractionEnv } from './extraction-process';
 import { ExtractionSharedEnv } from './extraction-prelude';
 
 describe('Field Extraction Pipeline', () => {
+  process.env['service-comm.loglevel'] = 'silly';
   const testCorpus = './test/resources/spidered-corpus';
   const testScratchDir = './test.scratch.d';
 
