@@ -12,5 +12,6 @@
     "services": {
     },
     "spider": {
-    }
+    },
+    "dataRootPath": "./test.scratch.d"
 }

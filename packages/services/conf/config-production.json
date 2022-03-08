@@ -7,11 +7,12 @@
     "openreview": {
         "restApi": "https://api.openreview.net",
         "restUser": "saunders@cs.umass.edu",
-        "restPassword": "***REMOVED***"
+        "restPassword": ""
     },
     "services": {
     },
     "spider": {
 
-    }
+    },
+    "dataRootPath": "./app-share.d"
 }

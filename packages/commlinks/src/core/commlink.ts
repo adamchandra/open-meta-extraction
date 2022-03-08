@@ -31,6 +31,30 @@ import { newRedisClient } from './ioredis-conn';
 
 export const nextMessageId = newIdGenerator(1);
 
+const getAllMethods = (obj: object) => {
+  let props: string[] = []
+
+  do {
+    const l: string[] = Object.getOwnPropertyNames(obj)
+      .concat(Object.getOwnPropertySymbols(obj).map(s => s.toString()))
+      .sort()
+      .filter((p, i, arr) =>
+        // typeof obj[p] === 'function' &&  //only the methods
+        typeof _.get(obj, p) === 'function' &&  //only the methods
+        p !== 'constructor' &&           //not the constructor
+        (i == 0 || p !== arr[i - 1]) &&  //not overriding in this prototype
+        props.indexOf(p) === -1          //not overridden in a child
+      )
+    props = props.concat(l)
+  }
+  while (
+    (obj = Object.getPrototypeOf(obj)) &&   //walk-up the prototype chain
+    Object.getPrototypeOf(obj)              //not the the Object prototype methods (hasOwnProperty, etc...)
+  )
+
+  return props
+}
+
 export interface CommLink<ClientT> {
   name: string;
   client?: ClientT;
@@ -79,6 +103,8 @@ async function runMessageHandlers<ClientT>(
       const { func, arg, id, from } = message;
       commLink.log.verbose(`Call Attempt ${commLink.name}.${func}(${prettyFormat(arg)})`)
 
+      const clientMethods = getAllMethods(client);
+      // client.func
       const maybeCallback = _.get(client, func);
 
       if (maybeCallback === undefined) {
@@ -93,7 +119,6 @@ async function runMessageHandlers<ClientT>(
         const cb = _.bind(maybeCallback, client);
         const newA = await Promise.resolve(cb(arg, commLink));
         const yieldMsg: CYield = myield(func, newA, from);
-        // prettyPrint({ hdr: 'call()', ret: newA, yieldMsg })
         await commLink.send(Message.address(yieldMsg, { id, to: commLink.name }));
       }
       break;
@@ -163,8 +188,6 @@ export function newCommLink<ClientT>(
 
       const expectedReturn = mergeMessages(creturn(f), { id });
       const returnP = new Promise<B>((resolve, reject) => {
-        // prettyPrint({ m: 'calling', callMessage, expectedReturn })
-        // TODO make .on() => .once()
         self.once(expectedReturn, async (msg: Message) => {
           if (msg.kind !== 'creturn') {
             reject(new Error('unexpected message type'));
@@ -199,6 +222,7 @@ export function newCommLink<ClientT>(
     },
 
     withMethods(handlers: ClientT): CommLink<ClientT> {
+      const clientMethods = getAllMethods(handlers as any);
       this.methodHandlers = handlers;
       return this;
     },

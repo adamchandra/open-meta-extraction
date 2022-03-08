@@ -1,5 +1,4 @@
 import _ from 'lodash';
-import { initConfig, prettyPrint } from '@watr/commonlib';
 import { defineServiceHub } from '@watr/commlinks';
 import { runServiceHubAndSatellites } from './distributed-workflow';
 import { WorkflowConductor, FieldExtractor } from './workers';
@@ -10,7 +9,7 @@ import { Server } from 'http';
 import { OpenReviewRelayService } from './openreview-relay';
 
 describe('End-to-end Distributed Extraction workflows', () => {
-  process.env['service-comm.loglevel'] = 'info';
+  process.env['service-comm.loglevel'] = 'debug';
   const workingDir = './test.scratch.d';
 
   let server: Server | undefined;

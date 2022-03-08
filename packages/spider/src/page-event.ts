@@ -61,7 +61,7 @@ export function logBrowserEvent(browserInstance: BrowserInstance, logger: Logger
     browser.on(event, (e) => {
       const ttype = e?._targetInfo?.type;
       const turl = e?._targetInfo?.url;
-      logger.debug(`Browser#${pid}: browserEvent: ${event}, targetType: ${ttype}, targetUrl: ${turl}`);
+      logger.verbose(`Browser#${pid}: browserEvent: ${event}, targetType: ${ttype}, targetUrl: ${turl}`);
     });
   });
 }
@@ -81,13 +81,14 @@ export function logPageEvents(page: Page, logger: Logger) {
         case 'domcontentloaded':
         case 'load':
         case 'close': {
-          logger.debug(`Browser#${pid}/pageEvent: ${e}`);
+          logger.verbose(`Browser#${pid}/pageEvent: ${e}`);
           break;
         }
         case 'console': {
           const data: ConsoleMessage = _data;
+          data
           const text = data.text();
-          logger.debug(`Browser#${pid}/pageEvent: ${e}: ${text}`);
+          logger.verbose(`Browser#${pid}/pageEvent: ${e}: ${text}`);
           break;
         }
         case 'dialog': {
@@ -101,49 +102,53 @@ export function logPageEvents(page: Page, logger: Logger) {
           const data: Error = _data;
           const { message } = data;
           const { name } = data;
-          logger.debug(`Browser#${pid}/pageEvent: ${e}: ${name} / ${message}`);
+          logger.warn(`Browser#${pid}/pageEvent: ${e}: ${name} / ${message}`);
           break;
         }
         case 'frameattached':
         case 'framedetached':
         case 'framenavigated': {
           // const data: Frame = _data;
-          logger.debug(`Browser#${pid}/pageEvent: ${e}`);
+          logger.verbose(`Browser#${pid}/pageEvent: ${e}`);
           break;
         }
         case 'metrics': {
           const data: { title: string, metrics: Metrics } = _data;
-          logger.debug(`Browser#${pid}/pageEvent: ${e}: ${data.title} / ${data.metrics}`);
+          logger.verbose(`Browser#${pid}/pageEvent: ${e}: ${data.title} / ${data.metrics}`);
           break;
         }
         case 'popup': {
-          // const data: Page = _data;
           logger.debug(`Browser#${pid}/pageEvent: ${e}`);
           break;
         }
+        case 'requestfailed': {
+          const data: HTTPRequest = _data;
+          const url = data.url();
+          logger.warn(`Browser#${pid}/pageEvent: ${e}: ${url}`);
+          break;
+        }
         case 'request':
-        case 'requestfailed':
         case 'requestfinished': {
           const data: HTTPRequest = _data;
           const url = data.url();
-          logger.debug(`Browser#${pid}/pageEvent: ${e}: ${url}`);
+          logger.verbose(`Browser#${pid}/pageEvent: ${e}: ${url}`);
           break;
         }
         case 'response': {
           const data: HTTPResponse = _data;
           const url = data.url();
-          logger.debug(`Browser#${pid}/pageEvent: ${e}: ${url}`);
+          logger.verbose(`Browser#${pid}/pageEvent: ${e}: ${url}`);
           break;
         }
         case 'workercreated':
         case 'workerdestroyed': {
           const data: WebWorker = _data;
           const url = data.url();
-          logger.debug(`Browser#${pid}/pageEvent: ${e}: ${url}`);
+          logger.verbose(`Browser#${pid}/pageEvent: ${e}: ${url}`);
           break;
         }
         default:
-          logger.debug(`Browser#${pid}/Unknown event: ${e}`);
+          logger.warn(`Browser#${pid}/Unknown event: ${e}`);
       }
     });
   });

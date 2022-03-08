@@ -12,12 +12,7 @@ import Async from 'async';
 import { logPageEvents } from './page-event';
 import { getFetchDataFromResponse, UrlFetchData } from './url-fetch-chains';
 import { createScrapingContext } from './scraping-context';
-import { useAnonPlugin, useStealthPlugin } from './puppet';
-import { BrowserPool, createBrowserPool } from './browser-pool';
-import { BrowserInstance } from '.';
-
-useStealthPlugin();
-useAnonPlugin();
+import { BrowserPool, createBrowserPool, BrowserInstance } from './browser-pool';
 
 export interface Scraper {
   browserPool: BrowserPool;

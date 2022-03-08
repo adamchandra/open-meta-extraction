@@ -4,7 +4,6 @@ import { flow as compose, pipe } from 'fp-ts/function';
 import * as TE from 'fp-ts/TaskEither';
 import * as E from 'fp-ts/Either';
 
-import {  useResourceBlockPlugin } from '@watr/spider';
 import { ArtifactSubdir, expandDir, readCorpusTextFile, setLogLabel, writeCorpusTextFile, diffByChars } from '@watr/commonlib';
 
 import { Page } from 'puppeteer';
@@ -553,7 +552,6 @@ function applyCleaningRules(rules: CleaningRule[], initialString: string): [stri
   return [currentString, cleaningResults];
 }
 
-useResourceBlockPlugin();
 
 export async function initExtractionEnv(
   entryPath: string,

@@ -13,12 +13,9 @@ export const Env = {
 export function initConfig(): typeof nconf {
   const envMode = getEnv('NODE_ENV');
   const envFile = `config-${envMode}.json`;
-  console.log(`initConfig(file=conf/${envFile})`)
 
   nconf.file({ file: envFile, dir: 'conf', search: true });
-
   nconf.env().argv();
-  // nconf.defaults({});
 
   return nconf;
 }
@@ -26,15 +23,15 @@ export function initConfig(): typeof nconf {
 
 type EnvKey = keyof typeof Env;
 
+const runtimeConfig = initConfig();
+
 function getEnv(key: EnvKey): string | undefined {
   return process.env[key];
 }
 
 // Root directory for storing application data
 export function getAppSharedDir(): string {
-  const appSharePath = getEnv('AppSharePath');
-  const workingDir = appSharePath || 'app-share.d';
-  return workingDir;
+  return runtimeConfig.get('dataRootPath');
 }
 
 // The root directory in which the spider will download files

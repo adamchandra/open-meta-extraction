@@ -30,6 +30,7 @@ export interface PageInstance {
 }
 
 export function createBrowserPool(log: Logger): BrowserPool {
+
   const factory: gpool.Factory<BrowserInstance> = {
     async create(logPrefix: string = ''): Promise<BrowserInstance> {
       return launchBrowser().then(browser => {

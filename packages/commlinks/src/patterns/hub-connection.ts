@@ -82,11 +82,11 @@ export async function createServiceHub(
     commLink: newCommLink(name),
     async addSatelliteServices(): Promise<void> {
       await pingAndAwait(this.commLink, this.satelliteNames)
-      await callAndAwait(this.commLink, this.satelliteNames, 'networkReady');
-      await callAndForget(this.commLink, this.satelliteNames, 'startup');
+      await callAndAwait(this.commLink, this.satelliteNames, 'networkReady', false);
+      await callAndAwait(this.commLink, this.satelliteNames, 'startup', false);
     },
     async shutdownSatellites(): Promise<void> {
-      await callAndAwait(this.commLink, this.satelliteNames, 'shutdown');
+      await callAndAwait(this.commLink, this.satelliteNames, 'shutdown', false);
       return quitAndAwait(this.commLink, this.satelliteNames);
     }
   };
@@ -103,12 +103,10 @@ export async function createServiceHub(
 export function defineSatelliteService<CargoT>(
   name: string,
   cargoInit: (sc: CommLink<SatelliteService<CargoT>>) => Promise<CargoT>,
-  // lifecycleHandlers: SatelliteHandlers<CargoT>
 ): SatelliteServiceDef<CargoT> {
   return {
     name,
     cargoInit,
-    // lifecycleHandlers
   };
 }
 
@@ -154,72 +152,69 @@ export async function createSatelliteService<T>(
 }
 
 async function pingAndAwait(hubComm: CommLink<ServiceHub>, satelliteNames: string[]): Promise<void> {
-  return messageAndAwait(hubComm, satelliteNames, ping, ack(ping))
+  return messageAndAwait(hubComm, satelliteNames, ping, ack(ping), true)
 }
 async function quitAndAwait(hubComm: CommLink<ServiceHub>, satelliteNames: string[]): Promise<void> {
-  return messageAndAwait(hubComm, satelliteNames, quit, ack(quit))
-}
-async function callAndForget(
-  hubComm: CommLink<ServiceHub>,
-  satelliteNames: string[],
-  func: string
-): Promise<void> {
-  return messageOnce(hubComm, satelliteNames, mcall(func, {}))
+  return messageAndAwait(hubComm, satelliteNames, quit, ack(quit), true)
 }
 
 async function callAndAwait(
   hubComm: CommLink<ServiceHub>,
   satelliteNames: string[],
-  func: string
+  func: string,
+  retrySend: boolean
 ): Promise<void> {
-  return messageAndAwait(hubComm, satelliteNames, mcall(func, {}), creturn(func))
+  return messageAndAwait(hubComm, satelliteNames, mcall(func, {}), creturn(func), retrySend)
 }
 
 async function messageAndAwait(
   hubComm: CommLink<ServiceHub>,
   satelliteNames: string[],
   body: Body,
-  waitQuery: MessageQuery
+  waitQuery: MessageQuery,
+  retrySend: boolean
 ): Promise<void> {
   const answered: string[] = [];
 
-  const nextId = nextMessageId()
-  const waitFor = addHeaders(waitQuery, { id: nextId });
-
-  hubComm.on(waitFor, async (msg: Message) => {
-    hubComm.log.debug(`${hubComm.name} got ${msg.kind} from satellite ${msg.from}`);
-    answered.push(msg.from);
-  });
-
   const allAnswered = () => _.every(satelliteNames, n => answered.includes(n));
   const unanswered = () => _.filter(satelliteNames, n => !answered.includes(n));
+  let iterNum = 0;
+
   const tryPing: () => Promise<void> = async () => {
+    const isFirstPing = iterNum === 0;
+    // const pingTimeout = retrySend ? 500 : 5000;
+    const pingTimeout =  500;
+
     if (allAnswered()) {
       hubComm.log.info(`Done: ${hubComm.name} received all ${prettyFormat(body)}`);
       return;
     }
     const remaining = unanswered();
-    hubComm.log.info(`${hubComm.name} sending ${prettyFormat(body)} to remaining satellites: ${_.join(remaining, ', ')}`);
-    await Async.each(
-      remaining,
-      async satelliteName => hubComm.send(Message.address(body, { id: nextId, to: satelliteName }))
-    );
+    if (isFirstPing) {
+      hubComm.log.info(`${hubComm.name} sending ${prettyFormat(body)} to remaining satellites: ${_.join(remaining, ', ')}`);
+    }
 
-    return delay(500).then(async () => {
+    if (retrySend || iterNum === 0) {
+      iterNum += 1;
+
+      await Async.each(
+        remaining,
+        async satelliteName => {
+          const nextId = nextMessageId()
+          const waitFor = addHeaders(waitQuery, { id: nextId });
+
+          hubComm.on(waitFor, async (msg: Message) => {
+            hubComm.log.debug(`${hubComm.name} got ${msg.kind} from satellite ${msg.from}`);
+            answered.push(msg.from);
+          });
+
+          return hubComm.send(Message.address(body, { id: nextId, to: satelliteName }))
+        });
+    }
+
+    return delay(pingTimeout).then(async () => {
       return tryPing();
     });
   };
   return tryPing();
-}
-
-async function messageOnce(
-  hubComm: CommLink<ServiceHub>,
-  satelliteNames: string[],
-  body: Body,
-): Promise<void> {
-  hubComm.log.info(`${hubComm.name} sending ${prettyFormat(body)} to satellites: ${_.join(satelliteNames, ', ')}`);
-  await Async.each(
-    satelliteNames,
-    async satelliteName => hubComm.send(Message.address(body, { to: satelliteName }))
-  );
 }
