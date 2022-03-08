@@ -222,7 +222,6 @@ export function newCommLink<ClientT>(
     },
 
     withMethods(handlers: ClientT): CommLink<ClientT> {
-      const clientMethods = getAllMethods(handlers as any);
       this.methodHandlers = handlers;
       return this;
     },

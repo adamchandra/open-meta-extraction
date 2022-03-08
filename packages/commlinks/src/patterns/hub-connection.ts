@@ -88,7 +88,7 @@ export async function createServiceHub(
     async shutdownSatellites(): Promise<void> {
       await callAndAwait(this.commLink, this.satelliteNames, 'shutdown', false);
       return quitAndAwait(this.commLink, this.satelliteNames);
-    }
+    },
   };
 
   const connectedPromise: () => Promise<void> = () =>

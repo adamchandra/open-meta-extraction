@@ -552,7 +552,6 @@ function applyCleaningRules(rules: CleaningRule[], initialString: string): [stri
   return [currentString, cleaningResults];
 }
 
-
 export async function initExtractionEnv(
   entryPath: string,
   sharedEnv: ExtractionSharedEnv,
