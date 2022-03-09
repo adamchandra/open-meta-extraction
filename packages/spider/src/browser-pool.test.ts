@@ -4,7 +4,7 @@ import { BrowserInstance, createBrowserPool } from './browser-pool';
 import Async from 'async';
 
 describe('browser pooling', () => {
-  process.env['service-comm.loglevel'] = 'info';
+  process.env['service-comm.loglevel'] = 'verbose';
 
   it('borrow/return to pool', async () => {
     const logger = getServiceLogger('browser-pool');
@@ -44,24 +44,28 @@ describe('browser pooling', () => {
     console.log('pos.7');
   });
 
+  ///// Debug urls to simulate events in chrome, call as chrome://url
   const debugUrls = [
+    'not-valid-url',
     'badcastcrash',
     'crash',
     'crashdump',
+    'hang',
+    'kill',
+    'memory-exhaust',
+    'shorthang',
+
+    ///// Not valid debug urls in puppeteer's chrome (but should be according to documentation)
     // 'gpuclean',
     // 'gpucrash',
     // 'gpuhang',
-    'hang',
     // 'inducebrowsercrashforrealz',
-    'kill',
-    'memory-exhaust',
     // 'memory-pressure-critical',
     // 'memory-pressure-moderate',
     // 'ppapiflashcrash',
-    'ppapiflashhang',
+    // 'ppapiflashhang',
     // 'quit',
     // 'restart',
-    'shorthang',
     // 'webuijserror',
   ]
 

@@ -63,8 +63,8 @@ export async function launchBrowser(): Promise<Browser> {
   return puppeteer.launch({
     headless: true,
     // These arguments seem to be required to avoid bug where chrome doesn't shutdown on browser.close()
-    args: ['--single-process', '--no-zygote', '--no-sandbox'],
-    executablePath: process.env.CHROME_EXECUTABLE,
+    // args: ['--single-process', '--no-zygote', '--no-sandbox'],
+    // executablePath: process.env.CHROME_EXECUTABLE,
     // devtools: true,
   });
 }
