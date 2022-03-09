@@ -69,7 +69,7 @@ describe('browser pooling', () => {
     // 'webuijserror',
   ]
 
-  it.only('force kill on hang/timeout', async () => {
+  it('force kill on hang/timeout', async () => {
     const logger = getServiceLogger('browser-pool');
     const browserPool = createBrowserPool(logger);
 

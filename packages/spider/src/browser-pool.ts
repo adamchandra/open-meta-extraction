@@ -2,8 +2,7 @@ import { delay, prettyPrint } from '@watr/commonlib';
 import { Pool } from 'tarn';
 import _ from 'lodash';
 
-// import onExit from 'signal-exit';
-const onExit = require('signal-exit');
+import onExit from 'signal-exit';
 
 import {
   Browser, Page,
@@ -31,6 +30,7 @@ export interface BrowserInstance {
   events: string[];
   isStale(): boolean;
   kill(): Promise<void>;
+  asString(): string;
 }
 
 export interface PageInstance {
@@ -46,10 +46,13 @@ export function createBrowserPool(log: Logger): BrowserPool {
     },
     async create(): Promise<BrowserInstance> {
       const logPrefix: string = '';
-      console.log('create.1')
       return launchBrowser().then(browser => {
         const browserInstance: BrowserInstance = {
           browser,
+          asString(): string {
+            const pid = this.pid();
+            return `Browser#${pid}`;
+          },
           async kill(): Promise<void> {
             const bproc = this.browser.process();
             if (bproc === null) return;
@@ -100,11 +103,8 @@ export function createBrowserPool(log: Logger): BrowserPool {
           }
         };
 
-        console.log('create.2')
         logBrowserEvent(browserInstance, log);
-        console.log('create.3')
         const bproc = browser.process();
-        console.log('create.4')
         if (bproc !== null) {
           // Triggered on child process stdio streams closing
           bproc.on('close', (_signum: number, signame: NodeJS.Signals) => {
@@ -118,10 +118,9 @@ export function createBrowserPool(log: Logger): BrowserPool {
             browserInstance.events.push('exit');
           });
         }
-        console.log('create.5')
         return browserInstance;
       }).catch(error => {
-        console.log(error);
+        log.error(error);
         throw error;
       })
     },
@@ -161,7 +160,7 @@ export function createBrowserPool(log: Logger): BrowserPool {
     log.verbose(`pool/event: acquireRequest:${eventId}`)
   });
   pool.on('acquireSuccess', (eventId, resource) => {
-    log.verbose(`pool/event: acquireSuccess:${eventId}`)
+    log.verbose(`pool/event: acquireSuccess:${eventId}: ${resource.asString()}`)
   });
   pool.on('acquireFail', (eventId, err) => {
     log.warn(`pool/event: acquireFail:${eventId}: ${err}`)
@@ -169,7 +168,7 @@ export function createBrowserPool(log: Logger): BrowserPool {
 
   // resource returned to pool
   pool.on('release', resource => {
-    log.verbose(`pool/event: release`)
+    log.verbose(`pool/event: release ${resource.asString()}`)
   });
 
   // resource was created and added to the pool
@@ -177,7 +176,7 @@ export function createBrowserPool(log: Logger): BrowserPool {
     log.verbose(`pool/event: createRequest:${eventId}`)
   });
   pool.on('createSuccess', (eventId, resource) => {
-    log.verbose(`pool/event: createSuccess:${eventId}`)
+    log.verbose(`pool/event: createSuccess:${eventId}: ${resource.asString()}`)
   });
   pool.on('createFail', (eventId, err) => {
     log.warn(`pool/event: createFail:${eventId} ${err}`)
@@ -186,13 +185,13 @@ export function createBrowserPool(log: Logger): BrowserPool {
   // resource is destroyed and evicted from pool
   // resource may or may not be invalid when destroySuccess / destroyFail is called
   pool.on('destroyRequest', (eventId, resource) => {
-    log.verbose(`pool/event: destroyRequest:${eventId}`)
+    log.verbose(`pool/event: destroyRequest:${eventId}: ${resource.asString()}`)
   });
   pool.on('destroySuccess', (eventId, resource) => {
-    log.verbose(`pool/event: destroySuccess:${eventId}`)
+    log.verbose(`pool/event: destroySuccess:${eventId}: ${resource.asString()}`)
   });
   pool.on('destroyFail', (eventId, resource, err) => {
-    log.warn(`pool/event: destroyFail:${eventId} ${err}`)
+    log.warn(`pool/event: destroyFail:${eventId}: ${resource.asString()} ${err}`)
   });
 
   // when internal reaping event clock is activated / deactivated
@@ -212,46 +211,11 @@ export function createBrowserPool(log: Logger): BrowserPool {
     log.verbose(`pool/event: poolDestroySuccess:${eventId}`)
   });
 
-  console.log('setMaxListeners')
-  process.setMaxListeners(8);
-
   onExit(function(code: number | null, signal: string | null) {
-    console.log(`Node process got ${signal}/${code}; cleaning up browser pool`);
+    log.info(`Node process got ${signal}/${code}; cleaning up browser pool`);
     pool.destroy();
   }, { alwaysLast: false });
 
-  // function cleanup(exitCode: string): void {
-  //   console.log(`Node process got (${exitCode}); cleaning up browser pool`);
-  //   pool.destroy();
-  // }
-
-  // process.on('exit', (_signum: number, signame: NodeJS.Signals) => {
-  //   cleanup(signame);
-  // });
-  // process.on('disconnected', (_signum: number, signame: NodeJS.Signals) => {
-  //   cleanup(signame);
-  // });
-
-  // process.on('close', (_signum: number, signame: NodeJS.Signals) => {
-  //   cleanup(signame);
-  // });
-  // process.on('SIGINT', (_signum: number, signame: NodeJS.Signals) => {
-  //   console.log(`got ${signame}`)
-  //   cleanup(signame);
-  // });
-  // process.on('SIGTERM', (_signum: number, signame: NodeJS.Signals) => {
-  //   console.log(`got ${signame}`)
-  //   cleanup(signame);
-  // });
-
-  // process.on('SIGHUP', (_signum: number, signame: NodeJS.Signals) => {
-  //   console.log(`got ${signame}`)
-  //   cleanup(signame);
-  // });
-  // process.on('SIGKILL', (_signum: number, signame: NodeJS.Signals) => {
-  //   console.log(`got ${signame}`)
-  //   cleanup(signame);
-  // });
 
   return {
     pool,
@@ -263,7 +227,8 @@ export function createBrowserPool(log: Logger): BrowserPool {
     async release(b: BrowserInstance): Promise<void> {
       log.debug(`release: getting open pages`)
       let normalShutdown = false;
-      const pageCloseP = b.browser.pages()
+      // const pageCloseP =
+      b.browser.pages()
         .then(async pages => {
           log.debug(`release: closing all pages`)
           await Promise.all(pages.map(page => page.close()));

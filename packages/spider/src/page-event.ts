@@ -85,7 +85,6 @@ export function logPageEvents(page: Page, logger: Logger) {
         }
         case 'console': {
           const data: ConsoleMessage = _data;
-          data
           const text = data.text();
           logger.verbose(`Browser#${pid}/pageEvent: ${e}: ${text}`);
           break;
