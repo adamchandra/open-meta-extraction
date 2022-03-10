@@ -15,7 +15,6 @@ function appDef(name: string): Record<string, any> {
 }
 
 export const appNames: WorkflowServiceName[] = [
-  // 'RestService',
   'HubService',
   'WorkflowConductor',
   'SpiderService',

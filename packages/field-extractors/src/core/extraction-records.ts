@@ -26,15 +26,6 @@ export interface ExtractedFields {
   fields: Record<string, FieldInstances>;
 }
 
-// export interface ExtractedStanzas {
-//   kind: 'stanzas';
-//   stanzas: string[];
-// }
-
-// export interface ExtractedGroups {
-//   kind: 'groups';
-//   groups: ExtractedFields[];
-// }
 export interface ExtractionErrors {
   kind: 'errors';
   errors: string[];
@@ -50,54 +41,17 @@ export type ExtractionRecord =
   ExtractedFields
   | ExtractedField
   | ExtractionEvidence
-  // | ExtractedStanzas
-  // | ExtractedGroups
   | ExtractionErrors
   ;
 
-
-export interface ExtractionRecordFoldCases<A> {
-  onFields: (v: ExtractedFields) => A;
-  onField: (v: ExtractedField) => A;
-  onEvidence: (v: ExtractionEvidence) => A,
-  // onStanzas: (v: ExtractedStanzas) => A;
-  // onGroups: (v: ExtractedGroups) => A;
-  onErrors: (v: ExtractionErrors) => A;
+export interface FieldRecord {
+  name: string;
+  value: string;
 }
 
-const emptyFoldCases: ExtractionRecordFoldCases<undefined> = {
-  onFields: (_v: ExtractedFields) => undefined,
-  onField: (_v: ExtractedField) => undefined,
-  onEvidence: (_v: ExtractionEvidence) => undefined,
-  // onStanzas: (v: ExtractedStanzas) => undefined;
-  // onGroups: (v: ExtractedGroups) => undefined;
-  onErrors: (_v: ExtractionErrors) => undefined,
-};
-
-export function foldExtractionRec<A>(
-  rec: ExtractionRecord,
-  cases: Partial<ExtractionRecordFoldCases<A>>
-): A | undefined {
-  const cs = _.merge({}, emptyFoldCases, cases);
-  switch (rec.kind) {
-    case 'fields': return cs.onFields(rec);
-    case 'field': return cs.onField(rec);
-    case 'evidence': return cs.onEvidence(rec);
-    // case 'stanzas': return cs.onStanzas(rec);
-    // case 'groups': return cs.onGroups(rec);
-    case 'errors': return cs.onErrors(rec);
-  }
+export interface CanonicalFieldRecords {
+  noteId?: string;
+  url?: string;
+  title?: string;
+  fields: FieldRecord[];
 }
-
-export function addFieldInstance(rec: ExtractionRecord, field: Field): void {
-  return foldExtractionRec(rec, {
-    onFields: (rec) => {
-      const instances: FieldInstances = rec.fields[field.name] || { exists: true, count: 0, instances: [] };
-
-      instances.instances.push(field);
-      instances.count += 1;
-      rec.fields[field.name] = instances;
-    }
-  });
-}
-

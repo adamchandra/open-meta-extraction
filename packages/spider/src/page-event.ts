@@ -100,7 +100,7 @@ export function logPageEvents(page: Page, logger: Logger) {
           const data: Error = _data;
           const { message } = data;
           const { name } = data;
-          logger.warn(`Browser#${pid}/pageEvent: ${e}: ${name} / ${message}`);
+          logger.debug(`Browser#${pid}/pageEvent: ${e}: ${name} / ${message}`);
           break;
         }
         case 'frameattached':
@@ -122,7 +122,7 @@ export function logPageEvents(page: Page, logger: Logger) {
         case 'requestfailed': {
           const data: HTTPRequest = _data;
           const url = data.url();
-          logger.warn(`Browser#${pid}/pageEvent: ${e}: ${url}`);
+          logger.debug(`Browser#${pid}/pageEvent: ${e}: ${url}`);
           break;
         }
         case 'request':
@@ -146,7 +146,7 @@ export function logPageEvents(page: Page, logger: Logger) {
           break;
         }
         default:
-          logger.warn(`Browser#${pid}/Unknown event: ${e}`);
+          logger.debug(`Browser#${pid}/Unknown event: ${e}`);
       }
     });
   });

@@ -1,6 +1,7 @@
 import path from 'path';
 import { makeHashEncodedPath, HashEncodedPath } from '~/util/hash-encoded-paths';
 import nconf from 'nconf';
+import { prettyPrint } from '..';
 
 export const Env = {
   NODE_ENV: null, // production|testing
@@ -10,12 +11,34 @@ export const Env = {
   DBPassword: null,
 };
 
+export function configureApp(): typeof nconf {
+  const envMode = getEnv('NODE_ENV');
+  const envFile = `config-${envMode}.json`;
+
+  nconf.argv().env();
+  nconf.required(['workingDirectory']);
+
+  const wd = nconf.get('workingDirectory');
+  prettyPrint({ wd  });
+  const workingConf = path.join(wd, 'conf');
+
+  nconf.file('base', { file: envFile, dir: 'conf', search: true });
+  nconf.file('secrets', { file: 'config-secrets.json', dir: workingConf, search: true });
+
+  return nconf;
+}
+
 export function initConfig(): typeof nconf {
   const envMode = getEnv('NODE_ENV');
   const envFile = `config-${envMode}.json`;
 
-  nconf.file({ file: envFile, dir: 'conf', search: true });
-  nconf.env().argv();
+  nconf.argv().env();
+
+  nconf.file('conf-1', { file: path.join('..', envFile)  });
+  nconf.file('conf-2', { file: path.join('../..', envFile)  });
+  nconf.file('conf-3', { file: path.join('../../..', envFile)  });
+
+  nconf.file('base', { file: envFile, dir: 'conf', search: true });
 
   return nconf;
 }

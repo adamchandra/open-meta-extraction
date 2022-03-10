@@ -26,7 +26,7 @@ Y25,dblp.org/journals/LOGCOM/2013,Title: Some Other Title,http://localhost:9000/
 }
 
 describe('Corpus filesystem access utilities', () => {
-  const scratchTestDir = 'test-tmp.d';
+  const scratchTestDir = 'test.tmp.d';
 
   beforeEach(() => {
     fs.emptyDirSync(scratchTestDir);

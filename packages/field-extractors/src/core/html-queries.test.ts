@@ -61,7 +61,7 @@ describe('HTML jquery-like css queries', () => {
     ],
   });
 
-  const browserPool = createBrowserPool(logger);
+  const browserPool = createBrowserPool();
 
   afterAll(() => {
     return browserPool.shutdown();

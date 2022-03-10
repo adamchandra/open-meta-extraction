@@ -130,23 +130,18 @@ describe('Extraction Prelude / Primitives', () => {
 
     await Async.eachOf(examples, Async.asyncify(async (ex: ExampleType) => {
       const [example, expectedMessages] = ex;
-      // console.log('p.1')
       const messages = await runTakeWhileSuccess(example);
-      // console.log('p.2')
 
       const haveExpectedMessages = _.every(expectedMessages, em => messages.includes(em));
-      // console.log('p.3')
       const haveBadMessages = _.some(messages, msg => /bad/.test(msg));
 
       // prettyPrint({ msg: `example: ${n}`, messages, expectedMessages });
 
       expect(haveExpectedMessages).toBe(true);
       expect(haveBadMessages).toBe(false);
-      // console.log('p.5')
     }));
 
 
-    // console.log('p.10')
     // done();
   });
 
@@ -205,9 +200,7 @@ describe('Extraction Prelude / Primitives', () => {
     await Async.eachOf(examples, Async.asyncify(async (ex: ExampleType) => {
 
       const [example, expectedMessages] = ex;
-      console.log('p.1');
       const messages = await runGatherSuccess(example);
-      console.log('p.2');
       const haveExpectedMessages = _.every(expectedMessages, em => messages.includes(em));
       const haveBadMessages = _.some(messages, msg => /bad/.test(msg));
 
@@ -215,10 +208,8 @@ describe('Extraction Prelude / Primitives', () => {
 
       expect(haveExpectedMessages).toBe(true);
       expect(haveBadMessages).toBe(false);
-      console.log('p.3');
     }));
 
-    console.log('p.5');
 
     // done();
   });

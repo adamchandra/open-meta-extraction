@@ -12,12 +12,13 @@ import {
 import { getCanonicalFieldRecsForURL } from '~/workflow/inline/inline-workflow';
 import { BrowserPool, createBrowserPool, UrlFetchData } from '@watr/spider';
 import { getCorpusEntryDirForUrl } from '@watr/commonlib';
-import { CanonicalFieldRecords, extractFieldsForEntry, initExtractionEnv, readUrlFetchData } from '@watr/field-extractors';
+import { extractFieldsForEntry, initExtractionEnv, readUrlFetchData } from '@watr/field-extractors';
 import { ErrorRecord, RecordRequest, URLRequest, WorkflowData } from '../common/datatypes';
 
 import { Logger } from 'winston';
 import { ExtractionSharedEnv } from '@watr/field-extractors/src/app/extraction-prelude';
 import { SpiderService } from './spider-worker';
+import { CanonicalFieldRecords } from '@watr/field-extractors/src/core/extraction-records';
 
 export interface WorkflowConductorT {
   log: Logger;
@@ -120,7 +121,7 @@ interface FieldExtractor extends ExtractionSharedEnv {
 export const FieldExtractor = defineSatelliteService<FieldExtractor>(
   'FieldExtractor',
   async (commLink) => {
-    const browserPool = createBrowserPool(commLink.log);
+    const browserPool = createBrowserPool('FieldExtractor');
     return {
       log: commLink.log,
       browserPool,

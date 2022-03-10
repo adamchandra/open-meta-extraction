@@ -1,4 +1,4 @@
-import { delay, prettyPrint } from '@watr/commonlib';
+import { delay, getServiceLogger, prettyPrint } from '@watr/commonlib';
 import { Pool } from 'tarn';
 import _ from 'lodash';
 
@@ -38,8 +38,10 @@ export interface PageInstance {
   logPrefix: string;
   createdAt: Date;
 }
+export function createBrowserPool(logPrefix?: string): BrowserPool {
+  const prefix =  logPrefix? logPrefix : '';
+  const log = getServiceLogger(`${prefix}:browser-pool`);
 
-export function createBrowserPool(log: Logger): BrowserPool {
   const pool = new Pool<BrowserInstance>({
     log(msg: string): void {
       log.info(msg)
@@ -220,7 +222,6 @@ export function createBrowserPool(log: Logger): BrowserPool {
   return {
     pool,
     async acquire(): Promise<BrowserInstance> {
-      log.debug(`acquiring..`);
       const acq = pool.acquire();
       return acq.promise;
     },

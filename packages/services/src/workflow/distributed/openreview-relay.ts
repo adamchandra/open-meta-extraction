@@ -19,11 +19,11 @@ import {
   SatelliteService
 } from '@watr/commlinks';
 import { ErrorRecord, toUrl, URLRequest } from '../common/datatypes';
-import { CanonicalFieldRecords } from '@watr/field-extractors';
 import { WorkflowConductor } from './workers';
 import { initConfig, prettyFormat, prettyPrint } from '@watr/commonlib';
 import { Logger } from 'winston';
 import { asyncEachOfSeries } from '~/util/async-plus';
+import { CanonicalFieldRecords } from '@watr/field-extractors/src/core/extraction-records';
 
 
 interface User {
@@ -76,7 +76,7 @@ interface OpenReviewRelay {
   configAxios(): AxiosInstance;
   getCredentials(): Promise<Credentials>;
   postLogin(user: string, password: string): Promise<Credentials>;
-  doUpdateNote(): Promise<void>;
+  doUpdateNote(note: Note, abs: string, retries?: number): Promise<void>;
   apiGET<R>(url: string, query: Record<string, string | number>, retries?: number): Promise<R | undefined>;
   doFetchNotes(offset: number): Promise<Notes | undefined>;
   doRunRelay(): Promise<void>;
@@ -229,9 +229,7 @@ function newOpenReviewRelay(
       const user = config.get('openreview:restUser');
       const password = config.get('openreview:restPassword');
 
-      prettyPrint({ OpenReviewAPIBase, user, password })
-
-      this.commLink.log.info(`User/Password: ${user} ${password}`)
+      this.commLink.log.info(`Logging in as User: ${user}`)
       if (user === undefined || password === undefined) {
         return Promise.reject(new Error(`Openreview API: user or password not defined`))
       }
@@ -251,10 +249,37 @@ function newOpenReviewRelay(
     },
 
 
-    async doUpdateNote(): Promise<void> {
+    async doUpdateNote(note: Note, abs: string, retries: number = 0): Promise<void> {
+      const noteUpdate = {
+        referent: note.id,
+        content: {
+          'abstract': abs
+        },
+        invitation: 'dblp.org/-/abstract',
+        readers: ['everyone'],
+        writers: [],
+        signatures: ['dblp.org']
+      }
+      this.log.info(`POSTing updated note ${note.id}`);
+      await this.getCredentials()
+      await this.configAxios()
+        .post("/notes", noteUpdate)
+        .then(r => {
+          const updatedNote: Note = r.data;
+          this.log.info(`updated Note ${note.id}; updateId: ${updatedNote.id}`)
+        })
+        .catch(error => {
+          displayRestError(error);
+          this.commLink.log.warn(`doUpdateNote ${note.id}: retries=${retries} `)
+          if (retries > 1) {
+            return undefined;
+          }
+          this.doUpdateNote(note, abs, retries + 1);
+        })
     },
 
     async apiGET<R>(url: string, query: Record<string, string | number>, retries: number = 0): Promise<R | undefined> {
+      await this.getCredentials()
       return this.configAxios()
         .get(url, { params: query })
         .then(response => {
@@ -297,6 +322,7 @@ function newOpenReviewRelay(
           return;
         }
         foundAbstracts.push(note);
+        await this.doUpdateNote(note, maybeAbs);
       });
 
       prettyPrint({ byHostSuccFailSkipCounts, byHostErrors });

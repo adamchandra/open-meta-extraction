@@ -2,11 +2,12 @@ import _ from 'lodash';
 import * as winston from 'winston';
 import { AlphaRecord, getCorpusEntryDirForUrl } from '@watr/commonlib';
 import { createBrowserPool, UrlFetchData } from '@watr/spider';
-import { CanonicalFieldRecords, extractFieldsForEntry, getCanonicalFieldRecord, readUrlFetchData, initExtractionEnv } from '@watr/field-extractors';
+import { extractFieldsForEntry, getCanonicalFieldRecord, readUrlFetchData, initExtractionEnv } from '@watr/field-extractors';
 import { createSpiderService, SpiderService } from '~/workflow/distributed/spider-worker';
 import { commitUrlFetchData, commitUrlStatus, DatabaseContext, getNextUrlForSpidering, getUrlStatus, insertAlphaRecords, insertNewUrlChains } from '~/db/db-api';
 import { getServiceLogger } from '@watr/commonlib';
 import { ErrorRecord } from '../common/datatypes';
+import { CanonicalFieldRecords } from '@watr/field-extractors/src/core/extraction-records';
 
 export interface WorkflowServices {
   log: winston.Logger;
@@ -54,7 +55,7 @@ export async function runServicesInlineNoDB(
     if ('error' in metadataOrError) {
       return metadataOrError;
     }
-    const browserPool = createBrowserPool(log);
+    const browserPool = createBrowserPool();
 
     const entryPath = getCorpusEntryDirForUrl(url);
 
@@ -119,7 +120,7 @@ export async function runServicesInlineWithDB(
       return metadataOrError;
     }
 
-    const browserPool = createBrowserPool(log);
+    const browserPool = createBrowserPool();
     const entryPath = getCorpusEntryDirForUrl(url);
 
     log.info(`Extracting Fields in ${entryPath}`);

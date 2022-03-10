@@ -8,7 +8,7 @@ describe('browser pooling', () => {
 
   it('borrow/return to pool', async () => {
     const logger = getServiceLogger('browser-pool');
-    const browserPool = createBrowserPool(logger);
+    const browserPool = createBrowserPool();
 
     const browserInstance = await browserPool.acquire();
     const { page } = await browserInstance.newPage();
@@ -24,7 +24,7 @@ describe('browser pooling', () => {
   it('shutdown on error', async () => {
     console.log('pos.0');
     const logger = getServiceLogger('browser-pool');
-    const browserPool = createBrowserPool(logger);
+    const browserPool = createBrowserPool();
 
     console.log('pos.1');
 
@@ -71,7 +71,7 @@ describe('browser pooling', () => {
 
   it('force kill on hang/timeout', async () => {
     const logger = getServiceLogger('browser-pool');
-    const browserPool = createBrowserPool(logger);
+    const browserPool = createBrowserPool();
 
     const attemptOne = async (url: string) => {
       putStrLn(`attempting ${url}`);

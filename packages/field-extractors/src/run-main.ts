@@ -35,18 +35,6 @@ import { AbstractFieldAttempts } from './app/extraction-rules';
 
 const extractionRecordFileName = 'extraction-records.json';
 
-export interface FieldRecord {
-  name: string;
-  value: string;
-}
-
-export interface CanonicalFieldRecords {
-  noteId?: string;
-  url?: string;
-  title?: string;
-  fields: FieldRecord[];
-}
-
 export async function runMainInitFilters(
   corpusRoot: string,
 ): Promise<[radix.Radix<Set<string>>, radix.Radix<number>]> {
@@ -181,7 +169,7 @@ export async function runMainExtractFields(
       if (entryPath === undefined) throw new Error('invalid state: entryPath is undefined');
       setLogLabel(log, entryPath);
       const urlFetchData = readUrlFetchData(entryPath);
-      const browserPool = createBrowserPool(log);
+      const browserPool = createBrowserPool();
 
       return {
         log,
@@ -309,6 +297,7 @@ export function getCanonicalFieldRecord(
 
 import { arglib } from '@watr/commonlib';
 import { Page } from 'puppeteer';
+import { CanonicalFieldRecords, FieldRecord } from './core/extraction-records';
 
 const { opt, config, registerCmd } = arglib;
 

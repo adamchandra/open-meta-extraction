@@ -22,7 +22,7 @@ export interface Scraper {
 
 export async function initScraper(): Promise<Scraper> {
   const logger = getServiceLogger('scraper');
-  const browserPool = createBrowserPool(logger);
+  const browserPool = createBrowserPool('Scraper');
 
   return {
     browserPool,
