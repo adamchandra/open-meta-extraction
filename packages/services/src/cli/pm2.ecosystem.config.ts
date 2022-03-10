@@ -5,6 +5,9 @@ function appDef(name: string): Record<string, any> {
     name,
     script: "./dist/src/cli/index.js",
     args: `start-service --service-name=${name}`,
+    env_testing: {
+      NODE_ENV: "testing"
+    },
     env_development: {
       NODE_ENV: "development"
     },

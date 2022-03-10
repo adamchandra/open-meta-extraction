@@ -12,13 +12,20 @@ import {
 import { getCanonicalFieldRecsForURL } from '~/workflow/inline/inline-workflow';
 import { BrowserPool, createBrowserPool, UrlFetchData } from '@watr/spider';
 import { getCorpusEntryDirForUrl } from '@watr/commonlib';
-import { extractFieldsForEntry, initExtractionEnv, readUrlFetchData } from '@watr/field-extractors';
+import {
+  extractFieldsForEntry,
+  initExtractionEnv,
+  readUrlFetchData,
+  CanonicalFieldRecords,
+  ExtractionErrors,
+  ExtractionSharedEnv
+} from '@watr/field-extractors';
+
+
 import { RecordRequest, URLRequest, WorkflowData } from '../common/datatypes';
 
 import { Logger } from 'winston';
-import { ExtractionSharedEnv } from '@watr/field-extractors/src/app/extraction-prelude';
 import { SpiderService } from './spider-worker';
-import { CanonicalFieldRecords, ExtractionErrors } from '@watr/field-extractors/src/core/extraction-records';
 
 export interface WorkflowConductorT {
   log: Logger;

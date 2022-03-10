@@ -23,7 +23,7 @@ import { WorkflowConductor } from './workers';
 import { getEnvMode, initConfig, isTestingEnv, prettyFormat, prettyPrint } from '@watr/commonlib';
 import { Logger } from 'winston';
 import { asyncEachOfSeries } from '~/util/async-plus';
-import { CanonicalFieldRecords, ExtractionErrors } from '@watr/field-extractors/src/core/extraction-records';
+import { CanonicalFieldRecords, ExtractionErrors } from '@watr/field-extractors';
 
 interface User {
   id: string;

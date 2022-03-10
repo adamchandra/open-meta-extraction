@@ -2,11 +2,10 @@ import _ from 'lodash';
 // import * as winston from 'winston';
 import { AlphaRecord, getCorpusEntryDirForUrl } from '@watr/commonlib';
 // import { createBrowserPool, UrlFetchData } from '@watr/spider';
-import { extractFieldsForEntry, getCanonicalFieldRecord, readUrlFetchData, initExtractionEnv } from '@watr/field-extractors';
+import { extractFieldsForEntry, getCanonicalFieldRecord, CanonicalFieldRecords, readUrlFetchData, initExtractionEnv } from '@watr/field-extractors';
 // import { createSpiderService, SpiderService } from '~/workflow/distributed/spider-worker';
 // import { commitUrlFetchData, commitUrlStatus, DatabaseContext, getNextUrlForSpidering, getUrlStatus, insertAlphaRecords, insertNewUrlChains } from '~/db/db-api';
 // import { getServiceLogger } from '@watr/commonlib';
-import { CanonicalFieldRecords } from '@watr/field-extractors/src/core/extraction-records';
 
 export function getCanonicalFieldRecsForURL(url: string): CanonicalFieldRecords | undefined {
   const entryPath = getCorpusEntryDirForUrl(url);

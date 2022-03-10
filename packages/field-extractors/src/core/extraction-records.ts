@@ -32,11 +32,7 @@ export interface ExtractionErrors {
   finalUrl?: string;
   errors: string[];
 }
-export const ExtractionErrors = (error: string, args: Partial<ExtractionErrors>): ExtractionErrors => ({
-  kind: 'errors',
-  ...args,
-  errors: [error]
-});
+
 
 export interface ExtractionEvidence {
   kind: 'evidence';
@@ -63,3 +59,9 @@ export interface CanonicalFieldRecords {
   title?: string;
   fields: FieldRecord[];
 }
+
+export const ExtractionErrors = (error: string, args: Partial<ExtractionErrors>): ExtractionErrors => ({
+  kind: 'errors',
+  ...args,
+  errors: [error]
+});
