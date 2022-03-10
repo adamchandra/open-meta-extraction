@@ -48,6 +48,14 @@ type EnvKey = keyof typeof Env;
 
 const runtimeConfig = initConfig();
 
+export function getEnvMode(): string {
+  const env = getEnv('NODE_ENV');
+  return `${env}`;
+}
+export function isTestingEnv(): boolean {
+  return getEnv('NODE_ENV') === 'testing';
+}
+
 function getEnv(key: EnvKey): string | undefined {
   return process.env[key];
 }

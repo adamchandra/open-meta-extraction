@@ -20,10 +20,11 @@ import {
 } from '@watr/commlinks';
 import { ErrorRecord, toUrl, URLRequest } from '../common/datatypes';
 import { WorkflowConductor } from './workers';
-import { initConfig, prettyFormat, prettyPrint } from '@watr/commonlib';
+import { getEnvMode, initConfig, isTestingEnv, prettyFormat, prettyPrint } from '@watr/commonlib';
 import { Logger } from 'winston';
 import { asyncEachOfSeries } from '~/util/async-plus';
 import { CanonicalFieldRecords } from '@watr/field-extractors/src/core/extraction-records';
+import { boolean } from 'fp-ts';
 
 
 interface User {
@@ -79,7 +80,7 @@ interface OpenReviewRelay {
   doUpdateNote(note: Note, abs: string, retries?: number): Promise<void>;
   apiGET<R>(url: string, query: Record<string, string | number>, retries?: number): Promise<R | undefined>;
   doFetchNotes(offset: number): Promise<Notes | undefined>;
-  doRunRelay(): Promise<void>;
+  doRunRelay(offset?: number, batchSize?: number, iterations?: number): Promise<void>;
   attemptExtractNote(
     note: Note,
     byHostSuccFailSkipCounts: Record<string, NumNumNum>,
@@ -301,31 +302,55 @@ function newOpenReviewRelay(
       return this.apiGET<Notes>('/notes', { invitation: 'dblp.org/-/record', sort: 'number:desc', offset })
     },
 
-    async doRunRelay(): Promise<void> {
-      let offset = 0;
-      const batchSize = 1000;
-      const noteBatch = await this.createNoteBatch(offset, batchSize);
-      prettyPrint({ 'batchSummary': noteBatch.summary });
-
-      let { notes } = noteBatch;
-      const someNotes = notes.slice(0, 2);
-      notes = someNotes;
-
-      const foundAbstracts: Note[] = [];
-
+    async doRunRelay(offset: number = 0, batchSize: number = 1000, _iterations: number = 2): Promise<void> {
+      this.log.info(`Running Openreview -> abstract finder; mode=${getEnvMode()}`)
+      const self = this;
       const byHostSuccFailSkipCounts: Record<string, NumNumNum> = {};
       const byHostErrors: Record<string, Set<string>> = {};
 
-      await asyncEachOfSeries(notes, async (note: Note) => {
-        const maybeAbs = await this.attemptExtractNote(note, byHostSuccFailSkipCounts, byHostErrors);
-        if (maybeAbs === undefined) {
-          return;
-        }
-        foundAbstracts.push(note);
-        await this.doUpdateNote(note, maybeAbs);
-      });
+      let nextOffset = offset;
+      const iterations = isTestingEnv()? 2 : 0;
+      let iteration = 0;
+      const runForever = iterations === 0;
 
-      prettyPrint({ byHostSuccFailSkipCounts, byHostErrors });
+      async function run(): Promise<boolean> {
+        iteration += 1;
+        self.log.info(`Running batch #${iteration}`)
+        if (!runForever && iteration >= iterations) {
+          self.log.info(`Finished after specified ${iteration} batches`);
+          return false;
+        }
+        const noteBatch = await self.createNoteBatch(nextOffset, batchSize);
+        prettyPrint({ 'batchSummary': noteBatch.summary });
+
+        let { notes, finalOffset } = noteBatch;
+        if (notes.length === 0) {
+          self.log.info(`No more notes to process`);
+          return false;
+        }
+        nextOffset = finalOffset;
+
+        if (isTestingEnv()) {
+          const someNotes = notes.slice(0, 2);
+          notes = someNotes;
+        }
+
+        await asyncEachOfSeries(notes, async (note: Note) => {
+          const maybeAbs = await self.attemptExtractNote(note, byHostSuccFailSkipCounts, byHostErrors);
+          if (maybeAbs === undefined) {
+            return;
+          }
+          await self.doUpdateNote(note, maybeAbs);
+        });
+
+        prettyPrint({ byHostSuccFailSkipCounts, byHostErrors });
+        return true;
+      }
+
+      await Async.doWhilst(
+        Async.asyncify(run),
+        Async.asyncify(async (shouldContinue: boolean) => shouldContinue)
+      );
     },
 
     async attemptExtractNote(
@@ -334,11 +359,8 @@ function newOpenReviewRelay(
       byHostErrors: Record<string, Set<string>>
     ): Promise<string | undefined> {
       this.commLink.log.debug(`attemptExtractNote(${note.id})`);
-      // let errors: Set<string> = new Set();
 
-      // const abs = note.content['abstract'];
       const urlstr = note.content['html'];
-
 
       if (!_.isString(urlstr)) {
         const prevErrors: Set<string> = _.get(byHostErrors, '_no.host_', new Set());
@@ -358,9 +380,10 @@ function newOpenReviewRelay(
       const [prevSucc, prevFail, prevSkip] = _.get(byHostSuccFailSkipCounts, url.hostname, [0, 0, 0] as const);
       const arg = URLRequest(urlstr);
 
-      if (prevFail > 3) {
+      const maxFailsPerDomain = 10;
+      if (prevFail > maxFailsPerDomain) {
         // don't keep processing failed domains
-        errors.add('Previous failure count > 3; skipping.')
+        errors.add(`Previous failure count > ${maxFailsPerDomain}; skipping.`)
         byHostSuccFailSkipCounts[url.hostname] = [prevSucc, prevFail, prevSkip + 1];
         return undefined;
       }
