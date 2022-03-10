@@ -290,8 +290,16 @@ function newOpenReviewRelay(
         let currTime = Date.now();
 
         await asyncEachOfSeries(notes, async (note: Note) => {
+          const url = note.content.html || '';
+          const isArxivLink = /arxiv\.org/.test(url);
+          if (isArxivLink) {
+            self.log.info(`Skipping arxiv.org link`);
+            return;
+          };
+
           const elapsed = Date.now() - currTime;
           const waitTime = maxRate - elapsed;
+
           if (waitTime > 0) {
             self.log.info(`Delaying ${waitTime / 1000} seconds...`);
             await delay(waitTime);
@@ -352,7 +360,7 @@ function newOpenReviewRelay(
         return undefined;
       }
 
-      if (/arxiv\.org/.test( url.hostname)) {
+      if (/arxiv\.org/.test(url.hostname)) {
         this.commLink.log.info(`Skipping arxiv.org domain: ${urlstr}`);
         byHostSuccFailSkipCounts[url.hostname] = [prevSucc, prevFail, prevSkip + 1];
         return undefined;
@@ -365,9 +373,9 @@ function newOpenReviewRelay(
       const pfres = prettyFormat(res)
       this.commLink.log.debug(`runOneURLNoDB() => ${pfres}`);
 
-      const adjustedUrlStr = res.finalUrl? res.finalUrl : urlstr;
+      const adjustedUrlStr = res.finalUrl ? res.finalUrl : urlstr;
       const adjustedUrl = toUrl(adjustedUrlStr)
-      const adjustedHostname = typeof adjustedUrl === 'string'? url.hostname : `${adjustedUrl.hostname} (via ${url.hostname})`;
+      const adjustedHostname = typeof adjustedUrl === 'string' ? url.hostname : `${adjustedUrl.hostname} (via ${url.hostname})`;
       errors = _.get(byHostErrors, [adjustedHostname], new Set<string>());
       _.set(byHostErrors, [adjustedHostname], errors);
 
