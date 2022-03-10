@@ -1,8 +1,13 @@
 # Logs
+*.log
 *.log.*
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+dist/*
+dist/
+
 
 # Runtime data
 *.pid
@@ -72,3 +77,4 @@ common/autoinstallers/*/.npmrc
 
 # chrome install used by puppeteer
 puppeteer@13.0.0.local-chromium/
+
