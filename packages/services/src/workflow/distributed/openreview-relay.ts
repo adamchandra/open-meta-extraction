@@ -24,8 +24,6 @@ import { getEnvMode, initConfig, isTestingEnv, prettyFormat, prettyPrint } from 
 import { Logger } from 'winston';
 import { asyncEachOfSeries } from '~/util/async-plus';
 import { CanonicalFieldRecords } from '@watr/field-extractors/src/core/extraction-records';
-import { boolean } from 'fp-ts';
-
 
 interface User {
   id: string;
@@ -309,7 +307,7 @@ function newOpenReviewRelay(
       const byHostErrors: Record<string, Set<string>> = {};
 
       let nextOffset = offset;
-      const iterations = isTestingEnv()? 2 : 0;
+      const iterations = isTestingEnv() ? 2 : 0;
       let iteration = 0;
       const runForever = iterations === 0;
 
@@ -358,7 +356,7 @@ function newOpenReviewRelay(
       byHostSuccFailSkipCounts: Record<string, NumNumNum>,
       byHostErrors: Record<string, Set<string>>
     ): Promise<string | undefined> {
-      this.commLink.log.debug(`attemptExtractNote(${note.id})`);
+      this.commLink.log.debug(`attemptExtractNote(${note.id}, ${note.content.html})`);
 
       const urlstr = note.content['html'];
 
@@ -430,7 +428,7 @@ function newOpenReviewRelay(
       const notesWithUrlNoAbs: Note[] = [];
       const notesWithAbstracts: Note[] = [];
       const notesWithoutUrls: Note[] = [];
-      log.info(`CreateNoteBatch: starting...`)
+      log.info(`CreateNoteBatch: offset: ${offset}, batchSize: ${batchSize} ...`)
       let availableNoteCount = 0;
 
       await Async.doUntil(
@@ -443,7 +441,14 @@ function newOpenReviewRelay(
 
             const { notes, count } = nextNotes;
 
-            log.info(`fetched ${notes.length} (of ${count}) notes.`)
+            if (notes.length === 0) return 0;
+
+            const note0: Note | undefined = _.head(notes);
+            const noteN: Note | undefined = _.last(notes);
+            const id0 = note0 ? note0.id : 'error';
+            const idN = noteN ? noteN.id : 'error';
+
+            log.info(`fetched ${notes.length} (of ${count}) notes. First/Last= ${id0} / ${idN}`)
 
             availableNoteCount = count;
             offset += notes.length;
@@ -468,9 +473,9 @@ function newOpenReviewRelay(
           }
         }),
         Async.asyncify(async function test(fetchLength: number): Promise<boolean> {
-          log.info(`testing fetchLength = ${fetchLength}`)
           const atBatchLimit = notesWithUrlNoAbs.length >= batchSize;
           const doneFetching = fetchLength === 0;
+          log.info(`CreateBatch: until fetchLength(=${fetchLength})===0 || fetched(=${notesWithUrlNoAbs.length}) >= batchLimit(=${batchSize})`)
           return doneFetching || atBatchLimit;
         })
       );
