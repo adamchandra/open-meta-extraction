@@ -48,7 +48,6 @@ export async function createSpiderService(): Promise<SpiderService> {
   },
 
     async scrapeUrl(arg: { url: string }): Promise<UrlFetchData | undefined> {
-      // const spider = this.cargo;
       const fetchData: UrlFetchData | undefined = await this.scrape(arg.url)
         .catch((error: Error) => {
           logger.error(`${error.name}: ${error.message}`);

@@ -18,12 +18,12 @@ import {
   defineSatelliteService,
   SatelliteService
 } from '@watr/commlinks';
-import { ErrorRecord, toUrl, URLRequest } from '../common/datatypes';
+import { toUrl, URLRequest } from '../common/datatypes';
 import { WorkflowConductor } from './workers';
 import { getEnvMode, initConfig, isTestingEnv, prettyFormat, prettyPrint } from '@watr/commonlib';
 import { Logger } from 'winston';
 import { asyncEachOfSeries } from '~/util/async-plus';
-import { CanonicalFieldRecords } from '@watr/field-extractors/src/core/extraction-records';
+import { CanonicalFieldRecords, ExtractionErrors } from '@watr/field-extractors/src/core/extraction-records';
 
 interface User {
   id: string;
@@ -78,7 +78,7 @@ interface OpenReviewRelay {
   doUpdateNote(note: Note, abs: string, retries?: number): Promise<void>;
   apiGET<R>(url: string, query: Record<string, string | number>, retries?: number): Promise<R | undefined>;
   doFetchNotes(offset: number): Promise<Notes | undefined>;
-  doRunRelay(offset?: number, batchSize?: number, iterations?: number): Promise<void>;
+  doRunRelay(offset?: number, batchSize?: number): Promise<void>;
   attemptExtractNote(
     note: Note,
     byHostSuccFailSkipCounts: Record<string, NumNumNum>,
@@ -300,7 +300,7 @@ function newOpenReviewRelay(
       return this.apiGET<Notes>('/notes', { invitation: 'dblp.org/-/record', sort: 'number:desc', offset })
     },
 
-    async doRunRelay(offset: number = 0, batchSize: number = 1000, _iterations: number = 2): Promise<void> {
+    async doRunRelay(offset: number = 0, batchSize: number = 200): Promise<void> {
       this.log.info(`Running Openreview -> abstract finder; mode=${getEnvMode()}`)
       const self = this;
       const byHostSuccFailSkipCounts: Record<string, NumNumNum> = {};
@@ -361,21 +361,21 @@ function newOpenReviewRelay(
       const urlstr = note.content['html'];
 
       if (!_.isString(urlstr)) {
-        const prevErrors: Set<string> = _.get(byHostErrors, '_no.host_', new Set());
+        const prevErrors: Set<string> = _.get(byHostErrors, ['_no.host_'], new Set());
         prevErrors.add(`note.content.html is undefined`);
         _.set(byHostErrors, ['_no.host_'], prevErrors);
         return undefined;
       }
       const url = toUrl(urlstr);
       if (typeof url === 'string') {
-        const prevErrors: Set<string> = _.get(byHostErrors, '_bad.url_', new Set());
+        const prevErrors: Set<string> = _.get(byHostErrors, ['_bad.url_'], new Set());
         prevErrors.add(url)
         _.set(byHostErrors, ['_bad.url'], prevErrors);
         return undefined;
       }
-      const errors = _.get(byHostErrors, url.hostname, new Set<string>());
+      let errors = _.get(byHostErrors, [url.hostname], new Set<string>());
       _.set(byHostErrors, [url.hostname], errors);
-      const [prevSucc, prevFail, prevSkip] = _.get(byHostSuccFailSkipCounts, url.hostname, [0, 0, 0] as const);
+      const [prevSucc, prevFail, prevSkip] = _.get(byHostSuccFailSkipCounts, [url.hostname], [0, 0, 0] as const);
       const arg = URLRequest(urlstr);
 
       const maxFailsPerDomain = 10;
@@ -386,16 +386,22 @@ function newOpenReviewRelay(
         return undefined;
       }
 
-      const res: CanonicalFieldRecords | ErrorRecord = await this.commLink.call(
+      const res: CanonicalFieldRecords | ExtractionErrors = await this.commLink.call(
         'runOneURLNoDB', arg, { to: WorkflowConductor.name }
       );
 
       const pfres = prettyFormat(res)
       this.commLink.log.debug(`runOneURLNoDB() => ${pfres}`);
 
-      if ('error' in res) {
-        errors.add(res.error);
-        byHostSuccFailSkipCounts[url.hostname] = [prevSucc, prevFail + 1, prevSkip];
+      const adjustedUrlStr = res.finalUrl? res.finalUrl : urlstr;
+      const adjustedUrl = toUrl(adjustedUrlStr)
+      const adjustedHostname = typeof adjustedUrl === 'string'? url.hostname : `${adjustedUrl.hostname} (via ${url.hostname})`;
+      errors = _.get(byHostErrors, [adjustedHostname], new Set<string>());
+      _.set(byHostErrors, [adjustedHostname], errors);
+
+      if ('errors' in res) {
+        res.errors.forEach(e => errors.add(e));
+        byHostSuccFailSkipCounts[adjustedHostname] = [prevSucc, prevFail + 1, prevSkip];
         return;
       }
 
@@ -410,11 +416,11 @@ function newOpenReviewRelay(
       const hasAbstract = abstracts.length > 0 || abstractsClipped.length > 0;
       if (!hasAbstract) {
         errors.add('no abstract found');
-        byHostSuccFailSkipCounts[url.hostname] = [prevSucc, prevFail + 1, prevSkip];
+        byHostSuccFailSkipCounts[adjustedHostname] = [prevSucc, prevFail + 1, prevSkip];
         return;
       }
 
-      byHostSuccFailSkipCounts[url.hostname] = [prevSucc + 1, prevFail, prevSkip];
+      byHostSuccFailSkipCounts[adjustedHostname] = [prevSucc + 1, prevFail, prevSkip];
       const abstrct = abstracts[0] || abstractsClipped[0];
 
       return abstrct.value;
@@ -475,7 +481,7 @@ function newOpenReviewRelay(
         Async.asyncify(async function test(fetchLength: number): Promise<boolean> {
           const atBatchLimit = notesWithUrlNoAbs.length >= batchSize;
           const doneFetching = fetchLength === 0;
-          log.info(`CreateBatch: until fetchLength(=${fetchLength})===0 || fetched(=${notesWithUrlNoAbs.length}) >= batchLimit(=${batchSize})`)
+          log.info(`CreateBatch: until fetchLength(=${fetchLength})===0 || processableNotes(=${notesWithUrlNoAbs.length}) >= batchLimit(=${batchSize})`)
           return doneFetching || atBatchLimit;
         })
       );

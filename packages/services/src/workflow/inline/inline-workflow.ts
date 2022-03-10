@@ -1,19 +1,12 @@
 import _ from 'lodash';
-import * as winston from 'winston';
+// import * as winston from 'winston';
 import { AlphaRecord, getCorpusEntryDirForUrl } from '@watr/commonlib';
-import { createBrowserPool, UrlFetchData } from '@watr/spider';
+// import { createBrowserPool, UrlFetchData } from '@watr/spider';
 import { extractFieldsForEntry, getCanonicalFieldRecord, readUrlFetchData, initExtractionEnv } from '@watr/field-extractors';
-import { createSpiderService, SpiderService } from '~/workflow/distributed/spider-worker';
-import { commitUrlFetchData, commitUrlStatus, DatabaseContext, getNextUrlForSpidering, getUrlStatus, insertAlphaRecords, insertNewUrlChains } from '~/db/db-api';
-import { getServiceLogger } from '@watr/commonlib';
-import { ErrorRecord } from '../common/datatypes';
+// import { createSpiderService, SpiderService } from '~/workflow/distributed/spider-worker';
+// import { commitUrlFetchData, commitUrlStatus, DatabaseContext, getNextUrlForSpidering, getUrlStatus, insertAlphaRecords, insertNewUrlChains } from '~/db/db-api';
+// import { getServiceLogger } from '@watr/commonlib';
 import { CanonicalFieldRecords } from '@watr/field-extractors/src/core/extraction-records';
-
-export interface WorkflowServices {
-  log: winston.Logger;
-  spiderService: SpiderService;
-  dbCtx: DatabaseContext | undefined;
-}
 
 export function getCanonicalFieldRecsForURL(url: string): CanonicalFieldRecords | undefined {
   const entryPath = getCorpusEntryDirForUrl(url);
@@ -24,298 +17,305 @@ export function getCanonicalFieldRecsForURL(url: string): CanonicalFieldRecords 
   return fieldRecs;
 }
 
-export function getCanonicalFieldRecs(alphaRec: AlphaRecord): CanonicalFieldRecords | undefined {
-  const { url } = alphaRec;
-  const fieldRecs = getCanonicalFieldRecsForURL(url);
-  if (fieldRecs === undefined) {
-    return;
-  }
-  fieldRecs.noteId = alphaRec.noteId;
-  fieldRecs.title = alphaRec.title;
-  fieldRecs.url = alphaRec.url;
-  return fieldRecs;
-}
-
-export async function runServicesInlineNoDB(
-  services: WorkflowServices,
-  alphaRec: AlphaRecord,
-): Promise<CanonicalFieldRecords | ErrorRecord> {
-  const { log } = services;
-  const { url } = alphaRec;
-
-  log.info(`Fetching fields for ${url}`);
-
-  // First attempt: if we have the data on disk, just return it
-  let fieldRecs = getCanonicalFieldRecs(alphaRec);
-
-  if (fieldRecs === undefined) {
-    // Try to spider/extract
-    log.info(`No extracted fields found.. spidering ${url}`);
-    const metadataOrError = await scrapeUrlNoDB(services, url);
-    if ('error' in metadataOrError) {
-      return metadataOrError;
-    }
-    const browserPool = createBrowserPool();
-
-    const entryPath = getCorpusEntryDirForUrl(url);
-
-    log.info(`Extracting Fields in ${entryPath}`);
-
-    const urlFetchData = readUrlFetchData(entryPath);
-    const sharedEnv = {
-      log,
-      browserPool,
-      urlFetchData
-    }
-    const exEnv = await initExtractionEnv(entryPath, sharedEnv);
-    await extractFieldsForEntry(exEnv);
-
-    // try again:
-    fieldRecs = getCanonicalFieldRecs(alphaRec);
-  }
-
-  if (fieldRecs === undefined) {
-    const msg = 'No extracted fields available';
-    log.info(msg);
-    return ErrorRecord(msg);
-  }
-
-  return fieldRecs;
-}
+// export interface WorkflowServices {
+//   log: winston.Logger;
+//   spiderService: SpiderService;
+//   dbCtx: DatabaseContext | undefined;
+// }
 
 
-export async function runServicesInlineWithDB(
-  dbCtx: DatabaseContext,
-  services: WorkflowServices,
-  alphaRec: AlphaRecord,
-): Promise<CanonicalFieldRecords | ErrorRecord> {
-  const { log } = services;
-  const { url } = alphaRec;
+// export function getCanonicalFieldRecs(alphaRec: AlphaRecord): CanonicalFieldRecords | undefined {
+//   const { url } = alphaRec;
+//   const fieldRecs = getCanonicalFieldRecsForURL(url);
+//   if (fieldRecs === undefined) {
+//     return;
+//   }
+//   fieldRecs.noteId = alphaRec.noteId;
+//   fieldRecs.title = alphaRec.title;
+//   fieldRecs.url = alphaRec.url;
+//   return fieldRecs;
+// }
 
-  log.info(`Fetching fields for ${url}`);
+// export async function runServicesInlineNoDB(
+//   services: WorkflowServices,
+//   alphaRec: AlphaRecord,
+// ): Promise<CanonicalFieldRecords | ExtractionErrors> {
+//   const { log } = services;
+//   const { url } = alphaRec;
 
-  const insertedAlphaRecs = await insertAlphaRecords(dbCtx, [alphaRec]);
-  log.info(`inserted ${insertedAlphaRecs.length} new alpha records`);
+//   log.info(`Fetching fields for ${url}`);
 
-  const newUrlCount = await insertNewUrlChains(dbCtx);
-  log.info(`inserted ${newUrlCount} new URL records`);
+//   // First attempt: if we have the data on disk, just return it
+//   let fieldRecs = getCanonicalFieldRecs(alphaRec);
 
-  const urlStatus = await getUrlStatus(dbCtx, url);
-  if (urlStatus === undefined) {
-    return ErrorRecord('Error inserting records into database');
-  }
+//   if (fieldRecs === undefined) {
+//     // Try to spider/extract
+//     log.info(`No extracted fields found.. spidering ${url}`);
+//     const metadataOrError = await scrapeUrlNoDB(services, url);
+//     if ('error' in metadataOrError) {
+//       return metadataOrError;
+//     }
+//     const browserPool = createBrowserPool();
 
-  log.info(`URL Status: ${urlStatus.status_code}: ${urlStatus.status_message}`);
+//     const entryPath = getCorpusEntryDirForUrl(url);
 
-  // First attempt: if we have the data on disk, just return it
-  let fieldRecs = getCanonicalFieldRecs(alphaRec);
+//     log.info(`Extracting Fields in ${entryPath}`);
 
-  if (fieldRecs === undefined) {
-    // Try to spider/extract
-    log.info(`No extracted fields found.. spidering ${url}`);
-    const metadataOrError = await scrapeUrl(dbCtx, services, url);
-    if ('error' in metadataOrError) {
-      const { error } = metadataOrError;
-      await commitUrlStatus(dbCtx, url, 'spider:error', error);
-      return metadataOrError;
-    }
+//     const urlFetchData = readUrlFetchData(entryPath);
+//     const sharedEnv = {
+//       log,
+//       browserPool,
+//       urlFetchData
+//     }
+//     const exEnv = await initExtractionEnv(entryPath, sharedEnv);
+//     await extractFieldsForEntry(exEnv);
 
-    const browserPool = createBrowserPool();
-    const entryPath = getCorpusEntryDirForUrl(url);
+//     // try again:
+//     fieldRecs = getCanonicalFieldRecs(alphaRec);
+//   }
 
-    log.info(`Extracting Fields in ${entryPath}`);
+//   if (fieldRecs === undefined) {
+//     const msg = 'No extracted fields available';
+//     log.info(msg);
+//     return ExtractionErrors(msg);
+//   }
 
-    const urlFetchData = readUrlFetchData(entryPath);
-    const sharedEnv = {
-      log,
-      browserPool,
-      urlFetchData
-    }
-    const exEnv = await initExtractionEnv(entryPath, sharedEnv);
-    await extractFieldsForEntry(exEnv);
-
-    // try again:
-    fieldRecs = getCanonicalFieldRecs(alphaRec);
-  }
-
-  if (fieldRecs === undefined) {
-    const msg = 'No extracted fields available';
-    log.info(msg);
-    await commitUrlStatus(dbCtx, url, 'extraction:warning', 'no canonical field record available');
-    return ErrorRecord(msg);
-  }
-  await (fieldRecs.fields.length === 0
-    ? commitUrlStatus(dbCtx, url, 'extraction:warning', 'no fields extracted')
-    : commitUrlStatus(dbCtx, url, 'extraction:success', `extracted ${fieldRecs.fields.length} fields`));
-
-  return fieldRecs;
-}
+//   return fieldRecs;
+// }
 
 
-async function fetchNextDBRecord(
-  dbCtx: DatabaseContext,
-  services: WorkflowServices,
-): Promise<boolean | ErrorRecord> {
-  const { log } = services;
+// export async function runServicesInlineWithDB(
+//   dbCtx: DatabaseContext,
+//   services: WorkflowServices,
+//   alphaRec: AlphaRecord,
+// ): Promise<CanonicalFieldRecords | ExtractionErrors> {
+//   const { log } = services;
+//   const { url } = alphaRec;
 
-  const url = await getNextUrlForSpidering(dbCtx);
-  if (url === undefined) {
-    log.info('No More Records to Process');
-    return false;
-  }
+//   log.info(`Fetching fields for ${url}`);
 
-  log.info(`Fetching fields for ${url}`);
+//   const insertedAlphaRecs = await insertAlphaRecords(dbCtx, [alphaRec]);
+//   log.info(`inserted ${insertedAlphaRecs.length} new alpha records`);
 
-  // if we have the data on disk, just return it
-  const entryPath = getCorpusEntryDirForUrl(url);
+//   const newUrlCount = await insertNewUrlChains(dbCtx);
+//   log.info(`inserted ${newUrlCount} new URL records`);
 
-  // try:
-  let fieldRecs = getCanonicalFieldRecord(entryPath);
+//   const urlStatus = await getUrlStatus(dbCtx, url);
+//   if (urlStatus === undefined) {
+//     return ExtractionErrors('Error inserting records into database');
+//   }
 
-  if (fieldRecs === undefined) {
-    log.info(`No extracted fields found.. spidering ${url}`);
-    const metadataOrError = await scrapeUrl(dbCtx, services, url);
-    if ('error' in metadataOrError) {
-      const { error } = metadataOrError;
-      await commitUrlStatus(dbCtx, url, 'spider:error', error);
-      return metadataOrError;
-    }
+//   log.info(`URL Status: ${urlStatus.status_code}: ${urlStatus.status_message}`);
 
-    await commitUrlFetchData(dbCtx, metadataOrError);
+//   // First attempt: if we have the data on disk, just return it
+//   let fieldRecs = getCanonicalFieldRecs(alphaRec);
 
-    log.info(`Extracting Fields in ${entryPath}`);
-    const urlFetchData = readUrlFetchData(entryPath);
+//   if (fieldRecs === undefined) {
+//     // Try to spider/extract
+//     log.info(`No extracted fields found.. spidering ${url}`);
+//     const metadataOrError = await scrapeUrl(dbCtx, services, url);
+//     if ('error' in metadataOrError) {
+//       const { error } = metadataOrError;
+//       await commitUrlStatus(dbCtx, url, 'spider:error', error);
+//       return metadataOrError;
+//     }
 
-    const browserPool = services.spiderService.scraper.browserPool;
-    const sharedEnv = {
-      log,
-      browserPool,
-      urlFetchData
-    }
-    // TODO clean up the circularity of initializing browserPool for spider/field extractor:
-    const exEnv = await initExtractionEnv(entryPath, sharedEnv);
-    await extractFieldsForEntry(exEnv);
-  }
+//     const browserPool = createBrowserPool();
+//     const entryPath = getCorpusEntryDirForUrl(url);
 
-  // try again:
-  fieldRecs = getCanonicalFieldRecord(entryPath);
+//     log.info(`Extracting Fields in ${entryPath}`);
 
-  if (fieldRecs === undefined) {
-    const msg = 'No extracted fields available';
-    log.info(msg);
-    return ErrorRecord(msg);
-  }
+//     const urlFetchData = readUrlFetchData(entryPath);
+//     const sharedEnv = {
+//       log,
+//       browserPool,
+//       urlFetchData
+//     }
+//     const exEnv = await initExtractionEnv(entryPath, sharedEnv);
+//     await extractFieldsForEntry(exEnv);
 
-  return true;
-}
+//     // try again:
+//     fieldRecs = getCanonicalFieldRecs(alphaRec);
+//   }
 
-export async function fetchAllDBRecords(
-  dbCtx: DatabaseContext,
-  maxToFetch: number
-): Promise<void> {
-  const log = getServiceLogger('workflow');
+//   if (fieldRecs === undefined) {
+//     const msg = 'No extracted fields available';
+//     log.info(msg);
+//     await commitUrlStatus(dbCtx, url, 'extraction:warning', 'no canonical field record available');
+//     return ExtractionErrors(msg);
+//   }
+//   await (fieldRecs.fields.length === 0
+//     ? commitUrlStatus(dbCtx, url, 'extraction:warning', 'no fields extracted')
+//     : commitUrlStatus(dbCtx, url, 'extraction:success', `extracted ${fieldRecs.fields.length} fields`));
 
-  const spiderService = await createSpiderService();
+//   return fieldRecs;
+// }
 
-  const workflowServices: WorkflowServices = {
-    spiderService,
-    log,
-    dbCtx
-  };
 
-  let fetchCount = 0;
-  let fetchNext = true;
-  while (fetchNext) {
-    const fetchResult = await fetchNextDBRecord(dbCtx, workflowServices);
-    if (_.isBoolean(fetchResult)) {
-      fetchNext = fetchResult;
-    } else { }
-    fetchCount += 1;
-    if (maxToFetch > 0 && fetchCount >= maxToFetch) {
-      fetchNext = false;
-    }
-  }
+// async function fetchNextDBRecord(
+//   dbCtx: DatabaseContext,
+//   services: WorkflowServices,
+// ): Promise<boolean | ExtractionErrors> {
+//   const { log } = services;
 
-  log.info('Shutting down Spider');
-  await spiderService.quit();
+//   const url = await getNextUrlForSpidering(dbCtx);
+//   if (url === undefined) {
+//     log.info('No More Records to Process');
+//     return false;
+//   }
 
-  log.info('Done');
-}
+//   log.info(`Fetching fields for ${url}`);
 
-async function scrapeUrl(
-  dbCtx: DatabaseContext,
-  services: WorkflowServices,
-  url: string,
-): Promise<UrlFetchData | ErrorRecord> {
-  const { spiderService, log } = services;
-  const metadata = await spiderService
-    .scrape(url)
-    .catch((error: Error) => {
-      log.warn(error.message);
-      return `${error.name}: ${error.message}`;
-    });
+//   // if we have the data on disk, just return it
+//   const entryPath = getCorpusEntryDirForUrl(url);
 
-  if (_.isString(metadata)) {
-    const msg = `Spidering error ${metadata}`;
-    log.warn(msg);
-    await commitUrlStatus(dbCtx, url, 'spider:error', msg);
+//   // try:
+//   let fieldRecs = getCanonicalFieldRecord(entryPath);
 
-    return ErrorRecord(msg);
-  }
-  if (metadata === undefined) {
-    const msg = `Spider could not fetch url ${url}`;
-    await commitUrlStatus(dbCtx, url, 'spider:error', msg);
-    log.info(msg);
-    return ErrorRecord(msg);
-  }
+//   if (fieldRecs === undefined) {
+//     log.info(`No extracted fields found.. spidering ${url}`);
+//     const metadataOrError = await scrapeUrl(dbCtx, services, url);
+//     if ('error' in metadataOrError) {
+//       const { error } = metadataOrError;
+//       await commitUrlStatus(dbCtx, url, 'spider:error', error);
+//       return metadataOrError;
+//     }
 
-  await commitUrlFetchData(dbCtx, metadata);
+//     await commitUrlFetchData(dbCtx, metadataOrError);
 
-  const spiderSuccess = metadata.status === '200';
+//     log.info(`Extracting Fields in ${entryPath}`);
+//     const urlFetchData = readUrlFetchData(entryPath);
 
-  if (!spiderSuccess) {
-    const msg = `Spider returned ${metadata.status} for ${metadata.requestUrl}`;
-    log.info(msg);
-    return ErrorRecord(msg);
-  }
-  return metadata;
-}
+//     const browserPool = services.spiderService.scraper.browserPool;
+//     const sharedEnv = {
+//       log,
+//       browserPool,
+//       urlFetchData
+//     }
+//     // TODO clean up the circularity of initializing browserPool for spider/field extractor:
+//     const exEnv = await initExtractionEnv(entryPath, sharedEnv);
+//     await extractFieldsForEntry(exEnv);
+//   }
 
-async function scrapeUrlNoDB(
-  services: WorkflowServices,
-  url: string,
-): Promise<UrlFetchData | ErrorRecord> {
-  const { spiderService, log } = services;
-  const metadata = await spiderService
-    .scrape(url)
-    .catch((error: Error) => {
-      log.warn(error.message);
-      return `${error.name}: ${error.message}`;
-    });
+//   // try again:
+//   fieldRecs = getCanonicalFieldRecord(entryPath);
 
-  if (_.isString(metadata)) {
-    const msg = `Spidering error ${metadata}`;
-    log.warn(msg);
-    // await commitUrlStatus(dbCtx, url, 'spider:error', msg);
+//   if (fieldRecs === undefined) {
+//     const msg = 'No extracted fields available';
+//     log.info(msg);
+//     return ExtractionErrors(msg);
+//   }
 
-    return ErrorRecord(msg);
-  }
-  if (metadata === undefined) {
-    const msg = `Spider could not fetch url ${url}`;
-    // await commitUrlStatus(dbCtx, url, 'spider:error', msg);
-    log.info(msg);
-    return ErrorRecord(msg);
-  }
+//   return true;
+// }
 
-  // prettyPrint({ metadata });
-  // await commitUrlFetchData(dbCtx, metadata);
+// export async function fetchAllDBRecords(
+//   dbCtx: DatabaseContext,
+//   maxToFetch: number
+// ): Promise<void> {
+//   const log = getServiceLogger('workflow');
 
-  const spiderSuccess = metadata.status === '200';
+//   const spiderService = await createSpiderService();
 
-  if (!spiderSuccess) {
-    const msg = `Spider returned ${metadata.status} for ${metadata.requestUrl}`;
-    log.info(msg);
-    return ErrorRecord(msg);
-  }
-  return metadata;
-}
+//   const workflowServices: WorkflowServices = {
+//     spiderService,
+//     log,
+//     dbCtx
+//   };
+
+//   let fetchCount = 0;
+//   let fetchNext = true;
+//   while (fetchNext) {
+//     const fetchResult = await fetchNextDBRecord(dbCtx, workflowServices);
+//     if (_.isBoolean(fetchResult)) {
+//       fetchNext = fetchResult;
+//     } else { }
+//     fetchCount += 1;
+//     if (maxToFetch > 0 && fetchCount >= maxToFetch) {
+//       fetchNext = false;
+//     }
+//   }
+
+//   log.info('Shutting down Spider');
+//   await spiderService.quit();
+
+//   log.info('Done');
+// }
+
+// async function scrapeUrl(
+//   dbCtx: DatabaseContext,
+//   services: WorkflowServices,
+//   url: string,
+// ): Promise<UrlFetchData | ExtractionErrors> {
+//   const { spiderService, log } = services;
+//   const metadata = await spiderService
+//     .scrape(url)
+//     .catch((error: Error) => {
+//       log.warn(error.message);
+//       return `${error.name}: ${error.message}`;
+//     });
+
+//   if (_.isString(metadata)) {
+//     const msg = `Spidering error ${metadata}`;
+//     log.warn(msg);
+//     await commitUrlStatus(dbCtx, url, 'spider:error', msg);
+
+//     return ExtractionErrors(msg);
+//   }
+//   if (metadata === undefined) {
+//     const msg = `Spider could not fetch url ${url}`;
+//     await commitUrlStatus(dbCtx, url, 'spider:error', msg);
+//     log.info(msg);
+//     return ExtractionErrors(msg);
+//   }
+
+//   await commitUrlFetchData(dbCtx, metadata);
+
+//   const spiderSuccess = metadata.status === '200';
+
+//   if (!spiderSuccess) {
+//     const msg = `Spider returned ${metadata.status} for ${metadata.requestUrl}`;
+//     log.info(msg);
+//     return ExtractionErrors(msg);
+//   }
+//   return metadata;
+// }
+
+// async function scrapeUrlNoDB(
+//   services: WorkflowServices,
+//   url: string,
+// ): Promise<UrlFetchData | ExtractionErrors> {
+//   const { spiderService, log } = services;
+//   const metadata = await spiderService
+//     .scrape(url)
+//     .catch((error: Error) => {
+//       log.warn(error.message);
+//       return `${error.name}: ${error.message}`;
+//     });
+
+//   if (_.isString(metadata)) {
+//     const msg = `Spidering error ${metadata}`;
+//     log.warn(msg);
+//     // await commitUrlStatus(dbCtx, url, 'spider:error', msg);
+
+//     return ExtractionErrors(msg);
+//   }
+//   if (metadata === undefined) {
+//     const msg = `Spider could not fetch url ${url}`;
+//     // await commitUrlStatus(dbCtx, url, 'spider:error', msg);
+//     log.info(msg);
+//     return ExtractionErrors(msg);
+//   }
+
+//   // prettyPrint({ metadata });
+//   // await commitUrlFetchData(dbCtx, metadata);
+
+//   const spiderSuccess = metadata.status === '200';
+
+//   if (!spiderSuccess) {
+//     const msg = `Spider returned ${metadata.status} for ${metadata.requestUrl}`;
+//     log.info(msg);
+//     return ExtractionErrors(msg);
+//   }
+//   return metadata;
+// }

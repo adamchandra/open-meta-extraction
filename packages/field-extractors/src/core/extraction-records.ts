@@ -28,8 +28,15 @@ export interface ExtractedFields {
 
 export interface ExtractionErrors {
   kind: 'errors';
+  url?: string;
+  finalUrl?: string;
   errors: string[];
 }
+export const ExtractionErrors = (error: string, args: Partial<ExtractionErrors>): ExtractionErrors => ({
+  kind: 'errors',
+  ...args,
+  errors: [error]
+});
 
 export interface ExtractionEvidence {
   kind: 'evidence';
@@ -52,6 +59,7 @@ export interface FieldRecord {
 export interface CanonicalFieldRecords {
   noteId?: string;
   url?: string;
+  finalUrl?: string;
   title?: string;
   fields: FieldRecord[];
 }

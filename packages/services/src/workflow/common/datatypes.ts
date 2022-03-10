@@ -24,11 +24,10 @@ export type WorkflowData =
   | URLRequest
   ;
 
-export interface ErrorRecord {
-  error: string;
-}
-
-export const ErrorRecord = (error: string): ErrorRecord => ({ error });
+// export interface ErrorRecord {
+//   error: string;
+// }
+// export const ErrorRecord = (error: string): ErrorRecord => ({ error });
 
 export function toUrl(instr: unknown): URL | string {
   if (typeof instr !== 'string') {
