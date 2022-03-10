@@ -20,7 +20,7 @@ import {
 } from '@watr/commlinks';
 import { toUrl, URLRequest } from '../common/datatypes';
 import { WorkflowConductor } from './workers';
-import { getEnvMode, initConfig, isTestingEnv, prettyFormat, prettyPrint } from '@watr/commonlib';
+import { delay, getEnvMode, initConfig, isTestingEnv, prettyFormat, prettyPrint } from '@watr/commonlib';
 import { Logger } from 'winston';
 import { asyncEachOfSeries } from '~/util/async-plus';
 import { CanonicalFieldRecords, ExtractionErrors } from '@watr/field-extractors';
@@ -118,54 +118,6 @@ function displayRestError(error: ErrorTypes): void {
 
   console.log(error);
 }
-
-// # We use the Super User, but we are going to create a separate user just for this script
-// client = openreview.Client(baseurl = 'https://api.openreview.net', username = 'OpenReview.net', password = '')
-//
-// # Notes that will be updated with an abstract if they don't have one
-// dblp_notes=openreview.tools.iterget_notes(client, invitation='dblp.org/-/record', sort='number:desc')
-//
-// for note in tqdm(dblp_notes):
-//     if not note.content.get('abstract') and note.content.get('html'):
-//         noteId=note.id
-//         url=note.content['html']
-//
-//         # 10.128.0.33 is the local IP address of the server that hosts the abstract extraction service
-//         response=requests.post('http://10.128.0.33/extractor/record.json', json={
-//          "noteId": noteId,
-//           "url": url
-//         })
-//
-//         if response.status_code == 502:
-//             print(f'{url}: 502 error, wait for 20 seconds and try again...')
-//             time.sleep(20)
-//             response=requests.post('http://10.128.0.33/extractor/record.json', json={
-//              "noteId": noteId,
-//               "url": url
-//             })
-//
-//         if response.status_code == 200:
-//             json_response = response.json()
-//             for f in json_response.get('fields', []):
-//                 if 'abstract' in f['name']:
-//                     #print(noteId, f['value'])
-//                     note = openreview.Note(
-//                                 referent=noteId,
-//                                 content={
-//                                     'abstract': f['value']
-//                                 },
-//                                 invitation='dblp.org/-/abstract',
-//                                 readers = ['everyone'],
-//                                 writers = [],
-//                                 signatures = ['dblp.org'])
-//                     try:
-//                         r=client.post_note(note)
-//                     except:
-//                         # If it fails because the token of the client expired, we retry with a new token
-//                         client = openreview.Client(baseurl = 'https://api.openreview.net', username = 'OpenReview.net', password = '')
-//                         r=client.post_note(note)
-//         else:
-//             print('Error', url, response)
 
 function newOpenReviewRelay(
   commLink: CommLink<SatelliteService<OpenReviewRelay>>,
@@ -333,7 +285,18 @@ function newOpenReviewRelay(
           notes = someNotes;
         }
 
+        const maxRate = 5 * 1000;// 5 second max spidering rate
+
+        let currTime = Date.now();
+
         await asyncEachOfSeries(notes, async (note: Note) => {
+          const elapsed = Date.now() - currTime;
+          const waitTime = maxRate - elapsed;
+          if (waitTime > 0) {
+            self.log.info(`Delaying ${waitTime / 1000} seconds...`);
+            await delay(waitTime);
+          }
+          currTime = Date.now();
           const maybeAbs = await self.attemptExtractNote(note, byHostSuccFailSkipCounts, byHostErrors);
           if (maybeAbs === undefined) {
             return;
@@ -373,8 +336,11 @@ function newOpenReviewRelay(
         _.set(byHostErrors, ['_bad.url'], prevErrors);
         return undefined;
       }
+
+
       let errors = _.get(byHostErrors, [url.hostname], new Set<string>());
       _.set(byHostErrors, [url.hostname], errors);
+
       const [prevSucc, prevFail, prevSkip] = _.get(byHostSuccFailSkipCounts, [url.hostname], [0, 0, 0] as const);
       const arg = URLRequest(urlstr);
 
@@ -382,6 +348,12 @@ function newOpenReviewRelay(
       if (prevFail > maxFailsPerDomain) {
         // don't keep processing failed domains
         errors.add(`Previous failure count > ${maxFailsPerDomain}; skipping.`)
+        byHostSuccFailSkipCounts[url.hostname] = [prevSucc, prevFail, prevSkip + 1];
+        return undefined;
+      }
+
+      if (/arxiv\.org/.test( url.hostname)) {
+        this.commLink.log.info(`Skipping arxiv.org domain: ${urlstr}`);
         byHostSuccFailSkipCounts[url.hostname] = [prevSucc, prevFail, prevSkip + 1];
         return undefined;
       }
