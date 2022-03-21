@@ -3,7 +3,7 @@ import _ from 'lodash';
 import { prettyPrint, AlphaRecord } from '@watr/commonlib';
 import { mockAlphaRecord, mockUrlFetchData } from '@watr/spider';
 import { useEmptyDatabase } from './db-test-utils';
-import { commitUrlFetchData, DatabaseContext, getNextUrlForSpidering, insertAlphaRecords, insertNewUrlChains } from './db-api';
+import { commitUrlFetchData, DatabaseContext, getNextUrlForSpidering, insertAlphaRecords, insertNewUrlChains, testSelectNewUrlChains } from './db-api';
 import { getDBConfig } from './database';
 
 // TODO create per-unit-test database instances https://dev.to/walrusai/testing-database-interactions-with-jest-519n
@@ -33,15 +33,19 @@ describe('High-level Database API', () => {
     return useEmptyDatabase(dbConfig, async () => {});
   });
 
-  it('should create new alpha records and insert new url chains', async () => {
+  it.only('should create new alpha records and insert new url chains', async () => {
     const newAlphaRecs = await insertAlphaRecords(dbCtx, inputRecs);
-    _.each(newAlphaRecs, r => {
-      const rplain = r.get({ plain: true });
-      // prettyPrint({ rplain });
-    });
+    // _.each(newAlphaRecs, r => {
+    //   const rplain = r.get({ plain: true });
+    //   // prettyPrint({ rplain });
+    // });
     const updateCount = await insertNewUrlChains(dbCtx);
+    // const updateCount2 = await insertNewUrlChains(dbCtx);
 
-    expect(updateCount).toEqual(uniqRecs.length);
+    // const foo =  await testSelectNewUrlChains(dbCtx);
+    // const fooPlain = _.map(foo, r => r.get({ plain: true }));
+    prettyPrint({ updateCount });
+    // expect(updateCount).toEqual(uniqRecs.length);
   });
 
   it('should select next url for spidering', async () => {

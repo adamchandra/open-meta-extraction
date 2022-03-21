@@ -1,3 +1,4 @@
+import { AlphaRecord } from '@watr/commonlib';
 import _ from 'lodash';
 
 import {
@@ -14,25 +15,24 @@ import {
   requiredString
 } from './db-table-utils';
 
-export class AlphaRecord extends Model {
-  public id!: number;
-  public note_id!: string;
-  public url!: string;
-  public dblp_key!: string;
-  public author_id!: string;
-  public title!: string;
+export type NoteRecordStatus = 'hasAbstract' | 'noAbstract';
 
-  public readonly createdAt!: Date;
-  public readonly updatedAt!: Date;
+
+export class NoteRecord extends Model {
+  declare id: number;
+  declare note_id: string;
+  declare url: string;
+  declare status: string;
+
+  declare readonly createdAt: Date;
+  declare readonly updatedAt: Date;
 
   public static setup(sequelize: Sequelize) {
-    AlphaRecord.init({
+    NoteRecord.init({
       id: primaryKey(),
       note_id: requiredString(), // uniqKey 1
       url: requiredString(), // uniqKey 2
-      dblp_key: optionalString(),
-      author_id: optionalString(),
-      title: optionalText(),
+      status: requiredString(),
     }, {
       sequelize,
       timestamps: true,
@@ -44,13 +44,29 @@ export class AlphaRecord extends Model {
       ]
     });
   }
+  public static async upsertRec(rec: AlphaRecord, status: NoteRecordStatus) {
+    const [newEntry, isNew] = await NoteRecord.findOrCreate({
+      where: {
+        note_id: rec.noteId,
+        url: rec.url,
+        status
+      },
+      defaults: {
+        note_id: rec.noteId,
+        url: rec.url,
+        status
+      },
+    });
+    const plainNewEntry = newEntry.get({ plain: true });
+    return plainNewEntry;
+  }
 }
 
 export class UrlChain extends Model {
-  public request_url!: string; // Primary Key
-  public response_url?: string; // Nullable
-  public status_code!: string; // http:2/4/5xx, spider:new, etc.
-  public status_message?: string; // any error/info messages
+  declare request_url: string; // Primary Key
+  declare response_url: string; // Nullable
+  declare status_code: string; // http:2/4/5xx, spider:new, etc.
+  declare status_message: string; // any error/info messages
 
   public static setup(sequelize: Sequelize) {
     UrlChain.init({
@@ -65,28 +81,7 @@ export class UrlChain extends Model {
   }
 }
 
-export class ExtractedField extends Model {
-  public id!: number;
-  public alphaRecordId!: number;
-  public name!: string; // abstract, title, pdfLink, etc..
-  public value!: string;
-
-
-  public static setup(sequelize: Sequelize) {
-    ExtractedField.init({
-      id: primaryKey(),
-      alpha_record_id: requiredNumber(),
-      name: requiredString(),
-      value: requiredString(),
-    }, {
-      sequelize,
-      timestamps: true
-    });
-  }
-}
-
-
 export function defineTables(sql: Sequelize): void {
   UrlChain.setup(sql);
-  AlphaRecord.setup(sql);
+  NoteRecord.setup(sql);
 }

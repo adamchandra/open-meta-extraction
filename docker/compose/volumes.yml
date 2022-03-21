@@ -1,6 +1,7 @@
 version: '3.8'
 
 volumes:
+  logs:
   app-share:
   postgres-data:
-  redis-logs:
+  mongo-data:

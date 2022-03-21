@@ -13,5 +13,4 @@ services:
       - "6379:6379"
     restart: always
     volumes:
-      - redis-logs:/var/log
-
+      - logs:/var/log

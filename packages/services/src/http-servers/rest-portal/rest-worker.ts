@@ -73,7 +73,7 @@ export async function createRestServer(): Promise<RestPortal> {
 
   portalRouter
     .get('/', getRoot)
-    .post('/record.json', koaBody(), postRecordJson)
+    // .post('/record.json', koaBody(), postRecordJson)
     .post('/url', koaBody(), postURL)
     ;
 
@@ -119,32 +119,32 @@ async function postURL(ctx: Context): Promise<void> {
   }
 
   const url = decoded.url;
-  const responseRec = await commLink.call('runOneURLNoDB', URLRequest(url));
+  const responseRec = await commLink.call('runOneURL', URLRequest(url));
 
   _.merge(responseBody, responseRec);
 }
 
-async function postRecordJson(ctx: Context): Promise<void> {
-  const commLink = getCommLink(ctx);
-  const requestBody = ctx.request.body;
-  const responseBody: Record<string, string> = {};
-  ctx.response.body = responseBody;
+// async function postRecordJson(ctx: Context): Promise<void> {
+//   const commLink = getCommLink(ctx);
+//   const requestBody = ctx.request.body;
+//   const responseBody: Record<string, string> = {};
+//   ctx.response.body = responseBody;
 
-  if (requestBody) {
-    const decoded = AlphaRecord.decode(requestBody);
-    if (_.isString(decoded)) {
-      responseBody.status = 'error';
-      responseBody.errors = decoded;
-    } else {
-      const responseRec = await commLink.call('runOneAlphaRecNoDB', RecordRequest(decoded));
-      _.merge(responseBody, responseRec);
-    }
+//   if (requestBody) {
+//     const decoded = AlphaRecord.decode(requestBody);
+//     if (_.isString(decoded)) {
+//       responseBody.status = 'error';
+//       responseBody.errors = decoded;
+//     } else {
+//       const responseRec = await commLink.call('runOneAlphaRecNoDB', RecordRequest(decoded));
+//       _.merge(responseBody, responseRec);
+//     }
 
-  } else {
-    responseBody.status = 'error';
-    responseBody.errors = 'Empty request body';
-  }
-}
+//   } else {
+//     responseBody.status = 'error';
+//     responseBody.errors = 'Empty request body';
+//   }
+// }
 
 async function getRoot(ctx: Context): Promise<void> {
   const log = getLog(ctx);

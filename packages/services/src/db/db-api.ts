@@ -1,11 +1,11 @@
 import _ from 'lodash';
 
 import { stripMargin, putStrLn, AlphaRecord } from '@watr/commonlib';
-import Async from 'async';
 
-import { UrlFetchData } from '@watr/spider';
+import { UrlChain, UrlFetchData } from '@watr/spider';
 import { DBConfig, openDatabase } from './database';
 import * as DB from './db-tables';
+import { asyncMapSeries } from '~/util/async-plus';
 
 export interface DatabaseContext {
   dbConfig: DBConfig;
@@ -14,29 +14,27 @@ export interface DatabaseContext {
 export async function insertAlphaRecords(
   dbCtx: DatabaseContext,
   inputRecs: AlphaRecord[],
-): Promise<DB.AlphaRecord[]> {
+): Promise<DB.NoteRecord[]> {
   const db = await openDatabase(dbCtx.dbConfig);
   const ins = await db.run(async (_sql) => {
     let inserted = 0;
     let processed = 0;
-    return Async.mapSeries<AlphaRecord, DB.AlphaRecord, Error>(
+
+    return asyncMapSeries<AlphaRecord, DB.NoteRecord, Error>(
       inputRecs,
-      Async.asyncify(async (rec: AlphaRecord) => {
+      async (rec: AlphaRecord) => {
         if (processed % 100 === 0) {
           putStrLn(`processed ${processed}: new = ${inserted} total = ${inputRecs.length}...`);
         }
 
-        const [newEntry, isNew] = await DB.AlphaRecord.findOrCreate({
+        const [newEntry, isNew] = await DB.NoteRecord.findOrCreate({
           where: {
             note_id: rec.noteId,
             url: rec.url,
           },
           defaults: {
             note_id: rec.noteId,
-            url: rec.url,
-            dblp_key: rec.dblpConfId,
-            author_id: rec.authorId,
-            title: rec.title,
+            url: rec.url
           },
         });
 
@@ -44,12 +42,37 @@ export async function insertAlphaRecords(
         inserted += isNew ? 1 : 0;
 
         return newEntry;
-      }));
+      });
   });
   await db.close();
   return ins;
 }
 
+export async function testSelectNewUrlChains(
+  dbCtx: DatabaseContext,
+): Promise<any[]> {
+  const db = await openDatabase(dbCtx.dbConfig);
+
+  const [queryResults,] = await db.run(async (sql) => {
+    const results = await sql.query(stripMargin(`
+|  SELECT DISTINCT
+|    ar.url AS request_url,
+|    null as response_url,
+|    'status:new' as status_code,
+|    null as status_message,
+|    (datetime('now')) as "createdAt",
+|    (datetime('now')) as "updatedAt"
+|  FROM "NoteRecords" ar
+|  LEFT JOIN "UrlChains" uc
+|  ON ar.url=uc.request_url
+|  WHERE uc.request_url IS NULL
+|`));
+    return results;
+  });
+
+  await db.close();
+  return queryResults;
+}
 
 export async function insertNewUrlChains(
   dbCtx: DatabaseContext,
@@ -64,15 +87,14 @@ export async function insertNewUrlChains(
 |    null as response_url,
 |    'status:new' as status_code,
 |    null as status_message,
-|    NOW() as "createdAt",
-|    NOW() as "updatedAt"
-|  FROM "AlphaRecords" ar
+|    (datetime('now')) as "createdAt",
+|    (datetime('now')) as "updatedAt"
+|  FROM "NoteRecords" ar
 |  LEFT JOIN "UrlChains" uc
 |  ON ar.url=uc.request_url
 |  WHERE uc.request_url IS NULL
-|)
-|RETURNING request_url
-|`));
+| )
+| RETURNING request_url`));
     return results;
   });
 
@@ -131,7 +153,7 @@ export async function commitUrlStatus(
 |         SET
 |           "status_code" = ${esc(statusCode)},
 |           "status_message" = ${esc(statusMessage)},
-|           "updatedAt" = NOW()
+|           "updatedAt" = datetime('now')
 |         WHERE
 |           request_url = ${esc(requestUrl)}
 `);
@@ -185,7 +207,7 @@ export async function commitUrlFetchData(
 |         SET
 |           "status_code" = ${esc(httpStatus)},
 |           "response_url" = ${esc(responseUrl)},
-|           "updatedAt" = NOW()
+|           "updatedAt" = datetime('now')
 |         WHERE
 |           request_url = ${esc(requestUrl)}
 |         RETURNING "request_url", "response_url", "status_code"

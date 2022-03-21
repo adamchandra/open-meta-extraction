@@ -1,5 +1,6 @@
-import { initConfig } from '@watr/commonlib';
+import { initConfig, putStrLn } from '@watr/commonlib';
 import _ from 'lodash';
+import path from 'path'
 
 import {
   Sequelize,
@@ -12,6 +13,7 @@ export interface DBConfig {
   username: string;
   password: string;
   database: string;
+  dbFile: string;
 }
 
 export function getDBConfig(): DBConfig | undefined {
@@ -20,19 +22,26 @@ export function getDBConfig(): DBConfig | undefined {
   const username = config.get('db:username');
   const password = config.get('db:password');
   const database = config.get('db:database');
+  const dataRootPath = config.get('dataRootPath');
+  const dbFile = path.join(dataRootPath, 'service-db.sqlite');
 
   return {
     database,
     username,
-    password
+    password,
+    dbFile
   };
 }
 
 async function initSequelize(dbConfig: DBConfig): Promise<Sequelize> {
+  const { dbFile }= dbConfig;
   const sequelize = new Sequelize({
-    dialect: 'postgres',
+    // dialect: 'postgres',
+    dialect: 'sqlite',
+    storage: dbFile,
     ...dbConfig,
-    logging: false, // logging: console.log,
+    logging: console.log,
+    // logging: putStrLn
   });
 
   return sequelize
@@ -85,10 +94,13 @@ export async function runTransaction<R>(
 export async function openDatabase(dbConfig: DBConfig): Promise<Database> {
   return initSequelize(dbConfig)
     .then(async _sql => {
+      console.log('defining tables')
       defineTables(_sql);
 
+      console.log('syncing tables')
       // Create tables if they don't exist, else no-op
-      const sql = await _sql.sync({ alter: true });
+      const sql = await _sql.sync({ alter: false });
+      // const sql = _sql;
 
       const run = _.curry(runQuery)(sql);
       const runT = _.curry(runTransaction)(sql);

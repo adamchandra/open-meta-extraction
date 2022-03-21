@@ -12,4 +12,5 @@ docker-compose \
     -f $COMPOSE/volumes.yml \
     -f $COMPOSE/postgres.yml \
     -f $COMPOSE/redis.yml \
-    "$@"
+    -f $COMPOSE/mongo.yml \
+    "$@" "--remove-orphans"

@@ -34,12 +34,9 @@ export interface WorkflowConductorT {
   networkReady: CustomHandler<WorkflowConductorT, unknown, unknown>;
   startup: CustomHandler<WorkflowConductorT, unknown, unknown>;
   shutdown: CustomHandler<WorkflowConductorT, unknown, unknown>;
-  runOneAlphaRec: CustomHandler<WorkflowConductorT, WorkflowData, WorkflowData>;
-  runOneAlphaRecNoDB: CustomHandler<WorkflowConductorT, RecordRequest, CanonicalFieldRecords | ExtractionErrors>;
-  runOneURLNoDB: CustomHandler<WorkflowConductorT, URLRequest, CanonicalFieldRecords | ExtractionErrors>;
+  runOneURL: CustomHandler<WorkflowConductorT, URLRequest, CanonicalFieldRecords | ExtractionErrors>;
 }
 
-// TODO split out the file system parts (ArtifactService)?
 export const WorkflowConductor = defineSatelliteService<WorkflowConductorT>(
   'WorkflowConductor',
   async (commLink) => {
@@ -56,11 +53,8 @@ export const WorkflowConductor = defineSatelliteService<WorkflowConductorT>(
       async networkReady() { },
       async startup() { },
       async shutdown() { },
-      async runOneAlphaRec(arg: WorkflowData): Promise<WorkflowData> {
-        return arg;
-      },
 
-      async runOneURLNoDB(arg: URLRequest): Promise<CanonicalFieldRecords | ExtractionErrors> {
+      async runOneURL(arg: URLRequest): Promise<CanonicalFieldRecords | ExtractionErrors> {
         const { url } = arg;
 
         this.log.info(`Fetching fields for ${url}`);
@@ -97,23 +91,7 @@ export const WorkflowConductor = defineSatelliteService<WorkflowConductorT>(
         fieldRecs.finalUrl = finalUrl;
 
         return fieldRecs;
-      },
-
-      async runOneAlphaRecNoDB(arg: RecordRequest): Promise<CanonicalFieldRecords | ExtractionErrors> {
-        const { alphaRec } = arg;
-        const { url } = alphaRec;
-
-        const fieldRecs: CanonicalFieldRecords | ExtractionErrors =
-          await this.commLink.call('runOneURLNoDB', { url });
-
-        if ('error' in fieldRecs) {
-          return fieldRecs;
-        }
-
-        Object.assign(fieldRecs, alphaRec);
-
-        return fieldRecs;
-      },
+      }
     };
   });
 
@@ -124,8 +102,8 @@ interface FieldExtractor extends ExtractionSharedEnv {
   startup: CustomHandler<FieldExtractor, unknown, unknown>;
   shutdown: CustomHandler<FieldExtractor, unknown, unknown>;
   extractFields: CustomHandler<FieldExtractor, { url: string }, void>;
-
 }
+
 // TODO spider/field extractor in same service to share browserPool
 export const FieldExtractor = defineSatelliteService<FieldExtractor>(
   'FieldExtractor',

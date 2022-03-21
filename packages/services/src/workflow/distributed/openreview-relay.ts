@@ -1,15 +1,9 @@
 import _ from 'lodash';
 
-import Async from 'async';
-
-import axios from 'axios';
-import { AxiosError } from 'axios';
-type ErrorTypes = AxiosError | unknown;
-
-
 import {
   AxiosRequestConfig,
-  AxiosInstance
+  AxiosInstance,
+  AxiosError
 } from 'axios';
 
 import {
@@ -22,31 +16,9 @@ import { toUrl, URLRequest } from '../common/datatypes';
 import { WorkflowConductor } from './workers';
 import { delay, getEnvMode, initConfig, isTestingEnv, prettyFormat, prettyPrint } from '@watr/commonlib';
 import { Logger } from 'winston';
-import { asyncEachOfSeries } from '~/util/async-plus';
+import { asyncDoUntil, asyncDoWhilst, asyncEachOfSeries } from '~/util/async-plus';
 import { CanonicalFieldRecords, ExtractionErrors } from '@watr/field-extractors';
-
-interface User {
-  id: string;
-}
-
-interface Credentials {
-  token: string;
-  user: User;
-}
-
-interface NoteContent {
-  'abstract'?: string;
-  html?: string; // this is a URL
-  venueid: string;
-}
-interface Note {
-  id: string;
-  content: NoteContent;
-}
-interface Notes {
-  notes: Note[];
-  count: number;
-}
+import { displayRestError, newOpenReviewExchange, Note, Notes, OpenReviewExchange } from './openreview-exchange';
 
 interface NoteBatch {
   notes: Note[];
@@ -59,24 +31,16 @@ interface NoteBatch {
 
 type NumNumNum = [number, number, number];
 
-const config = initConfig();
-
-const OpenReviewAPIBase = config.get('openreview:restApi');
-
 interface OpenReviewRelay {
-  credentials?: Credentials;
+  openReviewExchange: OpenReviewExchange;
+
   commLink: CommLink<SatelliteService<OpenReviewRelay>>;
   log: Logger;
   networkReady: CustomHandler<OpenReviewRelay, unknown, unknown>;
   startup: CustomHandler<OpenReviewRelay, unknown, unknown>;
   shutdown: CustomHandler<OpenReviewRelay, unknown, unknown>;
 
-  configRequest(): AxiosRequestConfig;
-  configAxios(): AxiosInstance;
-  getCredentials(): Promise<Credentials>;
-  postLogin(user: string, password: string): Promise<Credentials>;
   doUpdateNote(note: Note, abs: string, retries?: number): Promise<void>;
-  apiGET<R>(url: string, query: Record<string, string | number>, retries?: number): Promise<R | undefined>;
   doFetchNotes(offset: number): Promise<Notes | undefined>;
   doRunRelay(offset?: number, batchSize?: number): Promise<void>;
   attemptExtractNote(
@@ -100,37 +64,19 @@ export const OpenReviewRelayService = defineSatelliteService<OpenReviewRelay>(
   });
 
 
-function isAxiosError(error: any): error is AxiosError {
-  return error['isAxiosError'] !== undefined && error['isAxiosError'];
-}
-
-function displayRestError(error: ErrorTypes): void {
-  if (isAxiosError(error)) {
-    console.log('HTTP Request Error: ');
-    const { response } = error;
-    if (response !== undefined) {
-      const { status, statusText, data } = response;
-      console.log(`Error: ${status}/${statusText}`);
-      console.log(data);
-    }
-    return;
-  }
-
-  console.log(error);
-}
 
 function newOpenReviewRelay(
   commLink: CommLink<SatelliteService<OpenReviewRelay>>,
 ) {
 
   const relay: OpenReviewRelay = {
-    credentials: undefined,
+    openReviewExchange: newOpenReviewExchange(commLink.log),
     commLink,
     log: commLink.log,
     async networkReady() {
       console.log('inside OpenReviewRelay networkReady')
 
-      await this
+      await this.openReviewExchange
         .getCredentials()
         .catch(error => {
           this.log.error(`Error: ${error}`);
@@ -147,59 +93,6 @@ function newOpenReviewRelay(
     async shutdown() {
     },
 
-    configRequest(): AxiosRequestConfig {
-      let auth = {};
-      if (this.credentials) {
-        auth = {
-          Authorization: `Bearer ${this.credentials.token}`
-        };
-      }
-
-      const config: AxiosRequestConfig = {
-        baseURL: OpenReviewAPIBase,
-        headers: {
-          "User-Agent": "open-extraction-service",
-          ...auth
-        },
-        timeout: 10000,
-        responseType: "json"
-      };
-
-      return config;
-    },
-
-    configAxios(): AxiosInstance {
-      const conf = this.configRequest();
-      return axios.create(conf);
-    },
-
-    async getCredentials(): Promise<Credentials> {
-      if (this.credentials !== undefined) {
-        return this.credentials;
-      }
-      const user = config.get('openreview:restUser');
-      const password = config.get('openreview:restPassword');
-
-      this.commLink.log.info(`Logging in as User: ${user}`)
-      if (user === undefined || password === undefined) {
-        return Promise.reject(new Error(`Openreview API: user or password not defined`))
-      }
-      const creds = await this.postLogin(user, password);
-
-      this.log.info(`Logged in as ${creds.user}`);
-
-      this.credentials = creds;
-      return creds;
-    },
-
-    async postLogin(user: string, password: string): Promise<Credentials> {
-      return this.configAxios()
-        .post("/login", { id: user, password })
-        .then(r => r.data)
-        .catch(displayRestError)
-    },
-
-
     async doUpdateNote(note: Note, abs: string, retries: number = 0): Promise<void> {
       const noteUpdate = {
         referent: note.id,
@@ -212,8 +105,8 @@ function newOpenReviewRelay(
         signatures: ['dblp.org']
       }
       this.log.info(`POSTing updated note ${note.id}`);
-      await this.getCredentials()
-      await this.configAxios()
+      await this.openReviewExchange.getCredentials()
+      await this.openReviewExchange.configAxios()
         .post("/notes", noteUpdate)
         .then(r => {
           const updatedNote: Note = r.data;
@@ -229,27 +122,8 @@ function newOpenReviewRelay(
         })
     },
 
-    async apiGET<R>(url: string, query: Record<string, string | number>, retries: number = 0): Promise<R | undefined> {
-      await this.getCredentials()
-      return this.configAxios()
-        .get(url, { params: query })
-        .then(response => {
-          const { data } = response;
-          return data;
-        })
-        .catch(error => {
-          displayRestError(error);
-          this.credentials = undefined;
-          this.commLink.log.warn(`apiGET ${url}: retries=${retries} `)
-          if (retries > 1) {
-            return undefined;
-          }
-          return this.apiGET(url, query, retries + 1);
-        });
-    },
-
     async doFetchNotes(offset: number): Promise<Notes | undefined> {
-      return this.apiGET<Notes>('/notes', { invitation: 'dblp.org/-/record', sort: 'number:desc', offset })
+      return this.openReviewExchange.apiGET<Notes>('/notes', { invitation: 'dblp.org/-/record', sort: 'number:desc', offset })
     },
 
     async doRunRelay(offset: number = 0, batchSize: number = 200): Promise<void> {
@@ -316,9 +190,9 @@ function newOpenReviewRelay(
         return true;
       }
 
-      await Async.doWhilst(
-        Async.asyncify(run),
-        Async.asyncify(async (shouldContinue: boolean) => shouldContinue)
+      await asyncDoWhilst(
+        run,
+        async (shouldContinue: boolean) => shouldContinue
       );
     },
 
@@ -367,11 +241,11 @@ function newOpenReviewRelay(
       }
 
       const res: CanonicalFieldRecords | ExtractionErrors = await this.commLink.call(
-        'runOneURLNoDB', arg, { to: WorkflowConductor.name }
+        'runOneURL', arg, { to: WorkflowConductor.name }
       );
 
       const pfres = prettyFormat(res)
-      this.commLink.log.debug(`runOneURLNoDB() => ${pfres}`);
+      this.commLink.log.debug(`runOneURL() => ${pfres}`);
 
       const adjustedUrlStr = res.finalUrl ? res.finalUrl : urlstr;
       const adjustedUrl = toUrl(adjustedUrlStr)
@@ -417,8 +291,8 @@ function newOpenReviewRelay(
       log.info(`CreateNoteBatch: offset: ${offset}, batchSize: ${batchSize} ...`)
       let availableNoteCount = 0;
 
-      await Async.doUntil(
-        Async.asyncify(async function(): Promise<number> {
+      await asyncDoUntil(
+        async function(): Promise<number> {
           try {
             const nextNotes = await self.doFetchNotes(offset);
             if (nextNotes === undefined) {
@@ -457,13 +331,13 @@ function newOpenReviewRelay(
           } catch (error) {
             return Promise.reject(error);
           }
-        }),
-        Async.asyncify(async function test(fetchLength: number): Promise<boolean> {
+        },
+        async function test(fetchLength: number): Promise<boolean> {
           const atBatchLimit = notesWithUrlNoAbs.length >= batchSize;
           const doneFetching = fetchLength === 0;
           log.info(`CreateBatch: until fetchLength(=${fetchLength})===0 || processableNotes(=${notesWithUrlNoAbs.length}) >= batchLimit(=${batchSize})`)
           return doneFetching || atBatchLimit;
-        })
+        }
       );
       const notesWithUrlNoAbsLen = notesWithUrlNoAbs.length;
       const notesWithAbstractsLen = notesWithAbstracts.length;

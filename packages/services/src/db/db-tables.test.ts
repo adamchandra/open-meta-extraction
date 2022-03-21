@@ -1,15 +1,15 @@
 import _ from 'lodash';
 
 import { prettyPrint, AlphaRecord } from '@watr/commonlib';
-import Async from 'async';
 import * as T from './db-tables';
 import { useEmptyDatabase } from './db-test-utils';
 import { getDBConfig } from './database';
 import { DatabaseContext } from './db-api';
+import {  asyncMapSeries } from '~/util/async-plus';
 
 describe('Database Tables Basics', () => {
   const dbConfig = getDBConfig();
-  const dbCtx: DatabaseContext | undefined = dbConfig? { dbConfig } : undefined;
+  const dbCtx: DatabaseContext | undefined = dbConfig ? { dbConfig } : undefined;
   expect(dbCtx).toBeDefined;
 
   if (dbConfig === undefined || dbCtx === undefined) return;
@@ -40,23 +40,21 @@ describe('Database Tables Basics', () => {
   });
 
   it('AlphaRecord', async () => {
-    const inputRecs: AlphaRecord[] = _.map(_.range(3), (n) => {
+    const inputRecs: AlphaRecord[] = _.map(_.range(20), (n) => {
       const n0 = n % 2 === 0 ? 10 : 20;
       return ({
-        noteId: `note-${n0}`,
-        dblpConfId: `dblp/conf/conf-${n0}`, // TODO rename to dblpKey
-        title: `titl-${n0}`,
-        authorId: `auth-${n0}`,
-        url: `url-${n0}`,
+        noteId: `note-${n0}`, // primary key 1
+        url: `url-${n0}`, // primary key 2
+        dblpConfId: `dblp/conf/conf-${n}`,
+        title: `titl-${n}`,
+        authorId: `auth-${n}`,
       });
     });
 
     await useEmptyDatabase(dbConfig, async db => {
-      // const alphaRec0 = inputRecs[0];
-
       await db.runTransaction(async (_sql, transaction) => {
-        await Async.eachSeries(inputRecs, Async.asyncify(async (alphaRec: AlphaRecord) => {
-          const [newEntry, isNew] = await T.AlphaRecord.findOrCreate({
+        return asyncMapSeries(inputRecs, async (alphaRec: AlphaRecord) => {
+          const [newEntry, isNew] = await T.NoteRecord.findOrCreate({
             where: {
               note_id: alphaRec.noteId,
               url: alphaRec.url,
@@ -73,14 +71,16 @@ describe('Database Tables Basics', () => {
 
           const plainNewEntry = newEntry.get({ plain: true });
           // prettyPrint({ isNew, plainNewEntry });
-        }));
+          return plainNewEntry;
+        });
       });
 
       await db.run(async () => {
-        return T.AlphaRecord.findAll()
+        return T.NoteRecord.findAll()
           .then((alphaRecs) => {
             const plainRecs = alphaRecs.map(a => a.get({ plain: true }));
             // prettyPrint({ plainRecs });
+            expect(alphaRecs.length).toBe(2);
           });
       });
     });
