@@ -10,18 +10,18 @@ describe('Author Coreference data transfer', () => {
   const workingDir = './test.scratch.d';
 
   beforeEach(async () => {
-      // drop mongo testdb
-      await mongoose.connect('mongodb://localhost:27017/testdb');
-      const conn = await connectToMongoDB();
-      await conn.connection.dropDatabase();
+    // drop mongo testdb
+    await mongoose.connect('mongodb://localhost:27017/testdb');
+    const conn = await connectToMongoDB();
+    await conn.connection.dropDatabase();
     fs.emptyDirSync(workingDir);
     fs.removeSync(workingDir);
     fs.mkdirSync(workingDir);
   });
 
   it('should populate shadow db with openreview records', async () => {
-      const commLink = newCommLink<SatelliteService<OpenReviewCoref>>("CorefService");
-      const corefService = await OpenReviewCorefService.cargoInit(commLink);
-      await corefService.updateAuthorCorefDB();
+    const commLink = newCommLink<SatelliteService<OpenReviewCoref>>("CorefService");
+    const corefService = await OpenReviewCorefService.cargoInit(commLink);
+    await corefService.updateAuthorCorefDB();
   });
 });

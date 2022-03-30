@@ -21,9 +21,7 @@ export interface CPAuthor {
 export const CPAuthorSchema = new Schema<CPAuthor>({
     position: { type: Number, required: true },
     author_name: { type: String, required: true }
-});
-
-// export const CPAuthorModel = model<CPAuthor>("CPAuthor", CPAuthorSchema);
+}, { _id: false });
 
 export interface CorefPaper {
     paper_id: string,
@@ -75,7 +73,7 @@ export const CSAuthorInfoSchema = new Schema<CSAuthorInfo>({
     suffix: { type: String, required: false },
     affiliations: [{ type: String, required: false }],
     email: { type: String, required: false },
-});
+}, { _id: false });
 
 export interface CorefSignature {
     paper_id: string;
@@ -88,7 +86,7 @@ export const CorefSignatureSchema = new Schema<CorefSignature>({
     paper_id: { type: String, required: true },
     author_id: { type: String, required: true },
     signature_id: { type: String, required: true },
-    author_info: [CSAuthorInfoSchema]
+    author_info: CSAuthorInfoSchema
 });
 
 export const CorefSignatureModel = model<CorefSignature>("Signature", CorefSignatureSchema);

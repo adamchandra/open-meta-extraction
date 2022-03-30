@@ -77,6 +77,8 @@ function newOpenReviewCoref(
       const self = this;
 
       let availableNoteCount = 0;
+      let notesProcessed = 0;
+      const noteLimit = 50000;
 
       await asyncDoUntil(
         async function(): Promise<number> {
@@ -95,15 +97,17 @@ function newOpenReviewCoref(
             availableNoteCount = count;
             offset += notes.length;
 
-            asyncEachSeries(notes, async (note: Note) => {
-              log.info(`saving note ${note.id}`)
+            await asyncEachSeries(notes, async (note: Note) => {
+              notesProcessed += 1;
+              const msg = `===  Processing ${note.id} ${note.content.title} ===`;
+              log.info(msg)
               const { content, id } = note;
               const paperId = id;
               const abs = content.abstract;
               const { title, authorids, authors, venue } = content;
               const authorsRec = _.zip(authorids, authors).map(([authorid, author_name], position) => {
                 if (author_name === undefined) return;
-                if (authorid === undefined || authorid===null) {
+                if (authorid === undefined || authorid === null) {
                   authorid = author_name;
                 }
                 return {
@@ -112,6 +116,50 @@ function newOpenReviewCoref(
                   authorid
                 };
               });
+
+              const bibtexstr = note.content._bibtex;
+              const bibtex: Bibliography = parseBibtex(bibtexstr, {
+                unknownCommandHandler: (node: RegularCommand) => {
+                  const { loc, source } = node;
+
+                  const comment: BracedComment = {
+                    kind: 'BracedComment',
+                    loc,
+                    source,
+                    value: '_',
+                  };
+                  return comment;
+
+                }
+              });
+
+              const maybeYears = bibtex.entries.flatMap((bibEntry: Entry) => {
+                const yearFields = bibEntry.fields['year'];
+                return yearFields ? yearFields : [];
+              });
+
+              const year = maybeYears.length > 0 ? maybeYears[0] : null;
+
+              const corefPaper = new CorefPaperModel({
+                paper_id: paperId,
+                title,
+                abstract: typeof abs === 'string' ? abs : null,
+                venue,
+                authors: authorsRec,
+                journal_name: null,
+                year,
+                references: []
+              });
+              await corefPaper.save()
+                .then(p => {
+                  const msg = `Saved ${p.paper_id} ${p.title}`;
+                  log.info(msg);
+                })
+                .catch(error => {
+                  log.error(`Error saving corefSignatureRecord ${error}`)
+                  prettyPrint({ note })
+                });
+
 
               await asyncEachSeries(authorsRec, async (rec) => {
                 if (rec === undefined) return;
@@ -139,7 +187,6 @@ function newOpenReviewCoref(
                   middleName = middleParts.join(' ')
                 }
 
-
                 // use github datamade/probablepeople in python to get f/m/l parts
                 const corefSignatureRecord = new CorefSignatureModel({
                   paper_id: paperId,
@@ -165,49 +212,8 @@ function newOpenReviewCoref(
                   .catch(error => {
                     log.error(`Error saving corefSignatureRecord ${error}`)
                     prettyPrint({ note })
-                  })
-                ;
+                  });
               });
-
-              const bibtexstr = note.content._bibtex;
-              const bibtex: Bibliography = parseBibtex(bibtexstr, {
-                unknownCommandHandler: (node: RegularCommand) => {
-                  const { loc, source } = node;
-
-                  // export interface BracedComment {
-                  const comment: BracedComment = {
-                    kind: 'BracedComment',
-                    loc,
-                    source,
-                    value: '_',
-                  };
-                  return comment;
-
-                }
-              });
-              // prettyPrint({bibtex})
-
-              const maybeYears = bibtex.entries.flatMap((bibEntry: Entry) => {
-                const yearFields = bibEntry.fields['year'];
-                return yearFields ? yearFields : [];
-              });
-
-              const year = maybeYears.length > 0 ? maybeYears[0] : null;
-
-              const corefPaper = new CorefPaperModel({
-                paper_id: id,
-                title,
-                abstract: typeof abs === 'string' ? abs : null,
-                venue,
-                authors: authorsRec,
-                year,
-                references: []
-              });
-              await corefPaper.save()
-                  .catch(error => {
-                    log.error(`Error saving corefSignatureRecord ${error}`)
-                    prettyPrint({ note })
-                  })
 
             })
             return notes.length;
@@ -217,11 +223,37 @@ function newOpenReviewCoref(
         },
         async function test(fetchLength: number): Promise<boolean> {
           const doneFetching = fetchLength === 0;
-          return doneFetching;
+          const reachedLimit = noteLimit > 0 && notesProcessed >= noteLimit;
+          return doneFetching || reachedLimit;
         }
       );
 
     }
   };
   return relay;
+}
+
+import { arglib } from '@watr/commonlib';
+const { opt, config, registerCmd } = arglib;
+
+import mongoose from 'mongoose';
+import { connectToMongoDB } from '~/db/mongodb';
+import { newCommLink } from '@watr/commlinks';
+
+export function registerCLICommands(yargv: arglib.YArgsT) {
+  registerCmd(
+    yargv,
+    'coref-init-db',
+    'Populate MongoDB with signatures from Openreview',
+    config(
+    )
+  )(async (args: any) => {
+    await mongoose.connect('mongodb://localhost:27017/testdb');
+    const conn = await connectToMongoDB();
+    await conn.connection.dropDatabase();
+
+    const commLink = newCommLink<SatelliteService<OpenReviewCoref>>("CorefService");
+    const corefService = await OpenReviewCorefService.cargoInit(commLink);
+    await corefService.updateAuthorCorefDB();
+  });
 }
