@@ -19,7 +19,7 @@ import { asyncDoUntil, asyncEachSeries } from '~/util/async-plus';
 import { newOpenReviewExchange, Note, Notes, OpenReviewExchange } from './openreview-exchange';
 
 import { prettyFormat, prettyPrint } from '@watr/commonlib';
-import { CorefPaperModel, CorefSignatureModel } from '~/db/mongodb';
+import { CorefPaperModel, CorefSignatureModel, createCollections } from '~/db/mongodb';
 import { BracedComment, RegularCommand } from '@retorquere/bibtex-parser/grammar';
 
 export interface OpenReviewCoref {
@@ -257,11 +257,13 @@ export function registerCLICommands(yargv: arglib.YArgsT) {
     const conn = await connectToMongoDB();
     await conn.connection.dropDatabase();
 
+    await createCollections();
+
     const commLink = newCommLink<SatelliteService<OpenReviewCoref>>("CorefService");
     const corefService = await OpenReviewCorefService.cargoInit(commLink);
     await corefService.updateAuthorCorefDB(limit);
     console.log('done updateAuthorCorefDB')
-    // await conn.disconnect();
+    await conn.disconnect();
     await commLink.quit()
     console.log('disconnected...')
   });

@@ -42,6 +42,8 @@ export const CorefPaperSchema = new Schema<CorefPaper>({
     year: { type: Number, required: false },
     references: [{ type: String, required: true }],
     authors: [CPAuthorSchema]
+}, {
+    collection: 'paper'
 });
 
 CorefPaperSchema.on('index', error => {
@@ -49,6 +51,7 @@ CorefPaperSchema.on('index', error => {
 });
 
 export const CorefPaperModel = model<CorefPaper>("Paper", CorefPaperSchema);
+
 
 export interface CSAuthorInfo {
     position: number;
@@ -76,7 +79,7 @@ export const CSAuthorInfoSchema = new Schema<CSAuthorInfo>({
     suffix: { type: String, required: false },
     affiliations: [{ type: String, required: false }],
     email: { type: String, required: false },
-}, { _id: false });
+}, { _id: false, collection: 'signatures' });
 
 export interface CorefSignature {
     paper_id: string;
@@ -96,10 +99,7 @@ CorefSignatureSchema.on('index', error => {
     console.log('CorefSignatureSchema: indexing', error.message);
 });
 
-
 export const CorefSignatureModel = model<CorefSignature>("Signature", CorefSignatureSchema);
-
-
 
 export interface Cluster {
     prediction_group: string;
@@ -113,8 +113,19 @@ export const ClusterSchema = new Schema<Cluster>({
     cluster_id: { type: String, required: true, index: true },
     signature_id: { type: String, required: true, index: true },
     canopy: { type: String, required: true, index: true }
+}, {
+    collection: 'clusters'
 });
 
 ClusterSchema.on('index', error => {
     console.log('ClusterSchema: indexing', error.message);
 });
+
+export const ClusterModel = model<Cluster>("Cluster", ClusterSchema);
+
+export async function createCollections() {
+    await CorefPaperModel.createCollection();
+    await CorefSignatureModel.createCollection();
+    await ClusterModel.createCollection();
+
+}
