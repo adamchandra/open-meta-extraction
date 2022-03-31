@@ -32,7 +32,7 @@ export interface OpenReviewCoref {
   shutdown: CustomHandler<OpenReviewCoref, unknown, unknown>;
 
   doFetchNotes(offset: number): Promise<Notes | undefined>;
-  updateAuthorCorefDB(): Promise<void>;
+  updateAuthorCorefDB(limit: number): Promise<void>;
 }
 
 export const OpenReviewCorefService = defineSatelliteService<OpenReviewCoref>(
@@ -69,7 +69,7 @@ function newOpenReviewCoref(
       return this.openReviewExchange.apiGET<Notes>('/notes', { invitation: 'dblp.org/-/record', sort: 'number:desc', offset })
     },
 
-    async updateAuthorCorefDB(): Promise<void> {
+    async updateAuthorCorefDB(limit: number): Promise<void> {
       this.log.info('Connected to MongoDB');
       const log = this.log;
       let offset = 0;
@@ -78,10 +78,11 @@ function newOpenReviewCoref(
 
       let availableNoteCount = 0;
       let notesProcessed = 0;
-      const noteLimit = 50000;
+      const noteLimit = limit;
+      const hasNoteLimit = noteLimit > 0;
 
       await asyncDoUntil(
-        async function(): Promise<number> {
+        async function (): Promise<number> {
           try {
             const nextNotes = await self.doFetchNotes(offset);
             if (nextNotes === undefined) {
@@ -98,6 +99,7 @@ function newOpenReviewCoref(
             offset += notes.length;
 
             await asyncEachSeries(notes, async (note: Note) => {
+              if (hasNoteLimit && notesProcessed > noteLimit) return;
               notesProcessed += 1;
               const msg = `===  Processing ${note.id} ${note.content.title} ===`;
               log.info(msg)
@@ -236,7 +238,6 @@ function newOpenReviewCoref(
 import { arglib } from '@watr/commonlib';
 const { opt, config, registerCmd } = arglib;
 
-import mongoose from 'mongoose';
 import { connectToMongoDB } from '~/db/mongodb';
 import { newCommLink } from '@watr/commlinks';
 
@@ -246,14 +247,23 @@ export function registerCLICommands(yargv: arglib.YArgsT) {
     'coref-init-db',
     'Populate MongoDB with signatures from Openreview',
     config(
+      opt.ion('limit: Max number of papers to add to db, 0==all', {
+        type: 'number',
+        demandOption: true
+      }),
     )
   )(async (args: any) => {
-    await mongoose.connect('mongodb://localhost:27017/testdb');
+    const { limit } = args;
     const conn = await connectToMongoDB();
     await conn.connection.dropDatabase();
 
     const commLink = newCommLink<SatelliteService<OpenReviewCoref>>("CorefService");
     const corefService = await OpenReviewCorefService.cargoInit(commLink);
-    await corefService.updateAuthorCorefDB();
+    await corefService.updateAuthorCorefDB(limit);
+    console.log('done updateAuthorCorefDB')
+    // await conn.disconnect();
+    await commLink.quit()
+    console.log('disconnected...')
   });
+
 }

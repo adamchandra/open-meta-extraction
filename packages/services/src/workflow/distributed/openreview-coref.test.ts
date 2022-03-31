@@ -2,7 +2,6 @@ import fs from 'fs-extra';
 import { OpenReviewCoref, OpenReviewCorefService } from './openreview-coref';
 import { newCommLink, CommLink, nextMessageId, SatelliteService } from '@watr/commlinks';
 
-import mongoose from 'mongoose';
 import { connectToMongoDB } from '~/db/mongodb';
 
 describe('Author Coreference data transfer', () => {
@@ -10,8 +9,6 @@ describe('Author Coreference data transfer', () => {
   const workingDir = './test.scratch.d';
 
   beforeEach(async () => {
-    // drop mongo testdb
-    await mongoose.connect('mongodb://localhost:27017/testdb');
     const conn = await connectToMongoDB();
     await conn.connection.dropDatabase();
     fs.emptyDirSync(workingDir);
@@ -22,6 +19,7 @@ describe('Author Coreference data transfer', () => {
   it('should populate shadow db with openreview records', async () => {
     const commLink = newCommLink<SatelliteService<OpenReviewCoref>>("CorefService");
     const corefService = await OpenReviewCorefService.cargoInit(commLink);
-    await corefService.updateAuthorCorefDB();
+    await corefService.updateAuthorCorefDB(100);
+    await commLink.quit()
   });
 });

@@ -1,7 +1,6 @@
-//
 import mongoose from 'mongoose';
 
-import { Schema, model, connect, Mongoose } from 'mongoose';
+import { Schema, model, Mongoose } from 'mongoose';
 
 const MongoTestDBName = 'testdb'
 const MongoProductionDBName = 'corefdb'
@@ -35,7 +34,7 @@ export interface CorefPaper {
 }
 
 export const CorefPaperSchema = new Schema<CorefPaper>({
-    paper_id: { type: String, required: true },
+    paper_id: { type: String, required: true, unique: true },
     title: { type: String, required: true },
     abstract: { type: String, required: false },
     journal_name: { type: String, required: false },
@@ -43,6 +42,10 @@ export const CorefPaperSchema = new Schema<CorefPaper>({
     year: { type: Number, required: false },
     references: [{ type: String, required: true }],
     authors: [CPAuthorSchema]
+});
+
+CorefPaperSchema.on('index', error => {
+    console.log('CorefPaperSchema: indexing', error.message);
 });
 
 export const CorefPaperModel = model<CorefPaper>("Paper", CorefPaperSchema);
@@ -64,7 +67,7 @@ export interface CSAuthorInfo {
 export const CSAuthorInfoSchema = new Schema<CSAuthorInfo>({
     position: { type: Number, required: true },
     given_block: { type: String, required: true },
-    block: { type: String, required: true },
+    block: { type: String, required: true, index: true },
     fullname: { type: String, required: true },
     openId: { type: String, required: true },
     first: { type: String, required: false },
@@ -83,10 +86,35 @@ export interface CorefSignature {
 }
 
 export const CorefSignatureSchema = new Schema<CorefSignature>({
-    paper_id: { type: String, required: true },
+    paper_id: { type: String, required: true, index: true },
     author_id: { type: String, required: true },
-    signature_id: { type: String, required: true },
+    signature_id: { type: String, required: true, unique: true },
     author_info: CSAuthorInfoSchema
 });
 
+CorefSignatureSchema.on('index', error => {
+    console.log('CorefSignatureSchema: indexing', error.message);
+});
+
+
 export const CorefSignatureModel = model<CorefSignature>("Signature", CorefSignatureSchema);
+
+
+
+export interface Cluster {
+    prediction_group: string;
+    cluster_id: string;
+    signature_id: string;
+    canopy: string;
+}
+
+export const ClusterSchema = new Schema<Cluster>({
+    prediction_group: { type: String, required: true, index: true },
+    cluster_id: { type: String, required: true, index: true },
+    signature_id: { type: String, required: true, index: true },
+    canopy: { type: String, required: true, index: true }
+});
+
+ClusterSchema.on('index', error => {
+    console.log('ClusterSchema: indexing', error.message);
+});
