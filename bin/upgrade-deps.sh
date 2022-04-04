@@ -11,7 +11,7 @@ declare -a dirs=(
 
 for i in "${dirs[@]}"
 do
-   cd "$i"
+   cd "packages/$i" || exit
    ncu -ui
-   cd ..
+   cd ../..
 done

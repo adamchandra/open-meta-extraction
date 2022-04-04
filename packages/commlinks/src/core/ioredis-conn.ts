@@ -1,5 +1,6 @@
 import _ from 'lodash';
 import Redis from 'ioredis';
+import { RedisOptions } from 'ioredis';
 import { getServiceLogger } from '@watr/commonlib';
 
 export const RedisConnectionEvents = [
@@ -11,7 +12,7 @@ export const RedisConnectionEvents = [
   'reconnecting'
 ];
 
-export function newRedisClient(name: string, opts?: Redis.RedisOptions): Redis.Redis {
+export function newRedisClient(name: string, opts?: RedisOptions): Redis {
   const host = 'localhost';
   const allOpts = _.merge({}, { host }, opts);
   const client = new Redis(allOpts);
@@ -19,7 +20,7 @@ export function newRedisClient(name: string, opts?: Redis.RedisOptions): Redis.R
   return client;
 }
 
-function installEventEchoing(r: Redis.Redis, name: string) {
+function installEventEchoing(r: Redis, name: string) {
   const log = getServiceLogger(`${name}/redis`);
   _.each(RedisConnectionEvents, (e: string) => {
     r.on(e, () => log.debug(`event:${e}`));

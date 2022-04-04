@@ -1,0 +1,7 @@
+#!/bin/bash
+
+climain="./packages/services/dist/src/cli"
+
+export NODE_ENV=testing
+
+node "$climain" "$@"

@@ -99,7 +99,7 @@ function newOpenReviewCoref(
             offset += notes.length;
 
             await asyncEachSeries(notes, async (note: Note) => {
-              if (hasNoteLimit && notesProcessed > noteLimit) return;
+              if (hasNoteLimit && notesProcessed >= noteLimit) return;
               notesProcessed += 1;
               const msg = `===  Processing ${note.id} ${note.content.title} ===`;
               log.info(msg)

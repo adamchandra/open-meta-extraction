@@ -3,7 +3,7 @@ import _ from 'lodash';
 import fs from 'fs-extra';
 import path from 'path';
 
-import yargs, { Argv, Arguments, Options } from 'yargs';
+import yargs, { Argv, Arguments, Options, MiddlewareFunction } from 'yargs';
 
 import { prettyPrint } from '~/util/pretty-print';
 
@@ -71,17 +71,18 @@ const existingPath = (pathAndDesc: string) => (ya: Argv) => {
     requiresArg: true,
   });
 
-  ya.middleware((argv: Arguments) => {
+  const middleFunc: MiddlewareFunction = (argv: Arguments) => {
     const p = resolveArgPath(argv, pathname);
     if (p && fs.existsSync(p)) {
-      return argv;
+      return;
     }
     _.update(argv, ['errors'], (prev: string[] | undefined | null) => {
       const newval = prev || [];
       return _.concat(newval, [`--${pathname}: ${p} doesn't exist`]);
     });
-    return argv;
-  }, /* applyBeforeValidation= */ true);
+  };
+
+  ya.middleware(middleFunc, /* applyBeforeValidation= */ true);
 
   return ya;
 };
@@ -117,9 +118,9 @@ export const configFile = (ya: Argv): Argv => {
       _.each(confKVs, ([k, v]) => {
         argv[k] = v;
       });
-      return argv;
+      return;
     }
-    return argv;
+    return;
   }, /* applyBeforeValidation= */ true);
 
   return ya;
@@ -163,4 +164,3 @@ export const opt = {
 };
 
 // export { default as YArgs } from 'yargs';
-

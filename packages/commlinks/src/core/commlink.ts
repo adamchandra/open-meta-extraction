@@ -24,7 +24,6 @@ import {
   Body,
   Headers,
   CYield,
-  CustomHandler
 } from './message-types';
 
 import { newRedisClient } from './ioredis-conn';
@@ -74,7 +73,7 @@ export interface CommLink<ClientT> {
 
   // Internal use:
   _install(m: MessageQuery, h: MessageHandlerFunc<ClientT, Message>, once: boolean): void;
-  subscriber: Redis.Redis;
+  subscriber: Redis;
   messageHandlers: MessageHandlerDef<ClientT>[];
   methodHandlers: Partial<ClientT>;
   isShutdown: boolean;
