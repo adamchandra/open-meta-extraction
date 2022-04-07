@@ -2,6 +2,6 @@
 
 climain="./packages/services/dist/src/cli"
 
-export NODE_ENV=testing
+export NODE_ENV=production
 
 node "$climain" "$@"
