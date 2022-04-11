@@ -66,14 +66,17 @@ export function setLogLabel(log: Logger, label: string) {
   );
 }
 
-// export function setLogLabels(log: Logger, label: string) {
-//   _.each(
-//     log.transports, t => {
-//       // console.log('setting transport', t);
-//       t.format = format.label({ label, message: true })
-//     }
-//   );
-// }
+export function setLogLabels(log: Logger, label: string) {
+  _.each(
+    log.transports, t => {
+      t.format = format.combine(
+        format.colorize(),
+        format.label({ label, message: true }),
+        format.simple(),
+      );
+    }
+  );
+}
 
 export function setLogLevel(log: Logger, transportType: TransportType, level: string) {
   _.each(

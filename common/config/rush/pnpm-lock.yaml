@@ -4,6 +4,7 @@ specifiers:
   '@babel/cli': ~7.17.6
   '@babel/core': ~7.17.9
   '@koa/router': ~10.1.1
+  '@ladjs/graceful': ~2.0.1
   '@retorquere/bibtex-parser': ~6.1.4
   '@rush-temp/commlinks': file:./projects/commlinks.tgz
   '@rush-temp/commonlib': file:./projects/commonlib.tgz
@@ -55,7 +56,7 @@ specifiers:
   fp-ts: 2.11.9
   fs-extra: ^10.0.1
   io-ts: ^2.2.16
-  ioredis: ~5.0.3
+  ioredis: ~5.0.4
   jest: ^27.5.1
   json-server: ^0.17.0
   koa: ^2.13.4
@@ -65,7 +66,7 @@ specifiers:
   logform: ^2.4.0
   mongodb: ~4.5.0
   mongoose: ~6.2.10
-  nconf: ~0.11.3
+  nconf: ~0.11.4
   pg: ^8.7.3
   pg-hstore: ^2.3.4
   pm2: ~5.2.0
@@ -88,12 +89,13 @@ specifiers:
   url-parse: ^1.5.10
   winston: ^3.7.2
   xml2js: ~0.4.23
-  yargs: ^17.4.0
+  yargs: ^17.4.1
 
 dependencies:
   '@babel/cli': 7.17.6_@babel+core@7.17.9
   '@babel/core': 7.17.9
   '@koa/router': 10.1.1
+  '@ladjs/graceful': 2.0.1
   '@retorquere/bibtex-parser': 6.1.4
   '@rush-temp/commlinks': file:projects/commlinks.tgz_ts-node@10.7.0
   '@rush-temp/commonlib': file:projects/commonlib.tgz_ts-node@10.7.0
@@ -145,7 +147,7 @@ dependencies:
   fp-ts: 2.11.9
   fs-extra: 10.0.1
   io-ts: 2.2.16_fp-ts@2.11.9
-  ioredis: 5.0.3
+  ioredis: 5.0.4
   jest: 27.5.1_ts-node@10.7.0
   json-server: 0.17.0
   koa: 2.13.4
@@ -155,7 +157,7 @@ dependencies:
   logform: 2.4.0
   mongodb: 4.5.0
   mongoose: 6.2.10
-  nconf: 0.11.3
+  nconf: 0.11.4
   pg: 8.7.3
   pg-hstore: 2.3.4
   pm2: 5.2.0
@@ -178,7 +180,7 @@ dependencies:
   url-parse: 1.5.10
   winston: 3.7.2
   xml2js: 0.4.23
-  yargs: 17.4.0
+  yargs: 17.4.1
 
 packages:
 
@@ -1686,7 +1688,7 @@ packages:
     resolution: {integrity: sha512-RZNwNclF7+MS/8bDg70amg32dyeZGZxiDuQmZxKLAlQjr3jGyLx+4Kkk58UO7D2QdgFIQCovuSuZESne6RG6XQ==}
     engines: {node: '>= 6.0.0'}
     dependencies:
-      debug: 4.3.3
+      debug: 4.3.4
     transitivePeerDependencies:
       - supports-color
     dev: false
@@ -4269,8 +4271,8 @@ packages:
       fp-ts: 2.11.9
     dev: false
 
-  /ioredis/5.0.3:
-    resolution: {integrity: sha512-hKxywVypoGGUJDyfnMufO0VNkuIaQufo2/PJ5SOYBKWgf4+gCnZEPaBPle615k08euY9/B9DKytVtwZROF7HaA==}
+  /ioredis/5.0.4:
+    resolution: {integrity: sha512-qFJw3MnPNsJF1lcIOP3vztbsasOXK3nDdNAgjQj7t7/Bn/w10PGchTOpqylQNxjzPbLoYDu34LjeJtSWiKBntQ==}
     engines: {node: '>=12.22.0'}
     dependencies:
       '@ioredis/commands': 1.1.1
@@ -5233,7 +5235,7 @@ packages:
       pluralize: 8.0.0
       server-destroy: 1.0.1
       update-notifier: 5.1.0
-      yargs: 17.4.0
+      yargs: 17.4.1
     transitivePeerDependencies:
       - supports-color
     dev: false
@@ -5955,8 +5957,8 @@ packages:
     resolution: {integrity: sha1-Sr6/7tdUHywnrPspvbvRXI1bpPc=}
     dev: false
 
-  /nconf/0.11.3:
-    resolution: {integrity: sha512-iYsAuDS9pzjVMGIzJrGE0Vk3Eh8r/suJanRAnWGBd29rVS2XtSgzcAo5l6asV3e4hH2idVONHirg1efoBOslBg==}
+  /nconf/0.11.4:
+    resolution: {integrity: sha512-YaDR846q11JnG1vTrhJ0QIlhiGY6+W1bgWtReG9SS3vkTl3AoNwFvUItdhG6/ZjGCfWpUVuRTNEBTDAQ3nWhGw==}
     engines: {node: '>= 0.4.0'}
     dependencies:
       async: 1.5.2
@@ -6886,7 +6888,7 @@ packages:
     resolution: {integrity: sha512-yhaYMaNFdfQ1LbA94ZElW1zU8rh+MFmO+GZA0gtQ8BXc+UZ6aRrWS9flIZvlXDzk+ZsXhCbTEohEwZ8lEDLRVA==}
     engines: {node: '>=8'}
     dependencies:
-      debug: 4.3.3
+      debug: 4.3.4
       fs-extra: 10.0.1
       puppeteer-extra-plugin: 3.2.0_puppeteer-extra@3.2.3
     transitivePeerDependencies:
@@ -8705,8 +8707,8 @@ packages:
       yargs-parser: 20.2.9
     dev: false
 
-  /yargs/17.4.0:
-    resolution: {integrity: sha512-WJudfrk81yWFSOkZYpAZx4Nt7V4xp7S/uJkX0CnxovMCt1wCE8LNftPpNuF9X/u9gN5nsD7ycYtRcDf2pL3UiA==}
+  /yargs/17.4.1:
+    resolution: {integrity: sha512-WSZD9jgobAg3ZKuCQZSa3g9QOJeCCqLoLAykiWgmXnDo9EPnn4RPf5qVTtzgOx66o6/oqhcA5tHtJXpG8pMt3g==}
     engines: {node: '>=12'}
     dependencies:
       cliui: 7.0.4
@@ -8749,7 +8751,7 @@ packages:
     dev: false
 
   file:projects/commlinks.tgz_ts-node@10.7.0:
-    resolution: {integrity: sha512-xHZx0fCXM+SXzcz6FYpXc+BLQaloik+IALdm8cyzc+85uFm5af+vrH3v/zAACPwU7ylOMhcCxRJ4E4pv9yleaw==, tarball: file:projects/commlinks.tgz}
+    resolution: {integrity: sha512-EzGSO5YCxdcXV1lctay2zWJlEW4BfW3OEGAc3+FuxqrmSynxznvNmhVh1CLnrU8ZUMajGqFrHKJSGiN6Qcbyfg==, tarball: file:projects/commlinks.tgz}
     id: file:projects/commlinks.tgz
     name: '@rush-temp/commlinks'
     version: 0.0.0
@@ -8763,7 +8765,7 @@ packages:
       async: 3.2.3
       chai: 4.3.6
       eslint: 7.32.0
-      ioredis: 5.0.3
+      ioredis: 5.0.4
       jest: 27.5.1_ts-node@10.7.0
       lodash: 4.17.21
       typescript: 4.6.3
@@ -8778,7 +8780,7 @@ packages:
     dev: false
 
   file:projects/commonlib.tgz_ts-node@10.7.0:
-    resolution: {integrity: sha512-VcNvaUEXEoyJ63X8yqLvaFpJU//O3V3MHFf9U+l2/e1ocCWBkJWt1gN7bFwXI5Kkio+3VW5MtYuMgq3NjeF+Qw==, tarball: file:projects/commonlib.tgz}
+    resolution: {integrity: sha512-7+Rmgr1LAqTTrdNTuU9xeo8GRZRUG/esYoxUB6bpKMMkuBva/4/+Ords7AfYRfMZDjqI7QAlnRoocboICru5vg==, tarball: file:projects/commonlib.tgz}
     id: file:projects/commonlib.tgz
     name: '@rush-temp/commonlib'
     version: 0.0.0
@@ -8804,14 +8806,14 @@ packages:
       jest: 27.5.1_ts-node@10.7.0
       lodash: 4.17.21
       logform: 2.4.0
-      nconf: 0.11.3
+      nconf: 0.11.4
       pumpify: 2.0.1
       split: 1.0.1
       through2: 4.0.2
       tslib: 2.3.1
       typescript: 4.6.3
       winston: 3.7.2
-      yargs: 17.4.0
+      yargs: 17.4.1
     transitivePeerDependencies:
       - bufferutil
       - canvas
@@ -8897,7 +8899,7 @@ packages:
     dev: false
 
   file:projects/services.tgz:
-    resolution: {integrity: sha512-JOeJ1NEhEBU+XmV/6l+0C+dKw+c+XELPglYZxXHHsZeoyBDFlexgx5xT9RVTdEtI/7ScC7pOjOL7g1/yYLM4Hg==, tarball: file:projects/services.tgz}
+    resolution: {integrity: sha512-xPi2F1oRetCwmeTd9+AwehEXkximpjgWf3R4kFX/Ux5lesf4VoDUIkRY8PpwFkG52JO1VqRLs0B98+ag+/3WaQ==, tarball: file:projects/services.tgz}
     name: '@rush-temp/services'
     version: 0.0.0
     dependencies:
@@ -8935,7 +8937,7 @@ packages:
       lodash: 4.17.21
       mongodb: 4.5.0
       mongoose: 6.2.10
-      nconf: 0.11.3
+      nconf: 0.11.4
       pg: 8.7.3
       pg-hstore: 2.3.4
       pm2: 5.2.0

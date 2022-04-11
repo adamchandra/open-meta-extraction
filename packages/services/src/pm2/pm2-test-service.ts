@@ -41,7 +41,7 @@ export function registerCmds(yargv: arglib.YArgsT) {
       return;
     }
 
-    putStrLn(`once: ${message}`);
+    putStrLn(`once: ${message}\n`);
 
   });
 
