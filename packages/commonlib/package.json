@@ -32,7 +32,7 @@
     "through2": "^4.0.2",
     "typescript": "^4.6.3",
     "tslib": "~2.3.1",
-    "winston": "^3.7.1",
+    "winston": "^3.7.2",
     "yargs": "^17.4.0",
     "nconf": "~0.11.3"
   },
