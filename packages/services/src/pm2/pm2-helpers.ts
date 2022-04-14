@@ -4,10 +4,7 @@ import workerThreads, { parentPort } from 'worker_threads';
 import process from 'process';
 import path from 'path';
 
-// export const cron_1amDaily = '0 0 1 ? * * *';
-// export const seconds = (ms: number) => ms * 1000;
-
-export function pm2List(): Promise<pm2.ProcessDescription[]> {
+function pm2List(): Promise<pm2.ProcessDescription[]> {
   return new Promise<pm2.ProcessDescription[]>((resolve, reject) => {
     pm2.list(function (error: Error, ls: pm2.ProcessDescription[]) {
       if (error) {
@@ -19,7 +16,18 @@ export function pm2List(): Promise<pm2.ProcessDescription[]> {
   });
 }
 
-export async function pm2Restart(proc: string | number): Promise<void> {
+async function pm2Start(...args: Parameters<typeof pm2.start>): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    pm2.start(args[0], args[1], function (error: Error) {
+      if (error) {
+        reject(error);
+        return;
+      }
+      resolve();
+    });
+  });
+}
+async function pm2Restart(proc: string | number): Promise<void> {
   return new Promise<void>((resolve, reject) => {
     pm2.restart(proc, function (error: Error) {
       if (error) {
@@ -31,16 +39,40 @@ export async function pm2Restart(proc: string | number): Promise<void> {
   });
 }
 
+async function pm2Stop(proc: string | number): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    pm2.stop(proc, function (error: Error) {
+      if (error) {
+        reject(error);
+        return;
+      }
+      resolve();
+    });
+  });
+}
+
+async function pm2Delete(proc: string | number): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    pm2.delete(proc, function (error: Error) {
+      if (error) {
+        reject(error);
+        return;
+      }
+      resolve();
+    });
+  });
+}
+
 export const pm2x = {
-  //   connect: promisify(pm2.connect),
-  //   disconnect: promisify(pm2.disconnect),
-  //   start: promisify(pm2.start),
-  //   stop: promisify(pm2.stop),
-  //   reload: promisify(pm2.reload),
+  start: pm2Start,
+  stop: pm2Stop,
   restart: pm2Restart,
-  list: pm2List
-  //   delete: promisify(pm2.delete),
-  //   describe: promisify(pm2.describe),
+  delete: pm2Delete,
+  list: pm2List,
+  // reload: pm2Reload,
+  // describe: pm2Describe,
+  // connect: promisify(pm2.connect),
+  // disconnect: promisify(pm2.disconnect),
 };
 
 
@@ -63,9 +95,12 @@ function getJobLogger(jobFilename: string): JobLogger {
 
   function jobLogger(msg: string): void {
     const { threadId, isMainThread } = workerThreads;
-    const threadStr = isMainThread? 't#main' : `t#${threadId}`;
+    const d = new Date();
+
+    const localTime = d.toLocaleTimeString();
+    const threadStr = isMainThread ? 't#main' : `t#${threadId}`;
     if (parentPort !== null) {
-      parentPort.postMessage(`[job:${jobFilename}:${threadStr}] - ${msg}`);
+      parentPort.postMessage(`${localTime} [job:${jobFilename}:${threadStr}] - ${msg}`);
       return;
     }
     infoLogger(msg);
@@ -81,15 +116,15 @@ export async function runJob(
   const baseName = path.basename(jobFilename);
   const baseNoExt = baseName.substring(0, baseName.length - 3);
   const log: JobLogger = getJobLogger(baseNoExt)
-  log('Job Started');
 
   const workerData = getWorkerData();
   // const wdPretty = prettyFormat({ workerData, workerThreads})
+  const args: string[] = workerData.job?.worker?.argv || [];
 
-  // log(`\n${wdPretty}\n`);
+  log(`Begin: PM2/RunJob ${baseNoExt}: ${args.join(' ')}`);
 
   await Promise.resolve(jobFunc(log, workerData))
 
-  log('Job Complete, exiting');
+  log(`Done: PM2/RunJob '${baseNoExt}'`);
   exitJob()
 }

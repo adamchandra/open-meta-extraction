@@ -43,8 +43,12 @@ export function getServiceLogger(label: string): Logger {
       new transports.Console({
         format: format.combine(
           format.colorize(),
+          format.timestamp({
+            format: 'HH:mm:ss:sss'
+          }),
           format.label({ label, message: true }),
-          format.simple(),
+          // format.simple(),
+          format.printf(info => `${info.timestamp} ${info.level}: ${info.message}`)
         ),
       })
     ],

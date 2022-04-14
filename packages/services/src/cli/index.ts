@@ -1,4 +1,6 @@
 import { registerAllClis, runCli } from './runner';
 
-registerAllClis()
-runCli()
+(async () => {
+  registerAllClis();
+  await runCli();
+})();

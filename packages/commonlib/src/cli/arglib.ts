@@ -137,15 +137,20 @@ export function registerCmd(
   description: string,
   ...fs: ArgvApp[]
 ): (cb: (parsedArgs: any) => void | Promise<void>) => void {
-  return (cb: (parsedArgs: any) => void) => {
+  return (cb: (parsedArgs: any) => void | Promise<void>) => {
     useYargs.command(
-      name, description, config(...fs), (argv: any) => {
+      name, description, config(...fs), async (argv: any): Promise<void> => {
         if (_.isArray(argv.errors)) {
           const fullArgs = _.merge({}, argv);
           prettyPrint({ errors: argv.errors, fullArgs });
           return;
         }
-        cb(argv);
+        const time1 = (new Date()).toLocaleTimeString();
+        console.log(`${time1} Register/Running Command '${name}'`)
+        const res = await Promise.resolve(cb(argv))
+        const time2 = (new Date()).toLocaleTimeString();
+        console.log(`${time2} Register/Done Command '${name}'`)
+        return res;
       }
     );
   };

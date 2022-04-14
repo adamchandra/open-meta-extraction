@@ -4,6 +4,7 @@ import { arglib } from '@watr/commonlib';
 import { SpiderService } from './distributed/spider-worker';
 import { FieldExtractor, WorkflowConductor } from './distributed/workers';
 import { OpenReviewRelayService } from './distributed/openreview-relay';
+import { sigtraps } from '~/util/shutdown';
 const { opt, config, registerCmd } = arglib;
 
 export function registerCLICommands(yargv: arglib.YArgsT) {
@@ -51,19 +52,5 @@ export function registerCLICommands(yargv: arglib.YArgsT) {
           console.log(`Error: ${error}`)
         });
     }
-  });
-  // });
-}
-
-async function sigtraps(cb: () => Promise<void>): Promise<void> {
-  return new Promise((resolve) => {
-    process.on('SIGINT', function() {
-      console.log('got SIGINT')
-      cb().then(resolve);
-    });
-    process.on('SIGTERM', function() {
-      console.log('got SIGTERM')
-      cb().then(resolve);
-    });
   });
 }

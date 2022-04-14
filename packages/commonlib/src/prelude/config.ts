@@ -2,6 +2,20 @@ import path from 'path';
 import { makeHashEncodedPath, HashEncodedPath } from '~/util/hash-encoded-paths';
 import nconf from 'nconf';
 import { prettyPrint } from '..';
+import fs from 'fs';
+
+export const ENV_MODES = {
+  'development': null,
+  'testing': null,
+  'production': null,
+};
+
+export type ENV_MODES = typeof ENV_MODES;
+export type ENV_MODE = keyof ENV_MODES;
+
+function isValidEnvMode(s: string | undefined): s is ENV_MODE {
+  return s !== undefined && s in ENV_MODES;
+}
 
 export const Env = {
   NODE_ENV: null, // production|testing
@@ -19,7 +33,7 @@ export function configureApp(): typeof nconf {
   nconf.required(['workingDirectory']);
 
   const wd = nconf.get('workingDirectory');
-  prettyPrint({ wd  });
+  prettyPrint({ wd });
   const workingConf = path.join(wd, 'conf');
 
   nconf.file('base', { file: envFile, dir: 'conf', search: true });
@@ -28,25 +42,50 @@ export function configureApp(): typeof nconf {
   return nconf;
 }
 
+function isFile(p: string | undefined): boolean {
+  return p!==undefined && fs.existsSync(p) && fs.statSync(p).isFile();
+}
+function isDir(p: string | undefined): boolean {
+  return p!==undefined && fs.existsSync(p) && fs.statSync(p).isDirectory()
+}
+export function findAncestorFile(startingDir: string, filename: string): string | undefined {
+  let currDir = path.resolve(startingDir);
+
+  if (!isDir(currDir)) {
+    return;
+  }
+
+  while (currDir != '/') {
+    const maybeFile = path.join(currDir, filename)
+    const parentDir = path.normalize(path.join(currDir, '..'));
+    // prettyPrint({ maybeFile, currDir, parentDir });
+    if (isFile(maybeFile)) {
+      return maybeFile;
+    }
+    currDir = parentDir;
+  }
+}
+
 export function initConfig(): typeof nconf {
   const envMode = getEnv('NODE_ENV');
+  if (!isValidEnvMode(envMode)) {
+    throw new Error("NODE_ENV not set!")
+  }
+
   const envFile = `config-${envMode}.json`;
 
   nconf.argv().env();
 
-  nconf.file('conf-1', { file: path.join('..', envFile)  });
-  nconf.file('conf-2', { file: path.join('../..', envFile)  });
-  nconf.file('conf-3', { file: path.join('../../..', envFile)  });
+  const envPath = findAncestorFile('.', envFile);
 
-  nconf.file('base', { file: envFile, dir: 'conf', search: true });
+  if (envPath) {
+    nconf.file('env-conf', { file: envPath });
+  }
 
   return nconf;
 }
 
-
 type EnvKey = keyof typeof Env;
-
-const runtimeConfig = initConfig();
 
 export function getEnvMode(): string {
   const env = getEnv('NODE_ENV');
@@ -62,7 +101,8 @@ function getEnv(key: EnvKey): string | undefined {
 
 // Root directory for storing application data
 export function getAppSharedDir(): string {
-  return runtimeConfig.get('dataRootPath');
+  const config = initConfig();
+  return config.get('dataRootPath');
 }
 
 // The root directory in which the spider will download files

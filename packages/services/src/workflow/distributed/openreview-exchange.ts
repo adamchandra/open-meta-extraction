@@ -46,9 +46,14 @@ export interface Notes {
     count: number;
 }
 
-const config = initConfig();
+export interface MessagePostData {
+    subject: string;
+    message: string,
+    groups: string[];
+}
 
-const OpenReviewAPIBase = config.get('openreview:restApi');
+export const OpenreviewStatusGroup = 'OpenReview.net/Status';
+
 
 export interface OpenReviewExchange {
     credentials?: Credentials;
@@ -57,10 +62,27 @@ export interface OpenReviewExchange {
     getCredentials(): Promise<Credentials>;
     postLogin(user: string, password: string): Promise<Credentials>;
     apiGET<R>(url: string, query: Record<string, string | number>, retries?: number): Promise<R | undefined>;
+    apiPOST<PD extends object, R>(url: string, postData: PD, retries?: number): Promise<R | undefined>;
+    postStatusMessage(subject: string, message: string): Promise<void>;
     log: Logger;
 }
 
+// Send emails using the POST /messages endpoint.
+// The body of the request requires
+// { subject: <Some Status Title>, message: <Body>, groups: [ 'OpenReview.net/Status' ] }
+
+export function makeMessagePost(subject: string, message: string): MessagePostData {
+    return {
+        subject,
+        message,
+        groups: [OpenreviewStatusGroup]
+    }
+}
+
 export function newOpenReviewExchange(log: Logger): OpenReviewExchange {
+    const config = initConfig();
+    const OpenReviewAPIBase = config.get('openreview:restApi');
+
     return {
         log,
         configRequest(): AxiosRequestConfig {
@@ -115,8 +137,8 @@ export function newOpenReviewExchange(log: Logger): OpenReviewExchange {
                 .catch(displayRestError)
         },
 
-        async apiGET<R>(url: string, query: Record<string, string | number>, retries: number = 0): Promise<R | undefined> {
-            await this.getCredentials()
+        async apiGET<R>(url: string, query: Record<string, string | number>, retries: number = 1): Promise<R | undefined> {
+            await this.getCredentials();
             return this.configAxios()
                 .get(url, { params: query })
                 .then(response => {
@@ -127,12 +149,37 @@ export function newOpenReviewExchange(log: Logger): OpenReviewExchange {
                     displayRestError(error);
                     this.credentials = undefined;
                     this.log.warn(`apiGET ${url}: retries=${retries} `)
-                    if (retries > 1) {
+                    if (retries <= 0) {
                         return undefined;
                     }
-                    return this.apiGET(url, query, retries + 1);
+                    return this.apiGET(url, query, retries - 1);
                 });
         },
+
+        async apiPOST<PD extends object, R>(url: string, postData: PD, retries: number = 1): Promise<R | undefined> {
+            await this.getCredentials();
+            return this.configAxios()
+                .post(url, postData)
+                .then(response => {
+                    const { data } = response;
+                    return data;
+                })
+                .catch(error => {
+                    displayRestError(error);
+                    this.credentials = undefined;
+                    this.log.warn(`apiPOST ${url}: retries=${retries} `)
+                    if (retries <= 0) {
+                        return undefined;
+                    }
+                    return this.apiPOST(url, postData, retries - 1);
+                });
+        },
+        async postStatusMessage(subject: string, message: string): Promise<void> {
+            const mp = makeMessagePost(subject, message);
+            this.log.info(`Sending message ${mp.subject}`);
+            await this.apiPOST('/messages', mp);
+            this.log.info(`Sent message ${mp.subject}`);
+        }
     };
 }
 

@@ -1,6 +1,5 @@
-import { appDef, CLIAppDef, makeCLIEcosystem } from './eco-helpers';
-
-const cliScript = './dist/src/cli/index.js'
+import { pm2CliJob } from './eco-helpers';
+import _ from 'lodash';
 
 const appNames: string[] = [
   'Howard',
@@ -8,17 +7,16 @@ const appNames: string[] = [
   'Martha'
 ];
 
-const appDefs: CLIAppDef[] = appNames.map(name => ({
-  name,
-  args: `echo --message='Hello from ${name}'`
-}));
+const apps1 = appNames.map(name => {
+  return pm2CliJob('echo', { name: `Say ${name}`, args: `--message='Hello from ${name}' --interval 1000` });
+});
 
-const apps = makeCLIEcosystem(appDefs)
-// const apps = appNames.map(name => appDef(name, cliScript, `echo --message='Hello from ${name}'`));
+const apps2 = [
+  pm2CliJob('scheduler'),
+  pm2CliJob('preflight-check', { autorestart: false })
+];
 
-const sitter = appDef('PM2Sitter', cliScript, 'pm2-sitter --watch ".sentinel.tmp"')
-apps.push(sitter);
-
+const apps = _.concat(apps1, apps2)
 
 module.exports = {
   apps

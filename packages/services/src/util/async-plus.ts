@@ -22,6 +22,14 @@ export async function asyncDoUntil<A>(
         Async.asyncify(test)
     );
 }
+export async function asyncForever(
+    fn: () => Promise<unknown>
+): Promise<void> {
+    return Async.doUntil(
+        Async.asyncify(fn),
+        Async.asyncify(async () => false)
+    );
+}
 
 export async function asyncMapSeries<A, R, E>(
     inputs: A[],
