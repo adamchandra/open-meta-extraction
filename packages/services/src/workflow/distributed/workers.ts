@@ -1,6 +1,4 @@
 import _ from 'lodash';
-import { DatabaseContext } from '~/db/db-api';
-import { getDBConfig } from '~/db/database';
 
 import {
   CommLink,
@@ -22,7 +20,7 @@ import {
 } from '@watr/field-extractors';
 
 
-import { RecordRequest, URLRequest, WorkflowData } from '../common/datatypes';
+import { URLRequest, WorkflowData } from '../common/datatypes';
 
 import { Logger } from 'winston';
 import { SpiderService } from './spider-worker';
@@ -30,7 +28,7 @@ import { SpiderService } from './spider-worker';
 export interface WorkflowConductorT {
   log: Logger;
   commLink: CommLink<SatelliteService<WorkflowConductorT>>;
-  databaseContext: DatabaseContext,
+  // databaseContext: DatabaseContext,
   networkReady: CustomHandler<WorkflowConductorT, unknown, unknown>;
   startup: CustomHandler<WorkflowConductorT, unknown, unknown>;
   shutdown: CustomHandler<WorkflowConductorT, unknown, unknown>;
@@ -41,15 +39,15 @@ export const WorkflowConductor = defineSatelliteService<WorkflowConductorT>(
   'WorkflowConductor',
   async (commLink) => {
     // TODO ensure we have access to local filesystem and database
-    const dbConfig = getDBConfig();
-    if (dbConfig === undefined) {
-      throw new Error('invalid database config; use env.{database,username,password}')
-    }
-    const databaseContext: DatabaseContext = { dbConfig };
+    // const dbConfig = getDBConfig();
+    // if (dbConfig === undefined) {
+    //   throw new Error('invalid database config; use env.{database,username,password}')
+    // }
+    // const databaseContext: DatabaseContext = { dbConfig };
     return {
       commLink,
       log: commLink.log,
-      databaseContext,
+      // databaseContext,
       async networkReady() { },
       async startup() { },
       async shutdown() { },
