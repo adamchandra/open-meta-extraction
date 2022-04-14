@@ -63,9 +63,9 @@ export function registerCommands(yargv: arglib.YArgsT) {
     log.info('Starting Scheduler')
 
     // Send status email once per day (on restart)
-    const emailJob = jobDef('send-email', [], 'on the first sec after 2 sec')
+    const emailJob = jobDef('send-email', [], 'every 12 hours')
     // Restart extractor at least once per day
-    const restartJob = cliJob('pm2-restart', [], 'every 10 sec')
+    const restartJob = cliJob('pm2-restart', [], 'every 4 hours')
     // Watch for file/sentinel change to restart
     // Monitor extraction rate and warn when too low
 

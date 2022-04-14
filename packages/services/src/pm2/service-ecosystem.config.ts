@@ -1,7 +1,6 @@
 import { WorkflowServiceName } from '~/workflow/distributed/workflow-defs';
 import { pm2CliJob } from './eco-helpers';
 import _ from 'lodash';
-import { prettyPrint } from '@watr/commonlib';
 
 export const appNames: WorkflowServiceName[] = [
   'HubService',
@@ -22,8 +21,6 @@ const apps2 = [
 ];
 
 const apps = _.concat(apps1, apps2)
-
-prettyPrint({ apps });
 
 module.exports = {
   apps

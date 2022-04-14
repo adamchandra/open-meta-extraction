@@ -13,7 +13,6 @@ import {
 } from './message-types';
 
 import { prettyPrint } from '@watr/commonlib';
-import { preflightCheck } from '..';
 
 describe('Service Communication Hub lifecycle', () => {
   process.env['service-comm.loglevel'] = 'warn';
