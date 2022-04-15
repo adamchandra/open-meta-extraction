@@ -1,26 +1,37 @@
-import { Readable } from 'stream';
+import { Logger } from 'winston';
+import * as E from 'fp-ts/Either';
 
 import {
+  BrowserPool,
+  createBrowserPool,
   initScraper,
   Scraper,
   UrlFetchData,
-  CrawlScheduler,
-  initCrawlScheduler
 } from '@watr/spider';
 
 import {
-  streamPump,
-  delay,
+  getCorpusEntryDirForUrl,
   getServiceLogger
 } from '@watr/commonlib';
 
-import * as E from 'fp-ts/Either';
-import { CustomHandler, defineSatelliteService } from '@watr/commlinks';
+import {
+  CommLink,
+  CustomHandler,
+  defineSatelliteService,
+  SatelliteService
+} from '@watr/commlinks';
+
+import {
+  extractFieldsForEntry,
+  initExtractionEnv,
+  readUrlFetchData,
+} from '@watr/field-extractors';
+
 
 export interface SpiderService {
-  crawlScheduler: CrawlScheduler;
   scraper: Scraper;
-  run(alphaRecordStream: Readable): Promise<Readable>; // Readable<UrlFetchData|undefined>
+  log: Logger;
+  browserPool: BrowserPool;
   scrape(url: string): Promise<UrlFetchData | undefined>;
   scrapeUrl(arg: { url: string }): Promise<UrlFetchData | undefined>;
   quit(): Promise<void>;
@@ -28,24 +39,25 @@ export interface SpiderService {
   networkReady: CustomHandler<SpiderService, unknown, unknown>;
   startup: CustomHandler<SpiderService, unknown, unknown>;
   shutdown: CustomHandler<SpiderService, unknown, unknown>;
+  extractFields: CustomHandler<SpiderService, { url: string }, void>;
 }
 
-export async function createSpiderService(): Promise<SpiderService> {
-  const logger = getServiceLogger('spider');
+export async function createSpiderService(commLink: CommLink<SatelliteService<SpiderService>>): Promise<SpiderService> {
+  const logger = commLink.log;
 
   const scraper = await initScraper();
-
-  const crawlScheduler = initCrawlScheduler();
+  const { browserPool } = scraper;
 
   const service: SpiderService = {
+    log: logger,
     scraper,
-    crawlScheduler,
+    browserPool,
 
-  async networkReady() { },
-  async startup() { },
-  async shutdown() {
-    return this.scraper.quit();
-  },
+    async networkReady() { },
+    async startup() { },
+    async shutdown() {
+      return this.scraper.quit();
+    },
 
     async scrapeUrl(arg: { url: string }): Promise<UrlFetchData | undefined> {
       const fetchData: UrlFetchData | undefined = await this.scrape(arg.url)
@@ -55,6 +67,7 @@ export async function createSpiderService(): Promise<SpiderService> {
         });
       return fetchData;
     },
+
     async scrape(url: string): Promise<UrlFetchData | undefined> {
       return scraper.scrapeUrl(url)
         .then(resultOrError => {
@@ -67,26 +80,19 @@ export async function createSpiderService(): Promise<SpiderService> {
           )(resultOrError);
         });
     },
-    async run(alphaRecordStream: Readable): Promise<Readable> {
-      const urlCount = await crawlScheduler.addUrls(alphaRecordStream);
-      const seedUrlStream = crawlScheduler.getUrlStream();
-      let i = 0;
-      return streamPump.createPump()
-        .viaStream<string>(seedUrlStream)
-        .throughF(async (urlString) => {
-          logger.debug(`url ${i} of ${urlCount}`);
-          i += 1;
-          return scraper.scrapeUrl(urlString)
-            .then((didScrape) => {
-              if (didScrape) {
-                return delay(1000);
-              }
-            })
-            .catch((error) => logger.warn('Error', error))
-            ;
-        })
-        .toReadableStream();
+    async extractFields(arg): Promise<void> {
+      const entryPath = getCorpusEntryDirForUrl(arg.url);
+      const urlFetchData = readUrlFetchData(entryPath);
+      const { log, browserPool } = this;
+      const sharedEnv = {
+        log,
+        browserPool,
+        urlFetchData
+      }
+      const exEnv = await initExtractionEnv(entryPath, sharedEnv);
+      await extractFieldsForEntry(exEnv);
     },
+
     quit() {
       return scraper.quit();
     }
@@ -96,5 +102,5 @@ export async function createSpiderService(): Promise<SpiderService> {
 }
 
 export const SpiderService = defineSatelliteService<SpiderService>(
-  'SpiderService', () => createSpiderService()
+  'SpiderService', (commLink) => createSpiderService(commLink)
 );

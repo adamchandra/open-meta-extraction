@@ -1,8 +1,9 @@
 import _ from 'lodash';
+
 import { createSatelliteService, createServiceHub, defineServiceHub } from '@watr/commlinks';
 import { arglib } from '@watr/commonlib';
-import { SpiderService } from './distributed/spider-worker';
-import { FieldExtractor, WorkflowConductor } from './distributed/workers';
+import { SpiderService } from './distributed/spider-service';
+import { WorkflowConductor } from './distributed/conductor-service';
 import { OpenReviewRelayService } from './distributed/openreview-relay';
 import { sigtraps } from '~/util/shutdown';
 const { opt, config, registerCmd } = arglib;
@@ -11,7 +12,6 @@ export function registerCLICommands(yargv: arglib.YArgsT) {
   const availableServices = {
     WorkflowConductor,
     SpiderService,
-    FieldExtractor,
     OpenReviewRelayService
   };
   const orderedServices = _.keys(availableServices);

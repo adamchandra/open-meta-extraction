@@ -16,7 +16,7 @@ import {
 } from '@watr/commlinks';
 import { Logger } from 'winston';
 import { asyncDoUntil, asyncEachSeries } from '~/util/async-plus';
-import { newOpenReviewExchange, Note, Notes, OpenReviewExchange } from './openreview-exchange';
+import { newOpenReviewExchange, Note, Notes, OpenReviewExchange } from '../common/openreview-exchange';
 
 import { prettyFormat, prettyPrint } from '@watr/commonlib';
 import { CorefPaperModel, CorefSignatureModel, createCollections } from '~/db/mongodb';

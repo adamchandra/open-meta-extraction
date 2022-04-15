@@ -1,10 +1,5 @@
 import _ from 'lodash';
-
-import {
-  AxiosRequestConfig,
-  AxiosInstance,
-  AxiosError
-} from 'axios';
+import { Logger } from 'winston';
 
 import {
   CommLink,
@@ -12,13 +7,14 @@ import {
   defineSatelliteService,
   SatelliteService
 } from '@watr/commlinks';
-import { toUrl, URLRequest } from '../common/datatypes';
-import { WorkflowConductor } from './workers';
-import { delay, getEnvMode, initConfig, isTestingEnv, prettyFormat, prettyPrint } from '@watr/commonlib';
-import { Logger } from 'winston';
-import { asyncDoUntil, asyncDoWhilst, asyncEachOfSeries } from '~/util/async-plus';
+
+import { delay, getEnvMode, isTestingEnv, prettyFormat, prettyPrint } from '@watr/commonlib';
 import { CanonicalFieldRecords, ExtractionErrors } from '@watr/field-extractors';
-import { displayRestError, newOpenReviewExchange, Note, Notes, OpenReviewExchange } from './openreview-exchange';
+
+import { toUrl, URLRequest } from '../common/datatypes';
+import { WorkflowConductor } from './conductor-service';
+import { asyncDoUntil, asyncDoWhilst, asyncEachOfSeries } from '~/util/async-plus';
+import { displayRestError, newOpenReviewExchange, Note, Notes, OpenReviewExchange } from '../common/openreview-exchange';
 
 interface NoteBatch {
   notes: Note[];

@@ -6,7 +6,6 @@ export const appNames: WorkflowServiceName[] = [
   'HubService',
   'WorkflowConductor',
   'SpiderService',
-  'FieldExtractor',
   'OpenReviewRelayService'
 ];
 

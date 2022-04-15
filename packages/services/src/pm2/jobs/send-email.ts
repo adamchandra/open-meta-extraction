@@ -1,5 +1,5 @@
 import { getServiceLogger, isTestingEnv } from '@watr/commonlib';
-import { newOpenReviewExchange } from '~/workflow/distributed/openreview-exchange';
+import { newOpenReviewExchange } from '~/workflow/common/openreview-exchange';
 import { runJob } from '../pm2-helpers';
 
 runJob(__filename, async (logger, workerData: any) => {

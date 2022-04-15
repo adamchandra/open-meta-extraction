@@ -1,6 +1,4 @@
 import fs from 'fs-extra';
-import { OpenReviewCoref, OpenReviewCorefService } from './openreview-coref';
-import { newCommLink, CommLink, nextMessageId, SatelliteService } from '@watr/commlinks';
 
 import { connectToMongoDB } from '~/db/mongodb';
 
@@ -18,6 +16,7 @@ describe('Author Coreference data transfer', () => {
 
   it('should populate shadow db with openreview records', async () => {
     // const commLink = newCommLink<SatelliteService<OpenReviewCoref>>("CorefService");
+      //
     // const corefService = await OpenReviewCorefService.cargoInit(commLink);
     // await corefService.updateAuthorCorefDB(100);
     // await commLink.quit()

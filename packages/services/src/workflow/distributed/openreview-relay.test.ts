@@ -1,8 +1,8 @@
 import _ from 'lodash';
 import { defineServiceHub } from '@watr/commlinks';
-import { runServiceHubAndSatellites } from './distributed-workflow';
-import { WorkflowConductor, FieldExtractor } from './workers';
-import { SpiderService } from './spider-worker';
+import { runServiceHubAndSatellites } from '../common/testing-utils';
+import { WorkflowConductor } from './conductor-service';
+import { SpiderService } from './spider-service';
 import { startSpiderableTestServer } from '~/http-servers/rest-portal/mock-server';
 import fs from 'fs-extra';
 import { Server } from 'http';
@@ -39,7 +39,6 @@ describe('End-to-end Distributed Extraction workflows', () => {
     const serviceChainWorkers = [
       WorkflowConductor,
       SpiderService,
-      FieldExtractor,
       OpenReviewRelayService
     ];
     const orderedServices = serviceChainWorkers.map(w => w.name);
