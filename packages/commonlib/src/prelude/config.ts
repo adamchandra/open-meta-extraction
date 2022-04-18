@@ -1,7 +1,8 @@
 import path from 'path';
+import _ from 'lodash';
 import { makeHashEncodedPath, HashEncodedPath } from '~/util/hash-encoded-paths';
 import nconf from 'nconf';
-import { prettyPrint } from '..';
+import { prettyPrint, putStrLn } from '..';
 import fs from 'fs';
 
 export const ENV_MODES = {
@@ -25,30 +26,18 @@ export const Env = {
   DBPassword: null,
 };
 
-export function configureApp(): typeof nconf {
-  const envMode = getEnv('NODE_ENV');
-  const envFile = `config-${envMode}.json`;
-
-  nconf.argv().env();
-  nconf.required(['workingDirectory']);
-
-  const wd = nconf.get('workingDirectory');
-  prettyPrint({ wd });
-  const workingConf = path.join(wd, 'conf');
-
-  nconf.file('base', { file: envFile, dir: 'conf', search: true });
-  nconf.file('secrets', { file: 'config-secrets.json', dir: workingConf, search: true });
-
-  return nconf;
-}
-
 function isFile(p: string | undefined): boolean {
   return p!==undefined && fs.existsSync(p) && fs.statSync(p).isFile();
 }
 function isDir(p: string | undefined): boolean {
   return p!==undefined && fs.existsSync(p) && fs.statSync(p).isDirectory()
 }
-export function findAncestorFile(startingDir: string, filename: string): string | undefined {
+
+export function findAncestorFile(
+  startingDir: string,
+  filename: string,
+  leadingDirs: string[]
+): string | undefined {
   let currDir = path.resolve(startingDir);
 
   if (!isDir(currDir)) {
@@ -56,11 +45,18 @@ export function findAncestorFile(startingDir: string, filename: string): string 
   }
 
   while (currDir != '/') {
-    const maybeFile = path.join(currDir, filename)
     const parentDir = path.normalize(path.join(currDir, '..'));
-    // prettyPrint({ maybeFile, currDir, parentDir });
-    if (isFile(maybeFile)) {
-      return maybeFile;
+    // putStrLn(`CurrentDir ${currDir}`)
+    const maybeFiles = _.flatMap(leadingDirs, ld => {
+      const maybeFile = path.join(currDir, ld, filename);
+      // putStrLn(`  checking> ${maybeFile}`)
+      if (isFile(maybeFile)) {
+        return [maybeFile];
+      }
+      return [];
+    });
+    if (maybeFiles.length > 0) {
+      return maybeFiles[0];
     }
     currDir = parentDir;
   }
@@ -76,7 +72,7 @@ export function initConfig(): typeof nconf {
 
   nconf.argv().env();
 
-  const envPath = findAncestorFile('.', envFile);
+  const envPath = findAncestorFile('.', envFile, ['conf', '.']);
 
   if (envPath) {
     nconf.file('env-conf', { file: envPath });

@@ -91,34 +91,48 @@ function openreviewRouter(): Router<Koa.DefaultState, Koa.DefaultContext> {
 }
 
 function htmlRouter(): Router<Koa.DefaultState, Koa.DefaultContext> {
-  const router = new Router({
-    prefix: '/htmls'
-  });
+  const router = new Router({ routerPath: '/htmls' });
 
-  // TODO regex not working here...
-  router.get('/', async (ctx: Context, next: () => Promise<any>) => {
+  router.get(/[/].*/, async (ctx: Context, next: () => Promise<any>) => {
     const { response, path } = ctx;
     prettyPrint({ testServer: path });
-    const [status, respKey, maybeTimeout] = path.slice(1).split(/~/);
+    const pathTail = path.slice('/htmls/'.length);
+    // const pathTail = path.slice(1);
+    const [status, respKey, maybeTimeout] = pathTail.split(/~/);
     const timeout = maybeTimeout ? Number.parseInt(maybeTimeout) : 0;
     prettyPrint({ status, respKey, timeout });
 
     response.type = 'html';
     response.status = Number.parseInt(status, 10);
     response.body = htmlSamples[respKey] || 'Unknown';
-    return delay(timeout)
-      .then(() => next());
+    await next();
   });
+
+  router.use(async (ctx, next) => {
+    log.info(`HTMLS: ${ctx.method} ${ctx.path}`)
+    await next();
+    log.info(`HTMLS:END: ${ctx.method} ${ctx.path}`)
+  });
+
+  router
 
   return router;
 }
 
 function rootRouter(): Router<Koa.DefaultState, Koa.DefaultContext> {
-  const router = new Router({});
+  const router = new Router();
 
-  router.use('/', ((ctx: Context) => {
+  router.use(async (ctx: Context, next) => {
+    log.info('Root 0')
     ctx.set('Access-Control-Allow-Origin', '*');
-  }));
+    return next();
+  });
+
+  router.use(async (ctx, next) => {
+    log.info(`ROOT:${ctx.method} ${ctx.path}`)
+    await next();
+    log.info(`ROOT:END ${ctx.method} ${ctx.path}`)
+  });
 
   return router;
 }
@@ -129,23 +143,17 @@ export async function startSpiderableTestServer(): Promise<Server> {
   const port = 9100;
 
   const root = rootRouter();
-  app.use(root.routes());
-  app.use(root.allowedMethods());
+  const hrouter = htmlRouter();
+
+  root.use(hrouter.routes());
 
   app.use(async (ctx, next) => {
-    const auth = ctx.headers.authorization
-    log.info(`${ctx.method} ${ctx.path} auth: ${auth}`)
+    log.info(`${ctx.method} ${ctx.path}`)
     await next();
     log.info(`END ${ctx.method} ${ctx.path} ${ctx.status}`)
   });
 
-  const orouter = openreviewRouter();
-  app.use(orouter.routes());
-  app.use(orouter.allowedMethods());
-
-  const hrouter = htmlRouter();
-  app.use(hrouter.routes());
-  app.use(hrouter.allowedMethods());
+  app.use(root.routes());
 
   return new Promise((resolve) => {
     const server = app.listen(port, () => {

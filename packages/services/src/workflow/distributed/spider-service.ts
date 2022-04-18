@@ -3,7 +3,6 @@ import * as E from 'fp-ts/Either';
 
 import {
   BrowserPool,
-  createBrowserPool,
   initScraper,
   Scraper,
   UrlFetchData,
@@ -11,7 +10,6 @@ import {
 
 import {
   getCorpusEntryDirForUrl,
-  getServiceLogger
 } from '@watr/commonlib';
 
 import {
@@ -33,7 +31,6 @@ export interface SpiderService {
   log: Logger;
   browserPool: BrowserPool;
   scrape(url: string): Promise<UrlFetchData | undefined>;
-  scrapeUrl(arg: { url: string }): Promise<UrlFetchData | undefined>;
   quit(): Promise<void>;
 
   networkReady: CustomHandler<SpiderService, unknown, unknown>;
@@ -57,15 +54,6 @@ export async function createSpiderService(commLink: CommLink<SatelliteService<Sp
     async startup() { },
     async shutdown() {
       return this.scraper.quit();
-    },
-
-    async scrapeUrl(arg: { url: string }): Promise<UrlFetchData | undefined> {
-      const fetchData: UrlFetchData | undefined = await this.scrape(arg.url)
-        .catch((error: Error) => {
-          logger.error(`${error.name}: ${error.message}`);
-          return undefined;
-        });
-      return fetchData;
     },
 
     async scrape(url: string): Promise<UrlFetchData | undefined> {

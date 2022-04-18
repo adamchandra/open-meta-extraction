@@ -1,27 +1,38 @@
 import _ from 'lodash';
-// import { prettyPrint } from '~/util/pretty-print';
-import { findAncestorFile, initConfig } from './config';
+import { findAncestorFile } from './config';
 
 describe('Configuration Management', () => {
-  it('read base config+secrets', () => {
-      process.env['workingDirectory'] = './test.tmp.d';
-      // const conf = configureApp();
-      const conf = initConfig();
-      const api = conf.get('openreview:restApi');
-      const pass = conf.get('openreview:restPassword');
-      // prettyPrint({ api, pass });
-  });
-
+  type ExampleT = Parameters<typeof findAncestorFile>;
   it('find ancestor file', () => {
 
-    const f1 = findAncestorFile('.', 'foobar');
-    expect(f1).toBeUndefined();
+    const examplesUndef: ExampleT[] = [
+      ['.', 'foobar', ['conf', '.']],
+      ['no/path', 'foobar', ['conf', '.']],
+    ];
 
-    const f2 = findAncestorFile('ugh/what?', 'foobar');
-    expect(f2).toBeUndefined();
+    const examplesDef: ExampleT[] = [
+      ['..', 'tsconfig.json', ['conf', '.']],
+      ['.', 'jest.setup.ts', ['test', '.']],
+    ];
 
-    const f3 = findAncestorFile('..', 'tsconfig.json');
-    expect(f3).toMatch(/tsconfig.json$/)
+    _.each(examplesUndef, ex => {
+      const result = findAncestorFile(...ex);
+      expect(result).toBeUndefined();
+    });
+    _.each(examplesDef, ex => {
+      const result = findAncestorFile(...ex);
+      expect(result).toBeDefined();
+    });
 
-  })
+  });
+
+  it('read base config+secrets', () => {
+    process.env['workingDirectory'] = './test.tmp.d';
+    // const conf = configureApp();
+    // const conf = initConfig();
+    // const api = conf.get('openreview:restApi');
+    // const pass = conf.get('openreview:restPassword');
+    // prettyPrint({ api, pass });
+  });
+
 });
