@@ -31,7 +31,7 @@ export async function asyncForever(
     );
 }
 
-export async function asyncMapSeries<A, R, E>(
+export async function asyncMapSeries<A, R, E = Error>(
     inputs: A[],
     fn: (a: A) => Promise<R>
 ): Promise<R[]> {

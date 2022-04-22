@@ -13,6 +13,16 @@ import {
 
 const { cli } = config;
 
+export const AllLogLevels = [
+  'error',
+  'warn',
+  'info',
+  'http',
+  'verbose',
+  'debug',
+  'silly',
+];
+
 export function getLogEnvLevel(): string {
   const envLogLevel = process.env['service-comm.loglevel'];
   const envLevel = envLogLevel;

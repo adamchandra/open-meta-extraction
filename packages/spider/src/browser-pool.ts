@@ -6,6 +6,7 @@ import { Pool } from 'tarn';
 import {
   HTTPRequest,
   HTTPResponse,
+  PuppeteerLifeCycleEvent
 } from 'puppeteer';
 
 import { delay, getServiceLogger, prettyFormat, prettyPrint, putStrLn } from '@watr/commonlib';
@@ -15,7 +16,7 @@ import {
 } from 'puppeteer';
 import { logBrowserEvent, logPageEvents } from './page-event';
 
-import { launchBrowser } from './puppet';
+import { BlockableResource, launchBrowser } from './puppet';
 
 
 export interface BrowserPool {
@@ -31,7 +32,7 @@ export interface BrowserInstance {
   pid(): number;
   logPrefix: string;
   createdAt: Date;
-  newPage(): Promise<PageInstance>;
+  newPage(opts: PageInstanceOptions): Promise<PageInstance>;
   events: string[];
   isStale(): boolean;
   kill(): Promise<void>;
@@ -42,8 +43,29 @@ export interface PageInstance {
   page: Page;
   logPrefix: string;
   createdAt: Date;
+  opts: PageInstanceOptions;
   gotoUrl(url: string): Promise<HTTPResponse | undefined>;
 }
+
+export interface PageInstanceOptions {
+  cacheEnabled: boolean;
+  defaultNavigationTimeout: number;
+  defaultTimeout: number;
+  javaScriptEnabled: boolean;
+  allowedResources: BlockableResource[];
+  waitUntil: PuppeteerLifeCycleEvent;
+}
+
+export const DefaultPageInstanceOptions: PageInstanceOptions = {
+  cacheEnabled: true,
+  defaultNavigationTimeout: 10_000,
+  defaultTimeout: 10_000,
+  javaScriptEnabled: false,
+  allowedResources: ['document'],
+  waitUntil: 'domcontentloaded',
+
+}
+
 export function createBrowserPool(logPrefix?: string): BrowserPool {
   const prefix = logPrefix ? logPrefix : '';
   const log = getServiceLogger(`${prefix}:browser-pool`);
@@ -100,17 +122,19 @@ export function createBrowserPool(logPrefix?: string): BrowserPool {
           },
           logPrefix,
           createdAt: new Date(),
-          async newPage(): Promise<PageInstance> {
+
+          async newPage(opts: PageInstanceOptions): Promise<PageInstance> {
             const page = await browser.newPage()
-            page.setDefaultNavigationTimeout(11_000);
-            page.setDefaultTimeout(11_000);
-            page.setJavaScriptEnabled(true);
+            page.setDefaultNavigationTimeout(opts.defaultNavigationTimeout);
+            page.setDefaultTimeout(opts.defaultTimeout);
+            page.setJavaScriptEnabled(opts.javaScriptEnabled);
             logPageEvents(page, log);
 
             const pageInstance: PageInstance = {
               page,
               logPrefix,
               createdAt: new Date(),
+              opts,
               gotoUrl(url: string): Promise<HTTPResponse | undefined> {
                 return gotoUrlSimpleVersion(this, url);
               }
@@ -228,7 +252,7 @@ export function createBrowserPool(logPrefix?: string): BrowserPool {
   });
 
   onExit(function (code: number | null, signal: string | null) {
-    log.info(`Node process got ${signal}/${code}; cleaning up browser pool`);
+    log.debug(`Node process got ${signal}/${code}; cleaning up browser pool`);
     pool.destroy();
   }, { alwaysLast: false });
 
@@ -247,7 +271,7 @@ export function createBrowserPool(logPrefix?: string): BrowserPool {
           log.debug(`release: closing all pages`)
           await Promise.all(pages.map(page => page.close()));
           log.debug(`release: open/close test page`)
-          const page = await b.newPage();
+          const page = await b.newPage(DefaultPageInstanceOptions);
           await page.page.goto('about:blank');
           await page.page.close()
         }).then(() => {
@@ -281,7 +305,7 @@ export function createBrowserPool(logPrefix?: string): BrowserPool {
       return a;
     },
     async shutdown() {
-      log.info('pool.shutdown()');
+      log.debug('pool.shutdown()');
       await pool.destroy();
     },
     report() {
@@ -302,9 +326,10 @@ export function createBrowserPool(logPrefix?: string): BrowserPool {
 }
 
 async function gotoUrlSimpleVersion(pageInstance: PageInstance, url: string): Promise<HTTPResponse | undefined> {
-  const { page } = pageInstance;
+  const { page, opts } = pageInstance;
+  const { waitUntil } = opts;
 
-  return page.goto(url, { waitUntil: 'load' });
+  return page.goto(url, { waitUntil });
 }
 
 async function gotoUrlStepwiseVersion(pageInstance: PageInstance, url: string): Promise<HTTPResponse | undefined> {

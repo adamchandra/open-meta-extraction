@@ -1,5 +1,5 @@
 import { getServiceLogger, putStrLn } from '@watr/commonlib';
-import { BrowserInstance, createBrowserPool } from './browser-pool';
+import { BrowserInstance, createBrowserPool, DefaultPageInstanceOptions } from './browser-pool';
 
 import Async from 'async';
 
@@ -7,11 +7,11 @@ describe('browser pooling', () => {
   process.env['service-comm.loglevel'] = 'verbose';
 
   it('borrow/return to pool', async () => {
-    const logger = getServiceLogger('browser-pool');
+    // const logger = getServiceLogger('browser-pool');
     const browserPool = createBrowserPool();
 
     const browserInstance = await browserPool.acquire();
-    const { page } = await browserInstance.newPage();
+    const { page } = await browserInstance.newPage(DefaultPageInstanceOptions);
 
     await page.goto('https://google.com/');
     await page.close();
@@ -77,7 +77,7 @@ describe('browser pooling', () => {
       putStrLn(`attempting ${url}`);
       const browser = await browserPool.acquire();
       putStrLn(`acquired browser`);
-      const pageInstance = await browser.newPage();
+      const pageInstance = await browser.newPage(DefaultPageInstanceOptions);
       putStrLn(`acquired page`);
       const { page } = pageInstance;
       putStrLn(`navigating...`);

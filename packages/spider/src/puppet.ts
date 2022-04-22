@@ -12,6 +12,7 @@ import AnonPlugin from 'puppeteer-extra-plugin-anonymize-ua';
 // @ts-ignore
 import blockResourcesPlugin from 'puppeteer-extra-plugin-block-resources';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
+import { Logger } from 'winston';
 
 export type Browser = PBrowser;
 export const Browser = PBrowser;
@@ -51,13 +52,23 @@ const AllBlockableResources = {
 };
 
 type BlockableResources = typeof AllBlockableResources;
-type BlockableResource = keyof BlockableResources;
+export type BlockableResource = keyof BlockableResources;
 
 const BlockableResources: BlockableResource[] = _.keys(AllBlockableResources) as BlockableResource[];
 
 const blockResPlugin = blockResourcesPlugin({
   blockedTypes: new Set<BlockableResource>()
 });
+
+export function blockedResourceReport(log: Logger): void {
+  const blocked = blockedResourceTypes();
+  const bres = blocked.join(', ');
+  const allowed = _.difference(BlockableResources, blocked);
+  const ares = allowed.join(', ')
+  log.debug(`Resource permissions:`)
+  log.debug(`   Blocked: ${bres}`)
+  log.debug(`   Allowed: ${ares}`)
+}
 
 export function allowResourceTypes(rs: BlockableResource[]): void {
   BlockableResources.forEach(r => blockResPlugin.blockedTypes.add(r));

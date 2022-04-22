@@ -2,50 +2,18 @@ import path from 'path';
 
 import { Logger } from 'winston';
 import {
-  newConsoleTransport,
-  newFileTransport,
-  getAppSharedDir,
-  getCorpusRootDir,
   HashEncodedPath,
-  newLogger,
-  getHashEncodedPath
+  getHashEncodedPath,
+  getServiceLogger
 } from '@watr/commonlib';
 
-export interface ScrapingContext extends SpiderLoggers {
+export interface ScrapingContext {
   sharedDataDir: string;
   corpusRoot: string;
   initialUrl: string;
   entryEncPath: HashEncodedPath;
   entryPath(): string;
-}
-
-export interface SpiderLoggers {
-  rootLogger: Logger;
-  entryLogger: Logger;
-}
-
-export function getSpiderLoggers(
-  entryEncPath: HashEncodedPath
-): SpiderLoggers {
-  // const appShareDir = getAppSharedDir();
-  // const corpusRoot = getCorpusRootDir();
-  // const entryLoggingPath = path.resolve(corpusRoot, entryEncPath.toPath());
-
-  const loglevel = 'info';
-  const rootLogger = newLogger(
-    newConsoleTransport(loglevel),
-    // newFileTransport(appShareDir, 'spidering-root.log', loglevel)
-  );
-
-  const entryLogger = newLogger(
-    newConsoleTransport(loglevel),
-    // newFileTransport(entryLoggingPath, 'spidering-entry.log', loglevel)
-  );
-
-  return {
-    rootLogger,
-    entryLogger
-  };
+  logger: Logger;
 }
 
 type Args = {
@@ -58,11 +26,9 @@ export function createScrapingContext({
   sharedDataDir,
   corpusRoot
 }: Args): ScrapingContext {
-  // const sharedDataDir = getAppSharedDir();
-  // const corpusRoot = getCorpusRootDir();
-
   const entryEncPath = getHashEncodedPath(initialUrl);
-  const spiderLoggers = getSpiderLoggers(entryEncPath);
+  const logger = getServiceLogger('scraper')
+
   return {
     sharedDataDir,
     corpusRoot,
@@ -75,6 +41,6 @@ export function createScrapingContext({
       );
       return entryPath;
     },
-    ...spiderLoggers
+    logger
   };
 }

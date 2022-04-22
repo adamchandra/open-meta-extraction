@@ -6,6 +6,8 @@ import path from 'path';
 import yargs, { Argv, Arguments, Options, MiddlewareFunction } from 'yargs';
 
 import { prettyPrint, putStrLn } from '~/util/pretty-print';
+import { boolean } from 'io-ts';
+import { AllLogLevels } from '..';
 export const YArgs = yargs;
 
 export type YArgsT = yargs.Argv;
@@ -56,6 +58,30 @@ const optAndDesc = (optAndDesc: string, ext?: Options) => (ya: Argv): Argv => {
 
   return ya.option(optname, opts);
 };
+
+const optFlag = (odesc: string) =>  optAndDesc(odesc, {
+  type: 'boolean',
+  default: false
+});
+
+const optNum = (odesc: string, def?: number) =>  optAndDesc(odesc, {
+  type: 'number',
+  demandOption: def === undefined,
+  default: def
+});
+
+const optString = (odesc: string, def?: string) =>  optAndDesc(odesc, {
+  type: 'string',
+  demandOption: def === undefined,
+  default: def
+});
+
+const optlogLevel = (def?: string) => optAndDesc('log-level: set logging level', {
+  type: 'string',
+  choices: AllLogLevels,
+  demandOption: def === undefined,
+  default: def
+});
 
 const existingPath = (pathAndDesc: string) => (ya: Argv) => {
   let [pathname, desc] = pathAndDesc.includes(':')
@@ -146,11 +172,9 @@ export function registerCmd(
           putStrLn(errors.join('\n'));
           return;
         }
-        const time1 = (new Date()).toLocaleTimeString();
-        console.log(`${time1} Register/Running Command '${name}'`)
+        // const time1 = (new Date()).toLocaleTimeString();
         const res = await Promise.resolve(cb(argv))
-        const time2 = (new Date()).toLocaleTimeString();
-        console.log(`${time2} Register/Done Command '${name}'`)
+        // const time2 = (new Date()).toLocaleTimeString();
         return res;
       }
     );
@@ -167,6 +191,8 @@ export const opt = {
   file: existingFile,
   cwd: setCwd,
   ion: optAndDesc,
+  flag: optFlag,
+  num: optNum,
+  str: optString,
+  logLevel: optlogLevel,
 };
-
-// export { default as YArgs } from 'yargs';
