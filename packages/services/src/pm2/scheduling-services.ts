@@ -1,4 +1,7 @@
-import { arglib, delay, getServiceLogger, initConfig, putStrLn } from '@watr/commonlib';
+import {
+  arglib, delay, getServiceLogger, initConfig, putStrLn,
+  asyncEachSeries, asyncForever
+} from '@watr/commonlib';
 const { opt, config, registerCmd } = arglib;
 
 import _ from 'lodash';
@@ -6,7 +9,6 @@ import _ from 'lodash';
 import { pm2x } from './pm2-helpers';
 import { cliJob, createBreeScheduler, jobDef } from './bree-helpers';
 
-import { asyncEachSeries, asyncForever } from '~/util/async-plus';
 import { sigtraps } from '~/util/shutdown';
 
 export function registerCommands(yargv: arglib.YArgsT) {

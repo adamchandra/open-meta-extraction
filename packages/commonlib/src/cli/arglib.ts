@@ -5,8 +5,7 @@ import path from 'path';
 
 import yargs, { Argv, Arguments, Options, MiddlewareFunction } from 'yargs';
 
-import { prettyPrint } from '~/util/pretty-print';
-
+import { prettyPrint, putStrLn } from '~/util/pretty-print';
 export const YArgs = yargs;
 
 export type YArgsT = yargs.Argv;
@@ -68,6 +67,7 @@ const existingPath = (pathAndDesc: string) => (ya: Argv) => {
   ya.option(pathname, {
     describe: desc,
     type: 'string',
+    demandOption: true,
     requiresArg: true,
   });
 
@@ -76,9 +76,10 @@ const existingPath = (pathAndDesc: string) => (ya: Argv) => {
     if (p && fs.existsSync(p)) {
       return;
     }
+
     _.update(argv, ['errors'], (prev: string[] | undefined | null) => {
       const newval = prev || [];
-      return _.concat(newval, [`--${pathname}: ${p} doesn't exist`]);
+      return _.concat(newval, [`--${pathname}: Path doesn't exist: ${p}`]);
     });
   };
 
@@ -141,8 +142,8 @@ export function registerCmd(
     useYargs.command(
       name, description, config(...fs), async (argv: any): Promise<void> => {
         if (_.isArray(argv.errors)) {
-          const fullArgs = _.merge({}, argv);
-          prettyPrint({ errors: argv.errors, fullArgs });
+          const errors: string[] = argv.errors;
+          putStrLn(errors.join('\n'));
           return;
         }
         const time1 = (new Date()).toLocaleTimeString();

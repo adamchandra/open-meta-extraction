@@ -2,7 +2,6 @@ import path from 'path';
 import _ from 'lodash';
 import { makeHashEncodedPath, HashEncodedPath } from '~/util/hash-encoded-paths';
 import nconf from 'nconf';
-import { prettyPrint, putStrLn } from '..';
 import fs from 'fs';
 
 export const ENV_MODES = {

@@ -71,7 +71,7 @@ specifiers:
   pg-hstore: ^2.3.4
   pm2: ~5.2.0
   pumpify: ^2.0.1
-  puppeteer: ^13.5.0
+  puppeteer: ^13.6.0
   puppeteer-extra: ^3.2.3
   puppeteer-extra-plugin-anonymize-ua: ^2.3.3
   puppeteer-extra-plugin-block-resources: ^2.3.0
@@ -162,8 +162,8 @@ dependencies:
   pg-hstore: 2.3.4
   pm2: 5.2.0
   pumpify: 2.0.1
-  puppeteer: 13.5.0
-  puppeteer-extra: 3.2.3_puppeteer@13.5.0
+  puppeteer: 13.6.0
+  puppeteer-extra: 3.2.3_puppeteer@13.6.0
   puppeteer-extra-plugin-anonymize-ua: 2.3.3_puppeteer-extra@3.2.3
   puppeteer-extra-plugin-block-resources: 2.3.0_puppeteer-extra@3.2.3
   puppeteer-extra-plugin-stealth: 2.9.0_puppeteer-extra@3.2.3
@@ -2905,8 +2905,8 @@ packages:
     engines: {node: '>=8'}
     dev: false
 
-  /devtools-protocol/0.0.969999:
-    resolution: {integrity: sha512-6GfzuDWU0OFAuOvBokXpXPLxjOJ5DZ157Ue3sGQQM3LgAamb8m0R0ruSfN0DDu+XG5XJgT50i6zZ/0o8RglreQ==}
+  /devtools-protocol/0.0.981744:
+    resolution: {integrity: sha512-0cuGS8+jhR67Fy7qG3i3Pc7Aw494sb9yG9QgpG97SFVWwolgYjlhJg7n+UaHxOQT30d1TYu/EYe9k01ivLErIg==}
     dev: false
 
   /diff-sequences/27.4.0:
@@ -3564,7 +3564,7 @@ packages:
     engines: {node: '>= 10.17.0'}
     hasBin: true
     dependencies:
-      debug: 4.3.3
+      debug: 4.3.4
       get-stream: 5.2.0
       yauzl: 2.10.0
     optionalDependencies:
@@ -6897,12 +6897,12 @@ packages:
       '@types/debug': 4.1.7
       debug: 4.3.3
       merge-deep: 3.0.3
-      puppeteer-extra: 3.2.3_puppeteer@13.5.0
+      puppeteer-extra: 3.2.3_puppeteer@13.6.0
     transitivePeerDependencies:
       - supports-color
     dev: false
 
-  /puppeteer-extra/3.2.3_puppeteer@13.5.0:
+  /puppeteer-extra/3.2.3_puppeteer@13.6.0:
     resolution: {integrity: sha512-CnSN9yIedbAbS8WmRybaDHJLf6goRk+VYM/kbH6i/+EMadCaAeh2O+1/mFUMN2LbkbDNAp2Vd/UwrTVCHjTxyg==}
     engines: {node: '>=8'}
     peerDependencies:
@@ -6912,19 +6912,19 @@ packages:
       '@types/puppeteer': 5.4.5
       debug: 4.3.3
       deepmerge: 4.2.2
-      puppeteer: 13.5.0
+      puppeteer: 13.6.0
     transitivePeerDependencies:
       - supports-color
     dev: false
 
-  /puppeteer/13.5.0:
-    resolution: {integrity: sha512-raPr2YZ3RZLboGwt7jJgusJTBRDaVEUiPOSOWWFLV1oj07xqT5UqqbjmNXFXlMlkhF/NwmcEInW64VhvyllVdw==}
+  /puppeteer/13.6.0:
+    resolution: {integrity: sha512-EJXhTyY5bXNPLFXPGcY9JaF6EKJIX8ll8cGG3WUK+553Jx96oDf1cB+lkFOro9p0X16tY+9xx7zYWl+vnWgW2g==}
     engines: {node: '>=10.18.1'}
     requiresBuild: true
     dependencies:
       cross-fetch: 3.1.5
-      debug: 4.3.3
-      devtools-protocol: 0.0.969999
+      debug: 4.3.4
+      devtools-protocol: 0.0.981744
       extract-zip: 2.0.1
       https-proxy-agent: 5.0.0
       pkg-dir: 4.2.0
@@ -8673,11 +8673,12 @@ packages:
     dev: false
 
   file:projects/commonlib.tgz_ts-node@10.7.0:
-    resolution: {integrity: sha512-K7Giu+26JKK3ShxoyZ45aSf8rp3si8IStCO61PFiyg434vn7JpuW5hieheeZ+aEOc3Sa30qrkUCdS1gSnm/A6w==, tarball: file:projects/commonlib.tgz}
+    resolution: {integrity: sha512-PR7ryKO4uJchTuBaDI0nNNamnlhrC58wvPytUEh4qtLQQ+huLzkkmasUEMN1StZZ0ZnjTYJyP9Ou15yHxc5ORw==, tarball: file:projects/commonlib.tgz}
     id: file:projects/commonlib.tgz
     name: '@rush-temp/commonlib'
     version: 0.0.0
     dependencies:
+      '@types/async': 3.2.12
       '@types/chai': 4.3.1
       '@types/crypto-js': 4.1.1
       '@types/diff': 5.0.2
@@ -8689,6 +8690,7 @@ packages:
       '@types/split': 1.0.1
       '@types/through2': 2.0.36
       '@types/yargs': 17.0.10
+      async: 3.2.3
       crypto-js: 4.1.1
       diff: 5.0.0
       eslint: 7.32.0
@@ -8717,7 +8719,7 @@ packages:
     dev: false
 
   file:projects/field-extractors.tgz_ts-node@10.7.0:
-    resolution: {integrity: sha512-GKc1SPz//NXq/FIMY8RdnqBRAuc3sLrLFIG9TtrhXD1K6vsAoHTekaEkUUaphDvyBCpeF5eLAU6nlsS9GII8gg==, tarball: file:projects/field-extractors.tgz}
+    resolution: {integrity: sha512-HjMqy9GXmM7pMtxL06J3/x/ShCLibdPCD8ggeuFWtWyKn6mOwqyKlpxb6mSBOcQD//K2gfLtwy1qk68JTM+okw==, tarball: file:projects/field-extractors.tgz}
     id: file:projects/field-extractors.tgz
     name: '@rush-temp/field-extractors'
     version: 0.0.0
@@ -8736,7 +8738,7 @@ packages:
       fs-extra: 10.1.0
       jest: 27.5.1_ts-node@10.7.0
       lodash: 4.17.21
-      puppeteer: 13.5.0
+      puppeteer: 13.6.0
       typescript: 4.6.3
       url-parse: 1.5.10
       winston: 3.7.2
@@ -8859,7 +8861,7 @@ packages:
     dev: false
 
   file:projects/spider.tgz_ts-node@10.7.0:
-    resolution: {integrity: sha512-TRtXITLGuCZ95t69J1DgWFwVuir0H5gU+Hmqog5prB7EoRlUwp13riMRYtFYlJr8Szo3L5NorveOpvU3TY521Q==, tarball: file:projects/spider.tgz}
+    resolution: {integrity: sha512-b3IXmVZwO6e/8E57Rmoyiandc7tq9ZPoX/D7F+Wpg2G8yaliRGCMyrwuqZ/lsJ2vk3yZldtsgTes/0JIkOhfCw==, tarball: file:projects/spider.tgz}
     id: file:projects/spider.tgz
     name: '@rush-temp/spider'
     version: 0.0.0
@@ -8875,8 +8877,8 @@ packages:
       fp-ts: 2.11.10
       jest: 27.5.1_ts-node@10.7.0
       lodash: 4.17.21
-      puppeteer: 13.5.0
-      puppeteer-extra: 3.2.3_puppeteer@13.5.0
+      puppeteer: 13.6.0
+      puppeteer-extra: 3.2.3_puppeteer@13.6.0
       puppeteer-extra-plugin-anonymize-ua: 2.3.3_puppeteer-extra@3.2.3
       puppeteer-extra-plugin-block-resources: 2.3.0_puppeteer-extra@3.2.3
       puppeteer-extra-plugin-stealth: 2.9.0_puppeteer-extra@3.2.3

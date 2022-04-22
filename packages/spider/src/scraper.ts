@@ -1,7 +1,7 @@
 import _ from 'lodash';
 import * as E from 'fp-ts/Either';
 
-import { writeCorpusJsonFile, writeCorpusTextFile, hasCorpusFile, getServiceLogger } from '@watr/commonlib';
+import { writeCorpusJsonFile, writeCorpusTextFile, hasCorpusFile, getServiceLogger, cleanArtifactDir } from '@watr/commonlib';
 
 import {
   HTTPResponse,
@@ -16,19 +16,27 @@ import { BrowserPool, createBrowserPool, BrowserInstance } from './browser-pool'
 
 export interface Scraper {
   browserPool: BrowserPool;
-  scrapeUrl(url: string): Promise<E.Either<string, UrlFetchData>>;
+  scrapeUrl(url: string, clean: boolean): Promise<E.Either<string, UrlFetchData>>;
   quit(): Promise<void>;
 }
 
-export async function initScraper(): Promise<Scraper> {
+type InitScraperArgs = {
+  sharedDataDir: string,
+  corpusRoot: string
+};
+
+export async function initScraper({
+  sharedDataDir,
+  corpusRoot
+}: InitScraperArgs): Promise<Scraper> {
   const logger = getServiceLogger('scraper');
   const browserPool = createBrowserPool('Scraper');
 
   return {
     browserPool,
-    async scrapeUrl(url: string): Promise<E.Either<string, UrlFetchData>> {
+    async scrapeUrl(url: string, clean: boolean): Promise<E.Either<string, UrlFetchData>> {
       const result = await browserPool.use(async (browserInstance: BrowserInstance) => {
-        return scrapeUrl(browserInstance, url);
+        return scrapeUrl({ browserInstance, url, sharedDataDir, corpusRoot, clean });
       });
       return result;
     },
@@ -39,14 +47,30 @@ export async function initScraper(): Promise<Scraper> {
   };
 }
 
-async function scrapeUrl(
+type ScrapeUrlArgs = {
   browserInstance: BrowserInstance,
-  url: string
-): Promise<E.Either<string, UrlFetchData>> {
-  const scrapingContext = createScrapingContext(url);
+  url: string,
+  sharedDataDir: string,
+  corpusRoot: string,
+  clean: boolean
+};
+
+async function scrapeUrl({
+  browserInstance,
+  url,
+  sharedDataDir,
+  corpusRoot,
+  clean
+}: ScrapeUrlArgs): Promise<E.Either<string, UrlFetchData>> {
+  const scrapingContext = createScrapingContext({ initialUrl: url, sharedDataDir, corpusRoot });
 
   const { rootLogger } = scrapingContext;
   const entryRootPath = scrapingContext.entryPath();
+
+  if (clean) {
+    rootLogger.info('Cleaning old downloaded artifacts');
+    cleanArtifactDir(entryRootPath);
+  }
 
   rootLogger.info(`downloading ${url} to ${scrapingContext.entryEncPath.toPath()}`);
 
@@ -56,30 +80,13 @@ async function scrapeUrl(
     rootLogger.warn(`skipping ${url}: metadata file exists`);
     return E.left(`skipping ${url}: metadata file exists`);
   }
-  const { page }  = await browserInstance.newPage();
+  // const { page } = await browserInstance.newPage();
+  const browserPage = await browserInstance.newPage();
+
+  const { page } = browserPage;
+
   try {
-    logPageEvents(page, scrapingContext.rootLogger);
-
-    page.setDefaultNavigationTimeout(11_000);
-    page.setDefaultTimeout(11_000);
-    page.setJavaScriptEnabled(true);
-
-    let response: HTTPResponse | null = await page.goto(url, {});
-
-    if (!response) {
-      rootLogger.info('retrying navigation to page');
-      const response2 = await page
-        .waitForNavigation({
-          //
-        })
-        .catch(() => {
-          //
-        });
-      if (response2) {
-        rootLogger.info('successful retry navigation to page');
-        response = response2;
-      }
-    }
+    const response = await browserPage.gotoUrl(url)
 
     if (!response) {
       rootLogger.warn(`no response ${url}`);
@@ -110,7 +117,7 @@ async function scrapeUrl(
         rootLogger.info(`retrieving frame content ${frameNum} of ${frameCount}`);
         const content = await new Promise((resolve) => {
           let counter = 0;
-          const timeout = setTimeout(function() {
+          const timeout = setTimeout(function () {
             counter += 1;
             // clearImmediate(immediate);
             resolve(`timeout after ${timeoutMS}ms`);

@@ -48,3 +48,9 @@ A sample .envrc file is included in the ./docs folder
     - "By hand", running command line apps for the spider, then field extraction, then
         collecting output into an aggregated JSON file
     - Inline via Commandline, where spidering and field extraction happen in the same process
+
+
+* Handling arxiv.org redirects
+** watch redirect event in spider
+** rewrite url arxig.org/foobar -> spider.arxiv.org/blah
+** use css to select xml attrs ??

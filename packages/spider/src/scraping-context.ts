@@ -27,19 +27,19 @@ export interface SpiderLoggers {
 export function getSpiderLoggers(
   entryEncPath: HashEncodedPath
 ): SpiderLoggers {
-  const appShareDir = getAppSharedDir();
-  const corpusRoot = getCorpusRootDir();
-  const entryLoggingPath = path.resolve(corpusRoot, entryEncPath.toPath());
+  // const appShareDir = getAppSharedDir();
+  // const corpusRoot = getCorpusRootDir();
+  // const entryLoggingPath = path.resolve(corpusRoot, entryEncPath.toPath());
 
   const loglevel = 'info';
   const rootLogger = newLogger(
     newConsoleTransport(loglevel),
-    newFileTransport(appShareDir, 'spidering-root.log', loglevel)
+    // newFileTransport(appShareDir, 'spidering-root.log', loglevel)
   );
 
   const entryLogger = newLogger(
     newConsoleTransport(loglevel),
-    newFileTransport(entryLoggingPath, 'spidering-entry.log', loglevel)
+    // newFileTransport(entryLoggingPath, 'spidering-entry.log', loglevel)
   );
 
   return {
@@ -48,11 +48,18 @@ export function getSpiderLoggers(
   };
 }
 
-export function createScrapingContext(
+type Args = {
   initialUrl: string,
-): ScrapingContext {
-  const sharedDataDir = getAppSharedDir();
-  const corpusRoot = getCorpusRootDir();
+  sharedDataDir: string,
+  corpusRoot: string
+};
+export function createScrapingContext({
+  initialUrl,
+  sharedDataDir,
+  corpusRoot
+}: Args): ScrapingContext {
+  // const sharedDataDir = getAppSharedDir();
+  // const corpusRoot = getCorpusRootDir();
 
   const entryEncPath = getHashEncodedPath(initialUrl);
   const spiderLoggers = getSpiderLoggers(entryEncPath);
@@ -71,4 +78,3 @@ export function createScrapingContext(
     ...spiderLoggers
   };
 }
-

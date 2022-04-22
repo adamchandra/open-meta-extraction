@@ -1,11 +1,10 @@
 import _ from 'lodash';
 
-import { stripMargin, putStrLn, AlphaRecord } from '@watr/commonlib';
+import { stripMargin, putStrLn, AlphaRecord, asyncMapSeries } from '@watr/commonlib';
 
 import { UrlChain, UrlFetchData } from '@watr/spider';
 import { DBConfig, openDatabase } from './database';
 import * as DB from './db-tables';
-import { asyncMapSeries } from '~/util/async-plus';
 
 export interface DatabaseContext {
   dbConfig: DBConfig;

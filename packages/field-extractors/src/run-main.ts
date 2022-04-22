@@ -1,24 +1,21 @@
 import _ from 'lodash';
 
 import {
-  streamPump,
-  walkScrapyCacheCorpus,
+  // streamPump,
+  // walkScrapyCacheCorpus,
+  // getConsoleAndFileLogger,
+  // hasCorpusFile,
+  // setLogLabel,
+  // expandDir,
+  // putStrLn,
+  // radix,
   ensureArtifactDirectories,
-  getConsoleAndFileLogger,
   readCorpusJsonFile,
   writeCorpusJsonFile,
-  hasCorpusFile,
-  setLogLabel,
-  expandDir,
-  putStrLn,
-  radix,
+  getServiceLogger,
 } from '@watr/commonlib';
 
-import parseUrl from 'url-parse';
 
-import path from 'path';
-
-import fs from 'fs-extra';
 
 import * as TE from 'fp-ts/TaskEither';
 import * as E from 'fp-ts/Either';
@@ -33,96 +30,13 @@ import {
 } from './app/extraction-prelude';
 import { AbstractFieldAttempts } from './app/extraction-rules';
 
+import { arglib } from '@watr/commonlib';
+import { Page } from 'puppeteer';
+import { CanonicalFieldRecords, FieldRecord } from './core/extraction-records';
+
+const { opt, config, registerCmd } = arglib;
+
 const extractionRecordFileName = 'extraction-records.json';
-
-export async function runMainInitFilters(
-  corpusRoot: string,
-): Promise<[radix.Radix<Set<string>>, radix.Radix<number>]> {
-  const dirEntryStream = walkScrapyCacheCorpus(corpusRoot);
-
-  const radCounts = radix.createRadix<number>();
-  const radAccum = radix.createRadix<Set<string>>();
-
-  const pumpBuilder = streamPump.createPump()
-    .viaStream<string>(dirEntryStream)
-    .throughF((entryPath) => {
-      const metadata = readCorpusJsonFile<UrlFetchData>(entryPath, '.', 'metadata.json');
-
-      if (metadata === undefined) {
-        return;
-      }
-
-      const { responseUrl } = metadata;
-      const parsedUrl = parseUrl(responseUrl);
-      const { host } = parsedUrl;
-      const paths = parsedUrl.pathname.split('/');
-      const [, path1] = paths.slice(0, -1);
-      const hostAndPath = `${host}/${path1}`;
-      const lookup = {
-        host: {
-          okay: host,
-          path: {
-            okay: hostAndPath
-          }
-        },
-
-      };
-      radix.radUpsert(radCounts, [host], (count) => (count === undefined ? 1 : count + 1));
-      if (path1 !== undefined) {
-        radix.radUpsert(radCounts, [host, path1], (count) => (count === undefined ? 1 : count + 1));
-      }
-
-      const hasExtractionRecord = hasCorpusFile(entryPath, 'extracted-fields', extractionRecordFileName);
-
-      if (!hasExtractionRecord) {
-        return;
-      }
-
-      const extractedFieldsDir = path.join(entryPath, 'extracted-fields');
-      if (!fs.existsSync(extractedFieldsDir)) {
-        return;
-      }
-      const exdir = expandDir(extractedFieldsDir);
-      const gtFiles = _.filter(exdir.files, f => f.endsWith('.gt'));
-
-      _.each(gtFiles, f => {
-        const nameParts = path.basename(f).split(/\./);
-        const gtNamePart = nameParts[nameParts.length - 2];
-        putStrLn(`gtNamePart = ${gtNamePart}`);
-
-        const dotted = gtNamePart.replace(/_/g, '.');
-        const v = _.get(lookup, dotted);
-
-        radix.radUpsert(
-          radAccum, dotted, (strs?: Set<string>) => (strs === undefined ? (new Set<string>().add(v)) : strs.add(v))
-        );
-      });
-    });
-
-  return pumpBuilder.toPromise()
-    .then(() => {
-      putStrLn('URL Host / Path counts');
-      const pathCounts: [number, string][] = [];
-      radix.radTraverseValues(radCounts, (path, count) => {
-        const jpath = _.join(path, '/');
-        pathCounts.push([count, jpath]);
-      });
-
-      const sorted = _.sortBy(pathCounts, ([c]) => -c);
-      _.each(sorted, ([count, path]) => {
-        putStrLn(`    ${count} : ${path}`);
-      });
-
-      putStrLn('Ground Truth labels');
-      radix.radTraverseValues(radAccum, (path, strs) => {
-        putStrLn(`    ${_.join(path, ' _ ')} =>`);
-        strs.forEach(s => {
-          putStrLn(`      ${s}`);
-        });
-      });
-      return [radAccum, radCounts];
-    });
-}
 
 export async function runFieldExtractor(
   exEnv: ExtractionEnv,
@@ -143,58 +57,22 @@ export async function runFieldExtractor(
 
 export async function runMainExtractFields(
   corpusRoot: string,
-  logpath: string,
-  logLevel: string,
-  _dropN: number,
-  _takeN: number,
-  pathFilter: string,
-  urlFilter: string,
+  urlString: string,
 ): Promise<void> {
-  const logFilename = 'field-extractor-log.json';
-  const logfilePath = path.join(logpath, logFilename);
-  const log = getConsoleAndFileLogger(logfilePath, logLevel);
+  const log = getServiceLogger('field-extractor');
 
-  const dirEntryStream = walkScrapyCacheCorpus(corpusRoot);
+      // const urlFetchData = readUrlFetchData(entryPath);
+      // const browserPool = createBrowserPool();
 
-  // const [radAccum, radCount] = await runMainInitFilters(corpusRoot);
+      // return {
+      //   log,
+      //   urlFetchData,
+      //   browserPool,
+      // };
+      // await extractFieldsForEntry(exEnv);
 
-  const pumpBuilder = streamPump.createPump()
-    .viaStream<string>(dirEntryStream)
-    .filter((entryPath) => entryPath !== undefined)
-    .filter((entryPath) => {
-      const pathRE = new RegExp(pathFilter);
-      return pathRE.test(entryPath);
-    })
-    .initEnv<ExtractionSharedEnv>((entryPath) => {
-      if (entryPath === undefined) throw new Error('invalid state: entryPath is undefined');
-      setLogLabel(log, entryPath);
-      const urlFetchData = readUrlFetchData(entryPath);
-      const browserPool = createBrowserPool();
-
-      return {
-        log,
-        urlFetchData,
-        browserPool,
-      };
-    })
-    .throughF<ExtractionEnv>(async (entryPath, sharedEnv) => {
-      return await initExtractionEnv(entryPath, sharedEnv);
-    })
-    .filter((exEnv) => {
-      const { urlFetchData } = exEnv;
-      if (urlFetchData === undefined) return false;
-
-      const url = urlFetchData.responseUrl;
-      const re = new RegExp(urlFilter);
-      return re.test(url);
-    })
-    .tap(async (exEnv) => {
-      await extractFieldsForEntry(exEnv);
-    });
-
-  return pumpBuilder.toPromise()
-    .then(() => { });
 }
+
 
 export function readUrlFetchData(entryPath: string,): UrlFetchData | undefined {
   return readCorpusJsonFile<UrlFetchData>(entryPath, '.', 'metadata.json');
@@ -295,56 +173,25 @@ export function getCanonicalFieldRecord(
   return records;
 }
 
-import { arglib } from '@watr/commonlib';
-import { Page } from 'puppeteer';
-import { CanonicalFieldRecords, FieldRecord } from './core/extraction-records';
-
-const { opt, config, registerCmd } = arglib;
 
 registerCmd(
   arglib.YArgs,
-  'run-field-extractors',
-  'run field extractors',
+  'extract-url',
+  'spider and extract field from given URL',
   config(
     opt.cwd,
     opt.existingDir('corpus-root: root directory for corpus files'),
-    opt.ion('drop', {
-      type: 'number',
-      required: false,
-      default: 0
-    }),
-    opt.ion('take', {
-      type: 'number',
-      required: false,
-      default: Number.MAX_SAFE_INTEGER,
-    }),
-    opt.ion('log-level', {
-      required: false,
-      default: 'info'
-    }),
-    opt.ion('path-filter', {
+    opt.ion('url', {
       type: 'string',
-      required: false,
-      default: '.*'
-    }),
-    opt.ion('url-filter', {
-      type: 'string',
-      required: false,
-      default: '.*'
+      required: true
     }),
   )
 )((args: any) => {
-  const { corpusRoot, logLevel, drop, take, pathFilter, urlFilter } = args;
-  const logpath = corpusRoot;
+  const { corpusRoot, url } = args;
 
   runMainExtractFields(
     corpusRoot,
-    logpath,
-    logLevel,
-    drop,
-    take,
-    pathFilter,
-    urlFilter
+    url
   ).then(() => {
     console.log('done');
   });

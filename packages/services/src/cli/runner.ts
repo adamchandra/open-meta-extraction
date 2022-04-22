@@ -10,8 +10,6 @@ export function registerAllClis() {
     scheduling.registerCommands(arglib.YArgs);
 }
 
-export const CliPath = __dirname;
-
 export async function runCli() {
     const runResult = arglib.YArgs
         .demandCommand(1, 'You need at least one command before moving on')

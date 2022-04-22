@@ -1,11 +1,10 @@
 import _ from 'lodash';
 
-import { prettyPrint, AlphaRecord } from '@watr/commonlib';
+import { prettyPrint, AlphaRecord, asyncMapSeries } from '@watr/commonlib';
 import * as T from './db-tables';
 import { useEmptyDatabase } from './db-test-utils';
 import { getDBConfig } from './database';
 import { DatabaseContext } from './db-api';
-import {  asyncMapSeries } from '~/util/async-plus';
 
 describe('Database Tables Basics', () => {
   const dbConfig = getDBConfig();

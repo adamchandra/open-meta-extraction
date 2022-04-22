@@ -1,13 +1,18 @@
-import { delay, getServiceLogger, prettyPrint } from '@watr/commonlib';
-import { Pool } from 'tarn';
 import _ from 'lodash';
 
 import onExit from 'signal-exit';
+import { Pool } from 'tarn';
+
+import {
+  HTTPRequest,
+  HTTPResponse,
+} from 'puppeteer';
+
+import { delay, getServiceLogger, prettyFormat, prettyPrint, putStrLn } from '@watr/commonlib';
 
 import {
   Browser, Page,
 } from 'puppeteer';
-import { Logger } from 'winston';
 import { logBrowserEvent, logPageEvents } from './page-event';
 
 import { launchBrowser } from './puppet';
@@ -37,9 +42,10 @@ export interface PageInstance {
   page: Page;
   logPrefix: string;
   createdAt: Date;
+  gotoUrl(url: string): Promise<HTTPResponse | undefined>;
 }
 export function createBrowserPool(logPrefix?: string): BrowserPool {
-  const prefix =  logPrefix? logPrefix : '';
+  const prefix = logPrefix ? logPrefix : '';
   const log = getServiceLogger(`${prefix}:browser-pool`);
 
   const pool = new Pool<BrowserInstance>({
@@ -96,12 +102,20 @@ export function createBrowserPool(logPrefix?: string): BrowserPool {
           createdAt: new Date(),
           async newPage(): Promise<PageInstance> {
             const page = await browser.newPage()
+            page.setDefaultNavigationTimeout(11_000);
+            page.setDefaultTimeout(11_000);
+            page.setJavaScriptEnabled(true);
             logPageEvents(page, log);
-            return {
+
+            const pageInstance: PageInstance = {
               page,
               logPrefix,
               createdAt: new Date(),
-            }
+              gotoUrl(url: string): Promise<HTTPResponse | undefined> {
+                return gotoUrlSimpleVersion(this, url);
+              }
+            };
+            return pageInstance;
           }
         };
 
@@ -213,7 +227,7 @@ export function createBrowserPool(logPrefix?: string): BrowserPool {
     log.verbose(`pool/event: poolDestroySuccess:${eventId}`)
   });
 
-  onExit(function(code: number | null, signal: string | null) {
+  onExit(function (code: number | null, signal: string | null) {
     log.info(`Node process got ${signal}/${code}; cleaning up browser pool`);
     pool.destroy();
   }, { alwaysLast: false });
@@ -228,8 +242,7 @@ export function createBrowserPool(logPrefix?: string): BrowserPool {
     async release(b: BrowserInstance): Promise<void> {
       log.debug(`release: getting open pages`)
       let normalShutdown = false;
-      // const pageCloseP =
-      b.browser.pages()
+      const pageCloseP = b.browser.pages()
         .then(async pages => {
           log.debug(`release: closing all pages`)
           await Promise.all(pages.map(page => page.close()));
@@ -243,7 +256,9 @@ export function createBrowserPool(logPrefix?: string): BrowserPool {
         }).catch(error => {
           log.debug(`release:${error}`)
         });
+
       await delay(300);
+
       if (!normalShutdown) {
         log.info(`release: initiating kill()`)
         await b.kill();
@@ -285,3 +300,87 @@ export function createBrowserPool(logPrefix?: string): BrowserPool {
     }
   };
 }
+
+async function gotoUrlSimpleVersion(pageInstance: PageInstance, url: string): Promise<HTTPResponse | undefined> {
+  const { page } = pageInstance;
+
+  return page.goto(url, { waitUntil: 'load' });
+}
+
+async function gotoUrlStepwiseVersion(pageInstance: PageInstance, url: string): Promise<HTTPResponse | undefined> {
+  return new Promise<HTTPResponse | undefined>((resolve, reject) => {
+    const { page } = pageInstance;
+    const run = async () => {
+
+      page.on('response', (response: HTTPResponse) => {
+        const request = response.request();
+        const reqUrl = request.url();
+        const respUrl = response.url();
+        const reqHeaders = request.headers();
+        reqHeaders['referer']
+        reqHeaders['origin']
+        reqHeaders['location']
+        reqHeaders['accept']
+        const respHeaders = response.headers();
+        respHeaders['referer']
+        respHeaders['origin']
+        respHeaders['location']
+        respHeaders['accept']
+
+        const pfh2 = prettyFormat({ respHeaders })
+        putStrLn(`Intercepting Response ${respUrl}, ${pfh2}`)
+        putStrLn(`        Request: ${reqUrl}`)
+      });
+
+      page.on('request', (request: HTTPRequest) => {
+        const reqUrl = request.url();
+        const reqHeaders = request.headers();
+        reqHeaders['referer']
+        reqHeaders['origin']
+        reqHeaders['location']
+        reqHeaders['accept']
+        const pfh = prettyFormat({ reqHeaders })
+        putStrLn(`Intercepting Request ${reqUrl} ${pfh}`)
+      });
+
+      return page.goto(url, { waitUntil: 'load' });
+    };
+
+    resolve(run());
+  });
+}
+
+// page.on('response', (response: HTTPResponse) => {
+//   const reqUrl = response.request().url();
+//   const respUrl = response.url();
+//   const hdrLoc = response.headers()['location'];
+//   const toLoc = hdrLoc;
+//   const status = response.status()
+
+//   if ((status >= 300) && (status <= 399)) {
+//     putStrLn(`Redirect ${status}`)
+//     putStrLn(` fr:  ${reqUrl}`)
+//     putStrLn(` to:    ${toLoc}`)
+//     putStrLn(` rsp:   ${respUrl}`)
+//     putStrLn(` hdr:   ${hdrLoc}`)
+//     // prettyPrint({ response });
+//   }
+// });
+// // let response: HTTPResponse | null = await page.goto(url, {});
+// const wfRespP = page.waitForResponse((resp: HTTPResponse) => {
+//   const respHeaders = resp.headers();
+//   const respUrl = resp.url()
+//   const pfh = prettyFormat({ respUrl, respHeaders })
+//   putStrLn(`Waitfor Response status=${resp.status()}; ${pfh}`)
+//   return resp.status() === 200;
+//   // return true;
+// });
+
+// const wfReqP = page.waitForRequest((req: HTTPRequest) => {
+//   const reqHeaders = req.headers();
+//   const pfh = prettyFormat({ reqHeaders })
+//   putStrLn(`Waitfor Request ${pfh}`)
+//   req.abort();
+
+//   return true;
+// });

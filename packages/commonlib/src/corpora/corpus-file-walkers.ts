@@ -32,6 +32,11 @@ export function makeCorpusEntryLeadingPath(s: string): string {
   return leadingPath;
 }
 
+export function isValidCorpusEntryPath(s: string): boolean {
+  const pathRE = /[0-9a-f]{40}\.d$/i;
+  return pathRE.test(s);
+}
+
 
 export function expandDir(path: string): ExpandedDir {
   const dirEntries = fs.readdirSync(path, { withFileTypes: true });
@@ -97,8 +102,16 @@ export function ensureArtifactDir(entryPath: string, artifactDir: ArtifactSubdir
   const artifactDirExists = fs.existsSync(artifactDirPath);
   if (artifactDirExists) return;
 
-  fs.mkdirSync(artifactDirPath);
+  fs.mkdirSync(artifactDirPath, { recursive: true });
 }
+
+export function cleanArtifactDir(entryPath: string): void {
+  if (isValidCorpusEntryPath(entryPath)) {
+    fs.rmSync(entryPath, { recursive: true, force: true })
+    fs.mkdirSync(entryPath, { recursive: true });
+  }
+}
+
 
 export function hasCorpusFile(entryPath: string, artifactDir: ArtifactSubdir, corpusFilename: string): boolean {
   const filePath = path.resolve(entryPath, artifactDir, corpusFilename);
@@ -135,7 +148,7 @@ export function writeCorpusJsonFile<T>(
   artifactDir: ArtifactSubdir,
   filename: string,
   content: T,
-  overwrite: boolean=false
+  overwrite: boolean = false
 ): boolean {
   ensureArtifactDir(entryPath, artifactDir);
   const filePath = resolveCorpusFile(entryPath, artifactDir, filename);
@@ -149,7 +162,7 @@ export function writeCorpusTextFile(
   artifactDir: ArtifactSubdir,
   filename: string,
   content: string,
-  overwrite: boolean=false
+  overwrite: boolean = false
 ): boolean {
   ensureArtifactDir(entryPath, artifactDir);
   const filePath = resolveCorpusFile(entryPath, artifactDir, filename);
@@ -159,7 +172,7 @@ export function writeCorpusTextFile(
   return writeText(filePath, content);
 }
 
-export function updateCorpusJsonFile<T=never>(
+export function updateCorpusJsonFile<T = never>(
   entryPath: string,
   artifactDir: ArtifactSubdir,
   filename: string,
@@ -218,7 +231,7 @@ export const ensureArtifactDirectories = (entryPath: string): void => {
     const artifactPath = resolveEntryPath(entryPath, d);
     const artifactDirExists = fs.existsSync(artifactPath);
     if (!artifactDirExists) {
-      fs.mkdirSync(artifactPath);
+      fs.mkdirSync(artifactPath, { recursive: true });
     }
   });
 };

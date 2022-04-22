@@ -54,7 +54,6 @@ const addUrlEvidence = tapEnvLR((env) => {
   }
 });
 
-
 const gatherHighwirePressTags = gatherSuccess(
   selectMetaEvidence('citation_title'),
   selectMetaEvidence('citation_date'),

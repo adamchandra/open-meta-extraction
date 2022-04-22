@@ -1,3 +1,4 @@
+import { prettyFormat } from '@watr/commonlib';
 import _ from 'lodash';
 
 import {
@@ -15,6 +16,7 @@ import {
 import { Logger } from 'winston';
 
 import { BrowserInstance } from './browser-pool';
+import { blockedResourceTypes } from './puppet';
 
 const pageEvents: Array<keyof PageEventObject> = [
   'close',
@@ -65,6 +67,22 @@ export function logBrowserEvent(browserInstance: BrowserInstance, logger: Logger
   });
 }
 
+function _updateMap<K, V>(
+  m: Map<K, V>,
+  k: K,
+  upfn: (v: V) => V,
+  defaultVal: V
+): V {
+  const oldval = m.get(k);
+  if (oldval) {
+    const newval = upfn(oldval)
+    m.set(k, newval);
+    return newval;
+  }
+  m.set(k, defaultVal);
+  return defaultVal;
+}
+
 export function logPageEvents(page: Page, logger: Logger) {
 
   const bproc = page.browser().process();
@@ -72,6 +90,49 @@ export function logPageEvents(page: Page, logger: Logger) {
   if (bproc === null || pid === undefined) {
     logger.error('logPageEvents(): browser.process().pid is undefined');
     return;
+  }
+  const eventMap = new Map<string, string[]>()
+  const msgMap = new Map<string, string[]>()
+
+  const reqRespCycleSucceed = new Set<string>([
+    'request',
+    'response',
+    'requestfinished',
+  ]);
+  const reqRespCycleFail = new Set([
+    'request',
+    'requestfailed',
+  ]);
+
+  function setsEqual(a: Set<any>, b: Set<any>): boolean {
+    return a.size === b.size && [...a].every(value => b.has(value));
+  }
+
+  function updateEventMap(reqId: string, e: string, msg?: string) {
+    const currVal = _updateMap(eventMap, reqId, (evs) => _.concat(evs, [e]), [e]);
+    if (msg) {
+      _updateMap(msgMap, reqId, (m) => _.concat(m, [msg]), [msg])
+    }
+
+    const currSet = new Set(currVal);
+    if (setsEqual(currSet, reqRespCycleFail)) {
+      const currMsg = msgMap.get(reqId) || [];
+      const isBlocked = currMsg.some(m => /blocked/.test(m));
+      if (isBlocked) {
+        logger.verbose(`B<${pid}> / Fail<${reqId}> ${currMsg.join(', ')} `);
+      } else {
+        logger.debug(`B<${pid}> / Fail<${reqId}> ${currMsg.join(', ')} `);
+      }
+      eventMap.delete(reqId);
+      msgMap.delete(reqId);
+    }
+
+    if (setsEqual(currSet, reqRespCycleSucceed)) {
+      const currMsg = msgMap.get(reqId) || [];
+      logger.debug(`B<${pid}> / Success<${reqId}> ${currMsg.join(', ')} `);
+      eventMap.delete(reqId);
+      msgMap.delete(reqId);
+    }
   }
 
   _.each(pageEvents, e => {
@@ -92,7 +153,7 @@ export function logPageEvents(page: Page, logger: Logger) {
         case 'dialog': {
           const data: Dialog = _data;
           const message = data.message();
-          logger.debug(`Browser#${pid}/pageEvent: ${e}: ${message}`);
+          logger.verbose(`Browser#${pid}/pageEvent: ${e}: ${message}`);
           break;
         }
         case 'pageerror':
@@ -116,26 +177,42 @@ export function logPageEvents(page: Page, logger: Logger) {
           break;
         }
         case 'popup': {
-          logger.debug(`Browser#${pid}/pageEvent: ${e}`);
+          logger.verbose(`Browser#${pid}/pageEvent: ${e}`);
+          break;
+        }
+
+        case 'request': {
+          const data: HTTPRequest = _data;
+          const resType = data.resourceType();
+          const reqId = data._requestId
+          const url = data.url();
+          const currentlyBlocked = blockedResourceTypes();
+          const clippedUrl = url.replace(/\?.*$/, '?...');
+          let msg = `resource: ${resType} ${clippedUrl}`;
+          const isBlocked = currentlyBlocked.some(b => b === resType);
+          if (isBlocked) {
+            msg = `blocked: ${resType}`;
+          }
+          updateEventMap(reqId, e, msg)
           break;
         }
         case 'requestfailed': {
           const data: HTTPRequest = _data;
-          const url = data.url();
-          logger.debug(`Browser#${pid}/pageEvent: ${e}: ${url}`);
+          const reqId = data._requestId
+          updateEventMap(reqId, e)
           break;
         }
-        case 'request':
         case 'requestfinished': {
           const data: HTTPRequest = _data;
-          const url = data.url();
-          logger.verbose(`Browser#${pid}/pageEvent: ${e}: ${url}`);
+          const reqId = data._requestId
+          updateEventMap(reqId, e)
+
           break;
         }
         case 'response': {
           const data: HTTPResponse = _data;
-          const url = data.url();
-          logger.verbose(`Browser#${pid}/pageEvent: ${e}: ${url}`);
+          const reqId = data.request()._requestId;
+          updateEventMap(reqId, e)
           break;
         }
         case 'workercreated':

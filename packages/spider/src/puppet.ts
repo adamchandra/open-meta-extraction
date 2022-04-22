@@ -1,3 +1,5 @@
+import _ from 'lodash';
+
 import {
   Browser as PBrowser,
 } from 'puppeteer';
@@ -6,8 +8,9 @@ import puppeteer from 'puppeteer-extra';
 
 // @ts-ignore
 import AnonPlugin from 'puppeteer-extra-plugin-anonymize-ua';
+
 // @ts-ignore
-import blockResources from 'puppeteer-extra-plugin-block-resources';
+import blockResourcesPlugin from 'puppeteer-extra-plugin-block-resources';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 
 export type Browser = PBrowser;
@@ -31,29 +34,52 @@ export function useAnonPlugin(): void {
 
 let usingResourceBlockPlugin = false;
 
+const AllBlockableResources = {
+  stylesheet: null,
+  image: null,
+  document: null,
+  media: null,
+  font: null,
+  script: null,
+  texttrack: null,
+  xhr: null,
+  fetch: null,
+  eventsource: null,
+  websocket: null,
+  manifest: null,
+  other: null
+};
+
+type BlockableResources = typeof AllBlockableResources;
+type BlockableResource = keyof BlockableResources;
+
+const BlockableResources: BlockableResource[] = _.keys(AllBlockableResources) as BlockableResource[];
+
+const blockResPlugin = blockResourcesPlugin({
+  blockedTypes: new Set<BlockableResource>()
+});
+
+export function allowResourceTypes(rs: BlockableResource[]): void {
+  BlockableResources.forEach(r => blockResPlugin.blockedTypes.add(r));
+  rs.forEach(r => blockResPlugin.blockedTypes.delete(r))
+}
+
+export function blockResourceTypes(rs: BlockableResource[]): void {
+  BlockableResources.forEach(r => blockResPlugin.blockedTypes.delete(r));
+  rs.forEach(r => blockResPlugin.blockedTypes.add(r))
+}
+
+export function blockedResourceTypes(): BlockableResource[] {
+  const bs: Set<BlockableResource> = blockResPlugin.blockedTypes;
+  return [ ...bs ];
+}
+
 export function useResourceBlockPlugin(): void {
   if (usingResourceBlockPlugin) return;
   usingResourceBlockPlugin = true;
-  const blockedResourceTypes = [
-    'stylesheet',
-    'image',
-    // 'document',
-    // 'media',
-    'font',
-    'script',
-    // 'texttrack',
-    'xhr',
-    // 'fetch',
-    // 'eventsource',
-    // 'websocket',
-    // 'manifest',
-    // 'other'
-  ];
+  puppeteer.use(blockResPlugin);
 
-
-  puppeteer.use(blockResources({
-    blockedTypes: new Set(blockedResourceTypes)
-  }));
+  allowResourceTypes(['document'])
 }
 
 export async function launchBrowser(): Promise<Browser> {
