@@ -1,4 +1,4 @@
-import { prettyPrint } from '@watr/commonlib';
+import { prettyPrint, setLogEnvLevel } from '@watr/commonlib';
 import _ from 'lodash';
 import { awaitQuit, initCommLinks } from '~/util/service-test-utils';
 import { CustomHandlers } from '..';
@@ -6,8 +6,7 @@ import { newCommLink } from './commlink';
 import { ping, addHeaders, Message, cyield } from './message-types';
 
 describe('CommLink Communication', () => {
-
-  process.env['service-comm.loglevel'] = 'info';
+  setLogEnvLevel('info');
 
   interface MyClient extends CustomHandlers<unknown> {
     func1(arg: any): Promise<void>;

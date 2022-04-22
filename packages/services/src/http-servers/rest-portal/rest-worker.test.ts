@@ -5,9 +5,10 @@ import { Server } from 'http';
 import { mockAlphaRecord } from '@watr/spider';
 import axios from 'axios';
 import { createRestServer, RestPortal } from './rest-worker';
+import { setLogEnvLevel } from '@watr/commonlib';
 
 describe('REST Worker Endpoints', () => {
-  process.env['service-comm.loglevel'] = 'info';
+  setLogEnvLevel('info');
   const workingDir = './test.scratch.d';
 
   let restPortal: RestPortal | undefined;

@@ -1,10 +1,10 @@
-import { getServiceLogger, putStrLn } from '@watr/commonlib';
+import { getServiceLogger, putStrLn, setLogEnvLevel } from '@watr/commonlib';
 import { BrowserInstance, createBrowserPool, DefaultPageInstanceOptions } from './browser-pool';
 
 import Async from 'async';
 
 describe('browser pooling', () => {
-  process.env['service-comm.loglevel'] = 'verbose';
+  setLogEnvLevel('verbose');
 
   it('borrow/return to pool', async () => {
     // const logger = getServiceLogger('browser-pool');

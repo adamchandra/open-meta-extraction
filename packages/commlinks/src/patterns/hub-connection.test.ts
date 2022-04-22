@@ -1,4 +1,4 @@
-import { prettyPrint } from '@watr/commonlib';
+import { prettyPrint, setLogEnvLevel } from '@watr/commonlib';
 import _ from 'lodash';
 
 import {
@@ -7,7 +7,7 @@ import {
 } from '~/util/service-test-utils';
 
 describe('Service Communication Hub lifecycle', () => {
-  process.env['service-comm.loglevel'] = 'info';
+  setLogEnvLevel('info');
 
   it('should startup, link, and shutdown service hub with satellites', async () => {
     const logMessages: string[] = [];

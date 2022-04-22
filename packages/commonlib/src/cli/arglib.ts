@@ -5,8 +5,7 @@ import path from 'path';
 
 import yargs, { Argv, Arguments, Options, MiddlewareFunction } from 'yargs';
 
-import { prettyPrint, putStrLn } from '~/util/pretty-print';
-import { boolean } from 'io-ts';
+import { putStrLn } from '~/util/pretty-print';
 import { AllLogLevels } from '..';
 export const YArgs = yargs;
 
@@ -169,7 +168,8 @@ export function registerCmd(
       name, description, config(...fs), async (argv: any): Promise<void> => {
         if (_.isArray(argv.errors)) {
           const errors: string[] = argv.errors;
-          putStrLn(errors.join('\n'));
+          const errstr = errors.join('\n');
+          putStrLn(`Error running Command: ${errstr}`);
           return;
         }
         // const time1 = (new Date()).toLocaleTimeString();
@@ -179,6 +179,19 @@ export function registerCmd(
       }
     );
   };
+}
+export async function runRegisteredCmds(useYargs: Argv): Promise<void> {
+  const res = useYargs
+    .strictCommands()
+    .demandCommand(1, 'You need at least one command before moving on')
+    .help()
+    .fail((err) => {
+      console.log('RunCLI Error', err);
+      useYargs.showHelp();
+    })
+    .argv;
+
+  await Promise.resolve(res);
 }
 
 // opt.dir.(exists|parentExists|ancestorExists)

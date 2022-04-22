@@ -4,10 +4,10 @@ import { initCallChaining as initCC, createCommChain, CallChainingArgs } from '.
 import { awaitQuit, initCommLinks } from '~/util/service-test-utils';
 import { CommLink } from '~/core/commlink';
 import { CustomHandlers } from '~/core/message-types';
-import { prettyPrint } from '@watr/commonlib';
+import { prettyPrint, setLogEnvLevel } from '@watr/commonlib';
 
 describe('Chained CommLink Connection Patterns', () => {
-  process.env['service-comm.loglevel'] = 'info';
+  setLogEnvLevel('info');
 
   interface CallState {
     clientFuncs: string[];

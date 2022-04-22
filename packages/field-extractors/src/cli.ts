@@ -1,26 +1,30 @@
 import { arglib, setLogEnvLevel } from '@watr/commonlib';
-import { initScraper } from './scraper';
+
+import { runMainExtractFields } from '~/app/run-extraction';
+
 const { opt, config, registerCmd } = arglib;
 
 export function registerCommands(yargv: arglib.YArgsT) {
   registerCmd(
     yargv,
-    'spider-url',
-    'spider the give URL, save results in corpus',
+    'extract-url',
+    'spider and extract field from given URL',
     config(
+      opt.cwd,
       opt.existingDir('corpus-root: root directory for corpus files'),
       opt.str('url'),
       opt.flag('clean'),
-      opt.logLevel('info'),
+      opt.logLevel('info')
     )
   )(async (args: any) => {
-    const { url, corpusRoot, clean, logLevel } = args;
+    const { corpusRoot, url, clean, logLevel } = args;
     setLogEnvLevel(logLevel);
 
-    const scraper = await initScraper({ corpusRoot });
-    const scrapedUrl = await scraper.scrapeUrl(url, clean);
-
-    await scraper.quit();
+    await runMainExtractFields({
+      corpusRoot,
+      url,
+      clean
+    });
   });
 }
 

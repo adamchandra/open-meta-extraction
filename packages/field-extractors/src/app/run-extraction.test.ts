@@ -1,19 +1,19 @@
 import path from 'path';
 import _ from 'lodash';
-import { getConsoleAndFileLogger } from '@watr/commonlib';
 import fs from 'fs-extra';
 import cproc from 'child_process';
 import Async from 'async';
 
+import { getConsoleAndFileLogger, setLogEnvLevel } from '@watr/commonlib';
+import { AbstractFieldAttempts } from '~/core/extraction-scripts';
+import { initExtractionEnv } from '~/core/extraction-primitives';
+import { ExtractionSharedEnv } from '~/predef/extraction-prelude';
+
+import { readUrlFetchData, runFieldExtractor } from './run-extraction';
 import { createBrowserPool } from '@watr/spider';
-import { AbstractFieldAttempts } from './extraction-rules';
-import { runFieldExtractor } from '../run-main';
-import { readUrlFetchData } from '..';
-import { initExtractionEnv } from './extraction-process';
-import { ExtractionSharedEnv } from './extraction-prelude';
 
 describe('Field Extraction Pipeline', () => {
-  process.env['service-comm.loglevel'] = 'silly';
+  setLogEnvLevel('silly');
   const testCorpus = './test/resources/spidered-corpus';
   const testScratchDir = './test.scratch.d';
 

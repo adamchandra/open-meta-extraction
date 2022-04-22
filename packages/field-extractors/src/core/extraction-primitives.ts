@@ -28,15 +28,16 @@ import {
   gatherSuccess,
   FieldCandidate,
   ExtractionSharedEnv
-} from './extraction-prelude';
+} from '~/predef/extraction-prelude';
 
 
-import { ExtractionEvidence, Field } from '../core/extraction-records';
+import { ExtractionEvidence, Field } from '~/predef/extraction-records';
 import { runTidyCmdBuffered, runFileCmd } from '@watr/commonlib';
 import { Elem, expandCaseVariations, queryAllP, queryOneP, selectElementAttrP } from '../core/html-queries';
 
-import { GlobalDocumentMetadata } from './ieee-metadata';
-import { AbstractCleaningRules, CleaningRule, CleaningRuleResult } from './data-clean-abstracts';
+import { GlobalDocumentMetadata } from '~/predef/ieee-metadata';
+import { AbstractCleaningRules, CleaningRule, CleaningRuleResult } from './data-cleaning';
+import { DefaultPageInstanceOptions } from '@watr/spider';
 
 type CacheFileKey = string;
 
@@ -229,7 +230,6 @@ const saveDocumentMetaDataEvidence: (name: string, f: (m: GlobalDocumentMetadata
 /// ////////////
 // jquery/css selector and Elem functions
 
-
 const loadPageFromCache: Arrow<CacheFileKey, Page> =
   through((cacheKey: CacheFileKey, { browserInstance, fileContentCache, browserPageCache }) => {
     if (cacheKey in browserPageCache) {
@@ -237,7 +237,7 @@ const loadPageFromCache: Arrow<CacheFileKey, Page> =
     }
     if (cacheKey in fileContentCache) {
       const fileContent = fileContentCache[cacheKey];
-      const page = browserInstance.newPage()
+      const page = browserInstance.newPage(DefaultPageInstanceOptions) // TODO: FIXME this use of defaults is not correct
         .then(async ({ page }) => {
           await page.setContent(fileContent, {
             timeout: 8000,
@@ -586,176 +586,3 @@ export async function initExtractionEnv(
   };
   return env;
 }
-
-
-// const matchesText: (regex: RegExp) => FilterArrow<Elem> = (regex) => filter(async (elem: Elem) => {
-//   const textContent = await elem.evaluate(e => e.textContent);
-//   if (textContent === null) return false;
-//   return regex.test(textContent);
-// });
-
-// const matchesSelector: (query: string) => FilterArrow<Elem> = (query) => filter(async (elem: Elem) => {
-//   const result = await elem.$$(query);
-//   return result.length > 0;
-// });
-
-// const selectElemTextAs: (fieldName: string, queryString: string) => Arrow<CacheFileKey, unknown> = (fieldName, queryString) => compose(
-//   addEvidence(() => `select:$(${queryString}))`),
-//   selectOne(queryString),
-//   getElemText,
-//   saveFieldAs(fieldName),
-//   clearEvidence(/^select:/),
-// );
-
-// const selectMetaContentAs: (fieldName: string, name: string, attrName?: string) => Arrow<CacheFileKey, unknown> = (fieldName, name, attrName = 'name') => compose(
-//   addEvidence(() => `select:$(meta[${attrName}="${name}"]).attr('content')`),
-//   selectElemAttr(expandCaseVariations(name, (s) => `meta[${attrName}="${s}"]`), 'content'),
-//   saveFieldAs(fieldName),
-//   clearEvidence(/^select:/),
-// );
-
-// const selectElemAttrAs: (fieldName: string, queryString: string, contentAttr: string) => Arrow<CacheFileKey, unknown> = (fieldName, queryString, contentAttr) => compose(
-//   addEvidence(() => `select:$(${queryString}).attr(${contentAttr})`),
-//   selectElemAttr(queryString, contentAttr),
-//   saveFieldAs(fieldName),
-//   clearEvidence(/^select:/),
-// );
-
-// const selectAllElemAttrAs: (fieldName: string, queryString: string, contentAttr: string) => Arrow<CacheFileKey, unknown> = (fieldName, queryString, contentAttr) => compose(
-//   addEvidence(() => `select-all:$(${queryString}).attr(${contentAttr})`),
-//   selectAll(queryString),
-//   forEachDo(compose(
-//     getElemAttr(contentAttr),
-//     saveFieldAs(fieldName),
-//   )),
-//   clearEvidence(/^select-all:/),
-// );
-
-
-// const selectAllMetaContentAs: (fieldName: string, name: string) => Arrow<CacheFileKey, unknown> = (fieldName, name) => compose(
-//   addEvidence(() => `select-all:$(meta[name="${name}"])`),
-//   selectAll(expandCaseVariations(name, (s) => `meta[name="${s}"]`)),
-//   forEachDo(compose(
-//     getElemAttr('content'),
-//     saveFieldAs(fieldName),
-//   )),
-//   clearEvidence(/^select-all:/),
-// );
-// const textForEvidence: (env: ExtractionEnv, evstr: string) => string | undefined = (env, evstr) => {
-//   const regex = new RegExp(evstr);
-//   const maybeCandidate = _.find(env.fieldCandidates, (fc) => {
-//     return _.some(fc.evidence, ev => regex.test(ev));
-//   });
-
-//   return maybeCandidate ? maybeCandidate.text : undefined;
-// };
-
-// const summarizeExtraction: Arrow<unknown, unknown> = tap((_a, env) => {
-//   const nameValuePairs = _.toPairs(env.fieldRecs);
-//   const fieldNames = _.map(nameValuePairs, ([name]) => name);
-//   const url = env.metadata.responseUrl;
-//   const parsedUrl = parseUrl(url);
-//   const { host } = parsedUrl;
-//   let { pathname } = parsedUrl;
-//   if (pathname.startsWith('/')) pathname = pathname.slice(1);
-//   const paths = pathname.split('/');
-//   const pathButLast = paths.slice(0, -1);
-//   const pathBL = _.join(pathButLast, '/');
-//   env.log.log('info', `summary: url       : ${url}`);
-//   env.log.log('info', `summary: host      : ${host}`);
-//   env.log.log('info', `summary: path-1    : ${pathBL}`);
-//   env.log.log('info', `summary: fields    : ${_.join(fieldNames, ', ')}`);
-//   _.each(nameValuePairs, ([name, fields]) => {
-//     env.log.log('info', `summary:     field: ${name}  count=${fields.length}`);
-//     _.each(fields, field => {
-//       const evidence = _.join(field.evidence, ' ++ ');
-//       env.log.log('info', `summary:      value   : ${field.value} `);
-//       env.log.log('info', `summary:      evidence: ${evidence} `);
-//     });
-//   });
-// });
-
-// const dedupFields: Arrow<unknown, unknown> = tap((_a, env) => {
-//   const nameValuePairs = _.toPairs(env.fieldRecs);
-//   _.each(nameValuePairs, ([name, fields]) => {
-//     const hashedFields = _.map(fields, f => {
-//       const checksum = f.value ? shaEncodeAsHex(f.value) : '';
-//       return [checksum, f] as const;
-//     });
-//     const uniq = _.uniqBy(hashedFields, ([csum,]) => csum);
-//     const uniqFields = _.map(uniq, ([, f]) => f);
-//     env.fieldRecs[name].splice(0, env.fieldRecs[name].length, ...uniqFields);
-//   });
-// });
-
-// const saveDocumentMetaDataAs: (name: string, f: (m: GlobalDocumentMetadata) => string) => Arrow<GlobalDocumentMetadata, unknown> = (name, f) => compose(
-//   addEvidence(() => `global.document.metadata:[${name}]`),
-//   through((documentMetadata) => f(documentMetadata), `saveMetaAS(${name})`),
-//   saveFieldAs(name),
-//   clearEvidence(/^global.document.metadata:/),
-// );
-
-// const cleanNamedFields: Arrow<unknown, unknown> = tap((_a, env) => {
-//   const nameValuePairs = _.toPairs(env.fieldRecs);
-//   _.each(nameValuePairs, ([fieldName, fields]) => {
-//     if (fieldName === 'abstract') {
-//       _.each(fields, field => {
-//         const fieldValue = field.value;
-//         let cleaned: string | undefined;
-//         if (fieldValue) {
-//           const [cleaned0, cleaningRuleResults] = applyCleaningRules(AbstractCleaningRules, fieldValue);
-//           const ruleNames = _.map(cleaningRuleResults, r => {
-//             return `clean: ${r.rule}`;
-//           });
-//           cleaned = cleaned0;
-//           field.evidence.push(...ruleNames);
-//         }
-
-//         field.value = cleaned && cleaned.length > 0 ? cleaned : undefined;
-//       });
-//     }
-//   });
-// });
-
-// const cleanFields: Arrow<unknown, unknown> = tap((_a, env) => {
-//   const nameValuePairs = _.toPairs(env.fieldRecs);
-//   _.each(nameValuePairs, ([name, fields]) => {
-//     if (name === 'abstract') {
-//       _.each(fields, field => {
-//         const fieldValue = field.value;
-//         let cleaned: string | undefined;
-//         if (fieldValue) {
-//           const [cleaned0, cleaningRuleResults] = applyCleaningRules(AbstractCleaningRules, fieldValue);
-//           const ruleNames = _.map(cleaningRuleResults, r => {
-//             return `clean: ${r.rule}`;
-//           });
-//           cleaned = cleaned0;
-//           field.evidence.push(...ruleNames);
-//           const fvTrimmed = fieldValue.trim();
-//           // an axiomatic...
-//           const isClipped = fvTrimmed.endsWith('...') || fvTrimmed.endsWith('…');
-//           if (isClipped) {
-//             env.log.log('info', 'clipping abstract ...');
-//             field.name = 'abstract-clipped';
-//           }
-//         }
-
-//         field.value = cleaned && cleaned.length > 0 ? cleaned : undefined;
-//       });
-//     }
-//   });
-// });
-
-// const saveFieldAs: (fieldName: string) => Arrow<string, unknown> = (fieldName) => through((fieldValue: string, env) => {
-//   const field: Field = {
-//     name: fieldName,
-//     evidence: getCurrentEvidenceStrings(env),
-//     value: fieldValue.trim()
-//   };
-//   const candidate: FieldCandidate = {
-//     text: fieldValue.trim(),
-//     evidence: getCurrentEvidenceStrings(env),
-//   };
-//   env.fieldCandidates.push(candidate);
-//   env.fields.push(field);
-// }, `saveField:${fieldName}`);

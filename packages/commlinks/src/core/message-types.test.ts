@@ -12,10 +12,10 @@ import {
   mreturn
 } from './message-types';
 
-import { prettyPrint } from '@watr/commonlib';
+import { prettyPrint, setLogEnvLevel } from '@watr/commonlib';
 
 describe('Service Communication Hub lifecycle', () => {
-  process.env['service-comm.loglevel'] = 'warn';
+  setLogEnvLevel('warn');
 
   it('should marshall/unmarshall messages', () => {
     const examples = [

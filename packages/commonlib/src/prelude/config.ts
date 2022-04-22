@@ -110,6 +110,8 @@ export function getCorpusRootDir(): string {
 export function getHashEncodedPath(url: string): HashEncodedPath {
   return makeHashEncodedPath(url, 3);
 }
+
+// TODO get rid of this, as it uses global corpus root defs
 export function getCorpusEntryDirForUrl(url: string): string {
   const corpusRoot = getCorpusRootDir();
   const entryEncPath = getHashEncodedPath(url);

@@ -23,6 +23,9 @@ export const AllLogLevels = [
   'silly',
 ];
 
+export function setLogEnvLevel(level: string): void {
+  process.env['service-comm.loglevel'] = level;
+}
 export function getLogEnvLevel(): string {
   const envLogLevel = process.env['service-comm.loglevel'];
   const envLevel = envLogLevel;

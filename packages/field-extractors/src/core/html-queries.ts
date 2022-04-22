@@ -9,14 +9,11 @@ import {
   ElementHandle,
 } from 'puppeteer';
 
-import { BrowserInstance } from '@watr/spider';
-
 export type AttrSelection = E.Either<string, string>;
 
 export type Elem = ElementHandle<Element>;
 export type ElemSelectOne = E.Either<string, Elem>;
 export type ElemSelectAll = E.Either<string, Elem[]>;
-
 
 export function expandCaseVariations(seed: string, sub: (s: string) => string): string {
   const variations = _.reduce(seed, (acc, char) => {
@@ -64,25 +61,25 @@ export async function queryAllP(
   }
 }
 
-export async function queryAll(
-  browserInstance: BrowserInstance,
-  sourceHtml: string,
-  query: string
-): Promise<ElemSelectAll> {
-  const { page } = await browserInstance.newPage();
+// export async function queryAll(
+//   browserInstance: BrowserInstance,
+//   sourceHtml: string,
+//   query: string
+// ): Promise<ElemSelectAll> {
+//   const { page } = await browserInstance.newPage();
 
-  try {
-    await page.setContent(sourceHtml, {
-      timeout: 4000,
-      waitUntil: 'domcontentloaded',
-    });
+//   try {
+//     await page.setContent(sourceHtml, {
+//       timeout: 4000,
+//       waitUntil: 'domcontentloaded',
+//     });
 
-    return await queryAllP(page, query);
-  } catch (error) {
-    const msg = formatCSSSelectionError(error, query);
-    return E.left(msg);
-  }
-}
+//     return await queryAllP(page, query);
+//   } catch (error) {
+//     const msg = formatCSSSelectionError(error, query);
+//     return E.left(msg);
+//   }
+// }
 
 export async function queryOneP(
   page: Page,
@@ -97,20 +94,20 @@ export async function queryOneP(
       }));
     });
 }
-export async function queryOne(
-  browser: BrowserInstance,
-  sourceHtml: string,
-  query: string
-): Promise<ElemSelectOne> {
-  return queryAll(browser, sourceHtml, query)
-    .then(elems => {
-      return pipe(elems, E.chain(es => {
-        return es.length > 0
-          ? E.right(es[0])
-          : E.left(`empty selection '${query}'`);
-      }));
-    });
-}
+// export async function queryOne(
+//   browser: BrowserInstance,
+//   sourceHtml: string,
+//   query: string
+// ): Promise<ElemSelectOne> {
+//   return queryAll(browser, sourceHtml, query)
+//     .then(elems => {
+//       return pipe(elems, E.chain(es => {
+//         return es.length > 0
+//           ? E.right(es[0])
+//           : E.left(`empty selection '${query}'`);
+//       }));
+//     });
+// }
 
 export async function selectElementAndEval(
   page: Page,
@@ -159,22 +156,22 @@ export async function selectElementAttrP(
   }
 }
 
-export async function selectElementAttr(
-  browser: BrowserInstance,
-  sourceHtml: string,
-  elementSelector: string,
-  attributeName: string
-): Promise<AttrSelection> {
-  const { page } = await browser.newPage();
-  try {
-    await page.setContent(sourceHtml, {
-      timeout: 4000,
-      waitUntil: 'domcontentloaded',
-    });
+// export async function selectElementAttr(
+//   browser: BrowserInstance,
+//   sourceHtml: string,
+//   elementSelector: string,
+//   attributeName: string
+// ): Promise<AttrSelection> {
+//   const { page } = await browser.newPage();
+//   try {
+//     await page.setContent(sourceHtml, {
+//       timeout: 4000,
+//       waitUntil: 'domcontentloaded',
+//     });
 
-    return await selectElementAttrP(page, elementSelector, attributeName);
-  } catch (error) {
-    const msg = formatCSSSelectionError(error, elementSelector);
-    return E.left(msg);
-  }
-}
+//     return await selectElementAttrP(page, elementSelector, attributeName);
+//   } catch (error) {
+//     const msg = formatCSSSelectionError(error, elementSelector);
+//     return E.left(msg);
+//   }
+// }

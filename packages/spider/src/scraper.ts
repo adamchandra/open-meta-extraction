@@ -1,7 +1,8 @@
 import _ from 'lodash';
 import * as E from 'fp-ts/Either';
+import path from 'path';
 
-import { writeCorpusJsonFile, writeCorpusTextFile, hasCorpusFile, getServiceLogger, cleanArtifactDir, asyncMapSeries } from '@watr/commonlib';
+import { writeCorpusJsonFile, writeCorpusTextFile, hasCorpusFile, getServiceLogger, cleanArtifactDir, asyncMapSeries, getHashEncodedPath } from '@watr/commonlib';
 
 import {
   Frame
@@ -15,16 +16,15 @@ import { blockedResourceReport } from './puppet';
 export interface Scraper {
   browserPool: BrowserPool;
   scrapeUrl(url: string, clean: boolean): Promise<E.Either<string, UrlFetchData>>;
+  getUrlCorpusEntryPath(url: string): string;
   quit(): Promise<void>;
 }
 
 type InitScraperArgs = {
-  sharedDataDir: string,
-  corpusRoot: string
+  corpusRoot: string,
 };
 
 export async function initScraper({
-  sharedDataDir,
   corpusRoot
 }: InitScraperArgs): Promise<Scraper> {
   const logger = getServiceLogger('scraper');
@@ -33,7 +33,11 @@ export async function initScraper({
   return {
     browserPool,
     async scrapeUrl(url: string, clean: boolean): Promise<E.Either<string, UrlFetchData>> {
-      return scrapeUrl({ browserPool, url, sharedDataDir, corpusRoot, clean });
+      return scrapeUrl({ browserPool, url, corpusRoot, clean });
+    },
+    getUrlCorpusEntryPath(url: string): string {
+      const entryEncPath = getHashEncodedPath(url);
+      return path.resolve(corpusRoot, entryEncPath.toPath());
     },
     async quit() {
       await browserPool.shutdown();
@@ -45,7 +49,6 @@ export async function initScraper({
 type ScrapeUrlArgs = {
   browserPool: BrowserPool,
   url: string,
-  sharedDataDir: string,
   corpusRoot: string,
   clean: boolean
 };
@@ -53,12 +56,11 @@ type ScrapeUrlArgs = {
 async function scrapeUrl({
   browserPool,
   url,
-  sharedDataDir,
   corpusRoot,
   clean
 }: ScrapeUrlArgs): Promise<E.Either<string, UrlFetchData>> {
 
-  const scrapingContext = createScrapingContext({ initialUrl: url, sharedDataDir, corpusRoot });
+  const scrapingContext = createScrapingContext({ initialUrl: url, corpusRoot });
 
   const { logger } = scrapingContext;
 

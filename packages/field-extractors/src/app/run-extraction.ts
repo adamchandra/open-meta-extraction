@@ -1,14 +1,6 @@
 import _ from 'lodash';
 
 import {
-  // streamPump,
-  // walkScrapyCacheCorpus,
-  // getConsoleAndFileLogger,
-  // hasCorpusFile,
-  // setLogLabel,
-  // expandDir,
-  // putStrLn,
-  // radix,
   ensureArtifactDirectories,
   readCorpusJsonFile,
   writeCorpusJsonFile,
@@ -20,21 +12,21 @@ import {
 import * as TE from 'fp-ts/TaskEither';
 import * as E from 'fp-ts/Either';
 import Async from 'async';
-import { createBrowserPool, UrlFetchData } from '@watr/spider';
-import { initExtractionEnv } from './app/extraction-process';
+import { initScraper, UrlFetchData } from '@watr/spider';
+
 import {
   Arrow,
   PerhapsW,
   ExtractionEnv,
-  ExtractionSharedEnv
-} from './app/extraction-prelude';
-import { AbstractFieldAttempts } from './app/extraction-rules';
+  ExtractionSharedEnv,
+} from '~/predef/extraction-prelude';
 
-import { arglib } from '@watr/commonlib';
+import { AbstractFieldAttempts } from '~/core/extraction-scripts';
+
 import { Page } from 'puppeteer';
-import { CanonicalFieldRecords, FieldRecord } from './core/extraction-records';
+import { CanonicalFieldRecords, FieldRecord } from '~/predef/extraction-records';
+import { initExtractionEnv } from '~/core/extraction-primitives';
 
-const { opt, config, registerCmd } = arglib;
 
 const extractionRecordFileName = 'extraction-records.json';
 
@@ -55,22 +47,38 @@ export async function runFieldExtractor(
   return res;
 }
 
-export async function runMainExtractFields(
+type RMArgs = {
   corpusRoot: string,
-  urlString: string,
-): Promise<void> {
+  url: string,
+  clean: boolean,
+};
+
+export async function runMainExtractFields({
+  corpusRoot,
+  url,
+  clean
+}: RMArgs): Promise<void> {
   const log = getServiceLogger('field-extractor');
 
-      // const urlFetchData = readUrlFetchData(entryPath);
-      // const browserPool = createBrowserPool();
+  const scraper = await initScraper({ corpusRoot });
 
-      // return {
-      //   log,
-      //   urlFetchData,
-      //   browserPool,
-      // };
-      // await extractFieldsForEntry(exEnv);
+  const scrapedUrl = await scraper.scrapeUrl(url, clean);
 
+  const { browserPool } = scraper;
+
+  if (E.isRight(scrapedUrl)) {
+    log.info('Field Extraction starting..')
+    const urlFetchData = scrapedUrl.right;
+    const sharedEnv: ExtractionSharedEnv = {
+      log,
+      browserPool,
+      urlFetchData
+    };
+
+    const entryPath = scraper.getUrlCorpusEntryPath(url);
+    const exEnv = await initExtractionEnv(entryPath, sharedEnv);
+    await extractFieldsForEntry(exEnv);
+  }
 }
 
 
@@ -172,27 +180,3 @@ export function getCanonicalFieldRecord(
 
   return records;
 }
-
-
-registerCmd(
-  arglib.YArgs,
-  'extract-url',
-  'spider and extract field from given URL',
-  config(
-    opt.cwd,
-    opt.existingDir('corpus-root: root directory for corpus files'),
-    opt.ion('url', {
-      type: 'string',
-      required: true
-    }),
-  )
-)((args: any) => {
-  const { corpusRoot, url } = args;
-
-  runMainExtractFields(
-    corpusRoot,
-    url
-  ).then(() => {
-    console.log('done');
-  });
-});

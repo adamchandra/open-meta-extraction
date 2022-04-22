@@ -8,7 +8,7 @@ import {
   eachOrElse,
   log,
   filter,
-} from './extraction-prelude';
+} from '~/predef/extraction-prelude';
 
 import {
   clearEvidence,
@@ -26,7 +26,7 @@ import {
   _addEvidence,
   tapEnvLR,
   selectAllElemAttrEvidence,
-} from './extraction-process';
+} from '~/core/extraction-primitives';
 
 
 const compose: typeof fptsFlow = (...fs: []) =>

@@ -5,10 +5,10 @@ import { Server } from 'http';
 import { newCommLink, SatelliteService } from '@watr/commlinks';
 import { createSpiderService, SpiderService } from './spider-service';
 import { startSpiderableTestServer } from '~/http-servers/rest-portal/mock-server';
-import { prettyPrint, putStrLn } from '@watr/commonlib';
+import { prettyPrint, putStrLn, setLogEnvLevel } from '@watr/commonlib';
 
 describe('Spider/Field Extractor Service', () => {
-  process.env['service-comm.loglevel'] = 'debug';
+  setLogEnvLevel('debug');
   const workingDir = './test.scratch.d';
 
   let server: Server | undefined;

@@ -9,9 +9,10 @@ import { WorkflowConductor } from './conductor-service';
 import { SpiderService } from './spider-service';
 import { startSpiderableTestServer } from '~/http-servers/rest-portal/mock-server';
 import { OpenReviewRelayService } from './openreview-relay';
+import { setLogEnvLevel } from '@watr/commonlib';
 
 describe('End-to-end Distributed Extraction workflows', () => {
-  process.env['service-comm.loglevel'] = 'debug';
+  setLogEnvLevel('debug');
   const workingDir = './test.scratch.d';
 
   let server: Server | undefined;

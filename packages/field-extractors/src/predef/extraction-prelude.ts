@@ -3,9 +3,9 @@ import _ from 'lodash';
 import { UrlFetchData, BrowserPool, BrowserInstance } from '@watr/spider';
 import { Logger } from 'winston';
 import { Page } from 'puppeteer';
-import * as ft from '../core/function-defs';
+import * as ft from './function-defs';
 
-import { ExtractionEvidence, Field } from '../core/extraction-records';
+import { ExtractionEvidence, Field } from './extraction-records';
 
 interface NormalForms {
   'css-norm': null;
