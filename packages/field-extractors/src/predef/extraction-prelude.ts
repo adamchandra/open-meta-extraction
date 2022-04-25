@@ -53,7 +53,7 @@ export const {
   ClientFunc,
   Arrow,
   forEachDo,
-  eachOrElse,
+  attemptEach,
   takeWhileSuccess,
   gatherSuccess,
 } = fp;

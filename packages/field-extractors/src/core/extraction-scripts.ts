@@ -3,9 +3,10 @@ import _ from 'lodash';
 import { flow as fptsFlow, pipe } from 'fp-ts/function';
 
 import parseUrl from 'url-parse';
+
 import {
   gatherSuccess,
-  eachOrElse,
+  attemptEach,
   log,
   filter,
 } from '~/predef/extraction-prelude';
@@ -97,7 +98,7 @@ const gatherSchemaEvidence = forInputs(
   ),
 );
 
-const UrlSpecificAttempts = eachOrElse(
+const UrlSpecificAttempts = attemptEach(
   compose(
     urlFilter(/ieeexplore.ieee.org/),
     forInputs(/response-body/, compose(
@@ -154,7 +155,7 @@ const UrlSpecificAttempts = eachOrElse(
         gatherOpenGraphTags,
         selectElemTextEvidence('section#Abs1 > p.Para'),
       ),
-      eachOrElse(
+      attemptEach(
         compose(
           urlFilter(/\/chapter\//),
           tryEvidenceMapping({ // link.springer.com/chapter
@@ -266,14 +267,14 @@ const UrlSpecificAttempts = eachOrElse(
 export const AbstractFieldAttempts = compose(
   checkStatusAndNormalize,
 
-  eachOrElse(
+  attemptEach(
     UrlSpecificAttempts,
     // Url non-specific attempts
     compose(
       addUrlEvidence,
       gatherSchemaEvidence,
       clearEvidence(/^url:/),
-      filter(() => false, 'always fail') // <<- eachOrElse stops at first successful function, so we must fail to continue
+      filter(() => false, 'always fail') // <<- attemptEach stops at first successful function, so we must fail to continue
     ),
     tryEvidenceMapping({
       citation_title: 'title',

@@ -78,6 +78,7 @@ export async function runMainExtractFields({
     const entryPath = scraper.getUrlCorpusEntryPath(url);
     const exEnv = await initExtractionEnv(entryPath, sharedEnv);
     await extractFieldsForEntry(exEnv);
+    await browserPool.shutdown();
   }
 }
 

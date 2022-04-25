@@ -251,7 +251,7 @@ const loadPageFromCache: Arrow<CacheFileKey, Page> =
     }
 
     return ClientFunc.halt(`cache has no record for key ${cacheKey}`);
-  }, `loadPageCache`);
+  }, `loadPage`);
 
 const selectOne: (queryString: string) => Arrow<CacheFileKey, Elem> = (queryString) => compose(
   loadPageFromCache,
@@ -386,15 +386,14 @@ export const selectAllMetaEvidence: (name: string, attrName?: string) => Arrow<C
 /// ///////////////
 
 
-
 const urlMatcher: (urlTest: RegExp) => Arrow<unknown, unknown> = (regex) => compose(
-  through((_a, env) => env.urlFetchData.responseUrl, 'urlMatch'),
-  filter((a: string) => regex.test(a), `m/${regex.source}/`),
+  through((_a, env) => env.urlFetchData.responseUrl),
+  filter((a: string) => regex.test(a), `url ~= m/${regex.source}/`),
 );
 
 export const statusFilter: Arrow<unknown, unknown> = compose(
-  through((_a, env) => env.urlFetchData.status, 'httpStatus'),
-  filter((a) => a === '200', 'status=200'),
+  through((_a, env) => env.urlFetchData.status),
+  filter((a) => a === '200', 'HttpStatus==200'),
 );
 
 export const normalizeHtmls: Arrow<unknown, string[]> = compose(

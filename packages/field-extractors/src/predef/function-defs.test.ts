@@ -31,16 +31,13 @@ const {
   filter,
   Arrow,
   through,
-  // ExtractionResult,
   asW,
   forEachDo,
-  eachOrElse,
+  attemptEach,
   takeWhileSuccess,
   gatherSuccess,
 } = fp;
 
-
-// const compose: typeof fpflow = (...fs: []) => <A extends readonly unknown[]>(a: A) => pipe(a, ...fs);
 
 const withMessage: <A, B>(name: string, arrow: Arrow<A, B>) => Arrow<A, B> = (name, arrow) => compose(
   // ra,
@@ -93,7 +90,7 @@ async function runTakeWhileSuccess(fns: Arrow<string, string>[]): Promise<string
 
 
 async function runTakeFirstSuccess(fns: Arrow<string, string>[]): Promise<string[]> {
-  const res = await eachOrElse(...fns)(initEnv(`input#${dummy += 1}`))();
+  const res = await attemptEach(...fns)(initEnv(`input#${dummy += 1}`))();
   return getEnvMessages(res);
 }
 
@@ -145,7 +142,7 @@ describe('Extraction Prelude / Primitives', () => {
     // done();
   });
 
-  it('eachOrElse examples', async () => {
+  it('attemptEach examples', async () => {
     const examples: Array<[Arrow<string, string>[], string[]]> = [
       // Always stop at first emit:
       [[emit('A:okay'), emit('B:bad')],

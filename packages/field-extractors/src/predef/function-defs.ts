@@ -13,21 +13,20 @@ export interface FPackage<Env extends BaseEnv> {
   asW<A>(a: A, w: Env): W<A, Env>;
   asWCI(ci: ControlInstruction, w: Env): WCI<Env>;
 
+  // Pair an Arrow function with a runtime Env
   withNS: <A, B>(name: string, arrow: Arrow<A, B, Env>) => Arrow<A, B, Env>;
   withCarriedWA: <A, Env extends BaseEnv>(arrow: Arrow<A, unknown, Env>) => Arrow<A, A, Env>;
-  through<A, B>(f: ClientFunc<A, B, Env>, name: string, postHook?: PostHook<A, B, Env>,): Arrow<A, B, Env>;
+  through<A, B>(f: ClientFunc<A, B, Env>, name?: string, postHook?: LogHook<A, B, Env>,): Arrow<A, B, Env>;
   throughLeft<A>(f: ControlFunc<Env>): Arrow<A, A, Env>;
   tapLeft<A>(f: ControlFunc_<Env>): Arrow<A, A, Env>
   tap<A>(f: ClientFunc<A, unknown, Env>, name?: string): Arrow<A, A, Env>;
-  filter<A>(f: ClientFunc<A, boolean, Env>, name?: string, postHook?: PostHook<A, boolean, Env>,): FilterArrow<A, Env>;
+  filter<A>(f: ClientFunc<A, boolean, Env>, name?: string, postHook?: LogHook<A, boolean, Env>,): FilterArrow<A, Env>;
 
   forEachDo: <A, B> (arrow: Arrow<A, B, Env>) => Arrow<A[], B[], Env>;
 
-  // map(fs: (A=>B)[], a: A) => Either<E, B>[], then filter(isRight(bs))
   gatherSuccess: <A, B> (...arrows: Arrow<A, B, Env>[]) => Arrow<A, B[], Env>;
   takeWhileSuccess: <A, Env extends BaseEnv> (...arrows: Arrow<A, A, Env>[]) => Arrow<A, A, Env>;
-  eachOrElse: <A, B> (...arrows: Arrow<A, B, Env>[]) => Arrow<A, B, Env>;
-
+  attemptEach: <A, B> (...arrows: Arrow<A, B, Env>[]) => Arrow<A, B, Env>;
 
   log: <A>(level: LogLevel, f: (a: A, env: Env) => string) => Arrow<A, A, Env>;
 
@@ -60,7 +59,7 @@ export function createFPackage<Env extends BaseEnv>(): FPackage<Env> {
     withCarriedWA,
     forEachDo,
     gatherSuccess,
-    eachOrElse,
+    attemptEach,
     takeWhileSuccess,
     through,
     throughLeft,
@@ -81,6 +80,7 @@ function isELeft<A>(a: any): a is E.Left<A> {
 
   return isObj && isTagged && a._tag === 'Left' && 'left' in a;
 }
+
 function isERight<A>(a: any): a is E.Right<A> {
   const isObj = typeof a === 'object';
   const isTagged = isObj && '_tag' in a;
@@ -105,7 +105,7 @@ export interface BaseEnv {
 /**
  * Return value with user defined Environment
  */
-export type W<A, Env extends BaseEnv> = [a:A, env:Env];
+export type W<A, Env extends BaseEnv> = [a: A, env: Env];
 function asW<A, Env extends BaseEnv>(a: A, w: Env): W<A, Env> {
   return [a, w];
 }
@@ -124,7 +124,7 @@ export type Eventual<A> = A | Promise<A>;
 export type Perhaps<A> = E.Either<ControlInstruction, A>;
 export type PerhapsW<A, Env extends BaseEnv> = E.Either<WCI<Env>, W<A, Env>>;
 
-export type PostHook<A, B, Env extends BaseEnv> = (a: A, eb: Perhaps<B>, env: Env) => void;
+export type LogHook<A, B, Env extends BaseEnv> = (a: A, eb: Perhaps<B>, env: Env) => void;
 
 export type ClientResult<A> = Eventual<A>
   | Eventual<Perhaps<A>>
@@ -182,8 +182,10 @@ const Arrow = {
     ([prev, env]) => {
       return () => Promise.resolve(fab(prev, env))
         .then(async (result) => {
+
           if (isELeft(result)) {
             const ci = result.left;
+            //
             if (postHook) {
               postHook(prev, result, env);
             }
@@ -191,6 +193,7 @@ const Arrow = {
           }
           if (isERight(result)) {
             const b = result.right;
+            ///
             if (postHook) {
               postHook(prev, result, env);
             }
@@ -227,21 +230,23 @@ export type ExtractionFunction<A, B, Env extends BaseEnv> = (a: A, env: Env) => 
 export type FilterFunction<A, Env extends BaseEnv> = ExtractionFunction<A, A, Env>;
 export type EnvFunction<B, Env extends BaseEnv> = ExtractionFunction<void, B, Env>;
 
-const pushNS: <A, Env extends BaseEnv>(n: string) => Arrow<A, A, Env> = <A, Env extends BaseEnv>(name: string) => (ra: ExtractionResult<A, Env>) => {
-  return pipe(
-    ra,
-    TE.map(([a, env]) => {
-      env.ns.push(name);
-      env.enterNS(env.ns);
-      return asW(a, env);
-    }),
-    TE.mapLeft(([a, env]) => {
-      env.ns.push(name);
-      env.enterNS(env.ns);
-      return asW(a, env);
-    })
-  );
-};
+const pushNS:
+  <A, Env extends BaseEnv>(name: string) => Arrow<A, A, Env> =
+  <A, Env extends BaseEnv>(name: string) => (ra: ExtractionResult<A, Env>) => {
+    return pipe(
+      ra,
+      TE.map(([a, env]) => {
+        env.ns.push(name);
+        env.enterNS(env.ns);
+        return asW(a, env);
+      }),
+      TE.mapLeft(([a, env]) => {
+        env.ns.push(name);
+        env.enterNS(env.ns);
+        return asW(a, env);
+      })
+    );
+  };
 
 const popNS: <A, Env extends BaseEnv>() => Arrow<A, A, Env> = <A, Env extends BaseEnv>() => (ra: ExtractionResult<A, Env>) => {
   return pipe(
@@ -259,28 +264,32 @@ const popNS: <A, Env extends BaseEnv>() => Arrow<A, A, Env> = <A, Env extends Ba
   );
 };
 
-const withNS: <A, B, Env extends BaseEnv>(name: string, arrow: Arrow<A, B, Env>) => Arrow<A, B, Env> = <A, B, Env extends BaseEnv>(name: string, arrow: Arrow<A, B, Env>) => (ra: ExtractionResult<A, Env>) => pipe(
-  ra,
-  pushNS(name),
-  arrow,
-  popNS()
-);
-
-const carryWA: <A, B, Env extends BaseEnv>(arrow: Arrow<A, B, Env>) => Arrow<A, [B, W<A, Env>], Env> = <A, B, Env extends BaseEnv>(arrow: Arrow<A, B, Env>) => {
-  let origWA: W<A, Env>;
-
-  return (ra: ExtractionResult<A, Env>) => pipe(
+const withNS:
+  <A, B, Env extends BaseEnv>(name: string, arrow: Arrow<A, B, Env>) => Arrow<A, B, Env> =
+  <A, B, Env extends BaseEnv>(name: string, arrow: Arrow<A, B, Env>) => (ra: ExtractionResult<A, Env>) => pipe(
     ra,
-    TE.map((wa) => {
-      origWA = wa;
-      return wa;
-    }),
+    pushNS(name),
     arrow,
-    TE.chain(([b, env]) => {
-      return TE.right(asW([b, origWA], env));
-    }),
+    popNS()
   );
-};
+
+const carryWA:
+  <A, B, Env extends BaseEnv>(arrow: Arrow<A, B, Env>) => Arrow<A, [B, W<A, Env>], Env> =
+  <A, B, Env extends BaseEnv>(arrow: Arrow<A, B, Env>) => {
+    let origWA: W<A, Env>;
+
+    return (ra: ExtractionResult<A, Env>) => pipe(
+      ra,
+      TE.map((wa) => {
+        origWA = wa;
+        return wa;
+      }),
+      arrow,
+      TE.chain(([b, env]) => {
+        return TE.right(asW([b, origWA], env));
+      }),
+    );
+  };
 
 
 const withCarriedWA: <A, Env extends BaseEnv>(arrow: Arrow<A, unknown, Env>) => Arrow<A, A, Env> = (arrow) => ra => pipe(
@@ -336,32 +345,34 @@ const forEachDo: <A, B, Env extends BaseEnv> (arrow: Arrow<A, B, Env>) => Arrow<
 
 
 // Given a single input A, produce an array of Bs by running the given array of functions on the initial A
-const gatherSuccess: <A, B, Env extends BaseEnv> (...arrows: Arrow<A, B, Env>[]) => Arrow<A, B[], Env> = <A, B, Env extends BaseEnv>(...arrows: Arrow<A, B, Env>[]) => (ra: ExtractionResult<A, Env>) => {
-  return pipe(
-    ra,
-    scatterAndSettle(...arrows),
-    TE.chain(([settledBs, env]) => {
-      const bs: B[] = [];
-      _.each(settledBs, (wb) => {
-        if (E.isRight(wb)) {
-          const [b] = wb.right;
-          bs.push(b);
-        } else {
-          const [ci] = wb.left;
-          let msg = '';
-          if (typeof ci === 'string') {
-            msg = ci;
+const gatherSuccess:
+  <A, B, Env extends BaseEnv>(...arrows: Arrow<A, B, Env>[]) => Arrow<A, B[], Env> =
+  <A, B, Env extends BaseEnv>(...arrows: Arrow<A, B, Env>[]) => (ra: ExtractionResult<A, Env>) => {
+    return pipe(
+      ra,
+      scatterAndSettle(...arrows),
+      TE.chain(([settledBs, env]) => {
+        const bs: B[] = [];
+        _.each(settledBs, (wb) => {
+          if (E.isRight(wb)) {
+            const [b] = wb.right;
+            bs.push(b);
           } else {
-            const [code, m] = ci;
-            msg = `${code}: ${m}`;
+            const [ci] = wb.left;
+            let msg = '';
+            if (typeof ci === 'string') {
+              msg = ci;
+            } else {
+              const [code, m] = ci;
+              msg = `${code}: ${m}`;
+            }
+            env.log.log('debug', `gatherSuccess/left = ${msg}`);
           }
-          env.log.log('debug', `gatherSuccess/left = ${msg}`);
-        }
-      });
-      return TE.right(asW(bs, env));
-    })
-  );
-};
+        });
+        return TE.right(asW(bs, env));
+      })
+    );
+  };
 
 
 const scatterAndSettle: <A, B, Env extends BaseEnv> (
@@ -392,35 +403,31 @@ const takeWhileSuccess: <A, Env extends BaseEnv> (...arrows: Arrow<A, A, Env>[])
   __takeWhileSuccess(arrows, arrows.length)
 );
 
-const __takeWhileSuccess: <A, Env extends BaseEnv> (arrows: Arrow<A, A, Env>[], arrowCount: number) => Arrow<A, A, Env> = <A, Env extends BaseEnv>(arrows: Arrow<A, A, Env>[], arrowCount: number) => (ra: ExtractionResult<A, Env>) => {
-  // Base Case:
-  if (arrows.length === 0) return ra;
+const __takeWhileSuccess:
+  <A, Env extends BaseEnv>(arrows: Arrow<A, A, Env>[], arrowCount: number) => Arrow<A, A, Env> =
+  <A, Env extends BaseEnv>(arrows: Arrow<A, A, Env>[], arrowCount: number) => (ra: ExtractionResult<A, Env>) => {
+    // Base Case:
+    if (arrows.length === 0) return ra;
 
-  // Recursive Step:
-  const headArrow: Arrow<A, A, Env> = arrows[0];
-  const tailArrows: Arrow<A, A, Env>[] = arrows.slice(1);
-  const arrowNum = arrowCount - arrows.length;
-  const ns = `#${arrowNum}`;
+    // Recursive Step:
+    const headArrow: Arrow<A, A, Env> = arrows[0];
+    const tailArrows: Arrow<A, A, Env>[] = arrows.slice(1);
+    const arrowNum = arrowCount - arrows.length;
+    const ns = `#${arrowNum}`;
 
-  return pipe(
-    ra,
-    withCarriedWA(withNS(
-      ns,
-      headArrow
-    )),
-    __takeWhileSuccess(tailArrows, arrowCount)
-  );
-};
+    return pipe(
+      ra,
+      withCarriedWA(withNS(
+        ns,
+        headArrow
+      )),
+      __takeWhileSuccess(tailArrows, arrowCount)
+    );
+  };
 
-// Try each arrow on input until one succeeds
-// const eachOrElse: <A, B, Env extends BaseEnv> (...arrows: Arrow<A, B, Env>[]) => Arrow<A, B, Env> = (...arrows) => withNS(
-//   `eachOrElse:`,
-//   __eachOrElse(arrows, arrows.length),
-// );
-const eachOrElse: <A, B, Env extends BaseEnv> (...arrows: Arrow<A, B, Env>[]) => Arrow<A, B, Env> = (...arrows) => __eachOrElse(arrows, arrows.length);
+const attemptEach: <A, B, Env extends BaseEnv> (...arrows: Arrow<A, B, Env>[]) => Arrow<A, B, Env> = (...arrows) => __attemptEach(arrows, arrows.length);
 
-
-const __eachOrElse: <A, B, Env extends BaseEnv> (arrows: Arrow<A, B, Env>[], arrowCount: number) => Arrow<A, B, Env> = (arrows, arrowCount) => (ra) => {
+const __attemptEach: <A, B, Env extends BaseEnv> (arrows: Arrow<A, B, Env>[], arrowCount: number) => Arrow<A, B, Env> = (arrows, arrowCount) => (ra) => {
   // Base Case:
   if (arrows.length === 0) {
     return pipe(
@@ -435,7 +442,7 @@ const __eachOrElse: <A, B, Env extends BaseEnv> (arrows: Arrow<A, B, Env>[], arr
   const headArrow = arrows[0];
   const tailArrows = arrows.slice(1);
   const arrowNum = arrowCount - arrows.length;
-  const ns = `eachOrElse(${arrowNum} of ${arrowCount})`;
+  const ns = `attempt(${arrowNum + 1} of ${arrowCount})`;
 
   return pipe(
     ra,
@@ -443,7 +450,7 @@ const __eachOrElse: <A, B, Env extends BaseEnv> (arrows: Arrow<A, B, Env>[], arr
       const origWA = TE.right(asW(a, env));
 
       const headAttempt = pipe(origWA, withNS(ns, headArrow));
-      const fallback = pipe(origWA, __eachOrElse(tailArrows, arrowCount));
+      const fallback = pipe(origWA, __attemptEach(tailArrows, arrowCount));
 
       return TE.orElse(() => fallback)(headAttempt);
     }),
@@ -451,7 +458,7 @@ const __eachOrElse: <A, B, Env extends BaseEnv> (arrows: Arrow<A, B, Env>[], arr
 };
 
 const hook: <A, B, Env extends BaseEnv>(f: (a: A, b: Perhaps<B>, env: Env) => void) =>
-  PostHook<A, B, Env> = (f) => f;
+  LogHook<A, B, Env> = (f) => f;
 
 function shortFormat(v: any): string {
   if (_.isArray(v)) {
@@ -471,10 +478,10 @@ function shortFormat(v: any): string {
 
 function through<A, B, Env extends BaseEnv>(
   f: ClientFunc<A, B, Env>,
-  name: string,
-  postHook?: PostHook<A, B, Env>,
+  name?: string,
+  postHook?: LogHook<A, B, Env>,
 ): Arrow<A, B, Env> {
-  const ns = name ? `exec:${name}` : 'exec:anon';
+  const ns = name ? `do:${name}` : '';
 
   const mhook = <A>() => hook<A, B, Env>((a, b, env) => {
     const msg = pipe(b, E.fold(
@@ -528,7 +535,7 @@ function tap<A, Env extends BaseEnv>(f: ClientFunc<A, unknown, Env>, name?: stri
 function liftFilter<A, Env extends BaseEnv>(
   f: ClientFunc<A, boolean, Env>,
   name?: string,
-  postHook?: PostHook<A, boolean, Env>,
+  postHook?: LogHook<A, boolean, Env>,
 ): Arrow<A, boolean, Env> {
   const filterHook = <A>() => hook<A, A, Env>((a, b, env) => {
     const msg = pipe(b, E.fold(
@@ -545,7 +552,7 @@ function liftFilter<A, Env extends BaseEnv>(
 function filter<A, Env extends BaseEnv>(
   f: ClientFunc<A, boolean, Env>,
   name?: string,
-  postHook?: PostHook<A, boolean, Env>,
+  postHook?: LogHook<A, boolean, Env>,
 ): FilterArrow<A, Env> {
   const fa: FilterArrow<A, Env> = (ra: ExtractionResult<A, Env>) => {
     const ns = name ? `filter(${name})` : 'filter(?)';
