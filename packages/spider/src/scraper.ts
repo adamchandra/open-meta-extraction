@@ -5,13 +5,14 @@ import path from 'path';
 import { writeCorpusJsonFile, writeCorpusTextFile, hasCorpusFile, getServiceLogger, cleanArtifactDir, asyncMapSeries, getHashEncodedPath } from '@watr/commonlib';
 
 import {
-  Frame
+  Frame, HTTPResponse
 } from 'puppeteer';
 
 import { getFetchDataFromResponse, UrlFetchData } from './url-fetch-chains';
 import { createScrapingContext } from './scraping-context';
-import { BrowserPool, createBrowserPool, DefaultPageInstanceOptions } from './browser-pool';
-import { blockedResourceReport } from './puppet';
+import { BrowserPool, createBrowserPool, DefaultPageInstanceOptions, PageInstance } from './browser-pool';
+import { blockedResourceReport } from './resource-blocking';
+import { Logger } from 'winston';
 
 export interface Scraper {
   browserPool: BrowserPool;
@@ -53,6 +54,37 @@ type ScrapeUrlArgs = {
   clean: boolean
 };
 
+
+async function gotoUrlWithRewrites(
+  pageInstance: PageInstance,
+  url: string,
+  logger: Logger,
+): Promise<E.Either<string, HTTPResponse>> {
+  const urlRewrites = pageInstance.opts.rewriteableUrls;
+  const response = await pageInstance.gotoUrl(url);
+  if (E.isLeft(response)) {
+    const error = response.left;
+    logger.debug(`Attempting Rewrite for ${error}`);
+    const msg = error;
+    const maybeRewrite = _.map(urlRewrites, (rule) => {
+      if (rule.regex.test(msg)) {
+        const newUrl = rule.rewrite(msg);
+        logger.verbose(`    new url: ${newUrl}`);
+        return newUrl;
+      }
+    });
+    const rw0 = maybeRewrite.filter(s => s !== undefined);
+    logger.verbose(`    available rewrites: ${rw0.join(', ')}`);
+    if (rw0.length > 0) {
+      const rewrite = rw0[0];
+      if (rewrite === undefined) return E.left('no rewrites available');
+      logger.info(`Rewrote ${url} to ${rewrite}`)
+      return gotoUrlWithRewrites(pageInstance, rewrite, logger)
+    }
+  }
+  return response;
+}
+
 async function scrapeUrl({
   browserPool,
   url,
@@ -82,75 +114,24 @@ async function scrapeUrl({
 
     logger.info(`downloading ${url} to ${scrapingContext.entryEncPath.toPath()}`);
 
-    // TODO use a progressive strategy to navigate urls, starting with simplest to complex
-    const browserPage = await browserInstance.newPage(DefaultPageInstanceOptions);
+    const pageInstance = await browserInstance.newPage(DefaultPageInstanceOptions);
 
-    blockedResourceReport(logger);
-
-    const { page } = browserPage;
+    blockedResourceReport(pageInstance, logger);
 
     try {
-      const response = await browserPage.gotoUrl(url)
+      const maybeResponse = await gotoUrlWithRewrites(pageInstance, url, logger);
 
-      if (!response) {
-        logger.warn(`no response ${url}`);
-        return E.left(`no response scraping ${url}`);
+      if (E.isLeft(maybeResponse)) {
+        const msg = maybeResponse.left;
+        logger.warn(`no response ${url}: ${msg}`);
+        return E.left(`no response scraping ${url}: ${msg}`);
       }
 
-      const request = response.request();
-      const requestHeaders = request.headers();
-      writeCorpusJsonFile(entryRootPath, '.', 'request-headers.json', requestHeaders);
-      logger.verbose('wrote request headers');
+      const response = maybeResponse.right;
 
-      const respHeaders = response.headers();
-      writeCorpusJsonFile(entryRootPath, '.', 'response-headers.json', respHeaders);
-      logger.verbose('wrote response headers');
-
-      const respBuffer = await response.buffer();
-      writeCorpusTextFile(entryRootPath, '.', 'response-body', respBuffer.toString());
-
-      const frames = page.frames();
-      const frameCount = frames.length;
-      let frameNum = 0;
-      const timeoutMS = 5000;
-
-      const allFrameContent = await asyncMapSeries<Frame, string>(
-        page.frames(),
-        async (frame: Frame): Promise<string> => {
-          logger.verbose(`retrieving frame content ${frameNum} of ${frameCount}`);
-          const content = await new Promise<string>((resolve) => {
-            let counter = 0;
-            const timeout = setTimeout(function () {
-              counter += 1;
-              // clearImmediate(immediate);
-              resolve(`timeout after ${timeoutMS}ms`);
-            }, timeoutMS);
-
-            frame.content()
-              .then(c => {
-                if (counter === 0) {
-                  clearTimeout(timeout);
-                  resolve(c[0])
-                }
-              }).catch(_err => {
-                // Catches Target Closed errors if timeout occurs
-                // console.log(`error getting frame.content(): ${err}`);
-              });
-          });
-
-          frameNum += 1;
-          return content;
-        }
-      );
-
-      _.each(allFrameContent, (frameContent, i) => {
-        if (frameContent.length > 0) {
-          writeCorpusTextFile(entryRootPath, '.', `response-frame-${i}`, frameContent);
-        }
-      });
-
+      const { page } = pageInstance;
       const metadata = getFetchDataFromResponse(url, response);
-      writeCorpusJsonFile(entryRootPath, '.', 'metadata.json', metadata);
+      await writeRequestToDisk(response, entryRootPath, logger, pageInstance, metadata);
       const status = response.status();
       await page.close();
       logger.info(`Scraped ${url}: status: ${status}`);
@@ -160,10 +141,73 @@ async function scrapeUrl({
 
       return E.right(metadata);
     } catch (error) {
-      await page.close();
+      await pageInstance.page.close();
       const errorMsg = `Error for ${url}: ${error}`;
       logger.warn(errorMsg);
       return E.left(errorMsg);
     }
   });
+}
+
+async function writeRequestToDisk(
+  response: HTTPResponse,
+  entryRootPath: string,
+  logger: Logger,
+  pageInstance: PageInstance,
+  urlFetchData: UrlFetchData
+): Promise<void> {
+  const request = response.request();
+  const requestHeaders = request.headers();
+  writeCorpusJsonFile(entryRootPath, '.', 'request-headers.json', requestHeaders);
+  logger.verbose('wrote request headers');
+
+  const respHeaders = response.headers();
+  writeCorpusJsonFile(entryRootPath, '.', 'response-headers.json', respHeaders);
+  logger.verbose('wrote response headers');
+
+  const respBuffer = await response.buffer();
+  writeCorpusTextFile(entryRootPath, '.', 'response-body', respBuffer.toString());
+
+  const { page } = pageInstance;
+  const frames = page.frames();
+  const frameCount = frames.length;
+  let frameNum = 0;
+  const timeoutMS = 5000;
+
+  const allFrameContent = await asyncMapSeries<Frame, string>(
+    frames,
+    async (frame: Frame): Promise<string> => {
+      logger.verbose(`retrieving frame content ${frameNum} of ${frameCount}`);
+      const content = await new Promise<string>((resolve) => {
+        let counter = 0;
+        const timeout = setTimeout(function () {
+          counter += 1;
+          // clearImmediate(immediate);
+          resolve(`timeout after ${timeoutMS}ms`);
+        }, timeoutMS);
+
+        frame.content()
+          .then(c => {
+            if (counter === 0) {
+              clearTimeout(timeout);
+              resolve(c[0])
+            }
+          }).catch(_err => {
+            // Catches Target Closed errors if timeout occurs
+            // console.log(`error getting frame.content(): ${err}`);
+          });
+      });
+
+      frameNum += 1;
+      return content;
+    }
+  );
+
+  _.each(allFrameContent, (frameContent, i) => {
+    if (frameContent.length > 0) {
+      writeCorpusTextFile(entryRootPath, '.', `response-frame-${i}`, frameContent);
+    }
+  });
+
+  writeCorpusJsonFile(entryRootPath, '.', 'metadata.json', urlFetchData);
 }

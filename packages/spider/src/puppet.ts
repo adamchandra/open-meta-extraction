@@ -9,10 +9,7 @@ import puppeteer from 'puppeteer-extra';
 // @ts-ignore
 import AnonPlugin from 'puppeteer-extra-plugin-anonymize-ua';
 
-// @ts-ignore
-import blockResourcesPlugin from 'puppeteer-extra-plugin-block-resources';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
-import { Logger } from 'winston';
 
 export type Browser = PBrowser;
 export const Browser = PBrowser;
@@ -33,70 +30,9 @@ export function useAnonPlugin(): void {
   puppeteer.use(AnonPlugin());
 }
 
-let usingResourceBlockPlugin = false;
-
-const AllBlockableResources = {
-  stylesheet: null,
-  image: null,
-  document: null,
-  media: null,
-  font: null,
-  script: null,
-  texttrack: null,
-  xhr: null,
-  fetch: null,
-  eventsource: null,
-  websocket: null,
-  manifest: null,
-  other: null
-};
-
-type BlockableResources = typeof AllBlockableResources;
-export type BlockableResource = keyof BlockableResources;
-
-const BlockableResources: BlockableResource[] = _.keys(AllBlockableResources) as BlockableResource[];
-
-const blockResPlugin = blockResourcesPlugin({
-  blockedTypes: new Set<BlockableResource>()
-});
-
-export function blockedResourceReport(log: Logger): void {
-  const blocked = blockedResourceTypes();
-  const bres = blocked.join(', ');
-  const allowed = _.difference(BlockableResources, blocked);
-  const ares = allowed.join(', ')
-  log.debug(`Resource permissions:`)
-  log.debug(`   Blocked: ${bres}`)
-  log.debug(`   Allowed: ${ares}`)
-}
-
-export function allowResourceTypes(rs: BlockableResource[]): void {
-  BlockableResources.forEach(r => blockResPlugin.blockedTypes.add(r));
-  rs.forEach(r => blockResPlugin.blockedTypes.delete(r))
-}
-
-export function blockResourceTypes(rs: BlockableResource[]): void {
-  BlockableResources.forEach(r => blockResPlugin.blockedTypes.delete(r));
-  rs.forEach(r => blockResPlugin.blockedTypes.add(r))
-}
-
-export function blockedResourceTypes(): BlockableResource[] {
-  const bs: Set<BlockableResource> = blockResPlugin.blockedTypes;
-  return [ ...bs ];
-}
-
-export function useResourceBlockPlugin(): void {
-  if (usingResourceBlockPlugin) return;
-  usingResourceBlockPlugin = true;
-  puppeteer.use(blockResPlugin);
-
-  allowResourceTypes(['document'])
-}
-
 export async function launchBrowser(): Promise<Browser> {
   useStealthPlugin();
   useAnonPlugin();
-  useResourceBlockPlugin();
   return puppeteer.launch({
     headless: true,
     // These arguments seem to be required to avoid bug where chrome doesn't shutdown on browser.close()

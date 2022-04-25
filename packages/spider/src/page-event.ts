@@ -1,11 +1,9 @@
-import { prettyFormat } from '@watr/commonlib';
 import _ from 'lodash';
 
 import {
   HTTPResponse,
   HTTPRequest,
   PageEventObject,
-  Page,
   ConsoleMessage,
   Metrics,
   WebWorker,
@@ -15,10 +13,10 @@ import {
 
 import { Logger } from 'winston';
 
-import { BrowserInstance } from './browser-pool';
-import { blockedResourceTypes } from './puppet';
+import { BrowserInstance, PageInstance } from './browser-pool';
+import { currentlyBlockedResources } from './resource-blocking';
 
-const pageEvents: Array<keyof PageEventObject> = [
+const PageEvents: Array<keyof PageEventObject> = [
   'close',
   'console',
   'dialog',
@@ -37,6 +35,12 @@ const pageEvents: Array<keyof PageEventObject> = [
   'response',
   'workercreated',
   'workerdestroyed',
+];
+const RequestCycleEvents: Array<keyof PageEventObject> = [
+  'request',
+  'requestfailed',
+  'requestfinished',
+  'response'
 ];
 
 
@@ -83,7 +87,8 @@ function _updateMap<K, V>(
   return defaultVal;
 }
 
-export function logPageEvents(page: Page, logger: Logger) {
+export function logPageEvents(pageInstance: PageInstance, logger: Logger) {
+  const { page } = pageInstance;
 
   const bproc = page.browser().process();
   const pid = bproc?.pid;
@@ -135,7 +140,7 @@ export function logPageEvents(page: Page, logger: Logger) {
     }
   }
 
-  _.each(pageEvents, e => {
+  _.each(PageEvents, e => {
     page.on(e, (_data: any) => {
       switch (e) {
         case 'domcontentloaded':
@@ -186,10 +191,10 @@ export function logPageEvents(page: Page, logger: Logger) {
           const resType = data.resourceType();
           const reqId = data._requestId
           const url = data.url();
-          const currentlyBlocked = blockedResourceTypes();
+          const currBlocked = currentlyBlockedResources(pageInstance);
           const clippedUrl = url.replace(/\?.*$/, '?...');
           let msg = `resource: ${resType} ${clippedUrl}`;
-          const isBlocked = currentlyBlocked.some(b => b === resType);
+          const isBlocked = currBlocked.some(b => b === resType);
           if (isBlocked) {
             msg = `blocked: ${resType}`;
           }
@@ -224,6 +229,47 @@ export function logPageEvents(page: Page, logger: Logger) {
         }
         default:
           logger.debug(`Browser#${pid}/Unknown event: ${e}`);
+      }
+    });
+  });
+}
+
+
+export function interceptRequestCycle(pageInstance: PageInstance, logger: Logger) {
+  const { page } = pageInstance;
+
+  const bproc = page.browser().process();
+  const pid = bproc?.pid;
+  if (bproc === null || pid === undefined) {
+    return;
+  }
+  _.each(RequestCycleEvents, e => {
+    page.on(e, (_data: any) => {
+      switch (e) {
+        case 'request': {
+          const request: HTTPRequest = _data;
+          const url = request.url();
+          const resType = request.resourceType();
+          const allowedResources = pageInstance.opts.allowedResources;
+          if (!allowedResources.includes(resType)) {
+            request.abort('aborted');
+            break;
+          }
+
+          const isRewritable = pageInstance.opts.rewriteableUrls.some(({regex}) => {
+            return regex.test(url);
+          });
+
+          if (isRewritable) {
+            logger.debug(`Aborting rewritable url ${url}`)
+            request.abort('blockedbyclient');
+            break;
+          }
+
+          request.continue();
+          break;
+        }
+        default:
       }
     });
   });

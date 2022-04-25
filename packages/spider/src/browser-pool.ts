@@ -1,5 +1,6 @@
 import _ from 'lodash';
 
+import * as E from 'fp-ts/Either';
 import onExit from 'signal-exit';
 import { Pool } from 'tarn';
 
@@ -14,9 +15,10 @@ import { delay, getServiceLogger, prettyFormat, prettyPrint, putStrLn } from '@w
 import {
   Browser, Page,
 } from 'puppeteer';
-import { logBrowserEvent, logPageEvents } from './page-event';
+import { interceptRequestCycle, logBrowserEvent, logPageEvents } from './page-event';
 
-import { BlockableResource, launchBrowser } from './puppet';
+import { launchBrowser } from './puppet';
+import { BlockableResource, RewritableUrl, RewritableUrls } from './resource-blocking';
 
 
 export interface BrowserPool {
@@ -44,7 +46,7 @@ export interface PageInstance {
   logPrefix: string;
   createdAt: Date;
   opts: PageInstanceOptions;
-  gotoUrl(url: string): Promise<HTTPResponse | undefined>;
+  gotoUrl(url: string): Promise<E.Either<string, HTTPResponse>>;
 }
 
 export interface PageInstanceOptions {
@@ -53,6 +55,7 @@ export interface PageInstanceOptions {
   defaultTimeout: number;
   javaScriptEnabled: boolean;
   allowedResources: BlockableResource[];
+  rewriteableUrls: RewritableUrl[];
   waitUntil: PuppeteerLifeCycleEvent;
 }
 
@@ -62,6 +65,7 @@ export const DefaultPageInstanceOptions: PageInstanceOptions = {
   defaultTimeout: 10_000,
   javaScriptEnabled: false,
   allowedResources: ['document'],
+  rewriteableUrls: RewritableUrls,
   waitUntil: 'domcontentloaded',
 
 }
@@ -128,17 +132,19 @@ export function createBrowserPool(logPrefix?: string): BrowserPool {
             page.setDefaultNavigationTimeout(opts.defaultNavigationTimeout);
             page.setDefaultTimeout(opts.defaultTimeout);
             page.setJavaScriptEnabled(opts.javaScriptEnabled);
-            logPageEvents(page, log);
+            page.setRequestInterception(true);
 
             const pageInstance: PageInstance = {
               page,
               logPrefix,
               createdAt: new Date(),
               opts,
-              gotoUrl(url: string): Promise<HTTPResponse | undefined> {
+              gotoUrl(url: string): Promise<E.Either<string, HTTPResponse>> {
                 return gotoUrlSimpleVersion(this, url);
               }
             };
+            logPageEvents(pageInstance, log);
+            interceptRequestCycle(pageInstance, log)
             return pageInstance;
           }
         };
@@ -325,11 +331,16 @@ export function createBrowserPool(logPrefix?: string): BrowserPool {
   };
 }
 
-async function gotoUrlSimpleVersion(pageInstance: PageInstance, url: string): Promise<HTTPResponse | undefined> {
+async function gotoUrlSimpleVersion(pageInstance: PageInstance, url: string): Promise<E.Either<string, HTTPResponse>> {
   const { page, opts } = pageInstance;
   const { waitUntil } = opts;
 
-  return page.goto(url, { waitUntil });
+  return page.goto(url, { waitUntil })
+    .then(E.right)
+    .catch((error: Error) => {
+      return E.left(`${error.name}: ${error.message}`);
+    })
+  ;
 }
 
 async function gotoUrlStepwiseVersion(pageInstance: PageInstance, url: string): Promise<HTTPResponse | undefined> {
@@ -374,38 +385,3 @@ async function gotoUrlStepwiseVersion(pageInstance: PageInstance, url: string): 
     resolve(run());
   });
 }
-
-// page.on('response', (response: HTTPResponse) => {
-//   const reqUrl = response.request().url();
-//   const respUrl = response.url();
-//   const hdrLoc = response.headers()['location'];
-//   const toLoc = hdrLoc;
-//   const status = response.status()
-
-//   if ((status >= 300) && (status <= 399)) {
-//     putStrLn(`Redirect ${status}`)
-//     putStrLn(` fr:  ${reqUrl}`)
-//     putStrLn(` to:    ${toLoc}`)
-//     putStrLn(` rsp:   ${respUrl}`)
-//     putStrLn(` hdr:   ${hdrLoc}`)
-//     // prettyPrint({ response });
-//   }
-// });
-// // let response: HTTPResponse | null = await page.goto(url, {});
-// const wfRespP = page.waitForResponse((resp: HTTPResponse) => {
-//   const respHeaders = resp.headers();
-//   const respUrl = resp.url()
-//   const pfh = prettyFormat({ respUrl, respHeaders })
-//   putStrLn(`Waitfor Response status=${resp.status()}; ${pfh}`)
-//   return resp.status() === 200;
-//   // return true;
-// });
-
-// const wfReqP = page.waitForRequest((req: HTTPRequest) => {
-//   const reqHeaders = req.headers();
-//   const pfh = prettyFormat({ reqHeaders })
-//   putStrLn(`Waitfor Request ${pfh}`)
-//   req.abort();
-
-//   return true;
-// });
