@@ -28,9 +28,9 @@ import {
   tapEnvLR,
   selectAllElemAttrEvidence,
   selectXMLTag,
-  forXMLInputs
+  forXMLInputs,
+  selectSpringerDocumentMetaEvidence
 } from '~/core/extraction-primitives';
-import { selectSpringerDocumentMetaEvidence } from '..';
 
 const compose: typeof fptsFlow = (...fs: []) =>
   <A extends readonly unknown[]>(a: A) =>
