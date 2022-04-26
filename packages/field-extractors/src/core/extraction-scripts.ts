@@ -100,23 +100,23 @@ const gatherSchemaEvidence = forInputs(
     selectElemTextEvidence('.abstractInFull'),
   ),
 );
-  // compose(
-  //   urlFilter(/arxiv.org/),
-  //   forInputs(/response-body/, compose(
-  //     gatherSuccess(
-  //       gatherHighwirePressTags,
-  //       gatherOpenGraphTags,
-  //     ),
+// compose(
+//   urlFilter(/arxiv.org/),
+//   forInputs(/response-body/, compose(
+//     gatherSuccess(
+//       gatherHighwirePressTags,
+//       gatherOpenGraphTags,
+//     ),
 
-  //     log('info', (_0, env) => `Current Evidence ${env.evidence}`),
-  //     tryEvidenceMapping({
-  //       citation_title: 'title',
-  //       'og:description': 'abstract',
-  //       citation_author: 'author',
-  //       citation_pdf_url: 'pdf-link',
-  //     }),
-  //   )),
-  // ),
+//     log('info', (_0, env) => `Current Evidence ${env.evidence}`),
+//     tryEvidenceMapping({
+//       citation_title: 'title',
+//       'og:description': 'abstract',
+//       citation_author: 'author',
+//       citation_pdf_url: 'pdf-link',
+//     }),
+//   )),
+// ),
 
 const UrlSpecificAttempts = attemptEach(
   compose(
@@ -279,19 +279,11 @@ const UrlSpecificAttempts = attemptEach(
   ),
 );
 
-
-export const AbstractFieldAttempts = compose(
-  checkStatusAndNormalize,
-
+const GeneralAttempt = compose(
+  addUrlEvidence,
+  gatherSchemaEvidence,
+  clearEvidence(/^url:/),
   attemptEach(
-    UrlSpecificAttempts,
-    // Url non-specific attempts
-    compose(
-      addUrlEvidence,
-      gatherSchemaEvidence,
-      clearEvidence(/^url:/),
-      filter(() => false, 'always fail') // <<- attemptEach stops at first successful function, so we must fail to continue
-    ),
     tryEvidenceMapping({
       citation_title: 'title',
       citation_author: 'author',
@@ -307,7 +299,39 @@ export const AbstractFieldAttempts = compose(
     tryEvidenceMapping({
       'og:title': 'title',
       'og:description': 'abstract',
-    }),
+    })
+  )
+);
+
+export const AbstractFieldAttempts = compose(
+  checkStatusAndNormalize,
+
+  attemptEach(
+    UrlSpecificAttempts,
+    GeneralAttempt
+    // Try some general rules that often work, not specific to any particular URL
+    // compose(
+    //   addUrlEvidence,
+    //   gatherSchemaEvidence,
+    //   clearEvidence(/^url:/),
+    //   filter(() => false, 'always fail') // <<- attemptEach stops at first successful function, so we must fail to continue
+    // ),
+    // tryEvidenceMapping({
+    //   citation_title: 'title',
+    //   citation_author: 'author',
+    //   citation_pdf_url: 'pdf-link',
+    //   'DC.Description|og:description': 'abstract',
+    // }),
+    // tryEvidenceMapping({
+    //   'citation_title|DC.Title': 'title',
+    //   'citation_author|DC.Creator': 'author',
+    //   'citation_pdf_url?': 'pdf-link',
+    //   '\\.abstractInFull|\\.abstract|#abstract': 'abstract:raw',
+    // }),
+    // tryEvidenceMapping({
+    //   'og:title': 'title',
+    //   'og:description': 'abstract',
+    // }),
   ),
   summarizeEvidence,
 );

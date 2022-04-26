@@ -425,37 +425,39 @@ const __takeWhileSuccess:
     );
   };
 
-const attemptEach: <A, B, Env extends BaseEnv> (...arrows: Arrow<A, B, Env>[]) => Arrow<A, B, Env> = (...arrows) => __attemptEach(arrows, arrows.length);
+const attemptEach: <A, B, Env extends BaseEnv> (...arrows: Arrow<A, B, Env>[]) => Arrow<A, B, Env> =
+  (...arrows) => __attemptEach(arrows, arrows.length);
 
-const __attemptEach: <A, B, Env extends BaseEnv> (arrows: Arrow<A, B, Env>[], arrowCount: number) => Arrow<A, B, Env> = (arrows, arrowCount) => (ra) => {
-  // Base Case:
-  if (arrows.length === 0) {
+const __attemptEach: <A, B, Env extends BaseEnv>(arrows: Arrow<A, B, Env>[], arrowCount: number) => Arrow<A, B, Env> =
+  (arrows, arrowCount) => (ra) => {
+    // Base Case:
+    if (arrows.length === 0) {
+      return pipe(
+        ra,
+        TE.chain(([, env]) => {
+          return TE.left(asWCI('continue', env));
+        })
+      );
+    }
+
+    // Recursive Step:
+    const headArrow = arrows[0];
+    const tailArrows = arrows.slice(1);
+    const arrowNum = arrowCount - arrows.length;
+    const ns = `attempt(${arrowNum + 1} of ${arrowCount})`;
+
     return pipe(
       ra,
-      TE.chain(([, env]) => {
-        return TE.left(asWCI('continue', env));
-      })
+      TE.chain(([a, env]) => {
+        const origWA = TE.right(asW(a, env));
+
+        const headAttempt = pipe(origWA, withNS(ns, headArrow));
+        const fallback = pipe(origWA, __attemptEach(tailArrows, arrowCount));
+
+        return TE.orElse(() => fallback)(headAttempt);
+      }),
     );
-  }
-
-  // Recursive Step:
-  const headArrow = arrows[0];
-  const tailArrows = arrows.slice(1);
-  const arrowNum = arrowCount - arrows.length;
-  const ns = `attempt(${arrowNum + 1} of ${arrowCount})`;
-
-  return pipe(
-    ra,
-    TE.chain(([a, env]) => {
-      const origWA = TE.right(asW(a, env));
-
-      const headAttempt = pipe(origWA, withNS(ns, headArrow));
-      const fallback = pipe(origWA, __attemptEach(tailArrows, arrowCount));
-
-      return TE.orElse(() => fallback)(headAttempt);
-    }),
-  );
-};
+  };
 
 const hook: <A, B, Env extends BaseEnv>(f: (a: A, b: Perhaps<B>, env: Env) => void) =>
   LogHook<A, B, Env> = (f) => f;
