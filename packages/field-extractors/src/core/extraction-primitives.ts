@@ -145,7 +145,6 @@ const loadXML: Arrow<string, any> = through((artifactPath, env) => {
   const normType: NormalForm = 'original';
 
   const cacheKey = `${artifactPath}.${normType}`;
-  prettyPrint({ msg: 'loadXML', cacheKey })
 
   if (cacheKey in fileContentCache) {
     return ClientFunc.success(cacheKey);
@@ -227,12 +226,13 @@ const grepLines: (regex: RegExp) => Arrow<CacheFileKey, string[]> = (regex) => c
 export const selectGlobalDocumentMetaEvidence: () => Arrow<CacheFileKey, unknown> = () => compose(
   readGlobalDocumentMetadata,
   gatherSuccess(
-    saveDocumentMetaDataEvidence('metadata:title', m => [m.title]),
-    saveDocumentMetaDataEvidence('metadata:abstract', m => [m.abstract]),
-    saveDocumentMetaDataEvidence('metadata:pdf-path', m => [m.pdfPath]),
-    saveDocumentMetaDataEvidence('metadata:author', m => m.authors.map(a => a.name)),
+    saveDocumentMetaDataEvidence('metadata:title', m => m.title ? [m.title] : []),
+    saveDocumentMetaDataEvidence('metadata:abstract', m => m.abstract ? [m.abstract] : []),
+    saveDocumentMetaDataEvidence('metadata:pdf-path', m => m.pdfPath ? [m.pdfPath] : []),
+    saveDocumentMetaDataEvidence('metadata:author', m => m.authors && _.isArray(m.authors) ? m.authors.map(a => a.name) : []),
   )
 );
+
 
 const readGlobalDocumentMetadata: Arrow<CacheFileKey, GlobalDocumentMetadata> = compose(
   grepLines(/global\.document\.metadata/i),
@@ -251,6 +251,15 @@ const readGlobalDocumentMetadata: Arrow<CacheFileKey, GlobalDocumentMetadata> = 
 
 const saveDocumentMetaDataEvidence: (name: string, f: (m: GlobalDocumentMetadata) => string[]) => Arrow<GlobalDocumentMetadata, unknown> = (name, f) => compose(
   through((documentMetadata) => f(documentMetadata), `saveMetaEvidence(${name})`),
+  addEvidence(() => name),
+  forEachDo(
+    saveEvidence(name),
+  ),
+  clearEvidence(new RegExp(name)),
+);
+
+const saveMetaDataEvidence: (name: string, f: (m: any) => string[]) => Arrow<any, unknown> = (name, f) => compose(
+  through((documentMetadata) => f(documentMetadata), `saveAnyMetaEvidence(${name})`),
   addEvidence(() => name),
   forEachDo(
     saveEvidence(name),
@@ -334,14 +343,14 @@ const getElemText: Arrow<Elem, string> = through((elem: Elem) => {
 
 const selectElemAttr: (queryString: string, contentAttr: string, queryDesc?: string) => Arrow<CacheFileKey, string> =
   (queryString, contentAttr, queryDesc) => compose(
-  loadPageFromCache,
-  through((page: Page, { }) => {
-    return pipe(
-      () => selectElementAttrP(page, queryString, contentAttr, queryDesc),
-      TE.mapLeft((msg) => ['continue', msg])
-    );
-  }, `selectElemAttr(${queryDesc? queryDesc : queryString}, ${contentAttr})`)
-);
+    loadPageFromCache,
+    through((page: Page, { }) => {
+      return pipe(
+        () => selectElementAttrP(page, queryString, contentAttr, queryDesc),
+        TE.mapLeft((msg) => ['continue', msg])
+      );
+    }, `selectElemAttr(${queryDesc ? queryDesc : queryString}, ${contentAttr})`)
+  );
 
 
 
@@ -358,12 +367,14 @@ export const selectElemTextEvidence: (queryString: string) => Arrow<CacheFileKey
 
 
 const saveEvidence: (evidenceName: string) => Arrow<string, unknown> = (evidenceName) => through((extractedValue: string, env) => {
-  const text = _.isString(extractedValue) ? extractedValue.trim() : '<error: non-string value found>';
-  const candidate: FieldCandidate = {
-    text,
-    evidence: getCurrentEvidenceStrings(env),
-  };
-  env.fieldCandidates.push(candidate);
+  if (_.isString(extractedValue)) {
+    const text = extractedValue.trim();
+    const candidate: FieldCandidate = {
+      text,
+      evidence: getCurrentEvidenceStrings(env),
+    };
+    env.fieldCandidates.push(candidate);
+  }
 }, `saveEvidence:${evidenceName}`);
 
 export const selectMetaEvidence: (name: string, attrName?: string) => Arrow<CacheFileKey, unknown> = (name, attrName = 'name') => {
@@ -430,6 +441,37 @@ export const selectXMLTag: (selectorPath: string[]) => Arrow<CacheFileKey, unkno
     clearEvidence(/^xml:select:/),
   );
 };
+
+const readSpringerDocumentMetadata: Arrow<CacheFileKey, any> = compose(
+  selectOne('script[type="application/ld+json"]'),
+  getElemText,
+  through((jsonText, env) => {
+    if (!_.isString(jsonText) || jsonText.length === 0) {
+      return ClientFunc.continue('springer-link.metadata not found');
+    }
+    const i1 = jsonText.indexOf('{');
+    const i2 = jsonText.lastIndexOf('}')
+    if (i1 < 0 || i2 < 0) {
+      return ClientFunc.continue('springer-link.metadata doesnt look like json');
+    }
+    const strippedJson = jsonText.slice(i1, i2+1);
+    try {
+      return JSON.parse(strippedJson);
+    } catch (error) {
+      env.log.warn(`readSpringerDocumentMetadata: Could not parse JSON text`);
+      return ClientFunc.continue('springer-link.metadata not parsable');
+    }
+  }, 'readSpringerMetadata'));
+
+export const selectSpringerDocumentMetaEvidence: () => Arrow<CacheFileKey, unknown> = () => compose(
+  readSpringerDocumentMetadata,
+  gatherSuccess(
+    saveMetaDataEvidence('metadata:title', m => m.headline ? [m.headline] : []),
+    saveMetaDataEvidence('metadata:abstract', m => m.description ? [m.description] : []),
+    saveMetaDataEvidence('metadata:author', m => m.author && _.isArray(m.author) ? m.author.map((a: any) => a.name) : []),
+  )
+);
+
 /// // End jquery/css selector and Elem functions
 /// ///////////////
 
@@ -495,7 +537,6 @@ export const tryEvidenceMapping: (mapping: Record<string, string>) => Arrow<unkn
   return compose(
     takeWhileSuccess(...filters),
     tap((_a, env) => {
-      prettyPrint({ candidates: env.fieldCandidates })
       _.each(evidenceKeys, evKey0 => {
         const fieldName = mapping[evKey0];
 

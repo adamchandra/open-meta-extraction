@@ -30,6 +30,7 @@ import {
   selectXMLTag,
   forXMLInputs
 } from '~/core/extraction-primitives';
+import { selectSpringerDocumentMetaEvidence } from '..';
 
 const compose: typeof fptsFlow = (...fs: []) =>
   <A extends readonly unknown[]>(a: A) =>
@@ -98,23 +99,6 @@ const gatherSchemaEvidence = forInputs(
     selectElemTextEvidence('.abstractInFull'),
   ),
 );
-// compose(
-//   urlFilter(/arxiv.org/),
-//   forInputs(/response-body/, compose(
-//     gatherSuccess(
-//       gatherHighwirePressTags,
-//       gatherOpenGraphTags,
-//     ),
-
-//     log('info', (_0, env) => `Current Evidence ${env.evidence}`),
-//     tryEvidenceMapping({
-//       citation_title: 'title',
-//       'og:description': 'abstract',
-//       citation_author: 'author',
-//       citation_pdf_url: 'pdf-link',
-//     }),
-//   )),
-// ),
 
 const UrlSpecificAttempts = attemptEach(
   compose(
@@ -124,8 +108,8 @@ const UrlSpecificAttempts = attemptEach(
       tryEvidenceMapping({
         'metadata:title': 'title',
         'metadata:abstract': 'abstract',
-        'metadata:author': 'author',
-        'metadata:pdf-path': 'pdf-path',
+        'metadata:author?': 'author',
+        'metadata:pdf-path?': 'pdf-path',
       }),
     )),
   ),
@@ -168,6 +152,14 @@ const UrlSpecificAttempts = attemptEach(
         gatherHighwirePressTags,
         gatherOpenGraphTags,
         selectElemTextEvidence('section#Abs1 > p.Para'),
+        compose(
+          selectSpringerDocumentMetaEvidence(),
+          tryEvidenceMapping({
+            'metadata:title': 'title',
+            'metadata:abstract': 'abstract',
+            'metadata:author?': 'author',
+          }),
+        ),
       ),
       attemptEach(
         compose(

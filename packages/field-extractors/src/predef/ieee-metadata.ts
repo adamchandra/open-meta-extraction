@@ -1,9 +1,9 @@
 
 export interface GlobalDocumentMetadata {
-  title: string;
-  abstract: string;
-  authors: Author[];
-  pdfPath: string;
+  title?: string;
+  abstract?: string;
+  authors?: Author[];
+  pdfPath?: string;
 }
 
 export interface Author {
