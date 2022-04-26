@@ -350,25 +350,22 @@ const gatherSuccess:
   <A, B, Env extends BaseEnv>(...arrows: Arrow<A, B, Env>[]) => (ra: ExtractionResult<A, Env>) => {
     return pipe(
       ra,
-      scatterAndSettle(...arrows),
+      tap((_a, { log }) => {
+        log.info(`Begin fanOut(${arrows.length})`);
+      }),
+      withNS(`fanOut(${arrows.length})`, scatterAndSettle(...arrows)),
       TE.chain(([settledBs, env]) => {
         const bs: B[] = [];
+        let fails = 0;
         _.each(settledBs, (wb) => {
           if (E.isRight(wb)) {
             const [b] = wb.right;
             bs.push(b);
           } else {
-            const [ci] = wb.left;
-            let msg = '';
-            if (typeof ci === 'string') {
-              msg = ci;
-            } else {
-              const [code, m] = ci;
-              msg = `${code}: ${m}`;
-            }
-            env.log.log('debug', `gatherSuccess/left = ${msg}`);
+            fails += 1;
           }
         });
+        env.log.debug(`End fanOut(${arrows.length}); ${bs.length}/${fails} succ/fail`);
         return TE.right(asW(bs, env));
       })
     );
@@ -487,8 +484,8 @@ function through<A, B, Env extends BaseEnv>(
 
   const mhook = <A>() => hook<A, B, Env>((a, b, env) => {
     const msg = pipe(b, E.fold(
-      (ci) => `control(${ci}): ${shortFormat(a)} `,
-      (res) => `${shortFormat(a)} => ${shortFormat(res)}`
+      (ci) => `✗ ${ci}: ${shortFormat(a)} `,
+      (res) => `✓ ${shortFormat(a)} => ${shortFormat(res)}`
     ));
     env.log.info(msg);
   });
@@ -528,10 +525,9 @@ function tapLeft<A, Env extends BaseEnv>(
 }
 
 function tap<A, Env extends BaseEnv>(f: ClientFunc<A, unknown, Env>, name?: string): Arrow<A, A, Env> {
-  const ns = name ? `tap:${name}` : 'tap';
-  return withCarriedWA(
-    withNS(ns, Arrow.lift(f))
-  );
+  const arrowf = Arrow.lift(f);
+  const tapped = name ? withNS(`tap:${name}`, arrowf) : arrowf;
+  return withCarriedWA(tapped);
 }
 
 function liftFilter<A, Env extends BaseEnv>(

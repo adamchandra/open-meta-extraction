@@ -279,6 +279,7 @@ const UrlSpecificAttempts = attemptEach(
   ),
 );
 
+// Try some general rules that often work, not specific to any particular URL
 const GeneralAttempt = compose(
   addUrlEvidence,
   gatherSchemaEvidence,
@@ -305,33 +306,9 @@ const GeneralAttempt = compose(
 
 export const AbstractFieldAttempts = compose(
   checkStatusAndNormalize,
-
   attemptEach(
     UrlSpecificAttempts,
     GeneralAttempt
-    // Try some general rules that often work, not specific to any particular URL
-    // compose(
-    //   addUrlEvidence,
-    //   gatherSchemaEvidence,
-    //   clearEvidence(/^url:/),
-    //   filter(() => false, 'always fail') // <<- attemptEach stops at first successful function, so we must fail to continue
-    // ),
-    // tryEvidenceMapping({
-    //   citation_title: 'title',
-    //   citation_author: 'author',
-    //   citation_pdf_url: 'pdf-link',
-    //   'DC.Description|og:description': 'abstract',
-    // }),
-    // tryEvidenceMapping({
-    //   'citation_title|DC.Title': 'title',
-    //   'citation_author|DC.Creator': 'author',
-    //   'citation_pdf_url?': 'pdf-link',
-    //   '\\.abstractInFull|\\.abstract|#abstract': 'abstract:raw',
-    // }),
-    // tryEvidenceMapping({
-    //   'og:title': 'title',
-    //   'og:description': 'abstract',
-    // }),
   ),
   summarizeEvidence,
 );

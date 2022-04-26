@@ -81,9 +81,6 @@ export async function selectElementAndEval(
 
     if (maybeAttr === null) return E.left(`empty selection '${elementSelector}'`);
 
-    // const { attrValue } = maybeAttr;
-    // if (attrValue === null) return E.left(`no attr ${attributeName} in select('${elementSelector}')`);
-
     return E.right(maybeAttr);
   } catch (error) {
     const msg = formatCSSSelectionError(error, elementSelector);
@@ -94,8 +91,10 @@ export async function selectElementAndEval(
 export async function selectElementAttrP(
   page: Page,
   elementSelector: string,
-  attributeName: string
+  attributeName: string,
+  selectorDesc?: string
 ): Promise<AttrSelection> {
+  const displayDesc = selectorDesc? selectorDesc : elementSelector;
   try {
     const maybeAttr = await page.$eval(elementSelector, (elem: Element, attr: unknown) => {
       if (typeof attr !== 'string') {
@@ -106,14 +105,14 @@ export async function selectElementAttrP(
       return { elemHtml, attrValue };
     }, attributeName);
 
-    if (maybeAttr === null) return E.left(`empty selection '${elementSelector}'`);
+    if (maybeAttr === null) return E.left(`empty selection '${displayDesc}'`);
 
     const { attrValue } = maybeAttr;
-    if (attrValue === null) return E.left(`no attr ${attributeName} in select('${elementSelector}')`);
+    if (attrValue === null) return E.left(`no attr ${attributeName} in select('${displayDesc}')`);
 
     return E.right(attrValue);
   } catch (error) {
-    const msg = formatCSSSelectionError(error, elementSelector);
+    const msg = formatCSSSelectionError(error, displayDesc);
     return E.left(msg);
   }
 }

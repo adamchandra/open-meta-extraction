@@ -282,7 +282,7 @@ const loadPageFromCache: Arrow<CacheFileKey, Page> =
     }
 
     return ClientFunc.halt(`cache has no record for key ${cacheKey}`);
-  }, `loadPage`);
+  });
 
 const selectOne: (queryString: string) => Arrow<CacheFileKey, Elem> = (queryString) => compose(
   loadPageFromCache,
@@ -294,14 +294,14 @@ const selectOne: (queryString: string) => Arrow<CacheFileKey, Elem> = (queryStri
   }, `selectOne(${queryString})`)
 );
 
-const selectAll: (queryString: string) => Arrow<CacheFileKey, Elem[]> = (queryString) => compose(
+const selectAll: (queryString: string, abbrev?: string) => Arrow<CacheFileKey, Elem[]> = (queryString, abbrev) => compose(
   loadPageFromCache,
   through((page: Page, { }) => {
     return pipe(
       () => queryAllP(page, queryString),
       TE.mapLeft((msg) => ['continue', msg])
     );
-  }, `selectAll(${queryString})`)
+  }, `selectAll(${abbrev ? abbrev : queryString})`)
 );
 
 const getElemAttr: (attr: string) => Arrow<Elem, string> = (attr: string) => through((elem: Elem, { }) => {
@@ -332,14 +332,15 @@ const getElemText: Arrow<Elem, string> = through((elem: Elem) => {
 }, 'getElemText');
 
 
-const selectElemAttr: (queryString: string, contentAttr: string) => Arrow<CacheFileKey, string> = (queryString, contentAttr) => compose(
+const selectElemAttr: (queryString: string, contentAttr: string, queryDesc?: string) => Arrow<CacheFileKey, string> =
+  (queryString, contentAttr, queryDesc) => compose(
   loadPageFromCache,
   through((page: Page, { }) => {
     return pipe(
-      () => selectElementAttrP(page, queryString, contentAttr),
+      () => selectElementAttrP(page, queryString, contentAttr, queryDesc),
       TE.mapLeft((msg) => ['continue', msg])
     );
-  }, `selectElemAttr(${queryString}, ${contentAttr})`)
+  }, `selectElemAttr(${queryDesc? queryDesc : queryString}, ${contentAttr})`)
 );
 
 
@@ -369,7 +370,7 @@ export const selectMetaEvidence: (name: string, attrName?: string) => Arrow<Cach
   const evidenceName = `select:$(meta[${attrName}="${name}"])`;
   return compose(
     addEvidence(() => evidenceName),
-    selectElemAttr(expandCaseVariations(name, (s) => `meta[${attrName}="${s}"]`), 'content'),
+    selectElemAttr(expandCaseVariations(name, (s) => `meta[${attrName}="${s}"]`), 'content', `meta[${attrName}="${name}"]`),
     saveEvidence(evidenceName),
     clearEvidence(/^select:/),
   );
@@ -404,7 +405,7 @@ export const selectAllMetaEvidence: (name: string, attrName?: string) => Arrow<C
   const evidenceName = `select-all:$(meta[${attrName}="${name}"])`;
   return compose(
     addEvidence(() => evidenceName),
-    selectAll(expandCaseVariations(name, (s) => `meta[${attrName}="${s}"]`)),
+    selectAll(expandCaseVariations(name, (s) => `meta[${attrName}="${s}"]`), `meta[${attrName}="${name}"]`),
     forEachDo(compose(
       getElemAttr('content'),
       saveEvidence(evidenceName),
