@@ -40,7 +40,7 @@ describe('Spider/Field Extractor Service', () => {
     const url = `http://localhost:9100/htmls/200~withFields`;
     const commLink = newCommLink<SatelliteService<SpiderService>>("SpiderService");
     const spiderService = await createSpiderService(commLink);
-    const res = await spiderService.scrape(url);
+    const res = await spiderService.scrapeAndExtract(url);
     prettyPrint({ res });
     await spiderService.quit()
     await commLink.quit()

@@ -9,7 +9,7 @@ import {
 } from '@watr/spider';
 
 import {
-  getCorpusEntryDirForUrl,
+  getCorpusRootDir,
 } from '@watr/commonlib';
 
 import {
@@ -22,27 +22,28 @@ import {
 import {
   extractFieldsForEntry,
   initExtractionEnv,
-  readUrlFetchData,
 } from '@watr/field-extractors';
 
+import { ExtractionSharedEnv } from '@watr/field-extractors';
 
 export interface SpiderService {
   scraper: Scraper;
   log: Logger;
   browserPool: BrowserPool;
-  scrape(url: string): Promise<UrlFetchData | undefined>;
-  quit(): Promise<void>;
 
   networkReady: CustomHandler<SpiderService, unknown, unknown>;
   startup: CustomHandler<SpiderService, unknown, unknown>;
   shutdown: CustomHandler<SpiderService, unknown, unknown>;
-  extractFields: CustomHandler<SpiderService, { url: string }, void>;
+  quit(): Promise<void>;
+
+  scrapeAndExtract(url: string): Promise<UrlFetchData | undefined>;
 }
 
 export async function createSpiderService(commLink: CommLink<SatelliteService<SpiderService>>): Promise<SpiderService> {
   const logger = commLink.log;
+  const corpusRoot = getCorpusRootDir();
 
-  const scraper = await initScraper();
+  const scraper = await initScraper({ corpusRoot });
   const { browserPool } = scraper;
 
   const service: SpiderService = {
@@ -56,29 +57,24 @@ export async function createSpiderService(commLink: CommLink<SatelliteService<Sp
       return this.scraper.quit();
     },
 
-    async scrape(url: string): Promise<UrlFetchData | undefined> {
-      return scraper.scrapeUrl(url)
-        .then(resultOrError => {
-          return E.match(
-            (_err: string) => {
-              console.warn('Scraping Result', _err);
-              return undefined;
-            },
-            (succ: UrlFetchData) => succ
-          )(resultOrError);
-        });
-    },
-    async extractFields(arg): Promise<void> {
-      const entryPath = getCorpusEntryDirForUrl(arg.url);
-      const urlFetchData = readUrlFetchData(entryPath);
+    async scrapeAndExtract(url: string): Promise<UrlFetchData | undefined> {
       const { log, browserPool } = this;
-      const sharedEnv = {
-        log,
-        browserPool,
-        urlFetchData
+      const scrapedUrl = await scraper.scrapeUrl(url, true);
+
+      if (E.isRight(scrapedUrl)) {
+        log.info('Field Extraction starting..')
+        const urlFetchData = scrapedUrl.right;
+        const sharedEnv: ExtractionSharedEnv = {
+          log,
+          browserPool,
+          urlFetchData
+        };
+
+        const entryPath = scraper.getUrlCorpusEntryPath(url);
+        const exEnv = await initExtractionEnv(entryPath, sharedEnv);
+        await extractFieldsForEntry(exEnv);
+        return urlFetchData;
       }
-      const exEnv = await initExtractionEnv(entryPath, sharedEnv);
-      await extractFieldsForEntry(exEnv);
     },
 
     quit() {

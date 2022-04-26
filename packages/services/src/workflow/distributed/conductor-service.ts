@@ -9,7 +9,7 @@ import {
 } from '@watr/commlinks';
 
 import { UrlFetchData } from '@watr/spider';
-import { getCorpusEntryDirForUrl } from '@watr/commonlib';
+
 import {
   CanonicalFieldRecords,
   ExtractionErrors,
@@ -43,30 +43,15 @@ export const WorkflowConductor = defineSatelliteService<WorkflowConductorT>(
         const { url } = arg;
 
         this.log.info(`Fetching fields for ${url}`);
+        const urlFetchData: UrlFetchData | undefined =
+          await this.commLink.call('scrapeAndExtract', { url }, { to: SpiderService.name });
 
-        // First attempt: if we have the data on disk, just return it
-        let fieldRecs = getCanonicalFieldRecsForURL(url);
-        let finalUrl: string | undefined;
-
-        if (fieldRecs === undefined) {
-          this.log.info(`No extracted fields found.. spidering ${url}`);
-
-          const urlFetchData: UrlFetchData | undefined =
-            await this.commLink.call('scrapeUrl', { url }, { to: SpiderService.name });
-
-          if (urlFetchData === undefined) {
-            return ExtractionErrors(`spider did not successfully scrape url ${url}`, { url });
-          }
-
-          finalUrl = urlFetchData.responseUrl;
-          const entryPath = getCorpusEntryDirForUrl(url);
-          this.log.info(`Extracting Fields in ${entryPath}`);
-
-          await this.commLink.call('extractFields', { url }, { to: SpiderService.name });
-
-          // try again:
-          fieldRecs = getCanonicalFieldRecsForURL(url);
+        if (urlFetchData === undefined) {
+          return ExtractionErrors(`spider did not successfully scrape url ${url}`, { url });
         }
+
+        const finalUrl = urlFetchData.responseUrl;
+        const fieldRecs = getCanonicalFieldRecsForURL(url);
 
         if (fieldRecs === undefined) {
           const msg = 'No extracted fields available';

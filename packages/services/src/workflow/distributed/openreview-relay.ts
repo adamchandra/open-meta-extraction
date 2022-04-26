@@ -170,13 +170,6 @@ function newOpenReviewRelay(
         let currTime = Date.now();
 
         await asyncEachOfSeries(notes, async (note: Note) => {
-          const url = note.content.html || '';
-          const isArxivLink = /arxiv\.org/.test(url);
-          if (isArxivLink) {
-            self.log.info(`Skipping arxiv.org link`);
-            return;
-          };
-
           const elapsed = Date.now() - currTime;
           const waitTime = maxRate - elapsed;
 
@@ -236,12 +229,6 @@ function newOpenReviewRelay(
       if (prevFail > maxFailsPerDomain) {
         // don't keep processing failed domains
         errors.add(`Previous failure count > ${maxFailsPerDomain}; skipping.`)
-        byHostSuccFailSkipCounts[url.hostname] = [prevSucc, prevFail, prevSkip + 1];
-        return undefined;
-      }
-
-      if (/arxiv\.org/.test(url.hostname)) {
-        this.commLink.log.info(`Skipping arxiv.org domain: ${urlstr}`);
         byHostSuccFailSkipCounts[url.hostname] = [prevSucc, prevFail, prevSkip + 1];
         return undefined;
       }
