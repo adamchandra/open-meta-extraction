@@ -44,7 +44,7 @@ export const WorkflowConductor = defineSatelliteService<WorkflowConductorT>(
 
         this.log.info(`Fetching fields for ${url}`);
         const urlFetchData: UrlFetchData | undefined =
-          await this.commLink.call('scrapeAndExtract', { url }, { to: SpiderService.name });
+          await this.commLink.call('scrapeAndExtract', url, { to: SpiderService.name });
 
         if (urlFetchData === undefined) {
           return ExtractionErrors(`spider did not successfully scrape url ${url}`, { url });

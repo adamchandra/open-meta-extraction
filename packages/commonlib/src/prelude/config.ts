@@ -96,8 +96,9 @@ function getEnv(key: EnvKey): string | undefined {
 
 // Root directory for storing application data
 export function getAppSharedDir(): string {
-  const config = initConfig();
-  return config.get('dataRootPath');
+  // const config = initConfig();
+  // return config.get('dataRootPath');
+  return 'app-share.d';
 }
 
 // The root directory in which the spider will download files
