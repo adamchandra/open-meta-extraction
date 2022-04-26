@@ -54,3 +54,15 @@ A sample .envrc file is included in the ./docs folder
 ** watch redirect event in spider
 ** rewrite url arxig.org/foobar -> spider.arxiv.org/blah
 ** use css to select xml attrs ??
+
+
+* These URLs are still giving some extraction issues
+https://www.ijcai.org/proceedings/2019/829
+https://doi.org/10.1016/j.robot.2019.103270:
+https://doi.org/10.21437/Interspeech.2021-678:
+http://www.roboticsproceedings.org/rss13/p56.html:
+https://doi.org/10.3233/JIFS-190782
+https://content.iospress.com/articles/journal-of-intelligent-and-fuzzy-systems/ifs201737
+https://drum.lib.umd.edu/handle/1903/2438
+https://doi.org/10.1145/3242587.3242631:
+https://www.usenix.org/conference/tapp2018/presentation/petricek

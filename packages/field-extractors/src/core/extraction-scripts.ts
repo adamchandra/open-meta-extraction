@@ -216,7 +216,22 @@ const UrlSpecificAttempts = attemptEach(
         citation_title: 'title',
         citation_author: 'author',
         citation_pdf_url: 'pdf-link',
-        'acl-abstract': 'abstract:raw',
+        '.acl-abstract': 'abstract:raw', // TODO test this w/o leading .
+      }),
+    )),
+  ),
+
+  compose(
+    urlFilter(/ijcai.org/),
+    forInputs(/response-body/, compose(
+      gatherSuccess(
+        gatherHighwirePressTags,
+        selectElemTextEvidence('div.col-md-12'),
+      ),
+      tryEvidenceMapping({
+        citation_title: 'title',
+        citation_author: 'author',
+        'div.col-md-12': 'abstract'
       }),
     )),
   ),
@@ -267,6 +282,21 @@ const UrlSpecificAttempts = attemptEach(
       }),
     )),
   ),
+
+  // compose(
+  //   urlFilter(/content.iospress.com/),
+  //   forInputs(/response-body/, compose(
+  //     gatherSuccess(
+  //       gatherHighwirePressTags,
+  //       selectElemAttrEvidence('a[title="PDF"]', 'href'),
+  //     ),
+  //     tryEvidenceMapping({
+  //       citation_title: 'title',
+  //       citation_author: 'author',
+  //       'div.col-md-12': 'abstract'
+  //     }),
+  //   )),
+  // )
 );
 
 // Try some general rules that often work, not specific to any particular URL
