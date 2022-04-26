@@ -199,8 +199,8 @@ const UrlSpecificAttempts = attemptEach(
         'DC.Title?': 'title',
         'citation__title?': 'title',
         abstractInFull: 'abstract',
-        'author-name': 'author',
-        PDF: 'pdf-path',
+        'DC.Creator?': 'author',
+        'PDF?': 'pdf-path',
       }),
     )),
   ),
@@ -263,7 +263,7 @@ const UrlSpecificAttempts = attemptEach(
         citation_title: 'title',
         citation_author: 'author',
         citation_pdf_url: 'pdf-link',
-        abstract: 'h4 + p'
+        'h4 + p': 'abstract'
       }),
     )),
   ),

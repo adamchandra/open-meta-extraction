@@ -537,6 +537,8 @@ export const tryEvidenceMapping: (mapping: Record<string, string>) => Arrow<unkn
   return compose(
     takeWhileSuccess(...filters),
     tap((_a, env) => {
+      prettyPrint({ candidates: env.fieldCandidates });
+
       _.each(evidenceKeys, evKey0 => {
         const fieldName = mapping[evKey0];
 
