@@ -27,7 +27,10 @@ import {
   _addEvidence,
   tapEnvLR,
   selectAllElemAttrEvidence,
+  selectXMLTag,
+  readCache,
 } from '~/core/extraction-primitives';
+import { forXMLInputs } from '..';
 
 
 const compose: typeof fptsFlow = (...fs: []) =>
@@ -97,6 +100,23 @@ const gatherSchemaEvidence = forInputs(
     selectElemTextEvidence('.abstractInFull'),
   ),
 );
+  // compose(
+  //   urlFilter(/arxiv.org/),
+  //   forInputs(/response-body/, compose(
+  //     gatherSuccess(
+  //       gatherHighwirePressTags,
+  //       gatherOpenGraphTags,
+  //     ),
+
+  //     log('info', (_0, env) => `Current Evidence ${env.evidence}`),
+  //     tryEvidenceMapping({
+  //       citation_title: 'title',
+  //       'og:description': 'abstract',
+  //       citation_author: 'author',
+  //       citation_pdf_url: 'pdf-link',
+  //     }),
+  //   )),
+  // ),
 
 const UrlSpecificAttempts = attemptEach(
   compose(
@@ -112,19 +132,15 @@ const UrlSpecificAttempts = attemptEach(
     )),
   ),
   compose(
-    urlFilter(/arxiv.org/),
-    forInputs(/response-body/, compose(
+    urlFilter(/export.arxiv.org/),
+    forXMLInputs(/response-body/, compose(
       gatherSuccess(
-        gatherHighwirePressTags,
-        gatherOpenGraphTags,
+        selectXMLTag(['feed', 'entry', '0', 'summary']),
+        selectXMLTag(['feed', 'entry', '0', 'title']),
       ),
-
-      log('info', (_0, env) => `Current Evidence ${env.evidence}`),
       tryEvidenceMapping({
-        citation_title: 'title',
-        'og:description': 'abstract',
-        citation_author: 'author',
-        citation_pdf_url: 'pdf-link',
+        'feed.entry.0.summary': 'abstract',
+        'feed.entry.0.title': 'title',
       }),
     )),
   ),

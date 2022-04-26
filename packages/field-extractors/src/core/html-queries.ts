@@ -34,9 +34,6 @@ export function expandCaseVariations(seed: string, sub: (s: string) => string): 
 }
 
 function formatCSSSelectionError(error: unknown, cssSelector: string): string {
-  // if (error instanceof puppeteerErrors.TimeoutError) {
-  //   // TODO Do something if this is a timeout.
-  // }
   if (error instanceof Error) {
     const msg = error.message;
 
@@ -61,26 +58,6 @@ export async function queryAllP(
   }
 }
 
-// export async function queryAll(
-//   browserInstance: BrowserInstance,
-//   sourceHtml: string,
-//   query: string
-// ): Promise<ElemSelectAll> {
-//   const { page } = await browserInstance.newPage();
-
-//   try {
-//     await page.setContent(sourceHtml, {
-//       timeout: 4000,
-//       waitUntil: 'domcontentloaded',
-//     });
-
-//     return await queryAllP(page, query);
-//   } catch (error) {
-//     const msg = formatCSSSelectionError(error, query);
-//     return E.left(msg);
-//   }
-// }
-
 export async function queryOneP(
   page: Page,
   query: string
@@ -94,21 +71,6 @@ export async function queryOneP(
       }));
     });
 }
-// export async function queryOne(
-//   browser: BrowserInstance,
-//   sourceHtml: string,
-//   query: string
-// ): Promise<ElemSelectOne> {
-//   return queryAll(browser, sourceHtml, query)
-//     .then(elems => {
-//       return pipe(elems, E.chain(es => {
-//         return es.length > 0
-//           ? E.right(es[0])
-//           : E.left(`empty selection '${query}'`);
-//       }));
-//     });
-// }
-
 export async function selectElementAndEval(
   page: Page,
   elementSelector: string,
@@ -155,23 +117,3 @@ export async function selectElementAttrP(
     return E.left(msg);
   }
 }
-
-// export async function selectElementAttr(
-//   browser: BrowserInstance,
-//   sourceHtml: string,
-//   elementSelector: string,
-//   attributeName: string
-// ): Promise<AttrSelection> {
-//   const { page } = await browser.newPage();
-//   try {
-//     await page.setContent(sourceHtml, {
-//       timeout: 4000,
-//       waitUntil: 'domcontentloaded',
-//     });
-
-//     return await selectElementAttrP(page, elementSelector, attributeName);
-//   } catch (error) {
-//     const msg = formatCSSSelectionError(error, elementSelector);
-//     return E.left(msg);
-//   }
-// }

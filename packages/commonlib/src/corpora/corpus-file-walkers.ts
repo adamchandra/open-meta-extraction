@@ -77,7 +77,7 @@ export function walkDotDStyleCorpus(corpusRoot: string): Readable {
 const artifactSubdirO = {
   '.': null,
   'spidering-logs': null,
-  cache: null,
+  'cache': null,
   'ground-truth': null,
   'extracted-fields': null,
 };

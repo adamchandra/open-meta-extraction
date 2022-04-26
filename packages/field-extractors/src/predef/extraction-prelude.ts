@@ -35,7 +35,7 @@ export interface ExtractionEnv extends ExtractionSharedEnv {
   fields: Field[];
   evidence: ExtractionEvidence[];
   fieldCandidates: FieldCandidate[];
-  fileContentCache: Record<string, string>;
+  fileContentCache: Record<string, any>;
   browserPageCache: Record<string, Page>;
   browserInstance: BrowserInstance;
   enterNS(ns: string[]): void;

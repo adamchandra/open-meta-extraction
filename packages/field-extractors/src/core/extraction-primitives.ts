@@ -1,10 +1,11 @@
 import _ from 'lodash';
+import xml2js from 'xml2js';
 
 import { flow as compose, pipe } from 'fp-ts/function';
 import * as TE from 'fp-ts/TaskEither';
 import * as E from 'fp-ts/Either';
 
-import { ArtifactSubdir, expandDir, readCorpusTextFile, setLogLabel, writeCorpusTextFile, diffByChars } from '@watr/commonlib';
+import { ArtifactSubdir, expandDir, readCorpusTextFile, setLogLabel, writeCorpusTextFile, diffByChars, prettyPrint } from '@watr/commonlib';
 
 import { Page } from 'puppeteer';
 
@@ -86,7 +87,6 @@ function getCurrentEvidenceStrings(env: ExtractionEnv): string[] {
 
 function saveFieldRecs(env: ExtractionEnv): void {
   const grouped = _.groupBy(env.fields, (f) => f.name);
-
   _.each(
     _.toPairs(grouped),
     ([name, fields]) => {
@@ -123,7 +123,7 @@ const tidyHtmlTask: (filename: string) => TE.TaskEither<string, string[]> = (fil
         return E.right<string, string[]>(stdout);
       }
       const errString = _.find(stderr, l => l.trim().length > 0);
-      const err = errString !== undefined? errString : 'unknown error';
+      const err = errString !== undefined ? errString : 'unknown error';
       return E.left<string, string[]>(err);
     });
   return tidyOutputTask;
@@ -140,7 +140,38 @@ const listTidiedHtmls: Arrow<unknown, CacheFileKey[]> = through((_z, env) => {
 }, 'list(tidy)');
 
 
+const loadXML: Arrow<string, any> = through((artifactPath, env) => {
+  const { fileContentCache, entryPath } = env;
+  const normType: NormalForm = 'original';
+
+  const cacheKey = `${artifactPath}.${normType}`;
+  prettyPrint({ msg: 'loadXML', cacheKey })
+
+  if (cacheKey in fileContentCache) {
+    return ClientFunc.success(cacheKey);
+  }
+
+  // TODO this use of 'cache', vs '.' is unnecessary and confusing
+  const maybeCachedContent = readCorpusTextFile(entryPath, '.', artifactPath);
+  // prettyPrint({ msg: 'loadXML', maybeCachedContent })
+
+  if (maybeCachedContent) {
+    return pipe(
+      TE.right({}),
+      TE.bind('parsed', ({ }) => () => xml2js.parseStringPromise(maybeCachedContent).then(E.right)),
+      TE.bind('cacheKey', ({ parsed }) => {
+        fileContentCache[cacheKey] = parsed;
+        return TE.right(cacheKey);
+      }),
+      TE.map(({ cacheKey }) => cacheKey)
+    );
+  }
+
+  return ClientFunc.halt(`loadXML Fail for ${artifactPath}`)
+}, 'loadXML');
+
 const runHtmlTidy: Arrow<string, string> = through((artifactPath, env) => {
+  // TODO I don't think the cache key is working...
   const { fileContentCache, entryPath } = env;
   const normType: NormalForm = 'tidy-norm';
   const cacheKey = `${artifactPath}.${normType}`;
@@ -179,7 +210,7 @@ const verifyFileType: (urlTest: RegExp) => FilterArrow<string> = (typeTest: RegE
   return test;
 }, `m/${typeTest.source}/`);
 
-const readCache: Arrow<CacheFileKey, string> = through(
+export const readCache: Arrow<CacheFileKey, string> = through(
   (cacheKey: CacheFileKey, { fileContentCache }) => (cacheKey in fileContentCache
     ? fileContentCache[cacheKey]
     : ClientFunc.halt(`cache has no record for key ${cacheKey}`)), `readCache`);
@@ -326,7 +357,7 @@ export const selectElemTextEvidence: (queryString: string) => Arrow<CacheFileKey
 
 
 const saveEvidence: (evidenceName: string) => Arrow<string, unknown> = (evidenceName) => through((extractedValue: string, env) => {
-  const text = _.isString(extractedValue) ? extractedValue.trim() : 'undefined';
+  const text = _.isString(extractedValue) ? extractedValue.trim() : '<error: non-string value found>';
   const candidate: FieldCandidate = {
     text,
     evidence: getCurrentEvidenceStrings(env),
@@ -382,6 +413,22 @@ export const selectAllMetaEvidence: (name: string, attrName?: string) => Arrow<C
   );
 };
 
+
+export const selectXMLTag: (selectorPath: string[]) => Arrow<CacheFileKey, unknown> = (selectorPath) => {
+  const sel = selectorPath.join('.');
+  const evidenceName = `xml:select:'${sel}'`;
+  return compose(
+    readCache,
+    addEvidence(() => evidenceName),
+    through((a) => {
+      const selected = _.get(a, selectorPath);
+      const selstr = selected.toString();
+      return E.right(selstr);
+    }),
+    saveEvidence(evidenceName),
+    clearEvidence(/^xml:select:/),
+  );
+};
 /// // End jquery/css selector and Elem functions
 /// ///////////////
 
@@ -406,10 +453,24 @@ export const normalizeHtmls: Arrow<unknown, string[]> = compose(
   ),
 );
 
-export const urlFilter: (urlTest: RegExp) => Arrow<unknown, string[]> = (regex) => compose(
+export const urlFilter: (urlTest: RegExp) => Arrow<unknown, unknown> = (regex) => compose(
   urlMatcher(regex),
-  statusFilter,
-  normalizeHtmls,
+  statusFilter
+  // normalizeHtmls,
+);
+
+
+export const forXMLInputs: (re: RegExp, arrow: Arrow<string, unknown>) => Arrow<unknown, unknown> = (re, arrow) => compose(
+  listArtifactFiles('.', re),
+  forEachDo(
+    compose(
+      loadXML,
+      log('info', a => `processing input ${a}`),
+      addEvidence((a) => `input:${a}`),
+      arrow,
+      clearEvidence(/^input:/),
+    )
+  )
 );
 
 export const forInputs: (re: RegExp, arrow: Arrow<string, unknown>) => Arrow<unknown, unknown> = (re, arrow) => compose(
@@ -430,9 +491,11 @@ export const tryEvidenceMapping: (mapping: Record<string, string>) => Arrow<unkn
   const filters = _.map(evidenceKeys, e => evidenceExists(e));
   const keyEvidence = _.join(evidenceKeys, ' ++ ');
 
+
   return compose(
     takeWhileSuccess(...filters),
     tap((_a, env) => {
+      prettyPrint({ candidates: env.fieldCandidates })
       _.each(evidenceKeys, evKey0 => {
         const fieldName = mapping[evKey0];
 
@@ -555,7 +618,7 @@ export async function initExtractionEnv(
   entryPath: string,
   sharedEnv: ExtractionSharedEnv,
 ): Promise<ExtractionEnv> {
-  const { log, browserPool, urlFetchData  } = sharedEnv;
+  const { log, browserPool, urlFetchData } = sharedEnv;
   if (urlFetchData === undefined) throw new Error('error state: urlFetchData is undefined');
 
   const pathPrefix = path.basename(entryPath).slice(0, 6);
