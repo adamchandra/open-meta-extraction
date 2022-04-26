@@ -460,7 +460,6 @@ export const urlFilter: (urlTest: RegExp) => Arrow<unknown, unknown> = (regex) =
   // normalizeHtmls,
 );
 
-
 export const forXMLInputs: (re: RegExp, arrow: Arrow<string, unknown>) => Arrow<unknown, unknown> = (re, arrow) => compose(
   listArtifactFiles('.', re),
   forEachDo(

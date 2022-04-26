@@ -28,10 +28,8 @@ import {
   tapEnvLR,
   selectAllElemAttrEvidence,
   selectXMLTag,
-  readCache,
+  forXMLInputs
 } from '~/core/extraction-primitives';
-import { forXMLInputs } from '..';
-
 
 const compose: typeof fptsFlow = (...fs: []) =>
   <A extends readonly unknown[]>(a: A) =>
