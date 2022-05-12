@@ -30,7 +30,7 @@ function makeConfig(modulePackage) {
     transform: {
       "\\.tsx?$": "ts-jest"
     },
-    testRunner: "jest-jasmine2",
+    // testRunner: "jest-jasmine2",
     moduleFileExtensions: ["ts", "js", "json", "node"],
     setupFilesAfterEnv: ['./test/jest.setup.ts'],
     globals: {

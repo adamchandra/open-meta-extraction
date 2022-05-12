@@ -5,7 +5,6 @@ import { Server } from 'http';
 import { defineServiceHub } from '@watr/commlinks';
 
 import { runServiceHubAndSatellites } from '../common/testing-utils';
-import { WorkflowConductor } from './conductor-service';
 import { SpiderService } from './spider-service';
 import { startSpiderableTestServer } from '~/http-servers/rest-portal/mock-server';
 import { OpenReviewRelayService } from './openreview-relay';
@@ -40,7 +39,6 @@ describe('End-to-end Distributed Extraction workflows', () => {
 
   it('should run end-to-end', async () => {
     const serviceChainWorkers = [
-      WorkflowConductor,
       SpiderService,
       OpenReviewRelayService
     ];

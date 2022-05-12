@@ -1,12 +1,10 @@
 import { arglib } from '@watr/commonlib';
 
 import * as workflowCmds from '~/workflow/workflow-cli';
-import * as coref from '~/workflow/distributed/openreview-coref';
 import * as scheduling from '~/pm2/scheduling-services';
 
 export function registerAllClis() {
     workflowCmds.registerCLICommands(arglib.YArgs);
-    coref.registerCLICommands(arglib.YArgs);
     scheduling.registerCommands(arglib.YArgs);
 }
 

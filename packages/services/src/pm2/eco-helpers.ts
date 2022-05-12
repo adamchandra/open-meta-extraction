@@ -15,14 +15,14 @@ export function pm2Job(name: string, script: string, conf: Partial<PM2JobConfig>
     name,
     script,
     cwd,
-    env_testing: {
-      NODE_ENV: "testing",
+    env_test: {
+      NODE_ENV: "test",
     },
-    env_development: {
-      NODE_ENV: "development"
+    env_dev: {
+      NODE_ENV: "dev"
     },
-    env_production: {
-      NODE_ENV: "production"
+    env_prod: {
+      NODE_ENV: "prod"
     },
     ...conf,
   };
@@ -43,14 +43,14 @@ export function appDef(name: string, script: string, args: string): Record<strin
     script,
     args,
     cwd,
-    env_testing: {
-      NODE_ENV: "testing"
+    env_test: {
+      NODE_ENV: "test"
     },
-    env_development: {
-      NODE_ENV: "development"
+    env_dev: {
+      NODE_ENV: "dev"
     },
-    env_production: {
-      NODE_ENV: "production"
+    env_prod: {
+      NODE_ENV: "prod"
     },
   };
 }

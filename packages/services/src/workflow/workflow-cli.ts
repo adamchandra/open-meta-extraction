@@ -3,14 +3,12 @@ import _ from 'lodash';
 import { createSatelliteService, createServiceHub, defineServiceHub } from '@watr/commlinks';
 import { arglib } from '@watr/commonlib';
 import { SpiderService } from './distributed/spider-service';
-import { WorkflowConductor } from './distributed/conductor-service';
 import { OpenReviewRelayService } from './distributed/openreview-relay';
 import { sigtraps } from '~/util/shutdown';
 const { opt, config, registerCmd } = arglib;
 
 export function registerCLICommands(yargv: arglib.YArgsT) {
   const availableServices = {
-    WorkflowConductor,
     SpiderService,
     OpenReviewRelayService
   };
@@ -28,7 +26,6 @@ export function registerCLICommands(yargv: arglib.YArgsT) {
     )
   )((args: any) => {
     const { serviceName } = args;
-    // return new Promise((resolve) => {
     if (orderedServices.includes(serviceName)) {
       const serviceDef  = _.get(availableServices, serviceName);
       return createSatelliteService(HubService.name, serviceDef)

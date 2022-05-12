@@ -22,9 +22,11 @@ import {
 import { CanonicalFieldRecords, ExtractionErrors } from '@watr/field-extractors';
 
 import { toUrl, URLRequest } from '../common/datatypes';
-import { WorkflowConductor } from './conductor-service';
 
 import { displayRestError, newOpenReviewExchange, Note, Notes, OpenReviewExchange } from '../common/openreview-exchange';
+import { UrlFetchData } from '@watr/spider';
+import { SpiderService } from './spider-service';
+import { getCanonicalFieldRecsForURL } from '../common/utils';
 
 interface NoteBatch {
   notes: Note[];
@@ -49,6 +51,7 @@ interface OpenReviewRelay {
   doUpdateNote(note: Note, abs: string, retries?: number): Promise<void>;
   doFetchNotes(offset: number): Promise<Notes | undefined>;
   doRunRelay(offset?: number, batchSize?: number): Promise<void>;
+  runOneURL(arg: URLRequest): Promise<CanonicalFieldRecords | ExtractionErrors>;
   attemptExtractNote(
     note: Note,
     byHostSuccFailSkipCounts: Record<string, NumNumNum>,
@@ -98,6 +101,7 @@ function newOpenReviewRelay(
     },
     async shutdown() {
     },
+
 
     async doUpdateNote(note: Note, abs: string, retries: number = 0): Promise<void> {
       const noteUpdate = {
@@ -223,7 +227,6 @@ function newOpenReviewRelay(
       _.set(byHostErrors, [url.hostname], errors);
 
       const [prevSucc, prevFail, prevSkip] = _.get(byHostSuccFailSkipCounts, [url.hostname], [0, 0, 0] as const);
-      const arg = URLRequest(urlstr);
 
       const maxFailsPerDomain = 10;
       if (prevFail > maxFailsPerDomain) {
@@ -233,9 +236,7 @@ function newOpenReviewRelay(
         return undefined;
       }
 
-      const res: CanonicalFieldRecords | ExtractionErrors = await this.commLink.call(
-        'runOneURL', arg, { to: WorkflowConductor.name }
-      );
+      const res: CanonicalFieldRecords | ExtractionErrors = await this.runOneURL(URLRequest(urlstr));
 
       const pfres = prettyFormat(res)
       this.commLink.log.debug(`runOneURL() => ${pfres}`);
@@ -372,7 +373,32 @@ function newOpenReviewRelay(
       }
 
       return noteBatch;
-    }
+    },
+
+    async runOneURL(arg: URLRequest): Promise<CanonicalFieldRecords | ExtractionErrors> {
+      const { url } = arg;
+
+      this.log.info(`Fetching fields for ${url}`);
+      const urlFetchData: UrlFetchData | undefined =
+        await this.commLink.call('scrapeAndExtract', url, { to: SpiderService.name });
+
+      if (urlFetchData === undefined) {
+        return ExtractionErrors(`spider did not successfully scrape url ${url}`, { url });
+      }
+
+      const finalUrl = urlFetchData.responseUrl;
+      const fieldRecs = getCanonicalFieldRecsForURL(url);
+
+      if (fieldRecs === undefined) {
+        const msg = 'No extracted fields available';
+        this.log.info(msg);
+        return ExtractionErrors(msg, { url });
+      }
+      fieldRecs.finalUrl = finalUrl;
+
+      return fieldRecs;
+    },
+
   };
   return relay;
 }

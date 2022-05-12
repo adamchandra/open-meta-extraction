@@ -5,9 +5,9 @@ import nconf from 'nconf';
 import fs from 'fs';
 
 export const ENV_MODES = {
-  'development': null,
-  'testing': null,
-  'production': null,
+  'dev': null,
+  'test': null,
+  'prod': null,
 };
 
 export type ENV_MODES = typeof ENV_MODES;
@@ -18,7 +18,7 @@ function isValidEnvMode(s: string | undefined): s is ENV_MODE {
 }
 
 export const Env = {
-  NODE_ENV: null, // production|testing
+  NODE_ENV: null, // dev|prod|test
   AppSharePath: null,
   DBName: null,
   DBUser: null,
@@ -45,10 +45,8 @@ export function findAncestorFile(
 
   while (currDir != '/') {
     const parentDir = path.normalize(path.join(currDir, '..'));
-    // putStrLn(`CurrentDir ${currDir}`)
     const maybeFiles = _.flatMap(leadingDirs, ld => {
       const maybeFile = path.join(currDir, ld, filename);
-      // putStrLn(`  checking> ${maybeFile}`)
       if (isFile(maybeFile)) {
         return [maybeFile];
       }
@@ -72,10 +70,11 @@ export function initConfig(): typeof nconf {
   nconf.argv().env();
 
   const envPath = findAncestorFile('.', envFile, ['conf', '.']);
-
-  if (envPath) {
-    nconf.file('env-conf', { file: envPath });
+  if (envPath === undefined) {
+    throw new Error(`Could not find config file '${envFile}'`);
   }
+
+  nconf.file('env-conf', { file: envPath });
 
   return nconf;
 }
@@ -87,7 +86,7 @@ export function getEnvMode(): string {
   return `${env}`;
 }
 export function isTestingEnv(): boolean {
-  return getEnv('NODE_ENV') === 'testing';
+  return getEnv('NODE_ENV') === 'test';
 }
 
 function getEnv(key: EnvKey): string | undefined {
@@ -96,8 +95,6 @@ function getEnv(key: EnvKey): string | undefined {
 
 // Root directory for storing application data
 export function getAppSharedDir(): string {
-  // const config = initConfig();
-  // return config.get('dataRootPath');
   return 'app-share.d';
 }
 
