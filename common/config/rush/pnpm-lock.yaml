@@ -2618,6 +2618,11 @@ packages:
     engines: {node: '>= 6'}
     dev: false
 
+  /date-fns/2.28.0:
+    resolution: {integrity: sha512-8d35hViGYx/QH0icHYCeLmsLmMUheMmTyV9Fcm6gvNwdw31yXXH+O85sOBJ+OLnLQMKZowvpKb6FgMIQjcpvQw==}
+    engines: {node: '>=0.11'}
+    dev: false
+
   /dayjs/1.8.36:
     resolution: {integrity: sha512-3VmRXEtw7RZKAf+4Tv1Ym9AGeo8r8+CjDi26x+7SYQil1UqtqdaokhzoEJohqlzt0m5kacJSDhJQkG/LWhpRBw==}
     dev: false
@@ -8373,7 +8378,7 @@ packages:
     dev: false
 
   file:projects/services.tgz:
-    resolution: {integrity: sha512-f2nVWifbGMZK83iAhoiULq7+iWQAL9c/2l94oiNIMNNC3g3eNdrcrWw5ITpDIouI5btG9ojVNsqn0N8m7V3UuA==, tarball: file:projects/services.tgz}
+    resolution: {integrity: sha512-iayHksTu2adstv5J4tGcx0YaUfxJ/Pg533tDE0HenZEWG9SkS3hNYRNSSUKicSml2S2s9ss62adSZp7jvNFe3Q==, tarball: file:projects/services.tgz}
     name: '@rush-temp/services'
     version: 0.0.0
     dependencies:
@@ -8397,6 +8402,7 @@ packages:
       axios: 0.27.2
       bree: 8.0.3
       chai: 4.3.6
+      date-fns: 2.28.0
       eslint: 7.32.0
       fp-ts: 2.12.1
       fs-extra: 10.1.0

@@ -48,30 +48,30 @@ if (isTestingEnv()) {
     useMockTimestamps();
 }
 
-export interface NoteStatus {
-    noteId: string;
-    hasUrl: boolean;
-    hasAbstract: boolean;
-    url: string;
-    createdAt: Date;
-    updatedAt: Date;
-}
+// export interface NoteStatus {
+//     noteId: string;
+//     hasUrl: boolean;
+//     hasAbstract: boolean;
+//     url: string;
+//     createdAt: Date;
+//     updatedAt: Date;
+// }
 
-export const NoteStatusSchema = new Schema<NoteStatus>({
-    noteId: { type: String, required: true, index: true },
-    hasUrl: { type: Boolean, required: true },
-    hasAbstract: { type: Boolean, required: true },
-    url: { type: String, required: true, index: true },
-}, {
-    collection: 'note_status',
-    timestamps: timeStampOpts
-});
+// export const NoteStatusSchema = new Schema<NoteStatus>({
+//     noteId: { type: String, required: true, index: true },
+//     hasUrl: { type: Boolean, required: true },
+//     hasAbstract: { type: Boolean, required: true },
+//     url: { type: String, required: true, index: true },
+// }, {
+//     collection: 'note_status',
+//     timestamps: timeStampOpts
+// });
 
-NoteStatusSchema.on('index', error => {
-    console.log('NoteStatus: indexing', error.message);
-});
+// NoteStatusSchema.on('index', error => {
+//     console.log('NoteStatus: indexing', error.message);
+// });
 
-export const NoteStatus = model<NoteStatus>("NoteStatus", NoteStatusSchema);
+// export const NoteStatus = model<NoteStatus>("NoteStatus", NoteStatusSchema);
 
 
 export interface HostStatus {
@@ -97,7 +97,6 @@ export const HostStatusSchema = new Schema<HostStatus>({
     responseUrl: { type: String, required: true },
     responseHost: { type: String, required: true, index: true },
     httpStatus: { type: Number, required: true },
-    // extractedFields: [{ type: String, required: true, index: true }],
 }, {
     collection: 'host_status',
     timestamps: timeStampOpts
@@ -110,6 +109,5 @@ HostStatusSchema.on('index', error => {
 export const HostStatus = model<HostStatus>("HostStatus", HostStatusSchema);
 
 export async function createCollections() {
-    await NoteStatus.createCollection();
     await HostStatus.createCollection();
 }

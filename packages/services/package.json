@@ -47,7 +47,8 @@
     "@retorquere/bibtex-parser": "~6.3.5",
     "pm2": "~5.2.0",
     "bree": "~8.0.3",
-    "@ladjs/graceful": "~2.0.1"
+    "@ladjs/graceful": "~2.0.1",
+    "date-fns": "~2.28.0"
   },
   "devDependencies": {
     "@watr/root": "0.1.0",
