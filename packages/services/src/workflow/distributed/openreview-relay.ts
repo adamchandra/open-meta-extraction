@@ -1,5 +1,6 @@
 import _ from 'lodash';
 import { Logger } from 'winston';
+import * as E from 'fp-ts/Either';
 
 import {
   CommLink,
@@ -16,28 +17,32 @@ import {
   prettyPrint,
   asyncDoUntil,
   asyncDoWhilst,
-  asyncEachOfSeries
+  asyncEachOfSeries,
+  asyncEachSeries,
+  putStrLn,
+  isDevEnv
 } from '@watr/commonlib';
 
 import { CanonicalFieldRecords, ExtractionErrors } from '@watr/field-extractors';
 
-import { toUrl, URLRequest } from '../common/datatypes';
+import { toUrl, URLRequest, validateUrl } from '../common/datatypes';
 
 import { displayRestError, newOpenReviewExchange, Note, Notes, OpenReviewExchange } from '../common/openreview-exchange';
 import { UrlFetchData } from '@watr/spider';
 import { SpiderService } from './spider-service';
 import { getCanonicalFieldRecsForURL } from '../common/utils';
+import { HostStatus, NoteStatus } from '~/db/schemas';
+import { connectToMongoDB } from '~/db/mongodb';
+import { formatStatusMessages, showStatusSummary } from '~/db/extraction-summary';
+import { upsertHostStatus, upsertNoteStatus } from '~/db/query-api';
 
 interface NoteBatch {
   notes: Note[];
   initialOffset: number;
   finalOffset: number;
   availableNoteCount: number;
-  summary: Record<string, number>;
-  errors: string[];
 }
 
-type NumNumNum = [number, number, number];
 
 interface OpenReviewRelay {
   openReviewExchange: OpenReviewExchange;
@@ -52,26 +57,18 @@ interface OpenReviewRelay {
   doFetchNotes(offset: number): Promise<Notes | undefined>;
   doRunRelay(offset?: number, batchSize?: number): Promise<void>;
   runOneURL(arg: URLRequest): Promise<CanonicalFieldRecords | ExtractionErrors>;
-  attemptExtractNote(
-    note: Note,
-    byHostSuccFailSkipCounts: Record<string, NumNumNum>,
-    byHostErrors: Record<string, Set<string>>
-  ): Promise<string | undefined>;
+  attemptExtractNote(note: Note): Promise<string | undefined>;
 
   createNoteBatch(_offset: number, batchSize: number): Promise<NoteBatch>;
 }
 
 
-
-// Pull data from OpenReview into abstract finder and post the
-//   results back via HTTP/Rest API
 export const OpenReviewRelayService = defineSatelliteService<OpenReviewRelay>(
   'OpenReviewRelayService',
   async (commLink) => {
     const relay = newOpenReviewRelay(commLink);
     return relay;
   });
-
 
 
 function newOpenReviewRelay(
@@ -93,10 +90,14 @@ function newOpenReviewRelay(
     },
     async startup() {
       this.commLink.log.info('relay startup');
+      const mongoose = await connectToMongoDB();
+      this.log.info(`Successful connection to MongoDB`);
       await this
         .doRunRelay()
         .catch(error => {
           this.log.warn(`Error: ${error}`);
+        }).finally(async () => {
+          await mongoose.connection.close();
         });
     },
     async shutdown() {
@@ -139,8 +140,6 @@ function newOpenReviewRelay(
     async doRunRelay(offset: number = 0, batchSize: number = 200): Promise<void> {
       this.log.info(`Running Openreview -> abstract finder; mode=${getEnvMode()}`)
       const self = this;
-      const byHostSuccFailSkipCounts: Record<string, NumNumNum> = {};
-      const byHostErrors: Record<string, Set<string>> = {};
 
       let nextOffset = offset;
       const iterations = isTestingEnv() ? 2 : 0;
@@ -155,7 +154,6 @@ function newOpenReviewRelay(
           return false;
         }
         const noteBatch = await self.createNoteBatch(nextOffset, batchSize);
-        prettyPrint({ 'batchSummary': noteBatch.summary });
 
         let { notes, finalOffset } = noteBatch;
         if (notes.length === 0) {
@@ -164,7 +162,7 @@ function newOpenReviewRelay(
         }
         nextOffset = finalOffset;
 
-        if (isTestingEnv()) {
+        if (isTestingEnv() || isDevEnv()) {
           const someNotes = notes.slice(0, 2);
           notes = someNotes;
         }
@@ -182,14 +180,19 @@ function newOpenReviewRelay(
             await delay(waitTime);
           }
           currTime = Date.now();
-          const maybeAbs = await self.attemptExtractNote(note, byHostSuccFailSkipCounts, byHostErrors);
+          const maybeAbs = await self.attemptExtractNote(note); //, byHostSuccFailSkipCounts, byHostErrors);
           if (maybeAbs === undefined) {
             return;
           }
           await self.doUpdateNote(note, maybeAbs);
         });
 
-        prettyPrint({ byHostSuccFailSkipCounts, byHostErrors });
+        // prettyPrint({ byHostSuccFailSkipCounts, byHostErrors });
+
+        const summaryMessages = await showStatusSummary();
+        const formatted = formatStatusMessages(summaryMessages);
+        putStrLn(formatted);
+
         return true;
       }
 
@@ -201,55 +204,28 @@ function newOpenReviewRelay(
 
     async attemptExtractNote(
       note: Note,
-      byHostSuccFailSkipCounts: Record<string, NumNumNum>,
-      byHostErrors: Record<string, Set<string>>
     ): Promise<string | undefined> {
       this.commLink.log.debug(`attemptExtractNote(${note.id}, ${note.content.html})`);
 
-      const urlstr = note.content['html'];
 
-      if (!_.isString(urlstr)) {
-        const prevErrors: Set<string> = _.get(byHostErrors, ['_no.host_'], new Set());
-        prevErrors.add(`note.content.html is undefined`);
-        _.set(byHostErrors, ['_no.host_'], prevErrors);
-        return undefined;
-      }
-      const url = toUrl(urlstr);
-      if (typeof url === 'string') {
-        const prevErrors: Set<string> = _.get(byHostErrors, ['_bad.url_'], new Set());
-        prevErrors.add(url)
-        _.set(byHostErrors, ['_bad.url'], prevErrors);
+      const contentHtml = note.content['html'];
+      const maybeUrl = validateUrl(contentHtml);
+
+      if (E.isLeft(maybeUrl)) {
         return undefined;
       }
 
+      const url = maybeUrl.right;
+      const urlAsString = url.toString();
 
-      let errors = _.get(byHostErrors, [url.hostname], new Set<string>());
-      _.set(byHostErrors, [url.hostname], errors);
 
-      const [prevSucc, prevFail, prevSkip] = _.get(byHostSuccFailSkipCounts, [url.hostname], [0, 0, 0] as const);
-
-      const maxFailsPerDomain = 10;
-      if (prevFail > maxFailsPerDomain) {
-        // don't keep processing failed domains
-        errors.add(`Previous failure count > ${maxFailsPerDomain}; skipping.`)
-        byHostSuccFailSkipCounts[url.hostname] = [prevSucc, prevFail, prevSkip + 1];
-        return undefined;
-      }
-
-      const res: CanonicalFieldRecords | ExtractionErrors = await this.runOneURL(URLRequest(urlstr));
+      const res: CanonicalFieldRecords | ExtractionErrors = await this.runOneURL(URLRequest(urlAsString));
 
       const pfres = prettyFormat(res)
       this.commLink.log.debug(`runOneURL() => ${pfres}`);
 
-      const adjustedUrlStr = res.finalUrl ? res.finalUrl : urlstr;
-      const adjustedUrl = toUrl(adjustedUrlStr)
-      const adjustedHostname = typeof adjustedUrl === 'string' ? url.hostname : `${adjustedUrl.hostname} (via ${url.hostname})`;
-      errors = _.get(byHostErrors, [adjustedHostname], new Set<string>());
-      _.set(byHostErrors, [adjustedHostname], errors);
 
       if ('errors' in res) {
-        res.errors.forEach(e => errors.add(e));
-        byHostSuccFailSkipCounts[adjustedHostname] = [prevSucc, prevFail + 1, prevSkip];
         return;
       }
 
@@ -262,13 +238,21 @@ function newOpenReviewRelay(
       });
 
       const hasAbstract = abstracts.length > 0 || abstractsClipped.length > 0;
+
+      await HostStatus.findOneAndUpdate({
+        noteId: note.id
+      }, {
+        hasAbstract
+      });
+
+
       if (!hasAbstract) {
-        errors.add('no abstract found');
-        byHostSuccFailSkipCounts[adjustedHostname] = [prevSucc, prevFail + 1, prevSkip];
+        // errors.add('no abstract found');
+        // byHostSuccFailSkipCounts[adjustedHostname] = [prevSucc, prevFail + 1, prevSkip];
         return;
       }
 
-      byHostSuccFailSkipCounts[adjustedHostname] = [prevSucc + 1, prevFail, prevSkip];
+      // byHostSuccFailSkipCounts[adjustedHostname] = [prevSucc + 1, prevFail, prevSkip];
       const abstrct = abstracts[0] || abstractsClipped[0];
 
       return abstrct.value;
@@ -280,8 +264,6 @@ function newOpenReviewRelay(
       const self = this;
 
       const notesWithUrlNoAbs: Note[] = [];
-      const notesWithAbstracts: Note[] = [];
-      const notesWithoutUrls: Note[] = [];
       log.info(`CreateNoteBatch: offset: ${offset}, batchSize: ${batchSize} ...`)
       let availableNoteCount = 0;
 
@@ -297,29 +279,36 @@ function newOpenReviewRelay(
 
             if (notes.length === 0) return 0;
 
-            const note0: Note | undefined = _.head(notes);
-            const noteN: Note | undefined = _.last(notes);
-            const id0 = note0 ? note0.id : 'error';
-            const idN = noteN ? noteN.id : 'error';
-
-            log.info(`fetched ${notes.length} (of ${count}) notes. First/Last= ${id0} / ${idN}`)
+            log.info(`fetched ${notes.length} (of ${count}) notes`)
 
             availableNoteCount = count;
             offset += notes.length;
 
-            notes.forEach(note => {
+
+            await asyncEachSeries(notes, async (note: Note) => {
               const { content } = note;
               const abs = content.abstract;
               const { html } = content;
-              if (html === undefined) {
-                notesWithoutUrls.push(note);
+              const hasAbstract = abs !== undefined;
+              const noteStatus = await upsertNoteStatus({ noteId: note.id, urlstr: html })
+              if (!noteStatus.validUrl) {
                 return;
               }
+              const requestUrl = noteStatus.url;
+              if (requestUrl === undefined) {
+                return Promise.reject(`Invalid state: NoteStatus(${note.id}).validUrl===true, url===undefined`);
+              }
+              const hostStatus = await upsertHostStatus(note.id, { hasAbstract, requestUrl })
+
+              // if (html === undefined) {
+              //   notesWithoutUrls.push(note);
+              //   return;
+              // }
               if (abs === undefined) {
                 notesWithUrlNoAbs.push(note);
                 return;
               }
-              notesWithAbstracts.push(note);
+              // notesWithAbstracts.push(note);
             });
             return notes.length;
           } catch (error) {
@@ -333,43 +322,12 @@ function newOpenReviewRelay(
           return doneFetching || atBatchLimit;
         }
       );
-      const notesWithUrlNoAbsLen = notesWithUrlNoAbs.length;
-      const notesWithAbstractsLen = notesWithAbstracts.length;
-      const notesWithoutUrlsLen = notesWithoutUrls.length;
-
-      const noteCounts: Record<string, number> = {
-        notesWithUrlNoAbsLen,
-        notesWithAbstractsLen,
-        notesWithoutUrlsLen
-      };
-
-      const byHostCounts: Record<string, number> = {};
-
-      const errors: string[] = [];
-
-      notesWithUrlNoAbs.forEach(note => {
-        const html = note.content.html;
-        if (html === undefined) return;
-        const url = toUrl(html);
-        if (typeof url === 'string') {
-          errors.push(url);
-          return;
-        }
-        const { hostname } = url;
-        const prevCount = byHostCounts[hostname];
-        const newCount = prevCount === undefined ? 1 : prevCount + 1;
-        byHostCounts[hostname] = newCount;
-      });
-
-      const summary = _.merge(noteCounts, byHostCounts);
 
       const noteBatch: NoteBatch = {
         notes: notesWithUrlNoAbs,
         initialOffset: _offset,
         finalOffset: offset,
         availableNoteCount,
-        summary,
-        errors
       }
 
       return noteBatch;
@@ -383,11 +341,32 @@ function newOpenReviewRelay(
         await this.commLink.call('scrapeAndExtract', url, { to: SpiderService.name });
 
       if (urlFetchData === undefined) {
+        await HostStatus.findOneAndUpdate({
+          requestUrl: url
+        }, {
+          validResponseUrl: false,
+          response: 'Spider failed'
+        });
+
         return ExtractionErrors(`spider did not successfully scrape url ${url}`, { url });
       }
 
+
       const finalUrl = urlFetchData.responseUrl;
       const fieldRecs = getCanonicalFieldRecsForURL(url);
+      const maybeFinalUrl = validateUrl(finalUrl);
+
+      const validResponseUrl = E.isRight(maybeFinalUrl);
+      const responseHost = validResponseUrl ? maybeFinalUrl.right.hostname : undefined;
+
+      await HostStatus.findOneAndUpdate({
+        requestUrl: url
+      }, {
+        validResponseUrl,
+        response: finalUrl,
+        responseHost,
+        httpStatus: urlFetchData.status
+      });
 
       if (fieldRecs === undefined) {
         const msg = 'No extracted fields available';
@@ -401,4 +380,12 @@ function newOpenReviewRelay(
 
   };
   return relay;
+}
+
+/*
+ * Fetch Batches of notes from Openreview REST API, put them in
+ * local MongoDB queue for spidering/extraction
+ */
+export async function runOpenReviewRelay() {
+
 }

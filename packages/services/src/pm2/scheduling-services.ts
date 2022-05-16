@@ -10,6 +10,9 @@ import { pm2x } from './pm2-helpers';
 import { cliJob, createBreeScheduler, jobDef } from './bree-helpers';
 
 import { sigtraps } from '~/util/shutdown';
+import { Mongoose } from 'mongoose';
+import { connectToMongoDB } from '~/db/mongodb';
+import { createCollections } from '~/db/schemas';
 
 export function registerCommands(yargv: arglib.YArgsT) {
   registerCmd(
@@ -109,13 +112,27 @@ export function registerCommands(yargv: arglib.YArgsT) {
     const log = getServiceLogger("PreflightCheck")
     log.info('Starting Preflight Check')
 
+    let mongoose: Mongoose | undefined = undefined;
     try {
       initConfig();
+
+      mongoose = await connectToMongoDB();
+      if (mongoose === undefined) {
+        log.error('Could not connect to MongoDB');
+      }
+      await createCollections();
+
       log.info('Found Config')
+
       return;
     } catch (error) {
       log.error('No Config; stopping pm2 apps');
     }
+
+    if (mongoose !== undefined) {
+      await mongoose.connection.close()
+    }
+
     try {
       log.info('Stopping..');
       await pm2x.stop('all');

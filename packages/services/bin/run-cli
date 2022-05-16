@@ -2,6 +2,6 @@
 
 climain="./dist/src/cli"
 
-export NODE_ENV=testing
+export NODE_ENV=dev
 
 node "$climain" "$@"

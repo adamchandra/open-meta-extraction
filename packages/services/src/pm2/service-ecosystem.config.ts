@@ -4,7 +4,6 @@ import _ from 'lodash';
 
 export const appNames: WorkflowServiceName[] = [
   'HubService',
-  'WorkflowConductor',
   'SpiderService',
   'OpenReviewRelayService'
 ];

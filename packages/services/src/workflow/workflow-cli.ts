@@ -1,10 +1,12 @@
 import _ from 'lodash';
 
 import { createSatelliteService, createServiceHub, defineServiceHub } from '@watr/commlinks';
-import { arglib } from '@watr/commonlib';
+import { arglib, initConfig, putStrLn } from '@watr/commonlib';
 import { SpiderService } from './distributed/spider-service';
-import { OpenReviewRelayService } from './distributed/openreview-relay';
+import { OpenReviewRelayService, runOpenReviewRelay } from './distributed/openreview-relay';
 import { sigtraps } from '~/util/shutdown';
+import { formatStatusMessages, showStatusSummary } from '~/db/extraction-summary';
+import { connectToMongoDB } from '~/db/mongodb';
 const { opt, config, registerCmd } = arglib;
 
 export function registerCLICommands(yargv: arglib.YArgsT) {
@@ -27,7 +29,7 @@ export function registerCLICommands(yargv: arglib.YArgsT) {
   )((args: any) => {
     const { serviceName } = args;
     if (orderedServices.includes(serviceName)) {
-      const serviceDef  = _.get(availableServices, serviceName);
+      const serviceDef = _.get(availableServices, serviceName);
       return createSatelliteService(HubService.name, serviceDef)
         .then((service) => sigtraps(() => {
           return service.commLink.quit();
@@ -49,5 +51,33 @@ export function registerCLICommands(yargv: arglib.YArgsT) {
           console.log(`Error: ${error}`)
         });
     }
+  });
+
+  registerCmd(
+    yargv,
+    'extraction-summary',
+    'Show A Summary of Spidering/Extraction Progress',
+    config(
+    )
+  )(async (args: any) => {
+    putStrLn('Extraction Summary');
+    initConfig();
+    const mongoose = await connectToMongoDB();
+    const summaryMessages = await showStatusSummary();
+    const formatted = formatStatusMessages(summaryMessages);
+    putStrLn(formatted);
+    await mongoose.connection.close();
+  });
+
+  registerCmd(
+    yargv,
+    'run-openreview-relay',
+    'Fetch OpenReview Notes into local DB for spidering/extraction',
+    config(
+    )
+  )(async (args: any) => {
+    initConfig();
+    const mongoose = await connectToMongoDB();
+    await runOpenReviewRelay();
   });
 }

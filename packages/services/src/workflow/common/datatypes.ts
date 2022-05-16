@@ -1,4 +1,5 @@
 import { AlphaRecord } from "@watr/commonlib";
+import * as E from 'fp-ts/Either';
 
 export interface RecordRequest {
   kind: 'record-request';
@@ -47,4 +48,14 @@ export function toUrl(instr: unknown): URL | string {
 
 export function isUrl(instr: unknown): boolean {
   return typeof toUrl(instr) !== 'string';
+}
+
+export function validateUrl(instr: unknown): E.Either<string, URL> {
+  const maybeUrl = toUrl(instr);
+  const isUrl =  typeof maybeUrl !== 'string';
+  if (isUrl) {
+    return E.right(maybeUrl);
+  }
+
+  return E.left(maybeUrl);
 }

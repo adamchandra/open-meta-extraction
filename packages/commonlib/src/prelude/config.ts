@@ -89,6 +89,10 @@ export function isTestingEnv(): boolean {
   return getEnv('NODE_ENV') === 'test';
 }
 
+export function isDevEnv(): boolean {
+  return getEnv('NODE_ENV') === 'dev';
+}
+
 function getEnv(key: EnvKey): string | undefined {
   return process.env[key];
 }

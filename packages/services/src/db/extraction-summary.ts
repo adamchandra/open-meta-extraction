@@ -1,21 +1,8 @@
-import { prettyPrint } from '@watr/commonlib';
-import { HostStatus } from './mongodb';
+import { HostStatus, NoteStatus } from './schemas';
 import _ from 'lodash';
 
-import { format, compareAsc, subDays } from 'date-fns';
-
-
-/**
- * Wanted Stats:
- * - [X] How many new abstracts in past week (by day)
- * - [ ] How many notes processed overall
- *     - [X] With html field?
- *     - [X] With abstract field?
- * - [ ] For each spidered domain:
- *     - [ ]  http status code buckets
- *     - [ ]  # of extracted abstracts
- *     - [ ]  # of missing extracts
- **/
+import { subDays } from 'date-fns';
+import { prettyPrint } from '@watr/commonlib';
 
 interface BoolIDCounts {
     _id: boolean;
@@ -31,14 +18,18 @@ interface Total {
     total: number;
 }
 
+interface NoteStatusSummary {
+    noteCount: Total[];
+    updateByDay: StrIDCounts[];
+    totalWithUrls: BoolIDCounts[];
+    withUrlsByDomain: StrIDCounts[];
+}
+
 interface ExtractionStatusSummary {
     noteCount: Total[];
     updateByDay: StrIDCounts[];
     totalWithAbstracts: BoolIDCounts[];
-    totalWithUrls: BoolIDCounts[];
-    withUrlsByDomain: StrIDCounts[];
     withAbstractsByDomain: StrIDCounts[];
-    withAbstractsAndUrlByDomain: StrIDCounts[];
     withHttpStatusByDomain: StrIDCounts[];
 }
 
@@ -58,16 +49,19 @@ function formatAbstractStatusByDomain(title: string, byDomain: StrIDCounts[]): s
     const byDomain1: DomainPresentOrMissing[] = _.map(byDomain, ({ _id, count }) => {
         const [domain, hasAbstract] = _id.split('__')
         if (hasAbstract === 'true') {
-            return { domain, present: count, missing: undefined };
+            return { domain, present: count, missing: 0 };
         }
-        return { domain, present: undefined, missing: count };
+        return { domain, present: 0, missing: count };
     });
 
     const byDomain2 = _.values(_.groupBy(byDomain1, (r) => r.domain));
     const byDomain3 = _.map(byDomain2, (sdf3a) => {
         const merged = _.merge({}, ...sdf3a)
-        return `    ${merged.domain}: ${merged.present} out of ${merged.present + merged.missing}`;
+        const present = merged.present !== undefined? merged.present : 0;
+        const missing = merged.missing !== undefined? merged.missing : 0;
+        return `    ${merged.domain}: ${present} out of ${present + missing}`;
     });
+    prettyPrint({ byDomain1, byDomain2, byDomain3 })
 
     return [
         title,
@@ -118,10 +112,6 @@ export async function showStatusSummary(): Promise<string[][]> {
         }
     };
 
-    const selectHasUrl = {
-        $match: { hasUrl: true }
-    };
-
     const groupByUpdateDay = {
         $group: {
             _id: {
@@ -146,23 +136,16 @@ export async function showStatusSummary(): Promise<string[][]> {
 
     const groupByHaveUrl = {
         $group: {
-            _id: '$hasUrl',
+            _id: '$validUrl',
             count: {
                 $sum: 1
             },
         }
     };
 
-    const groupByDomainHasURL = {
-        $group: {
-            _id: {
-                $concat: [
-                    '$responseHost', '__', { $toString: '$hasUrl' }
-                ]
-            },
-            count: {
-                $sum: 1
-            },
+    const selectValidResponse = {
+        $match: {
+            validResponseUrl: true,
         }
     };
 
@@ -194,70 +177,63 @@ export async function showStatusSummary(): Promise<string[][]> {
 
     const count = { $count: 'total' };
 
-
-    const res = await HostStatus.aggregate([
-        {
-            $facet: {
-                noteCount: [count],
-                updateByDay: [selectOneWeek, groupByUpdateDay, { $sort: { _id: 1 } }],
-                totalWithAbstracts: [groupByHaveAbs],
-                totalWithUrls: [groupByHaveUrl],
-                withUrlsByDomain: [groupByDomainHasURL, { $sort: { _id: 1 } }],
-                withAbstractsByDomain: [groupByDomainHasAbstract, { $sort: { _id: 1 } }],
-                withAbstractsAndUrlByDomain: [selectHasUrl, groupByDomainHasAbstract, { $sort: { _id: 1 } }],
-                withHttpStatusByDomain: [groupByDomainHttpStatus, { $sort: { _id: 1 } }],
-            }
+    const noteStatusRes = await NoteStatus.aggregate([{
+        $facet: {
+            noteCount: [count],
+            updateByDay: [selectOneWeek, groupByUpdateDay, { $sort: { _id: 1 } }],
+            totalWithUrls: [groupByHaveUrl],
         }
-    ]);
+    }]);
 
-    const statusObj: ExtractionStatusSummary = res[0]
-    // prettyPrint({ statusObj })
+    const noteStatusSummary: NoteStatusSummary = noteStatusRes[0];
 
-    const noteCount = statusObj.noteCount[0].total
+    const res = await HostStatus.aggregate([{
+        $facet: {
+            noteCount: [count],
+            updateByDay: [selectOneWeek, groupByUpdateDay, { $sort: { _id: 1 } }],
+            totalWithAbstracts: [groupByHaveAbs],
+            withAbstractsByDomain: [selectValidResponse, groupByDomainHasAbstract, { $sort: { _id: 1 } }],
+            withHttpStatusByDomain: [selectValidResponse, groupByDomainHttpStatus, { $sort: { _id: 1 } }],
+        }
+    }]);
+
+    const hostStatusSummary: ExtractionStatusSummary = res[0]
+
+    prettyPrint({ res })
+
+    const noteCount = noteStatusSummary.noteCount[0].total
 
     const updateByDayMessage: string[] = [
         'Updated Notes Per Day, Last 7 days',
-        ..._.map(statusObj.updateByDay, ({ _id, count }) => {
+        ..._.map(hostStatusSummary.updateByDay, ({ _id, count }) => {
             return `    ${_id}: ${count}`
         })
     ];
 
 
-    const totalWithAbstractsMessage: string[] = _.flatMap(statusObj.totalWithAbstracts, ({ _id, count }) => {
+    const totalWithAbstractsMessage: string[] = _.flatMap(hostStatusSummary.totalWithAbstracts, ({ _id, count }) => {
         return _id ? [`Notes With Abstracts: ${count}`] : []
     })
 
-    const totalWithUrlsMessage = _.flatMap(statusObj.totalWithUrls, ({ _id, count }) => {
-        return _id ? [`Notes With URL Field (content.html): ${count}`] : [];
+    const totalWithUrlsMessage = _.flatMap(noteStatusSummary.totalWithUrls, ({ _id, count }) => {
+        return _id ? [`Notes With Valid URL Field (content.html): ${count}`] : [];
     });
 
-
-    // const absByDomainMessages = formatAbstractStatusByDomain(
-    //     'Extracted Abstract Count By Domain, out of all known Notes',
-    //     statusObj.withAbstractsByDomain
-    // );
-
-    const absAndUrlByDomainMessages = formatAbstractStatusByDomain(
+    const absByDomainMessages = formatAbstractStatusByDomain(
         'Extracted Abstracts By Domain, out of Notes with valid URLs',
-        statusObj.withAbstractsAndUrlByDomain
+        hostStatusSummary.withAbstractsByDomain
     );
 
-    const urlByDomainMessages = formatAbstractStatusByDomain(
-        'Valid Note URLs (content.html) By Domain',
-        statusObj.withUrlsByDomain
-    );
-
-    const httpStatusByDomainMessages = formatHttpStatusByDomain(statusObj.withHttpStatusByDomain);
+    const httpStatusByDomainMessages = formatHttpStatusByDomain(hostStatusSummary.withHttpStatusByDomain);
 
     return [
-        [`Total Note Count: ${noteCount}`],
-        totalWithAbstractsMessage,
+        [`Recorded Note Count: ${noteCount}`,],
         totalWithUrlsMessage,
+        totalWithAbstractsMessage,
         updateByDayMessage,
-        urlByDomainMessages,
-        absAndUrlByDomainMessages,
+        absByDomainMessages,
         httpStatusByDomainMessages
-    ]
+    ];
 }
 
 export function formatStatusMessages(msgs: string[][]): string {
