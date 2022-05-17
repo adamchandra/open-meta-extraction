@@ -41,6 +41,7 @@ specifiers:
   bree: ~8.0.3
   chai: ^4.3.6
   crypto-js: ^4.1.1
+  date-fns: ~2.28.0
   diff: ^5.0.0
   eslint: ^7.32.0
   eslint-config-airbnb-base: ^15.0.0
@@ -132,6 +133,7 @@ dependencies:
   bree: 8.0.3
   chai: 4.3.6
   crypto-js: 4.1.1
+  date-fns: 2.28.0
   diff: 5.0.0
   eslint: 7.32.0
   eslint-config-airbnb-base: 15.0.0_3bd94fa9be989baab6ef2e6b5dec3766
@@ -3415,6 +3417,13 @@ packages:
       - supports-color
     dev: false
 
+  /fast-check/2.25.0:
+    resolution: {integrity: sha512-wRUT2KD2lAmT75WNIJIHECawoUUMHM0I5jrlLXGtGeqmPL8jl/EldUDjY1VCp6fDY8yflyfUeIOsOBrIbIiArg==}
+    engines: {node: '>=8.0.0'}
+    dependencies:
+      pure-rand: 5.0.1
+    dev: false
+
   /fast-csv/4.3.6:
     resolution: {integrity: sha512-2RNSpuwwsJGP0frGsOmTb9oUF+VkFSM4SyLTDgwf2ciHWTarN0lQTC+F2f/t5J9QjW+c65VFIAAu85GsvMIusw==}
     engines: {node: '>=10.0.0'}
@@ -6636,6 +6645,10 @@ packages:
       - utf-8-validate
     dev: false
 
+  /pure-rand/5.0.1:
+    resolution: {integrity: sha512-ksWccjmXOHU2gJBnH0cK1lSYdvSZ0zLoCMSz/nTGh6hDvCSgcRxDyIcOBD6KNxFz3xhMPm/T267Tbe2JRymKEQ==}
+    dev: false
+
   /qs/6.10.3:
     resolution: {integrity: sha512-wr7M2E0OFRfIfJZjKGieI8lBKb7fRCH4Fv5KNPEs7gJ8jadvotdsS08PzOKR7opXhZ/Xkjtt3WF9g38drmyRqQ==}
     engines: {node: '>=0.6'}
@@ -8378,7 +8391,7 @@ packages:
     dev: false
 
   file:projects/services.tgz:
-    resolution: {integrity: sha512-iayHksTu2adstv5J4tGcx0YaUfxJ/Pg533tDE0HenZEWG9SkS3hNYRNSSUKicSml2S2s9ss62adSZp7jvNFe3Q==, tarball: file:projects/services.tgz}
+    resolution: {integrity: sha512-52MnDXO5FxaIy0I2rj9EZsH649xgztg2xelCumuiW4NpYojCM1xyWVJNXS0Uq3HAq37Poi1Q0oWeGy1VP2899w==, tarball: file:projects/services.tgz}
     name: '@rush-temp/services'
     version: 0.0.0
     dependencies:
@@ -8404,6 +8417,7 @@ packages:
       chai: 4.3.6
       date-fns: 2.28.0
       eslint: 7.32.0
+      fast-check: 2.25.0
       fp-ts: 2.12.1
       fs-extra: 10.1.0
       jest: 28.1.0_8f636ae2da81afb2b509b4acb1e46d2e

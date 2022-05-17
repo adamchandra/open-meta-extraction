@@ -28,6 +28,7 @@ interface NoteStatusSummary {
 interface ExtractionStatusSummary {
     noteCount: Total[];
     updateByDay: StrIDCounts[];
+    workflowStatus: StrIDCounts[];
     totalWithAbstracts: BoolIDCounts[];
     withAbstractsByDomain: StrIDCounts[];
     withHttpStatusByDomain: StrIDCounts[];
@@ -45,6 +46,16 @@ type DomainCodeCounts = {
     count: number
 };
 
+// function indent(n: number, strs: string[]): string[] {
+//     return _.map(strs, s => _.padStart(s, n, s));
+
+// }
+function collateStrIDCounts(recs: StrIDCounts[]): string[] {
+    return _.map(recs, ({ _id, count }) => {
+        return `    ${_id}: ${count}`;
+    });
+}
+
 function formatAbstractStatusByDomain(title: string, byDomain: StrIDCounts[]): string[] {
     const byDomain1: DomainPresentOrMissing[] = _.map(byDomain, ({ _id, count }) => {
         const [domain, hasAbstract] = _id.split('__')
@@ -57,11 +68,12 @@ function formatAbstractStatusByDomain(title: string, byDomain: StrIDCounts[]): s
     const byDomain2 = _.values(_.groupBy(byDomain1, (r) => r.domain));
     const byDomain3 = _.map(byDomain2, (sdf3a) => {
         const merged = _.merge({}, ...sdf3a)
-        const present = merged.present !== undefined? merged.present : 0;
-        const missing = merged.missing !== undefined? merged.missing : 0;
+        const present = merged.present !== undefined ? merged.present : 0;
+        const missing = merged.missing !== undefined ? merged.missing : 0;
         return `    ${merged.domain}: ${present} out of ${present + missing}`;
     });
-    prettyPrint({ byDomain1, byDomain2, byDomain3 })
+
+    // prettyPrint({ byDomain1, byDomain2, byDomain3 })
 
     return [
         title,
@@ -162,6 +174,15 @@ export async function showStatusSummary(): Promise<string[][]> {
         }
     };
 
+    const groupByWorkflowStatus = {
+        $group: {
+            _id: '$workflowStatus',
+            count: {
+                $sum: 1
+            },
+        }
+    };
+
     const groupByDomainHttpStatus = {
         $group: {
             _id: {
@@ -192,6 +213,7 @@ export async function showStatusSummary(): Promise<string[][]> {
             noteCount: [count],
             updateByDay: [selectOneWeek, groupByUpdateDay, { $sort: { _id: 1 } }],
             totalWithAbstracts: [groupByHaveAbs],
+            workflowStatus: [groupByWorkflowStatus],
             withAbstractsByDomain: [selectValidResponse, groupByDomainHasAbstract, { $sort: { _id: 1 } }],
             withHttpStatusByDomain: [selectValidResponse, groupByDomainHttpStatus, { $sort: { _id: 1 } }],
         }
@@ -199,9 +221,9 @@ export async function showStatusSummary(): Promise<string[][]> {
 
     const hostStatusSummary: ExtractionStatusSummary = res[0]
 
-    prettyPrint({ res })
+    // prettyPrint({ res })
 
-    const noteCount = noteStatusSummary.noteCount[0].total
+    const noteCount = noteStatusSummary.noteCount.length === 0 ? 0 : noteStatusSummary.noteCount[0].total
 
     const updateByDayMessage: string[] = [
         'Updated Notes Per Day, Last 7 days',
@@ -225,6 +247,10 @@ export async function showStatusSummary(): Promise<string[][]> {
     );
 
     const httpStatusByDomainMessages = formatHttpStatusByDomain(hostStatusSummary.withHttpStatusByDomain);
+    const workflowStatus = [
+        "Workflow Status Counts",
+        ...collateStrIDCounts(hostStatusSummary.workflowStatus)
+    ];
 
     return [
         [`Recorded Note Count: ${noteCount}`,],
@@ -232,7 +258,8 @@ export async function showStatusSummary(): Promise<string[][]> {
         totalWithAbstractsMessage,
         updateByDayMessage,
         absByDomainMessages,
-        httpStatusByDomainMessages
+        httpStatusByDomainMessages,
+        workflowStatus
     ];
 }
 

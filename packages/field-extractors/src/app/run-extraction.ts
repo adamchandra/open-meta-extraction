@@ -108,6 +108,29 @@ export async function extractFieldsForEntry(
   }
 }
 
+export function getEnvCanonicalFields(env: ExtractionEnv): CanonicalFieldRecords {
+  const { fieldRecs } = env;
+
+  const fieldRecords: FieldRecord[] = _.flatMap(_.toPairs(fieldRecs), ([fieldName, fieldInstances]) => {
+    if (fieldName === 'author') {
+      const nameValueRecs = _.flatMap(fieldInstances, fi => {
+        const { name, value } = fi;
+        if (value === undefined) return [];
+        return [{ name, value }];
+      });
+      return nameValueRecs;
+    }
+    const { name, value } = fieldInstances[0];
+    if (value === undefined) return [];
+    return [{ name, value }];
+  });
+
+  const canonicalRecords: CanonicalFieldRecords = {
+    fields: fieldRecords
+  };
+  return canonicalRecords;
+}
+
 
 function writeExtractionRecords(env: ExtractionEnv, messages: string[]) {
   const { entryPath, fieldRecs } = env;
@@ -143,23 +166,7 @@ function writeExtractionRecords(env: ExtractionEnv, messages: string[]) {
     /* overwrite= */true
   );
 
-  const fieldRecords: FieldRecord[] = _.flatMap(_.toPairs(fieldRecs), ([fieldName, fieldInstances]) => {
-    if (fieldName === 'author') {
-      const nameValueRecs = _.flatMap(fieldInstances, fi => {
-        const { name, value } = fi;
-        if (value === undefined) return [];
-        return [{ name, value }];
-      });
-      return nameValueRecs;
-    }
-    const { name, value } = fieldInstances[0];
-    if (value === undefined) return [];
-    return [{ name, value }];
-  });
-
-  const canonicalRecords: CanonicalFieldRecords = {
-    fields: fieldRecords
-  };
+  const canonicalRecords = getEnvCanonicalFields(env);
 
   writeCorpusJsonFile(
     entryPath,
@@ -170,7 +177,7 @@ function writeExtractionRecords(env: ExtractionEnv, messages: string[]) {
   );
 }
 
-export function getCanonicalFieldRecord(
+export function readCanonicalFieldRecord(
   entryPath: string,
 ): CanonicalFieldRecords | undefined {
   const records = readCorpusJsonFile<CanonicalFieldRecords>(

@@ -7,7 +7,7 @@ import { defineServiceHub } from '@watr/commlinks';
 import { runServiceHubAndSatellites } from '../common/testing-utils';
 import { SpiderService } from './spider-service';
 import { startSpiderableTestServer } from '~/http-servers/rest-portal/mock-server';
-import { OpenReviewRelayService } from './openreview-relay';
+// import { OpenReviewRelayService } from './openreview-relay';
 import { setLogEnvLevel } from '@watr/commonlib';
 
 describe('End-to-end Distributed Extraction workflows', () => {
@@ -37,21 +37,21 @@ describe('End-to-end Distributed Extraction workflows', () => {
   });
 
 
-  it('should run end-to-end', async () => {
-    const serviceChainWorkers = [
-      SpiderService,
-      OpenReviewRelayService
-    ];
-    const orderedServices = serviceChainWorkers.map(w => w.name);
+  // it('should run end-to-end', async () => {
+  //   const serviceChainWorkers = [
+  //     SpiderService,
+  //     OpenReviewRelayService
+  //   ];
+  //   const orderedServices = serviceChainWorkers.map(w => w.name);
 
-    const hubDef = defineServiceHub('HubService', orderedServices, [], {});
+  //   const hubDef = defineServiceHub('HubService', orderedServices, [], {});
 
-    const [hubService, hubConnected] =
-      await runServiceHubAndSatellites(hubDef, serviceChainWorkers);
+  //   const [hubService, hubConnected] =
+  //     await runServiceHubAndSatellites(hubDef, serviceChainWorkers);
 
-    await hubConnected();
+  //   await hubConnected();
 
-    await hubService.shutdownSatellites();
-    await hubService.commLink.quit();
-  });
+  //   await hubService.shutdownSatellites();
+  //   await hubService.commLink.quit();
+  // });
 });

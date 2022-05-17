@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 
 import { Mongoose } from 'mongoose';
 
-function mongoConnectionString(): string {
+export function mongoConnectionString(): string {
     const config = initConfig();
     const ConnectionURL = config.get('mongodb:connectionUrl');
     const MongoDBName = config.get('mongodb:dbName');

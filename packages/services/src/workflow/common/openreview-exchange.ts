@@ -118,13 +118,13 @@ export function newOpenReviewExchange(log: Logger): OpenReviewExchange {
             const user = config.get('openreview:restUser');
             const password = config.get('openreview:restPassword');
 
-            this.log.info(`Logging in as User: ${user}`)
+            this.log.info(`Logging in as ${user}`)
             if (user === undefined || password === undefined) {
                 return Promise.reject(new Error(`Openreview API: user or password not defined`))
             }
             const creds = await this.postLogin(user, password);
 
-            this.log.info(`Logged in as ${creds.user}`);
+            this.log.info(`Logged in as ${creds.user.id}`);
 
             this.credentials = creds;
             return creds;

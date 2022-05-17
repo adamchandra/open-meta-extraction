@@ -9,7 +9,7 @@ import {
 } from '@watr/spider';
 
 import {
-  getCorpusRootDir,
+  getCorpusRootDir, getServiceLogger,
 } from '@watr/commonlib';
 
 import {
@@ -88,3 +88,5 @@ export async function createSpiderService(commLink: CommLink<SatelliteService<Sp
 export const SpiderService = defineSatelliteService<SpiderService>(
   'SpiderService', (commLink) => createSpiderService(commLink)
 );
+
+
