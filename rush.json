@@ -400,10 +400,6 @@
       "projectFolder": "packages/spider",
     },
     {
-      "packageName": "@watr/commlinks",
-      "projectFolder": "packages/commlinks",
-    },
-    {
       "packageName": "@watr/field-extractors",
       "projectFolder": "packages/field-extractors",
     },

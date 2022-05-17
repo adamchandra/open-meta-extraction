@@ -4,14 +4,12 @@ import fs from 'fs-extra';
 import { Server } from 'http';
 import { mockAlphaRecord } from '@watr/spider';
 import axios from 'axios';
-import { createRestServer, RestPortal } from './rest-worker';
 import { setLogEnvLevel } from '@watr/commonlib';
 
 describe('REST Worker Endpoints', () => {
   setLogEnvLevel('info');
   const workingDir = './test.scratch.d';
 
-  let restPortal: RestPortal | undefined;
   let testServer: Server | undefined;
 
   beforeEach(async () => {
@@ -21,8 +19,6 @@ describe('REST Worker Endpoints', () => {
     return startSpiderableTestServer()
       .then(async (server) => {
         testServer = server;
-        restPortal = await createRestServer();
-        return restPortal.run();
       });
   });
 
@@ -32,10 +28,7 @@ describe('REST Worker Endpoints', () => {
       testServer.on('close', () => resolve(undefined));
       testServer.close();
     });
-    return pClose1.then(() => {
-      if (restPortal === undefined) return;
-      return restPortal.close()
-    })
+    return pClose1;
   });
 
   it('should run end-to-end', async () => {

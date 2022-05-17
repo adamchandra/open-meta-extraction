@@ -1,4 +1,3 @@
-import { CustomHandler } from '@watr/commlinks';
 import { AlphaRecord } from '@watr/commonlib';
 
 export type WorkflowServiceName = keyof {
@@ -19,6 +18,3 @@ export interface RequestOneRecWorkflow {
   log: string[];
   alphaRec: AlphaRecord;
 }
-
-export type RequestOneRecHandler<ClientT> =
-  CustomHandler<ClientT, RequestOneRecWorkflow, Promise<RequestOneRecWorkflow>>;

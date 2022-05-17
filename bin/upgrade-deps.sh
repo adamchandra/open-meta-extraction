@@ -1,7 +1,6 @@
 #!/bin/bash
 
 declare -a dirs=(
-   commlinks
    commonlib
    field-extractors
    root

@@ -1,60 +1,13 @@
 import _ from 'lodash';
 
-import { createSatelliteService, createServiceHub, defineServiceHub } from '@watr/commlinks';
 import { arglib, initConfig, putStrLn } from '@watr/commonlib';
-import { SpiderService } from './distributed/spider-service';
-// import { OpenReviewRelayService, runOpenReviewRelay, runRelayFetch } from './distributed/openreview-relay';
 import { runRelayExtract, runRelayFetch } from './distributed/openreview-relay';
-import { sigtraps } from '~/util/shutdown';
 import { formatStatusMessages, showStatusSummary } from '~/db/extraction-summary';
 import { connectToMongoDB, mongoConnectionString } from '~/db/mongodb';
 import { createCollections } from '~/db/schemas';
 const { opt, config, registerCmd } = arglib;
 
 export function registerCLICommands(yargv: arglib.YArgsT) {
-  // const availableServices = {
-  //   SpiderService,
-  //   OpenReviewRelayService
-  // };
-  // const orderedServices = _.keys(availableServices);
-  // const HubService = defineServiceHub('HubService', orderedServices, [], {});
-
-  // registerCmd(
-  //   yargv,
-  //   'start-service',
-  //   'start a named service',
-  //   config(
-  //     opt.ion('service-name: name of service to launch (or "HubService" to start hub)', {
-  //       choices: _.concat(orderedServices, [HubService.name])
-  //     })
-  //   )
-  // )((args: any) => {
-  //   const { serviceName } = args;
-  //   if (orderedServices.includes(serviceName)) {
-  //     const serviceDef = _.get(availableServices, serviceName);
-  //     return createSatelliteService(HubService.name, serviceDef)
-  //       .then((service) => sigtraps(() => {
-  //         return service.commLink.quit();
-  //       }))
-  //       .catch(error => {
-  //         console.log(`Error: ${error}`)
-  //       });
-  //   }
-  //   if (serviceName === HubService.name) {
-  //     return createServiceHub(HubService)
-  //       .then(([hubService, hubConnected]) => {
-  //         return hubConnected()
-  //           .then(() => sigtraps(async () => {
-  //             await hubService.shutdownSatellites();
-  //             await hubService.commLink.quit();
-  //           }));
-  //       })
-  //       .catch(error => {
-  //         console.log(`Error: ${error}`)
-  //       });
-  //   }
-  // });
-
   registerCmd(
     yargv,
     'extraction-summary',
