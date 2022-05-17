@@ -1,5 +1,6 @@
 import _ from 'lodash';
 import * as E from 'fp-ts/Either';
+import { differenceInMilliseconds } from 'date-fns'
 
 import {
   CommLink,
@@ -9,35 +10,21 @@ import {
 } from '@watr/commlinks';
 
 import {
-  delay,
-  getEnvMode,
-  isTestingEnv,
-  prettyFormat,
   prettyPrint,
   asyncDoUntil,
-  asyncDoWhilst,
-  asyncEachOfSeries,
   asyncEachSeries,
-  putStrLn,
-  isDevEnv,
   getServiceLogger,
-  getCorpusRootDir
+  getCorpusRootDir,
+  delay
 } from '@watr/commonlib';
 
-import { AbstractFieldAttempts, CanonicalFieldRecords, extractFieldsForEntry, ExtractionErrors, ExtractionSharedEnv, getEnvCanonicalFields, initExtractionEnv, runFieldExtractor } from '@watr/field-extractors';
-
-import { toUrl, URLRequest, validateUrl } from '../common/datatypes';
+import { AbstractFieldAttempts, ExtractionSharedEnv, getEnvCanonicalFields, initExtractionEnv, runFieldExtractor } from '@watr/field-extractors';
 
 import { displayRestError, newOpenReviewExchange, Note, Notes, OpenReviewExchange } from '../common/openreview-exchange';
-import { BrowserPool, initScraper, Scraper, UrlFetchData } from '@watr/spider';
-import { SpiderService } from './spider-service';
+import { initScraper } from '@watr/spider';
 
-import { HostStatus, NoteStatus, WorkflowStatus } from '~/db/schemas';
-import { connectToMongoDB } from '~/db/mongodb';
-import { formatStatusMessages, showStatusSummary } from '~/db/extraction-summary';
+import { WorkflowStatus } from '~/db/schemas';
 import { getNextSpiderableUrl, releaseSpiderableUrl, upsertHostStatus, upsertNoteStatus } from '~/db/query-api';
-import { error } from 'console';
-import { updateExternalModuleReference } from 'typescript';
 
 interface NoteBatch {
   notes: Note[];
@@ -49,9 +36,9 @@ interface NoteBatch {
 const log = getServiceLogger('OpenReviewRelay')
 
 
-async function doUpdateNote(openReviewExchange: OpenReviewExchange, note: Note, abs: string, retries: number = 0): Promise<void> {
+async function doUpdateNote(openReviewExchange: OpenReviewExchange, noteId: string, abs: string): Promise<void> {
   const noteUpdate = {
-    referent: note.id,
+    referent: noteId,
     content: {
       'abstract': abs
     },
@@ -60,13 +47,13 @@ async function doUpdateNote(openReviewExchange: OpenReviewExchange, note: Note, 
     writers: [],
     signatures: ['dblp.org']
   }
-  log.info(`POSTing updated note ${note.id}`);
+  log.info(`POSTing updated note ${noteId}`);
   await openReviewExchange.getCredentials()
   await openReviewExchange.configAxios()
     .post("/notes", noteUpdate)
     .then(r => {
       const updatedNote: Note = r.data;
-      log.info(`updated Note ${note.id}; updateId: ${updatedNote.id}`)
+      log.info(`updated Note ${noteId}; updateId: ${updatedNote.id}`)
     })
     .catch(error => {
       displayRestError(error);
@@ -384,24 +371,46 @@ export async function runRelayFetch(_offset: number, count: number) {
 }
 
 
+async function rateLimit(prevTime: Date, maxRateMs: number): Promise<Date> {
+  const currTime = new Date();
+  const elapsedMs = differenceInMilliseconds(currTime, prevTime)
+  const waitTime = maxRateMs - elapsedMs;
+
+  if (waitTime > 0) {
+    log.info(`Delaying ${waitTime / 1000} seconds...`);
+    await delay(waitTime);
+  }
+  return currTime;
+}
 
 
 export async function runRelayExtract(count: number) {
   let currCount = 0;
 
   const corpusRoot = getCorpusRootDir();
+  const openReviewExchange = newOpenReviewExchange(getServiceLogger("OpenReviewExchange"));
 
   const scraper = await initScraper({ corpusRoot });
   const { browserPool } = scraper;
+
+  const maxRate = 5 * 1000;// 5 second max spidering rate
+  let currTime = new Date();
+
   return asyncDoUntil(
     async () => {
+      if (currCount > 0) {
+        currTime = await rateLimit(currTime, maxRate);
+      }
+
       const nextSpiderable = await getNextSpiderableUrl();
       if (nextSpiderable === undefined) {
         log.info('runRelayExtract(): no more spiderable urls in mongo')
         return;
       }
-      const noteId = nextSpiderable._id;
+
       currCount += 1;
+
+      const noteId = nextSpiderable._id;
       const url = nextSpiderable.requestUrl
 
       const scrapedUrl = await scraper.scrapeUrl(url, true);
@@ -440,10 +449,27 @@ export async function runRelayExtract(count: number) {
       const canonicalFields = getEnvCanonicalFields(extractionEnv);
 
       prettyPrint({ canonicalFields })
+      const abstracts = _.filter(canonicalFields.fields, (field) => field.name === 'abstract');
+      const clippedAbstracts = _.filter(canonicalFields.fields, (field) => field.name === 'abstract-clipped');
+      let theAbstract: string | undefined;
+      if (abstracts.length > 0) {
+        theAbstract = abstracts[0].value;
+      } else if (clippedAbstracts.length > 0) {
+        theAbstract = clippedAbstracts[0].value;
+      }
 
-      return releaseSpiderableUrl(nextSpiderable, 'extractor:success');
+      const hasAbstract = theAbstract !== undefined;
 
+      if (theAbstract !== undefined) {
+        await doUpdateNote(openReviewExchange, noteId, theAbstract);
+      }
+
+      await upsertHostStatus(noteId, 'extractor:success', {
+        hasAbstract,
+      });
     },
     () => Promise.resolve(currCount >= count)
-  )
+  ).finally(() => {
+    return browserPool.shutdown();
+  })
 }

@@ -102,8 +102,10 @@ export function registerCLICommands(yargv: arglib.YArgsT) {
 
     await runRelayExtract(count)
       .finally(() => {
+        console.log('run-relay-extract: closing...')
         return mongoose.connection.close();
       });
+    console.log('done! run-relay-extract')
   });
 
   registerCmd(

@@ -2,7 +2,6 @@ import { HostStatus, NoteStatus } from './schemas';
 import _ from 'lodash';
 
 import { subDays } from 'date-fns';
-import { prettyPrint } from '@watr/commonlib';
 
 interface BoolIDCounts {
     _id: boolean;
@@ -46,10 +45,6 @@ type DomainCodeCounts = {
     count: number
 };
 
-// function indent(n: number, strs: string[]): string[] {
-//     return _.map(strs, s => _.padStart(s, n, s));
-
-// }
 function collateStrIDCounts(recs: StrIDCounts[]): string[] {
     return _.map(recs, ({ _id, count }) => {
         return `    ${_id}: ${count}`;
