@@ -39,7 +39,6 @@ export function registerCommands(yargv: arglib.YArgsT) {
       log.info(`restarting ${name}`)
       return pm2x.restart(name);
     });
-
   })
 
   registerCmd(

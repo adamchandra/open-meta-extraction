@@ -47,7 +47,7 @@ export function registerCLICommands(yargv: arglib.YArgsT) {
     yargv,
     'run-relay-extract',
     'Fetch OpenReview Notes into local DB for spidering/extraction',
-    opt.num('count', Number.MAX_SAFE_INTEGER),
+    opt.num('count', 0),
   )(async (args: any) => {
     const count: number = args.count;
     initConfig();

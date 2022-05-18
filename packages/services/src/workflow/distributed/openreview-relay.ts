@@ -135,6 +135,7 @@ async function rateLimit(prevTime: Date, maxRateMs: number): Promise<Date> {
 
 export async function runRelayExtract(count: number) {
   let currCount = 0;
+  const runForever = count === 0;
 
   const corpusRoot = getCorpusRootDir();
   const openReviewExchange = newOpenReviewExchange(getServiceLogger("OpenReviewExchange"));
@@ -145,13 +146,16 @@ export async function runRelayExtract(count: number) {
   const maxRate = 5 * 1000;// 5 second max spidering rate
   let currTime = new Date();
 
+  async function stopCondition(): Promise<boolean> {
+    const atCountLimit = currCount >= count;
+    currTime = await rateLimit(currTime, maxRate);
+    return atCountLimit && !runForever;
+  }
+
   return asyncDoUntil(
     async () => {
-      if (currCount > 0) {
-        currTime = await rateLimit(currTime, maxRate);
-      }
-
       const nextSpiderable = await getNextSpiderableUrl();
+
       if (nextSpiderable === undefined) {
         log.info('runRelayExtract(): no more spiderable urls in mongo')
         return;
@@ -217,7 +221,7 @@ export async function runRelayExtract(count: number) {
         hasAbstract,
       });
     },
-    () => Promise.resolve(currCount >= count)
+    stopCondition
   ).finally(() => {
     return browserPool.shutdown();
   })
