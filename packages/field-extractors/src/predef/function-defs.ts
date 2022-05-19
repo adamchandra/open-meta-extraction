@@ -461,7 +461,8 @@ const hook: <A, B, Env extends BaseEnv>(f: (a: A, b: Perhaps<B>, env: Env) => vo
 
 function shortFormat(v: any): string {
   if (_.isArray(v)) {
-    return _.join(_.map(v, shortFormat), ', ');
+    const shortArray = _.join(_.map(v, shortFormat), ', ');
+    return `[len=${v.length}: ${shortFormat(shortArray)}]`;
   }
   if (_.isObject(v)) {
     const cname = v?.constructor?.name;
@@ -472,7 +473,11 @@ function shortFormat(v: any): string {
     const line0 = pretty.split('\n')[0];
     return line0.substring(0, 50);
   }
-  return prettyFormat(v).substring(0, 50);
+
+  const prettified = prettyFormat(v.trim()).substring(0, 50);
+  return _.join(_.split(prettified, '\n'), ' ');
+  // return prettified;
+  // return prettyFormat(v.trim()).substring(0, 50);
 }
 
 function through<A, B, Env extends BaseEnv>(

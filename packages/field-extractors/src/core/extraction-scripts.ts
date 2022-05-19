@@ -29,7 +29,8 @@ import {
   selectAllElemAttrEvidence,
   selectXMLTag,
   forXMLInputs,
-  selectSpringerDocumentMetaEvidence
+  selectSpringerDocumentMetaEvidence,
+  selectNeuripsCCAbstract
 } from '~/core/extraction-primitives';
 
 const compose: typeof fptsFlow = (...fs: []) =>
@@ -268,7 +269,22 @@ const UrlSpecificAttempts = attemptEach(
     )),
   ),
   compose(
-    urlFilter(/n(eur)?ips.cc/),
+    urlFilter(/neurips.cc/),
+    forInputs(/response-body/, compose(
+      gatherSuccess(
+        gatherHighwirePressTags,
+        selectNeuripsCCAbstract()
+      ),
+      tryEvidenceMapping({
+        citation_title: 'title',
+        citation_author: 'author',
+        citation_pdf_url: 'pdf-link',
+        'neurips.cc.abstract': 'abstract'
+      }),
+    )),
+  ),
+  compose(
+    urlFilter(/nips.cc/),
     forInputs(/response-body/, compose(
       gatherSuccess(
         gatherHighwirePressTags,

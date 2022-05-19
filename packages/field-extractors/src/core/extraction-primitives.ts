@@ -215,12 +215,59 @@ export const readCache: Arrow<CacheFileKey, string> = through(
     : ClientFunc.halt(`cache has no record for key ${cacheKey}`)), `readCache`);
 
 
-const grepLines: (regex: RegExp) => Arrow<CacheFileKey, string[]> = (regex) => compose(
+const grepFilter: (regex: RegExp) => Arrow<CacheFileKey, string[]> = (regex) => compose(
   readCache,
   through((content: string) => {
     const lines = _.split(content, '\n');
     return _.filter(lines, l => regex.test(l));
   }, `grep(${regex.source})`)
+);
+
+
+// TODO make this consistent by introducing read/splitstring/etc
+const grepFilterNot: (regex: RegExp) => Arrow<string[], string[]> = (regex) => compose(
+  through((lines: string[]) => {
+    return _.filter(lines, l => !regex.test(l));
+  }, `grep(${regex.source})`)
+);
+
+
+const grepDropUntil: (regex: RegExp) => Arrow<CacheFileKey, string[]> = (regex) => compose(
+  readCache,
+  through((content: string) => {
+    const lines = _.split(content, '\n');
+    const filtered = _.dropWhile(lines, l => !regex.test(l));
+    return filtered;
+  }, `grepDropUntil(${regex.source})`)
+);
+
+const grepTakeUntil: (regex: RegExp) => Arrow<string[], string[]> = (regex) => compose(
+  through((lines: string[]) => {
+    const filtered = _.takeWhile(lines, l => !regex.test(l));
+    return filtered;
+  }, `grepTakeUntil(${regex.source})`)
+);
+
+const dropN: (num: number) => Arrow<string[], string[]> = (num) => compose(
+  through((lines: string[]) => {
+    return _.drop(lines, num);
+  }, `dropN(${num})`)
+);
+const joinLines: (join: string) => Arrow<string[], string> = (joinstr) => compose(
+  through((lines: string[]) => {
+    return _.join(lines, joinstr);
+  }, `joinLines(${joinstr})`)
+);
+
+export const selectNeuripsCCAbstract: () => Arrow<CacheFileKey, unknown> = () => compose(
+  grepDropUntil(/Abstract/),
+  dropN(1),
+  grepTakeUntil(/^[ ]+<.div/),
+  grepFilterNot(/^[ ]+<.{1,4}>[ ]*$/),
+  joinLines(' '),
+  addEvidence(() => 'neurips.cc.abstract'),
+  saveEvidence('neurips.cc.abstract'),
+  clearEvidence(new RegExp('neurips.cc.abstract')),
 );
 
 export const selectGlobalDocumentMetaEvidence: () => Arrow<CacheFileKey, unknown> = () => compose(
@@ -235,7 +282,7 @@ export const selectGlobalDocumentMetaEvidence: () => Arrow<CacheFileKey, unknown
 
 
 const readGlobalDocumentMetadata: Arrow<CacheFileKey, GlobalDocumentMetadata> = compose(
-  grepLines(/global\.document\.metadata/i),
+  grepFilter(/global\.document\.metadata/i),
   through((lines) => {
     if (lines.length === 0) {
       return ClientFunc.continue('global.document.metadata not found');
