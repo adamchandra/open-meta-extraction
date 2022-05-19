@@ -2,6 +2,7 @@ import { HostStatus, NoteStatus } from './schemas';
 import _ from 'lodash';
 
 import { subDays } from 'date-fns';
+import { prettyPrint } from '@watr/commonlib';
 
 interface BoolIDCounts {
     _id: boolean;
@@ -60,15 +61,19 @@ function formatAbstractStatusByDomain(title: string, byDomain: StrIDCounts[]): s
         return { domain, present: 0, missing: count };
     });
 
-    const byDomain2 = _.values(_.groupBy(byDomain1, (r) => r.domain));
-    const byDomain3 = _.map(byDomain2, (sdf3a) => {
-        const merged = _.merge({}, ...sdf3a)
-        const present = merged.present !== undefined ? merged.present : 0;
-        const missing = merged.missing !== undefined ? merged.missing : 0;
-        return `    ${merged.domain}: ${present} out of ${present + missing}`;
-    });
+    const domainsWithMissing = _.filter(byDomain1, ({ missing }) => missing !== undefined && missing > 0);
+    const domainsWithoutMissing = _.filter(byDomain1, ({ missing }) => missing == undefined || missing === 0);
+    const domainsSorted = _.concat(
+        domainsWithoutMissing,
+        domainsWithMissing
+    );
 
-    // prettyPrint({ byDomain1, byDomain2, byDomain3 })
+
+    const byDomain3 = _.map(domainsSorted, (rec) => {
+        const present = rec.present !== undefined ? rec.present : 0;
+        const missing = rec.missing !== undefined ? rec.missing : 0;
+        return `    ${present} of ${present + missing}: ${rec.domain}`;
+    });
 
     return [
         title,
