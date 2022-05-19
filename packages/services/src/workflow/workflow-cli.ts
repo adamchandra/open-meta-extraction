@@ -36,7 +36,6 @@ export function registerCLICommands(yargv: arglib.YArgsT) {
     initConfig();
     const mongoose = await connectToMongoDB();
 
-
     await runRelayFetch(offset, count)
       .finally(() => {
         return mongoose.connection.close();

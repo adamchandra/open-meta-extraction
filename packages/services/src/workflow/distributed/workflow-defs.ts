@@ -5,7 +5,7 @@ export type WorkflowServiceName = keyof {
   WorkflowConductor: null,
   SpiderService: null,
   OpenReviewRelayService: null
-}
+};
 
 export const WorkflowServiceNames: WorkflowServiceName[] = [
   'HubService',

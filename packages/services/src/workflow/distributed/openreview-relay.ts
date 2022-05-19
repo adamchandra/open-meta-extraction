@@ -1,6 +1,6 @@
 import _ from 'lodash';
 import * as E from 'fp-ts/Either';
-import { differenceInMilliseconds } from 'date-fns'
+import { differenceInMilliseconds } from 'date-fns';
 
 import {
   prettyPrint,
@@ -13,14 +13,13 @@ import {
 
 import { AbstractFieldAttempts, ExtractionSharedEnv, getEnvCanonicalFields, initExtractionEnv, runFieldExtractor } from '@watr/field-extractors';
 
-import { displayRestError, newOpenReviewExchange, Note, Notes, OpenReviewExchange } from '../common/openreview-exchange';
 import { initScraper } from '@watr/spider';
+import { displayRestError, newOpenReviewExchange, Note, Notes, OpenReviewExchange } from '../common/openreview-exchange';
 
 import { WorkflowStatus } from '~/db/schemas';
 import { getNextSpiderableUrl, releaseSpiderableUrl, upsertHostStatus, upsertNoteStatus } from '~/db/query-api';
 
-
-const log = getServiceLogger('OpenReviewRelay')
+const log = getServiceLogger('OpenReviewRelay');
 
 async function doUpdateNote(openReviewExchange: OpenReviewExchange, noteId: string, abs: string): Promise<void> {
   const noteUpdate = {
