@@ -17,6 +17,8 @@ import {
   through,
   ClientFunc,
   gatherSuccess,
+  CacheFileKey,
+  compose,
 } from '~/predef/extraction-prelude';
 
 import {
@@ -24,12 +26,7 @@ import {
   selectElemTextEvidence,
   tryEvidenceMapping,
   urlFilter,
-  _addEvidence,
-  compose,
-  CacheFileKey,
-  addEvidence,
   saveEvidence,
-  clearEvidence,
   grepFilter
 } from '~/core/extraction-primitives';
 
@@ -67,11 +64,9 @@ const readSpringerDocumentMetadata: Transform<CacheFileKey, any> = compose(
 
 const saveMetaDataEvidence: (name: string, f: (m: any) => string[]) => Transform<any, unknown> = (name, f) => compose(
   through((documentMetadata) => f(documentMetadata), `saveAnyMetaEvidence(${name})`),
-  addEvidence(() => name),
   forEachDo(
     saveEvidence(name),
   ),
-  clearEvidence(new RegExp(name)),
 );
 
 const selectSpringerDocumentMetaEvidence: () => Transform<CacheFileKey, unknown> = () => compose(
@@ -140,11 +135,9 @@ const readGlobalDocumentMetadata: Transform<CacheFileKey, GlobalDocumentMetadata
 
 const saveDocumentMetaDataEvidence: (name: string, f: (m: GlobalDocumentMetadata) => string[]) => Transform<GlobalDocumentMetadata, unknown> = (name, f) => compose(
   through((documentMetadata) => f(documentMetadata), `saveMetaEvidence(${name})`),
-  addEvidence(() => name),
   forEachDo(
     saveEvidence(name),
   ),
-  clearEvidence(new RegExp(name)),
 );
 
 const selectGlobalDocumentMetaEvidence: () => Transform<CacheFileKey, unknown> = () => compose(

@@ -7,7 +7,6 @@ import {
   selectAllMetaEvidence,
   selectElemTextEvidence,
   selectMetaEvidence,
-  _addEvidence,
 } from '~/core/extraction-primitives';
 
 /**

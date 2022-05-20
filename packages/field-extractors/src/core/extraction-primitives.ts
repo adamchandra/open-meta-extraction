@@ -1,10 +1,12 @@
 import _ from 'lodash';
 import xml2js from 'xml2js';
 
-import { flow as fptsFlow, pipe } from 'fp-ts/function';
+import { pipe } from 'fp-ts/function';
 import * as TE from 'fp-ts/TaskEither';
 import * as E from 'fp-ts/Either';
+
 import path from 'path';
+
 
 import {
   ArtifactSubdir,
@@ -29,17 +31,21 @@ import {
   through,
   filter,
   tap,
-  tapLeft,
+  tapEnvLR,
   ClientFunc,
   ClientResult,
   takeWhileSuccess,
   log,
-  FieldCandidate,
-  ExtractionSharedEnv
+  ExtractionSharedEnv,
+  CacheFileKey,
+  compose
 } from '~/predef/extraction-prelude';
 
-
-import { ExtractionEvidence, Field } from '~/predef/extraction-records';
+import {
+  ExtractionEvidence,
+  FieldRecord,
+  FieldCandidate
+} from '~/predef/extraction-records';
 
 import {
   expandCaseVariations,
@@ -56,52 +62,46 @@ import {
   CleaningRuleResult
 } from './data-cleaning';
 
-export type CacheFileKey = string;
 
-export const compose: typeof fptsFlow = (...fs: []) =>
-  <A extends readonly unknown[]>(a: A) =>
-    pipe(a, ...fs);
 
-export function _addEvidence(env: ExtractionEnv, evidence: string, weight: number = 0) {
+
+// This means add a string representing the sort of evidence we are exploring
+function _addEvidence(env: ExtractionEnv, evidence: string) {
   const e: ExtractionEvidence = {
-    kind: 'evidence',
     evidence,
-    weight
   };
 
   env.evidence.push(e);
 }
+
+export const addEvidence: <A>(f: (a: A, env: ExtractionEnv) => string) => Transform<A, A> =
+  (f) => tap((a, env) => _addEvidence(env, f(a, env)));
+
+export const addEvidences: <A>(f: (a: A, env: ExtractionEnv) => string[]) => Transform<A, A> =
+  (f) => tap((a, env) => f(a, env).forEach(ev => _addEvidence(env, ev)));
 
 function removeEvidence(env: ExtractionEnv, regex: RegExp) {
   const filtered = _.filter(env.evidence, (er) => !regex.test(er.evidence));
   env.evidence.splice(0, env.evidence.length, ...filtered);
 }
 
-export const addEvidence: <A>(f: (a: A, env: ExtractionEnv) => string) => Transform<A, A> =
-  (f) => tap((a, env) => _addEvidence(env, f(a, env)));
-
-export const tapEnvLR: <A>(f: (env: ExtractionEnv) => unknown) => Transform<A, A> = (f) => compose(
-  tap((_0, env) => f(env)),
-  tapLeft((_0, env) => {
-    f(env);
-  })
-);
-
 export const clearEvidence: (evidenceTest: RegExp) => Transform<unknown, unknown> = (evidenceTest: RegExp) => {
   return tapEnvLR((env) => removeEvidence(env, evidenceTest));
 };
 
 
-function getCurrentEvidenceStrings(env: ExtractionEnv): string[] {
-  return _.map(env.evidence, ef => {
-    const { evidence, weight } = ef;
-    const w = weight > 0 ? `::weight=+${weight}`
-      : (weight < 0 ? `::weight=-${weight}`
-        : '');
+export const saveEvidence: (evidenceName: string) => Transform<string, unknown> =
+  (evidenceName) => through((extractedValue: string, env) => {
+    const text = extractedValue.trim();
+    const savedEvidenceStrings = _.map(env.evidence, ev => ev.evidence);
+    const evidence = _.concat(savedEvidenceStrings, [evidenceName])
+    const candidate: FieldCandidate = {
+      text,
+      evidence,
+    };
+    env.fieldCandidates.push(candidate);
+  }, `saveEvidence:${evidenceName}`);
 
-    return `${evidence}${w}`;
-  });
-}
 
 function saveFieldRecs(env: ExtractionEnv): void {
   const grouped = _.groupBy(env.fields, (f) => f.name);
@@ -109,7 +109,7 @@ function saveFieldRecs(env: ExtractionEnv): void {
     _.toPairs(grouped),
     ([name, fields]) => {
       _.update(
-        env.fieldRecs, name, (fieldRecs: Field[]) => {
+        env.fieldRecs, name, (fieldRecs: FieldRecord[]) => {
           if (fieldRecs === undefined) {
             return [...fields];
           }
@@ -251,7 +251,6 @@ export const grepFilterNot: (regex: RegExp) => Transform<string[], string[]> = (
   }, `grep(${regex.source})`)
 );
 
-
 export const grepDropUntil: (regex: RegExp) => Transform<CacheFileKey, string[]> = (regex) => compose(
   readCache,
   through((content: string) => {
@@ -281,63 +280,39 @@ export const joinLines: (join: string) => Transform<string[], string> = (joinstr
 );
 
 
-/// ////////////
-// jquery/css selector and Elem functions
-
-
-
-export const saveEvidence: (evidenceName: string) => Transform<string, unknown> = (evidenceName) => through((extractedValue: string, env) => {
-  if (_.isString(extractedValue)) {
-    const text = extractedValue.trim();
-    const candidate: FieldCandidate = {
-      text,
-      evidence: getCurrentEvidenceStrings(env),
-    };
-    env.fieldCandidates.push(candidate);
-  }
-}, `saveEvidence:${evidenceName}`);
-
 export const selectMetaEvidence: (name: string, attrName?: string) => Transform<CacheFileKey, unknown> = (name, attrName = 'name') => {
   const evidenceName = `select:$(meta[${attrName}="${name}"])`;
   return compose(
-    addEvidence(() => evidenceName),
     selectElemAttr(expandCaseVariations(name, (s) => `meta[${attrName}="${s}"]`), 'content', `meta[${attrName}="${name}"]`),
     saveEvidence(evidenceName),
-    clearEvidence(/^select:/),
   );
 };
 
 export const selectElemTextEvidence: (queryString: string) => Transform<CacheFileKey, unknown> = (queryString) => {
   const evidenceName = `select:$(${queryString})`;
   return compose(
-    addEvidence(() => evidenceName),
     selectOne(queryString),
     getElemText,
     saveEvidence(evidenceName),
-    clearEvidence(/^select:/),
   );
 };
 
 export const selectElemAttrEvidence: (queryString: string, contentAttr: string) => Transform<CacheFileKey, unknown> = (queryString, contentAttr) => {
   const evidenceName = `select:$(${queryString}).attr(${contentAttr})`;
   return compose(
-    addEvidence(() => evidenceName),
     selectElemAttr(queryString, contentAttr),
     saveEvidence(evidenceName),
-    clearEvidence(/^select:/),
   );
 };
 
 export const selectAllElemAttrEvidence: (queryString: string, contentAttr: string) => Transform<CacheFileKey, unknown> = (queryString, contentAttr) => {
   const evidenceName = `select-all:$(${queryString}).attr(${contentAttr})`;
   return compose(
-    addEvidence(() => evidenceName),
     selectAll(queryString),
     forEachDo(compose(
       getElemAttr(contentAttr),
       saveEvidence(evidenceName),
     )),
-    clearEvidence(/^select-all:/),
   );
 };
 
@@ -346,13 +321,11 @@ export const selectAllElemAttrEvidence: (queryString: string, contentAttr: strin
 export const selectAllMetaEvidence: (name: string, attrName?: string) => Transform<CacheFileKey, unknown> = (name, attrName = 'name') => {
   const evidenceName = `select-all:$(meta[${attrName}="${name}"])`;
   return compose(
-    addEvidence(() => evidenceName),
     selectAll(expandCaseVariations(name, (s) => `meta[${attrName}="${s}"]`), `meta[${attrName}="${name}"]`),
     forEachDo(compose(
       getElemAttr('content'),
       saveEvidence(evidenceName),
     )),
-    clearEvidence(/^select-all:/),
   );
 };
 
@@ -362,14 +335,12 @@ export const selectXMLTag: (selectorPath: string[]) => Transform<CacheFileKey, u
   const evidenceName = `xml:select:'${sel}'`;
   return compose(
     readCache,
-    addEvidence(() => evidenceName),
     through((a) => {
       const selected = _.get(a, selectorPath);
       const selstr = selected.toString();
       return E.right(selstr);
     }),
     saveEvidence(evidenceName),
-    clearEvidence(/^xml:select:/),
   );
 };
 
@@ -411,31 +382,33 @@ export const checkStatusAndNormalize = compose(
 );
 
 
-export const forXMLInputs: (re: RegExp, arrow: Transform<string, unknown>) => Transform<unknown, unknown> = (re, arrow) => compose(
+export const forXMLInputs: (re: RegExp, arrow: Transform<string, unknown>) => Transform<unknown, unknown> = (re, transform) => compose(
   listArtifactFiles('.', re),
   forEachDo(
     compose(
       loadXML,
       log('info', a => `processing input ${a}`),
       addEvidence((a) => `input:${a}`),
-      arrow,
+      transform,
       clearEvidence(/^input:/),
     )
   )
 );
 
-export const forInputs: (re: RegExp, arrow: Transform<string, unknown>) => Transform<unknown, unknown> = (re, arrow) => compose(
-  listTidiedHtmls,
-  through((inputs) => _.filter(inputs, input => re.test(input)), `m/${re.source}/`),
-  forEachDo(
-    compose(
-      log('info', a => `processing input ${a}`),
-      addEvidence((a) => `input:${a}`),
-      arrow,
-      clearEvidence(/^input:/),
+export const forInputs: (re: RegExp, transform: Transform<CacheFileKey, unknown>) => Transform<unknown, unknown> =
+  (re, transform) => compose(
+    listTidiedHtmls,
+    through((inputs) => _.filter(inputs, input => re.test(input)), `m/${re.source}/`),
+    forEachDo(
+      compose(
+        log('info', a => `processing input ${a}`),
+        addEvidence((a) => `input:${a}`),
+        transform,
+        clearEvidence(/^input:/),
+      )
     )
-  )
-);
+  );
+
 
 export const tryEvidenceMapping: (mapping: Record<string, string>) => Transform<unknown, unknown> = (mapping) => {
   const evidenceKeys = _.keys(mapping);
@@ -461,7 +434,7 @@ export const tryEvidenceMapping: (mapping: Record<string, string>) => Transform<
           _.each(maybeCandidates, c => {
             const { text, evidence } = c;
 
-            const field: Field = {
+            const field: FieldRecord = {
               name: fieldName,
               evidence: [...evidence, keyEvidence],
               value: text

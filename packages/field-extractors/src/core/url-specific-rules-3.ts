@@ -2,13 +2,11 @@ import {
     Transform,
     ExtractionRule,
     gatherSuccess,
+    CacheFileKey,
+    compose,
 } from '~/predef/extraction-prelude';
 
 import {
-    addEvidence,
-    CacheFileKey,
-    clearEvidence,
-    compose,
     dropN,
     forInputs,
     grepDropUntil,
@@ -22,6 +20,7 @@ import {
 } from "./extraction-primitives";
 
 import { gatherHighwirePressTags } from './headtag-scripts';
+import { BrowserPage, Elem, elemQueryOne, getElemAttr, getElemText, loadPageFromCache, pageQueryOne, selectOne } from './html-query-primitives';
 
 const selectNeuripsCCAbstract: Transform<CacheFileKey, unknown> = compose(
     grepDropUntil(/Abstract/),
@@ -29,9 +28,7 @@ const selectNeuripsCCAbstract: Transform<CacheFileKey, unknown> = compose(
     grepTakeUntil(/^[ ]+<.div/),
     grepFilterNot(/^[ ]+<.{1,4}>[ ]*$/),
     joinLines(' '),
-    addEvidence(() => 'neurips.cc.abstract'),
     saveEvidence('neurips.cc.abstract'),
-    clearEvidence(new RegExp('neurips.cc.abstract')),
 );
 
 export const neuripsCCRule: ExtractionRule = compose(
@@ -50,30 +47,48 @@ export const neuripsCCRule: ExtractionRule = compose(
     ))
 );
 
-
-const selectIscaSpeechAbstract: Transform<CacheFileKey, unknown> = compose(
-    grepDropUntil(/Abstract/),
-    dropN(1),
-    grepTakeUntil(/^[ ]+<.div/),
-    grepFilterNot(/^[ ]+<.{1,4}>[ ]*$/),
-    joinLines(' '),
-    addEvidence(() => 'neurips.cc.abstract'),
-    saveEvidence('neurips.cc.abstract'),
-    clearEvidence(new RegExp('neurips.cc.abstract')),
+const selectIscaSpeechAbstract: Transform<Elem, unknown> = compose(
+    elemQueryOne('p'),
+    getElemText,
+    saveEvidence('isca.abstract'),
 );
 
-// https://www.isca-speech.org/archive/sltu_2012/nakagawa12_sltu.html
+
+const selectIscaSpeechTitle: Transform<Elem, unknown> = compose(
+    elemQueryOne('h3'),
+    getElemText,
+    saveEvidence('isca.title'),
+);
+
+const selectIscaSpeechAuthors: Transform<Elem, unknown> = compose(
+    elemQueryOne('h5'),
+    getElemText,
+    saveEvidence('isca.authors'),
+);
+
+
+const selectIscaSpeechPDFLink: Transform<Elem, unknown> = compose(
+    elemQueryOne('a'),
+    getElemAttr('href'),
+    saveEvidence('isca.pdf-partial-link'),
+);
+
 export const iscaSpeechOrgRule: ExtractionRule = compose(
-  urlFilter(/isca-speech.org/),
-  forInputs(/response-body/, compose(
-    gatherSuccess(
-      selectIscaSpeechAbstract,
-    ),
-    tryEvidenceMapping({
-      // citation_title: 'title',
-      // citation_author: 'author',
-      // citation_pdf_url: 'pdf-link',
-      'abstract': 'abstract'
-    }),
-  )),
+    urlFilter(/isca-speech.org/),
+    forInputs(/response-body/, compose(
+        loadPageFromCache,
+        pageQueryOne('div.w3-card'),
+        gatherSuccess(
+            selectIscaSpeechAbstract,
+            selectIscaSpeechAuthors,
+            selectIscaSpeechPDFLink,
+            selectIscaSpeechTitle,
+        ),
+        tryEvidenceMapping({
+            title: 'title',
+            authors: 'authors',
+            'pdf-link?': 'pdf-link',
+            'abstract': 'abstract',
+        }),
+    )),
 );

@@ -16,9 +16,9 @@ import {
   Transform,
   through,
   ClientFunc,
+  CacheFileKey,
+  compose
 } from '~/predef/extraction-prelude';
-
-import { CacheFileKey, compose } from './extraction-primitives';
 
 export type AttrSelection = E.Either<string, string>;
 
@@ -26,23 +26,7 @@ export type Elem = ElementHandle<Element>;
 export type ElemSelectOne = E.Either<string, Elem>;
 export type ElemSelectAll = E.Either<string, Elem[]>;
 
-export function expandCaseVariations(seed: string, sub: (s: string) => string): string {
-  const variations = _.reduce(seed, (acc, char) => {
-    const isUpper = char >= 'A' && char <= 'Z';
-    return _.flatMap(acc, (elem) => {
-      if (isUpper) return [elem + char, elem + char.toLowerCase()];
-      return [elem + char.toLowerCase()];
-    });
-  }, ['']);
-
-
-  const expanded = _.join(
-    _.map(variations, v => sub(v)),
-    ','
-  );
-
-  return expanded;
-}
+export type BrowserPage = Page;
 
 function formatCSSSelectionError(error: unknown, cssSelector: string): string {
   if (error instanceof Error) {
@@ -56,10 +40,24 @@ function formatCSSSelectionError(error: unknown, cssSelector: string): string {
   return `?${error}`;
 }
 
-export async function queryAllP(
-  page: Page,
-  query: string
-): Promise<ElemSelectAll> {
+export function expandCaseVariations(seed: string, sub: (s: string) => string): string {
+  const variations = _.reduce(seed, (acc, char) => {
+    const isUpper = char >= 'A' && char <= 'Z';
+    return _.flatMap(acc, (elem) => {
+      if (isUpper) return [elem + char, elem + char.toLowerCase()];
+      return [elem + char.toLowerCase()];
+    });
+  }, ['']);
+
+  const expanded = _.join(
+    _.map(variations, v => sub(v)),
+    ','
+  );
+
+  return expanded;
+}
+
+export async function queryAllPage(page: Page, query: string): Promise<ElemSelectAll> {
   try {
     const elems: ElementHandle<Element>[] = await page.$$(query);
     return E.right(elems);
@@ -69,11 +67,29 @@ export async function queryAllP(
   }
 }
 
-export async function queryOneP(
-  page: Page,
-  query: string
-): Promise<ElemSelectOne> {
-  return queryAllP(page, query)
+export async function queryAllElem(elem: Elem, query: string): Promise<ElemSelectAll> {
+  try {
+    const elems: ElementHandle<Element>[] = await elem.$$(query);
+    return E.right(elems);
+  } catch (error) {
+    const msg = formatCSSSelectionError(error, query);
+    return E.left(msg);
+  }
+}
+
+export async function queryOnePage(page: Page, query: string): Promise<ElemSelectOne> {
+  return queryAllPage(page, query)
+    .then(elems => {
+      return pipe(elems, E.chain(es => {
+        return es.length > 0
+          ? E.right(es[0])
+          : E.left(`empty selection '${query}'`);
+      }));
+    });
+}
+
+export async function queryOneElem(elem: Elem, query: string): Promise<ElemSelectOne> {
+  return queryAllElem(elem, query)
     .then(elems => {
       return pipe(elems, E.chain(es => {
         return es.length > 0
@@ -89,15 +105,14 @@ export async function selectElementAttrP(
   attributeName: string,
   selectorDesc?: string
 ): Promise<AttrSelection> {
-  const displayDesc = selectorDesc? selectorDesc : elementSelector;
+  const displayDesc = selectorDesc ? selectorDesc : elementSelector;
   try {
     const maybeAttr = await page.$eval(elementSelector, (elem: Element, attr: unknown) => {
       if (typeof attr !== 'string') {
         throw new TypeError(`attr ${attr} did not eval to string`);
       }
       const attrValue = elem.getAttribute(attr);
-      const elemHtml = elem.outerHTML;
-      return { elemHtml, attrValue };
+      return { attrValue };
     }, attributeName);
 
     if (maybeAttr === null) return E.left(`empty selection '${displayDesc}'`);
@@ -112,7 +127,62 @@ export async function selectElementAttrP(
   }
 }
 
-const loadPageFromCache: Transform<CacheFileKey, Page> =
+
+export const pageQueryOne: (queryString: string) => Transform<BrowserPage, Elem> =
+  (queryString) => through((page: Page, { }) => {
+    return pipe(
+      () => queryOnePage(page, queryString),
+      TE.mapLeft((msg) => ['continue', msg])
+    );
+  }, `page.$(${queryString})`)
+
+export const elemQueryOne: (queryString: string) => Transform<Elem, Elem> =
+  (queryString) => through((elem: Elem, { }) => {
+    return pipe(
+      () => queryOneElem(elem, queryString),
+      TE.mapLeft((msg) => ['continue', msg])
+    );
+  }, `elem.$(${queryString})`)
+
+
+export async function evalElemText(elem: Elem): Promise<E.Either<string, string>> {
+  return elem.evaluate(e => e.textContent)
+    .then(text => {
+      if (text === null)
+        return E.left('no text found in elem');
+      return E.right(text.trim());
+    });
+}
+
+export async function evalElemAttr(elem: Elem, attr: string): Promise<E.Either<string, string>> {
+  return elem.evaluate((e, attrname) => e.getAttribute(attrname), attr)
+    .then(text => (text === null
+      ? E.left(`evalElemAttr: no attr '${attr}' found`)
+      : E.right(text)))
+    .catch((error) => {
+      return E.left(`evalElemAttr: ${error}`);
+    });
+}
+
+export const getElemAttr: (attr: string) => Transform<Elem, string> =
+  (attr: string) => through((elem: Elem, { }) => {
+    return pipe(
+      () => evalElemAttr(elem, attr),
+      TE.mapLeft((msg) => ['continue', msg]),
+    );
+  }, 'getElemAttr');
+
+
+export const getElemText: Transform<Elem, string> =
+  through((elem: Elem) => {
+    return pipe(
+      () => evalElemText(elem),
+      TE.mapLeft((msg) => ['continue', msg]),
+    );
+  }, 'getElemText');
+
+
+export const loadPageFromCache: Transform<CacheFileKey, Page> =
   through((cacheKey: CacheFileKey, { browserInstance, fileContentCache, browserPageCache }) => {
     if (cacheKey in browserPageCache) {
       return browserPageCache[cacheKey];
@@ -135,54 +205,23 @@ const loadPageFromCache: Transform<CacheFileKey, Page> =
     return ClientFunc.halt(`cache has no record for key ${cacheKey}`);
   });
 
-export const selectOne: (queryString: string) => Transform<CacheFileKey, Elem> = (queryString) => compose(
-  loadPageFromCache,
-  through((page: Page, { }) => {
-    return pipe(
-      () => queryOneP(page, queryString),
-      TE.mapLeft((msg) => ['continue', msg])
-    );
-  }, `selectOne(${queryString})`)
-);
-
-export const selectAll: (queryString: string, abbrev?: string) => Transform<CacheFileKey, Elem[]> = (queryString, abbrev) => compose(
-  loadPageFromCache,
-  through((page: Page, { }) => {
-    return pipe(
-      () => queryAllP(page, queryString),
-      TE.mapLeft((msg) => ['continue', msg])
-    );
-  }, `selectAll(${abbrev ? abbrev : queryString})`)
-);
-
-export const getElemAttr: (attr: string) => Transform<Elem, string> = (attr: string) => through((elem: Elem, { }) => {
-  const attrContent: Promise<E.Either<string, string>> = elem.evaluate((e, attrname) => e.getAttribute(attrname), attr)
-    .then(text => (text === null
-      ? E.left(`getElemAttr: no attr content found in elem attr ${attr}`)
-      : E.right(text)))
-    .catch((error) => {
-      return E.left(`getElemAttr error ${error}`);
-    });
-
-  return pipe(
-    () => attrContent,
-    TE.mapLeft((msg) => ['continue', msg]),
+export const selectOne: (queryString: string) => Transform<CacheFileKey, Elem> =
+  (queryString) => compose(
+    loadPageFromCache,
+    pageQueryOne(queryString)
   );
-}, 'getElemAttr');
 
 
-export const getElemText: Transform<Elem, string> = through((elem: Elem) => {
-  const textContent: Promise<E.Either<string, string>> = elem.evaluate(e => e.textContent)
-    .then(text => (text === null
-      ? E.left('no text found in elem')
-      : E.right(text.trim())));
-
-  return pipe(
-    () => textContent,
-    TE.mapLeft((msg) => ['continue', msg]),
+export const selectAll: (queryString: string, abbrev?: string) => Transform<CacheFileKey, Elem[]> =
+  (queryString, abbrev) => compose(
+    loadPageFromCache,
+    through((page: Page, { }) => {
+      return pipe(
+        () => queryAllPage(page, queryString),
+        TE.mapLeft((msg) => ['continue', msg])
+      );
+    }, `selectAll(${abbrev ? abbrev : queryString})`)
   );
-}, 'getElemText');
-
 
 export const selectElemAttr: (queryString: string, contentAttr: string, queryDesc?: string) => Transform<CacheFileKey, string> =
   (queryString, contentAttr, queryDesc) => compose(

@@ -1,12 +1,19 @@
 import _ from 'lodash';
 
 import { isLeft, isRight } from 'fp-ts/Either';
-import { prettyPrint, putStrLn, stripMargin } from '@watr/commonlib';
-import Async from 'async';
-import { createBrowserPool } from '@watr/spider';
-// import { selectElementAttr, queryOne, queryAll, expandCaseVariations, Elem } from './html-query-primitives';
-import { expandCaseVariations, Elem } from './html-query-primitives';
-import { createLogger, transports, format } from 'winston';
+import * as TE from 'fp-ts/TaskEither';
+import { pipe } from 'fp-ts/function';
+import { prettyPrint,  stripMargin } from '@watr/commonlib';
+import { BrowserInstance, createBrowserPool, DefaultPageInstanceOptions } from '@watr/spider';
+
+
+import {
+  BrowserPage,
+  evalElemAttr,
+  queryOneElem,
+  queryOnePage,
+  selectElementAttrP
+} from './html-query-primitives';
 
 const tmpHtml = stripMargin(`
 |<html>
@@ -50,34 +57,71 @@ const tmpHtml = stripMargin(`
 |</html>
 `);
 
+function genHtml(head: string, body: string): string {
+  return stripMargin(`
+|<!DOCTYPE html>
+|<html>
+|  <head>${head}</head>
+|  <body>${body}</body>
+|</html>
+`);
+}
+
+async function withHTMLPage(browserInstance: BrowserInstance, htmlContent: string): Promise<BrowserPage> {
+  const pageInstance = await browserInstance.newPage(DefaultPageInstanceOptions);
+  const { page } = pageInstance;
+  await page.setContent(htmlContent, {
+    timeout: 8000,
+    waitUntil: 'domcontentloaded',
+  });
+  return page;
+}
+
+async function withPageContent(htmlContent: string, f: (page: BrowserPage) => Promise<void>): Promise<void> {
+    const browserPool = createBrowserPool();
+    await browserPool.use(async (browserInstance) => {
+      const page = await withHTMLPage(browserInstance, htmlContent);
+      await f(page);
+    });
+    return browserPool.shutdown();
+}
 
 describe('HTML jquery-like css queries', () => {
-  type ExampleType = [string, RegExp];
+  // type ExampleType = [string, RegExp];
 
-  const logger = createLogger({
-    level: 'warn',
-    format: format.json(),
-    transports: [
-      new transports.Console(),
-    ],
+
+  it('smokescreen', async () => {
+    return withPageContent(tmpHtml, async (page) => {
+      const attr0 = await selectElementAttrP(page, 'meta[name=citation_title]', 'content');
+      const attr1 = await selectElementAttrP(page, 'meta[name=citation_title]', 'content_');
+      expect(isRight(attr0)).toEqual(true);
+      expect(isLeft(attr1)).toEqual(true);
+    })
   });
 
-  const browserPool = createBrowserPool();
-
-  afterAll(() => {
-    return browserPool.shutdown();
+  it.only('should select elements within previously selected elements', async () => {
+    const outerInner = stripMargin(`
+|       <div class="outer" id="my-outer">
+|         <div class="inner" id="my-inner">  </div>
+|       </div>
+`);
+    const htmlResult = genHtml('', outerInner)
+    return withPageContent(htmlResult, async (page) => {
+      await pipe(
+        TE.right({ page }),
+        TE.bind('outer', ({ page }) => () => queryOnePage(page, '.outer')),
+        TE.bind('inner', ({ outer }) => () => queryOneElem(outer, '.inner')),
+        TE.bind('outerId', ({ outer }) => () => evalElemAttr(outer, 'id')),
+        TE.bind('innerId', ({ inner }) => () => evalElemAttr(inner, 'id')),
+        TE.map(({ innerId, outerId }) => {
+          prettyPrint({ innerId, outerId });
+        }),
+        TE.mapLeft((error) => {
+          prettyPrint({ error })
+        })
+      )();
+    });
   });
-
-  // it('smokescreen', async () => {
-  //   await browserPool.use(async (browser) => {
-  //     const attr0 = await selectElementAttr(browser, tmpHtml, 'meta[name=citation_title]', 'content');
-  //     const attr1 = await selectElementAttr(browser, tmpHtml, 'meta[name=citation_title]', 'content_');
-  //     const attr2 = await selectElementAttr(browser, tmpHtml, 'meta[name=empty]', 'content');
-  //     expect(isRight(attr0)).toBeTruthy();
-  //     expect(isLeft(attr1)).toBeTruthy();
-  //     expect(isLeft(attr2)).toBeTruthy();
-  //   });
-  // });
 
 
   // it('should run assorted css queries', async () => {

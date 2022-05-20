@@ -29,6 +29,7 @@ export interface BrowserPool {
   shutdown(): Promise<void>;
   report(): void;
 }
+
 export interface BrowserInstance {
   browser: Browser;
   pid(): number;
@@ -60,7 +61,7 @@ export interface PageInstanceOptions {
 }
 
 export const DefaultPageInstanceOptions: PageInstanceOptions = {
-  cacheEnabled: true,
+  cacheEnabled: false,
   defaultNavigationTimeout: 10_000,
   defaultTimeout: 10_000,
   javaScriptEnabled: false,

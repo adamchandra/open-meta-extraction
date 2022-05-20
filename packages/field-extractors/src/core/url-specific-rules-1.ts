@@ -8,6 +8,7 @@
 import {
   gatherSuccess,
   ExtractionRule,
+  compose,
 } from '~/predef/extraction-prelude';
 
 import {
@@ -16,11 +17,9 @@ import {
   selectElemTextEvidence,
   tryEvidenceMapping,
   urlFilter,
-  _addEvidence,
   selectAllElemAttrEvidence,
   selectXMLTag,
   forXMLInputs,
-  compose
 } from '~/core/extraction-primitives';
 
 import {

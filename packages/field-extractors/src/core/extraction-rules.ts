@@ -2,12 +2,11 @@ import _ from 'lodash';
 
 import {
   attemptEach,
+  compose,
 } from '~/predef/extraction-prelude';
 
 import {
   summarizeEvidence,
-  _addEvidence,
-  compose,
   checkStatusAndNormalize
 } from '~/core/extraction-primitives';
 

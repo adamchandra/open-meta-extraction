@@ -113,16 +113,10 @@ export function getEnvCanonicalFields(env: ExtractionEnv): CanonicalFieldRecords
 
   const fieldRecords: FieldRecord[] = _.flatMap(_.toPairs(fieldRecs), ([fieldName, fieldInstances]) => {
     if (fieldName === 'author') {
-      const nameValueRecs = _.flatMap(fieldInstances, fi => {
-        const { name, value } = fi;
-        if (value === undefined) return [];
-        return [{ name, value }];
-      });
-      return nameValueRecs;
+      return fieldInstances;
     }
-    const { name, value } = fieldInstances[0];
-    if (value === undefined) return [];
-    return [{ name, value }];
+    const fi0 = fieldInstances[0];
+    return [fi0];
   });
 
   const canonicalRecords: CanonicalFieldRecords = {
