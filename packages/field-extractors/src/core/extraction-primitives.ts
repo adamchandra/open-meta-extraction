@@ -1,23 +1,31 @@
 import _ from 'lodash';
 import xml2js from 'xml2js';
 
-import { flow as compose, pipe } from 'fp-ts/function';
+import { flow as fptsFlow, pipe } from 'fp-ts/function';
 import * as TE from 'fp-ts/TaskEither';
 import * as E from 'fp-ts/Either';
-
-import { ArtifactSubdir, expandDir, readCorpusTextFile, setLogLabel, writeCorpusTextFile, diffByChars, prettyPrint } from '@watr/commonlib';
-
-import { Page } from 'puppeteer';
-
 import path from 'path';
 
 import {
-  Arrow,
+  ArtifactSubdir,
+  expandDir,
+  readCorpusTextFile,
+  setLogLabel,
+  writeCorpusTextFile,
+  diffByChars,
+  runTidyCmdBuffered,
+  runFileCmd,
+  prettyPrint
+} from '@watr/commonlib';
+
+
+import {
+  Transform,
   ExtractionEnv,
   ControlInstruction,
   NormalForm,
   forEachDo,
-  FilterArrow,
+  FilterTransform,
   through,
   filter,
   tap,
@@ -26,21 +34,33 @@ import {
   ClientResult,
   takeWhileSuccess,
   log,
-  gatherSuccess,
   FieldCandidate,
   ExtractionSharedEnv
 } from '~/predef/extraction-prelude';
 
 
 import { ExtractionEvidence, Field } from '~/predef/extraction-records';
-import { runTidyCmdBuffered, runFileCmd } from '@watr/commonlib';
-import { Elem, expandCaseVariations, queryAllP, queryOneP, selectElementAttrP } from '../core/html-queries';
 
-import { GlobalDocumentMetadata } from '~/predef/ieee-metadata';
-import { AbstractCleaningRules, CleaningRule, CleaningRuleResult } from './data-cleaning';
-import { DefaultPageInstanceOptions } from '@watr/spider';
+import {
+  expandCaseVariations,
+  getElemAttr,
+  getElemText,
+  selectAll,
+  selectElemAttr,
+  selectOne
+} from './html-query-primitives';
 
-type CacheFileKey = string;
+import {
+  AbstractCleaningRules,
+  CleaningRule,
+  CleaningRuleResult
+} from './data-cleaning';
+
+export type CacheFileKey = string;
+
+export const compose: typeof fptsFlow = (...fs: []) =>
+  <A extends readonly unknown[]>(a: A) =>
+    pipe(a, ...fs);
 
 export function _addEvidence(env: ExtractionEnv, evidence: string, weight: number = 0) {
   const e: ExtractionEvidence = {
@@ -57,19 +77,17 @@ function removeEvidence(env: ExtractionEnv, regex: RegExp) {
   env.evidence.splice(0, env.evidence.length, ...filtered);
 }
 
+export const addEvidence: <A>(f: (a: A, env: ExtractionEnv) => string) => Transform<A, A> =
+  (f) => tap((a, env) => _addEvidence(env, f(a, env)));
 
-const addEvidence: <A>(f: (a: A, env: ExtractionEnv) => string) => Arrow<A, A> = (f) => tap((a, env) => {
-  _addEvidence(env, f(a, env));
-});
-
-export const tapEnvLR: <A>(f: (env: ExtractionEnv) => unknown) => Arrow<A, A> = (f) => compose(
+export const tapEnvLR: <A>(f: (env: ExtractionEnv) => unknown) => Transform<A, A> = (f) => compose(
   tap((_0, env) => f(env)),
   tapLeft((_0, env) => {
     f(env);
   })
 );
 
-export const clearEvidence: (evidenceTest: RegExp) => Arrow<unknown, unknown> = (evidenceTest: RegExp) => {
+export const clearEvidence: (evidenceTest: RegExp) => Transform<unknown, unknown> = (evidenceTest: RegExp) => {
   return tapEnvLR((env) => removeEvidence(env, evidenceTest));
 };
 
@@ -102,14 +120,15 @@ function saveFieldRecs(env: ExtractionEnv): void {
   );
 }
 
-const listArtifactFiles: (artifactDir: ArtifactSubdir, regex: RegExp) => Arrow<unknown, CacheFileKey[]> = (dir, regex) => through((_a, env) => {
-  const { entryPath } = env;
-  const artifactRoot = path.join(entryPath, dir);
-  const exDir = expandDir(artifactRoot);
-  const matching = _.filter(exDir.files, f => regex.test(f));
-  const keys: CacheFileKey[] = _.map(matching, f => path.join(dir, f));
-  return keys;
-}, 'listArtifacts');
+const listArtifactFiles: (artifactDir: ArtifactSubdir, regex: RegExp) => Transform<unknown, CacheFileKey[]> =
+  (dir, regex) => through((_a, env) => {
+    const { entryPath } = env;
+    const artifactRoot = path.join(entryPath, dir);
+    const exDir = expandDir(artifactRoot);
+    const matching = _.filter(exDir.files, f => regex.test(f));
+    const keys: CacheFileKey[] = _.map(matching, f => path.join(dir, f));
+    return keys;
+  }, 'listArtifacts');
 
 
 const listResponseBodies = listArtifactFiles('.', /response-body|response-frame/);
@@ -130,7 +149,7 @@ const tidyHtmlTask: (filename: string) => TE.TaskEither<string, string[]> = (fil
 };
 
 
-const listTidiedHtmls: Arrow<unknown, CacheFileKey[]> = through((_z, env) => {
+const listTidiedHtmls: Transform<unknown, CacheFileKey[]> = through((_z, env) => {
   const { fileContentCache } = env;
   const normType: NormalForm = 'tidy-norm';
   const cacheKeys = _.map(
@@ -140,7 +159,7 @@ const listTidiedHtmls: Arrow<unknown, CacheFileKey[]> = through((_z, env) => {
 }, 'list(tidy)');
 
 
-const loadXML: Arrow<string, any> = through((artifactPath, env) => {
+const loadXML: Transform<string, any> = through((artifactPath, env) => {
   const { fileContentCache, entryPath } = env;
   const normType: NormalForm = 'original';
 
@@ -169,7 +188,7 @@ const loadXML: Arrow<string, any> = through((artifactPath, env) => {
   return ClientFunc.halt(`loadXML Fail for ${artifactPath}`)
 }, 'loadXML');
 
-const runHtmlTidy: Arrow<string, string> = through((artifactPath, env) => {
+const runHtmlTidy: Transform<string, string> = through((artifactPath, env) => {
   // TODO I don't think the cache key is working...
   const { fileContentCache, entryPath } = env;
   const normType: NormalForm = 'tidy-norm';
@@ -202,20 +221,21 @@ const runHtmlTidy: Arrow<string, string> = through((artifactPath, env) => {
   return maybeTidy;
 }, 'runHtmlTidy');
 
-const verifyFileType: (urlTest: RegExp) => FilterArrow<string> = (typeTest: RegExp) => filter((filename, env) => {
+
+const verifyFileType: (urlTest: RegExp) => FilterTransform<string> = (typeTest: RegExp) => filter((filename, env) => {
   const file = path.resolve(env.entryPath, filename);
 
   const test = runFileCmd(file).then(a => typeTest.test(a));
   return test;
 }, `m/${typeTest.source}/`);
 
-export const readCache: Arrow<CacheFileKey, string> = through(
+export const readCache: Transform<CacheFileKey, string> = through(
   (cacheKey: CacheFileKey, { fileContentCache }) => (cacheKey in fileContentCache
     ? fileContentCache[cacheKey]
     : ClientFunc.halt(`cache has no record for key ${cacheKey}`)), `readCache`);
 
 
-const grepFilter: (regex: RegExp) => Arrow<CacheFileKey, string[]> = (regex) => compose(
+export const grepFilter: (regex: RegExp) => Transform<CacheFileKey, string[]> = (regex) => compose(
   readCache,
   through((content: string) => {
     const lines = _.split(content, '\n');
@@ -225,14 +245,14 @@ const grepFilter: (regex: RegExp) => Arrow<CacheFileKey, string[]> = (regex) => 
 
 
 // TODO make this consistent by introducing read/splitstring/etc
-const grepFilterNot: (regex: RegExp) => Arrow<string[], string[]> = (regex) => compose(
+export const grepFilterNot: (regex: RegExp) => Transform<string[], string[]> = (regex) => compose(
   through((lines: string[]) => {
     return _.filter(lines, l => !regex.test(l));
   }, `grep(${regex.source})`)
 );
 
 
-const grepDropUntil: (regex: RegExp) => Arrow<CacheFileKey, string[]> = (regex) => compose(
+export const grepDropUntil: (regex: RegExp) => Transform<CacheFileKey, string[]> = (regex) => compose(
   readCache,
   through((content: string) => {
     const lines = _.split(content, '\n');
@@ -241,179 +261,32 @@ const grepDropUntil: (regex: RegExp) => Arrow<CacheFileKey, string[]> = (regex) 
   }, `grepDropUntil(${regex.source})`)
 );
 
-const grepTakeUntil: (regex: RegExp) => Arrow<string[], string[]> = (regex) => compose(
+export const grepTakeUntil: (regex: RegExp) => Transform<string[], string[]> = (regex) => compose(
   through((lines: string[]) => {
     const filtered = _.takeWhile(lines, l => !regex.test(l));
     return filtered;
   }, `grepTakeUntil(${regex.source})`)
 );
 
-const dropN: (num: number) => Arrow<string[], string[]> = (num) => compose(
+export const dropN: (num: number) => Transform<string[], string[]> = (num) => compose(
   through((lines: string[]) => {
     return _.drop(lines, num);
   }, `dropN(${num})`)
 );
-const joinLines: (join: string) => Arrow<string[], string> = (joinstr) => compose(
+
+export const joinLines: (join: string) => Transform<string[], string> = (joinstr) => compose(
   through((lines: string[]) => {
     return _.join(lines, joinstr);
   }, `joinLines(${joinstr})`)
 );
 
-export const selectNeuripsCCAbstract: () => Arrow<CacheFileKey, unknown> = () => compose(
-  grepDropUntil(/Abstract/),
-  dropN(1),
-  grepTakeUntil(/^[ ]+<.div/),
-  grepFilterNot(/^[ ]+<.{1,4}>[ ]*$/),
-  joinLines(' '),
-  addEvidence(() => 'neurips.cc.abstract'),
-  saveEvidence('neurips.cc.abstract'),
-  clearEvidence(new RegExp('neurips.cc.abstract')),
-);
-
-export const selectGlobalDocumentMetaEvidence: () => Arrow<CacheFileKey, unknown> = () => compose(
-  readGlobalDocumentMetadata,
-  gatherSuccess(
-    saveDocumentMetaDataEvidence('metadata:title', m => m.title ? [m.title] : []),
-    saveDocumentMetaDataEvidence('metadata:abstract', m => m.abstract ? [m.abstract] : []),
-    saveDocumentMetaDataEvidence('metadata:pdf-path', m => m.pdfPath ? [m.pdfPath] : []),
-    saveDocumentMetaDataEvidence('metadata:author', m => m.authors && _.isArray(m.authors) ? m.authors.map(a => a.name) : []),
-  )
-);
-
-
-const readGlobalDocumentMetadata: Arrow<CacheFileKey, GlobalDocumentMetadata> = compose(
-  grepFilter(/global\.document\.metadata/i),
-  through((lines) => {
-    if (lines.length === 0) {
-      return ClientFunc.continue('global.document.metadata not found');
-    }
-    const line = lines[0];
-    const jsonStart = line.indexOf('{');
-    const jsonEnd = line.lastIndexOf('}');
-    const lineJson = line.slice(jsonStart, jsonEnd + 1);
-    const globalMetadata: GlobalDocumentMetadata = JSON.parse(lineJson);
-    return globalMetadata;
-  }, 'readGlobalMetadata'));
-
-
-const saveDocumentMetaDataEvidence: (name: string, f: (m: GlobalDocumentMetadata) => string[]) => Arrow<GlobalDocumentMetadata, unknown> = (name, f) => compose(
-  through((documentMetadata) => f(documentMetadata), `saveMetaEvidence(${name})`),
-  addEvidence(() => name),
-  forEachDo(
-    saveEvidence(name),
-  ),
-  clearEvidence(new RegExp(name)),
-);
-
-const saveMetaDataEvidence: (name: string, f: (m: any) => string[]) => Arrow<any, unknown> = (name, f) => compose(
-  through((documentMetadata) => f(documentMetadata), `saveAnyMetaEvidence(${name})`),
-  addEvidence(() => name),
-  forEachDo(
-    saveEvidence(name),
-  ),
-  clearEvidence(new RegExp(name)),
-);
 
 /// ////////////
 // jquery/css selector and Elem functions
 
-const loadPageFromCache: Arrow<CacheFileKey, Page> =
-  through((cacheKey: CacheFileKey, { browserInstance, fileContentCache, browserPageCache }) => {
-    if (cacheKey in browserPageCache) {
-      return browserPageCache[cacheKey];
-    }
-    if (cacheKey in fileContentCache) {
-      const fileContent = fileContentCache[cacheKey];
-      const page = browserInstance.newPage(DefaultPageInstanceOptions) // TODO: FIXME this use of defaults is not correct
-        .then(async ({ page }) => {
-          await page.setContent(fileContent, {
-            timeout: 8000,
-            waitUntil: 'domcontentloaded',
-            // waitUntil: 'load',
-          });
-          browserPageCache[cacheKey] = page;
-          return page;
-        });
-      return page;
-    }
-
-    return ClientFunc.halt(`cache has no record for key ${cacheKey}`);
-  });
-
-const selectOne: (queryString: string) => Arrow<CacheFileKey, Elem> = (queryString) => compose(
-  loadPageFromCache,
-  through((page: Page, { }) => {
-    return pipe(
-      () => queryOneP(page, queryString),
-      TE.mapLeft((msg) => ['continue', msg])
-    );
-  }, `selectOne(${queryString})`)
-);
-
-const selectAll: (queryString: string, abbrev?: string) => Arrow<CacheFileKey, Elem[]> = (queryString, abbrev) => compose(
-  loadPageFromCache,
-  through((page: Page, { }) => {
-    return pipe(
-      () => queryAllP(page, queryString),
-      TE.mapLeft((msg) => ['continue', msg])
-    );
-  }, `selectAll(${abbrev ? abbrev : queryString})`)
-);
-
-const getElemAttr: (attr: string) => Arrow<Elem, string> = (attr: string) => through((elem: Elem, { }) => {
-  const attrContent: Promise<E.Either<string, string>> = elem.evaluate((e, attrname) => e.getAttribute(attrname), attr)
-    .then(text => (text === null
-      ? E.left(`getElemAttr: no attr content found in elem attr ${attr}`)
-      : E.right(text)))
-    .catch((error) => {
-      return E.left(`getElemAttr error ${error}`);
-    });
-
-  return pipe(
-    () => attrContent,
-    TE.mapLeft((msg) => ['continue', msg]),
-  );
-}, 'getElemAttr');
-
-const getElemText: Arrow<Elem, string> = through((elem: Elem) => {
-  const textContent: Promise<E.Either<string, string>> = elem.evaluate(e => e.textContent)
-    .then(text => (text === null
-      ? E.left('no text found in elem')
-      : E.right(text.trim())));
-
-  return pipe(
-    () => textContent,
-    TE.mapLeft((msg) => ['continue', msg]),
-  );
-}, 'getElemText');
 
 
-const selectElemAttr: (queryString: string, contentAttr: string, queryDesc?: string) => Arrow<CacheFileKey, string> =
-  (queryString, contentAttr, queryDesc) => compose(
-    loadPageFromCache,
-    through((page: Page, { }) => {
-      return pipe(
-        () => selectElementAttrP(page, queryString, contentAttr, queryDesc),
-        TE.mapLeft((msg) => ['continue', msg])
-      );
-    }, `selectElemAttr(${queryDesc ? queryDesc : queryString}, ${contentAttr})`)
-  );
-
-
-
-export const selectElemTextEvidence: (queryString: string) => Arrow<CacheFileKey, unknown> = (queryString) => {
-  const evidenceName = `select:$(${queryString})`;
-  return compose(
-    addEvidence(() => evidenceName),
-    selectOne(queryString),
-    getElemText,
-    saveEvidence(evidenceName),
-    clearEvidence(/^select:/),
-  );
-};
-
-
-const saveEvidence: (evidenceName: string) => Arrow<string, unknown> = (evidenceName) => through((extractedValue: string, env) => {
+export const saveEvidence: (evidenceName: string) => Transform<string, unknown> = (evidenceName) => through((extractedValue: string, env) => {
   if (_.isString(extractedValue)) {
     const text = extractedValue.trim();
     const candidate: FieldCandidate = {
@@ -424,7 +297,7 @@ const saveEvidence: (evidenceName: string) => Arrow<string, unknown> = (evidence
   }
 }, `saveEvidence:${evidenceName}`);
 
-export const selectMetaEvidence: (name: string, attrName?: string) => Arrow<CacheFileKey, unknown> = (name, attrName = 'name') => {
+export const selectMetaEvidence: (name: string, attrName?: string) => Transform<CacheFileKey, unknown> = (name, attrName = 'name') => {
   const evidenceName = `select:$(meta[${attrName}="${name}"])`;
   return compose(
     addEvidence(() => evidenceName),
@@ -434,7 +307,18 @@ export const selectMetaEvidence: (name: string, attrName?: string) => Arrow<Cach
   );
 };
 
-export const selectElemAttrEvidence: (queryString: string, contentAttr: string) => Arrow<CacheFileKey, unknown> = (queryString, contentAttr) => {
+export const selectElemTextEvidence: (queryString: string) => Transform<CacheFileKey, unknown> = (queryString) => {
+  const evidenceName = `select:$(${queryString})`;
+  return compose(
+    addEvidence(() => evidenceName),
+    selectOne(queryString),
+    getElemText,
+    saveEvidence(evidenceName),
+    clearEvidence(/^select:/),
+  );
+};
+
+export const selectElemAttrEvidence: (queryString: string, contentAttr: string) => Transform<CacheFileKey, unknown> = (queryString, contentAttr) => {
   const evidenceName = `select:$(${queryString}).attr(${contentAttr})`;
   return compose(
     addEvidence(() => evidenceName),
@@ -444,7 +328,7 @@ export const selectElemAttrEvidence: (queryString: string, contentAttr: string) 
   );
 };
 
-export const selectAllElemAttrEvidence: (queryString: string, contentAttr: string) => Arrow<CacheFileKey, unknown> = (queryString, contentAttr) => {
+export const selectAllElemAttrEvidence: (queryString: string, contentAttr: string) => Transform<CacheFileKey, unknown> = (queryString, contentAttr) => {
   const evidenceName = `select-all:$(${queryString}).attr(${contentAttr})`;
   return compose(
     addEvidence(() => evidenceName),
@@ -459,7 +343,7 @@ export const selectAllElemAttrEvidence: (queryString: string, contentAttr: strin
 
 
 
-export const selectAllMetaEvidence: (name: string, attrName?: string) => Arrow<CacheFileKey, unknown> = (name, attrName = 'name') => {
+export const selectAllMetaEvidence: (name: string, attrName?: string) => Transform<CacheFileKey, unknown> = (name, attrName = 'name') => {
   const evidenceName = `select-all:$(meta[${attrName}="${name}"])`;
   return compose(
     addEvidence(() => evidenceName),
@@ -473,7 +357,7 @@ export const selectAllMetaEvidence: (name: string, attrName?: string) => Arrow<C
 };
 
 
-export const selectXMLTag: (selectorPath: string[]) => Arrow<CacheFileKey, unknown> = (selectorPath) => {
+export const selectXMLTag: (selectorPath: string[]) => Transform<CacheFileKey, unknown> = (selectorPath) => {
   const sel = selectorPath.join('.');
   const evidenceName = `xml:select:'${sel}'`;
   return compose(
@@ -489,51 +373,22 @@ export const selectXMLTag: (selectorPath: string[]) => Arrow<CacheFileKey, unkno
   );
 };
 
-const readSpringerDocumentMetadata: Arrow<CacheFileKey, any> = compose(
-  selectOne('script[type="application/ld+json"]'),
-  getElemText,
-  through((jsonText, env) => {
-    if (!_.isString(jsonText) || jsonText.length === 0) {
-      return ClientFunc.continue('springer-link.metadata not found');
-    }
-    const i1 = jsonText.indexOf('{');
-    const i2 = jsonText.lastIndexOf('}')
-    if (i1 < 0 || i2 < 0) {
-      return ClientFunc.continue('springer-link.metadata doesnt look like json');
-    }
-    const strippedJson = jsonText.slice(i1, i2+1);
-    try {
-      return JSON.parse(strippedJson);
-    } catch (error) {
-      env.log.warn(`readSpringerDocumentMetadata: Could not parse JSON text`);
-      return ClientFunc.continue('springer-link.metadata not parsable');
-    }
-  }, 'readSpringerMetadata'));
-
-export const selectSpringerDocumentMetaEvidence: () => Arrow<CacheFileKey, unknown> = () => compose(
-  readSpringerDocumentMetadata,
-  gatherSuccess(
-    saveMetaDataEvidence('metadata:title', m => m.headline ? [m.headline] : []),
-    saveMetaDataEvidence('metadata:abstract', m => m.description ? [m.description] : []),
-    saveMetaDataEvidence('metadata:author', m => m.author && _.isArray(m.author) ? m.author.map((a: any) => a.name) : []),
-  )
-);
 
 /// // End jquery/css selector and Elem functions
 /// ///////////////
 
 
-const urlMatcher: (urlTest: RegExp) => Arrow<unknown, unknown> = (regex) => compose(
+const urlMatcher: (urlTest: RegExp) => Transform<unknown, unknown> = (regex) => compose(
   through((_a, env) => env.urlFetchData.responseUrl),
   filter((a: string) => regex.test(a), `url ~= m/${regex.source}/`),
 );
 
-export const statusFilter: Arrow<unknown, unknown> = compose(
+export const statusFilter: Transform<unknown, unknown> = compose(
   through((_a, env) => env.urlFetchData.status),
   filter((a) => a === '200', 'HttpStatus==200'),
 );
 
-export const normalizeHtmls: Arrow<unknown, string[]> = compose(
+export const normalizeHtmls: Transform<unknown, string[]> = compose(
   listResponseBodies,
   forEachDo(
     compose(
@@ -543,13 +398,20 @@ export const normalizeHtmls: Arrow<unknown, string[]> = compose(
   ),
 );
 
-export const urlFilter: (urlTest: RegExp) => Arrow<unknown, unknown> = (regex) => compose(
+export const urlFilter: (urlTest: RegExp) => Transform<unknown, unknown> = (regex) => compose(
   urlMatcher(regex),
   statusFilter
-  // normalizeHtmls,
 );
 
-export const forXMLInputs: (re: RegExp, arrow: Arrow<string, unknown>) => Arrow<unknown, unknown> = (re, arrow) => compose(
+export const checkStatusAndNormalize = compose(
+  log('info', (_0, env) => `Processing ${env.urlFetchData.responseUrl}`),
+  statusFilter,
+  normalizeHtmls,
+  filter((a) => a.length > 0),
+);
+
+
+export const forXMLInputs: (re: RegExp, arrow: Transform<string, unknown>) => Transform<unknown, unknown> = (re, arrow) => compose(
   listArtifactFiles('.', re),
   forEachDo(
     compose(
@@ -562,7 +424,7 @@ export const forXMLInputs: (re: RegExp, arrow: Arrow<string, unknown>) => Arrow<
   )
 );
 
-export const forInputs: (re: RegExp, arrow: Arrow<string, unknown>) => Arrow<unknown, unknown> = (re, arrow) => compose(
+export const forInputs: (re: RegExp, arrow: Transform<string, unknown>) => Transform<unknown, unknown> = (re, arrow) => compose(
   listTidiedHtmls,
   through((inputs) => _.filter(inputs, input => re.test(input)), `m/${re.source}/`),
   forEachDo(
@@ -575,7 +437,7 @@ export const forInputs: (re: RegExp, arrow: Arrow<string, unknown>) => Arrow<unk
   )
 );
 
-export const tryEvidenceMapping: (mapping: Record<string, string>) => Arrow<unknown, unknown> = (mapping) => {
+export const tryEvidenceMapping: (mapping: Record<string, string>) => Transform<unknown, unknown> = (mapping) => {
   const evidenceKeys = _.keys(mapping);
   const filters = _.map(evidenceKeys, e => evidenceExists(e));
   const keyEvidence = _.join(evidenceKeys, ' ++ ');
@@ -637,7 +499,7 @@ const candidatesForEvidence: (env: ExtractionEnv, evstr: string) => FieldCandida
 };
 
 
-const evidenceExists: (evstr: string) => FilterArrow<unknown> = (evstr) => filter((_a, env) => {
+const evidenceExists: (evstr: string) => FilterTransform<unknown> = (evstr) => filter((_a, env) => {
   if (evstr.endsWith('?')) return true;
   const evRes = _.map(evstr.split('|'), s => new RegExp(s.trim()));
   return _.some(evRes, regex => {
@@ -649,7 +511,7 @@ const evidenceExists: (evstr: string) => FilterArrow<unknown> = (evstr) => filte
   });
 }, evstr);
 
-export const summarizeEvidence: Arrow<unknown, unknown> = tapEnvLR((env) => {
+export const summarizeEvidence: Transform<unknown, unknown> = tapEnvLR((env) => {
   const { fieldCandidates, log } = env;
   const url = env.urlFetchData.responseUrl;
 

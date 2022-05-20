@@ -15,13 +15,13 @@ import Async from 'async';
 import { initScraper, UrlFetchData } from '@watr/spider';
 
 import {
-  Arrow,
+  Transform,
   PerhapsW,
   ExtractionEnv,
   ExtractionSharedEnv,
 } from '~/predef/extraction-prelude';
 
-import { AbstractFieldAttempts } from '~/core/extraction-scripts';
+import { AbstractFieldAttempts } from '~/core/extraction-rules';
 
 import { Page } from 'puppeteer';
 import { CanonicalFieldRecords, FieldRecord } from '~/predef/extraction-records';
@@ -32,7 +32,7 @@ const extractionRecordFileName = 'extraction-records.json';
 
 export async function runFieldExtractor(
   exEnv: ExtractionEnv,
-  extractionPipeline: Arrow<unknown, unknown>
+  extractionPipeline: Transform<unknown, unknown>
 ): Promise<PerhapsW<unknown>> {
   const { urlFetchData, browserPool, browserPageCache, browserInstance } = exEnv;
 

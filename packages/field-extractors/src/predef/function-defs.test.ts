@@ -20,16 +20,16 @@ interface EnvT {
 
 const fp = ft.createFPackage<EnvT>();
 
-type ExtractionResult<A> = ft.ExtractionResult<A, EnvT>;
-type Arrow<A, B> = ft.Arrow<A, B, EnvT>;
+type ExtractionTask<A> = ft.ExtractionTask<A, EnvT>;
+type Transform<A, B> = ft.Transform<A, B, EnvT>;
 type PerhapsW<A> = ft.PerhapsW<A, EnvT>;
-// type FilterArrow<A> = ft.FilterArrow<A, EnvT>;
+// type FilterTransform<A> = ft.FilterTransform<A, EnvT>;
 
 const {
   tap,
   tapLeft,
   filter,
-  Arrow,
+  Transform,
   through,
   asW,
   forEachDo,
@@ -39,7 +39,7 @@ const {
 } = fp;
 
 
-const withMessage: <A, B>(name: string, arrow: Arrow<A, B>) => Arrow<A, B> = (name, arrow) => compose(
+const withMessage: <A, B>(name: string, arrow: Transform<A, B>) => Transform<A, B> = (name, arrow) => compose(
   // ra,
   tap((_a, env) => env.messages.push(`${name}:enter:right`)),
   tapLeft((_a, env) => env.messages.push(`${name}:enter:left`)),
@@ -49,15 +49,15 @@ const withMessage: <A, B>(name: string, arrow: Arrow<A, B>) => Arrow<A, B> = (na
 );
 
 
-// const fgood: (s: string) => Arrow<string, string> = s => withMessage(`succ:${s}`, filter<string>(() => true));
-const fbad: (s: string) => Arrow<string, string> = s => withMessage(`fail:${s}`, filter<string>(() => false));
-const fgood_: Arrow<string, string> = withMessage('succ', filter<string>(() => true));
-const fbad_: Arrow<string, string> = withMessage('fail', filter<string>(() => false));
+// const fgood: (s: string) => Transform<string, string> = s => withMessage(`succ:${s}`, filter<string>(() => true));
+const fbad: (s: string) => Transform<string, string> = s => withMessage(`fail:${s}`, filter<string>(() => false));
+const fgood_: Transform<string, string> = withMessage('succ', filter<string>(() => true));
+const fbad_: Transform<string, string> = withMessage('fail', filter<string>(() => false));
 const emit = (msg: string) => tap<string>((_a, env) => env.messages.push(msg));
 const emitL = (msg: string) => tapLeft<string>((_a, env) => env.messages.push(msg));
 
 
-function initEnv<A>(a: A): ExtractionResult<A> {
+function initEnv<A>(a: A): ExtractionTask<A> {
   const logger = newLogger(newConsoleTransport('info'));
   const env0: EnvT = {
     ns: [],
@@ -83,23 +83,23 @@ function getEnvMessages(res: PerhapsW<unknown>): string[] {
 }
 
 let dummy = 0;
-async function runTakeWhileSuccess(fns: Arrow<string, string>[]): Promise<string[]> {
+async function runTakeWhileSuccess(fns: Transform<string, string>[]): Promise<string[]> {
   const res = await takeWhileSuccess(...fns)(initEnv(`input#${dummy += 1}`))();
   return getEnvMessages(res);
 }
 
 
-async function runTakeFirstSuccess(fns: Arrow<string, string>[]): Promise<string[]> {
+async function runTakeFirstSuccess(fns: Transform<string, string>[]): Promise<string[]> {
   const res = await attemptEach(...fns)(initEnv(`input#${dummy += 1}`))();
   return getEnvMessages(res);
 }
 
-async function runGatherSuccess(fns: Arrow<string, string>[]): Promise<string[]> {
+async function runGatherSuccess(fns: Transform<string, string>[]): Promise<string[]> {
   const res = await gatherSuccess(...fns)(initEnv(`input#${dummy += 1}`))();
   return getEnvMessages(res);
 }
 
-// async function runForEachDo(fn: Arrow<number, string>): Promise<string[]> {
+// async function runForEachDo(fn: Transform<number, string>): Promise<string[]> {
 //   const inputs = _.range(4);
 //   const env0 = initEnv(inputs);
 //   const res = await forEachDo(fn)(env0)();
@@ -110,7 +110,7 @@ describe('Extraction Prelude / Primitives', () => {
   // it('should create basic arrows/results', async (done) => {});
   // it('tap() composition', async (done) => { });
 
-  type ExampleType = [Arrow<string, string>[], string[]];
+  type ExampleType = [Transform<string, string>[], string[]];
 
   it('takeWhileSuccess examples', async () => {
     const examples: ExampleType[] = [
@@ -143,7 +143,7 @@ describe('Extraction Prelude / Primitives', () => {
   });
 
   it('attemptEach examples', async () => {
-    const examples: Array<[Arrow<string, string>[], string[]]> = [
+    const examples: Array<[Transform<string, string>[], string[]]> = [
       // Always stop at first emit:
       [[emit('A:okay'), emit('B:bad')],
         ['A:okay']],
@@ -182,7 +182,7 @@ describe('Extraction Prelude / Primitives', () => {
   });
 
   it('gatherSuccess examples', async () => {
-    const examples: Array<[Arrow<string, string>[], string[]]> = [
+    const examples: Array<[Transform<string, string>[], string[]]> = [
       [[emit('A:okay'), emit('B:okay')],
         ['A:okay', 'B:okay']],
       [[emit('A:okay'), fgood_, emit('B:okay')],

@@ -5,7 +5,7 @@ import cproc from 'child_process';
 import Async from 'async';
 
 import { getConsoleAndFileLogger, setLogEnvLevel } from '@watr/commonlib';
-import { AbstractFieldAttempts } from '~/core/extraction-scripts';
+import { AbstractFieldAttempts } from '~/core/extraction-rules';
 import { initExtractionEnv } from '~/core/extraction-primitives';
 import { ExtractionSharedEnv } from '~/predef/extraction-prelude';
 

@@ -4,8 +4,8 @@ import { isLeft, isRight } from 'fp-ts/Either';
 import { prettyPrint, putStrLn, stripMargin } from '@watr/commonlib';
 import Async from 'async';
 import { createBrowserPool } from '@watr/spider';
-// import { selectElementAttr, queryOne, queryAll, expandCaseVariations, Elem } from './html-queries';
-import { expandCaseVariations, Elem } from './html-queries';
+// import { selectElementAttr, queryOne, queryAll, expandCaseVariations, Elem } from './html-query-primitives';
+import { expandCaseVariations, Elem } from './html-query-primitives';
 import { createLogger, transports, format } from 'winston';
 
 const tmpHtml = stripMargin(`
