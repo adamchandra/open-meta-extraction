@@ -62,7 +62,7 @@ import {
   CleaningRule,
   CleaningRuleResult
 } from './data-cleaning';
-import { loadTextFile } from './text-primitives';
+import { joinLines, loadTextFile } from './text-primitives';
 
 
 
@@ -247,10 +247,21 @@ export const selectElemTextEvidence: (queryString: string) => Transform<BrowserP
     saveEvidence(evidenceName),
   );
 };
+export const selectCombinedElemTextEvidence: (queryString: string) => Transform<BrowserPage, unknown> = (queryString) => {
+  const evidenceName = `page.$$(${queryString})`;
+  return compose(
+    selectAll(queryString),
+    forEachDo(compose(
+      getElemText,
+    )),
+    joinLines('\n'),
+    saveEvidence(evidenceName),
+  );
+};
 
 export const selectElemAttrEvidence: (queryString: string, contentAttr: string) => Transform<BrowserPage, unknown> =
   (queryString, contentAttr) => {
-    const evidenceName = `select:$(${queryString}).attr(${contentAttr})`;
+    const evidenceName = `page.$(${queryString}).attr(${contentAttr})`;
     return compose(
       selectElemAttr(queryString, contentAttr),
       saveEvidence(evidenceName),

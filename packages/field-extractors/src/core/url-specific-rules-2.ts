@@ -26,6 +26,7 @@ import {
   urlFilter,
   saveEvidence,
   withResponsePage,
+  selectCombinedElemTextEvidence
 } from '~/core/extraction-primitives';
 
 import {
@@ -95,6 +96,7 @@ export const linkSpringerComRule: ExtractionRule = compose(
       gatherHighwirePressTags,
       gatherOpenGraphTags,
       selectElemTextEvidence('section#Abs1 > p.Para'),
+      selectCombinedElemTextEvidence('#body div.content'),
       compose(
         selectSpringerDocumentMetaEvidence(),
         validateEvidence({
@@ -113,6 +115,16 @@ export const linkSpringerComRule: ExtractionRule = compose(
           citation_pdf_url: 'pdf-link',
           'og:description': 'abstract-clipped',
           'section#Abs1 > p.Para': 'abstract',
+        }),
+      ),
+      compose(
+        urlFilter(/\/referenceworkentry\//),
+        validateEvidence({
+          citation_title: 'title',
+          citation_author: 'author',
+          citation_pdf_url: 'pdf-link',
+          'og:description': 'abstract-clipped',
+          '#body div.content': 'abstract',
         }),
       ),
       compose(
