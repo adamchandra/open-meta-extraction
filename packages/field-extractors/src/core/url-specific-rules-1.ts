@@ -14,6 +14,7 @@ import {
 import {
   selectElemAttrEvidence,
   selectElemTextEvidence,
+  selectEachElemTextEvidence,
   validateEvidence,
   urlFilter,
   selectAllElemAttrEvidence,
@@ -27,7 +28,6 @@ import {
   gatherHighwirePressTags,
   gatherOpenGraphTags,
 } from './headtag-scripts';
-import { getElemAttr, selectElemAttr, selectOne } from './html-query-primitives';
 
 export const arxivOrgRule: ExtractionRule = compose(
   urlFilter(/export.arxiv.org/),
@@ -176,6 +176,22 @@ export const iospressComRule: ExtractionRule = compose(
       citation_author: 'author',
       citation_pdf_url: 'pdf-link',
       'data-abstract': 'abstract'
+    }),
+  )),
+);
+
+export const digitalHumanitiesOrg: ExtractionRule = compose(
+  urlFilter(/digitalhumanities.org/),
+  withResponsePage(compose(
+    collectFanout(
+      selectElemTextEvidence('#abstract'),
+      selectElemTextEvidence('.articleTitle'),
+      selectEachElemTextEvidence('.author'),
+    ),
+    validateEvidence({
+      '#abstract': 'abstract:raw',
+      '.articleTitle': 'title',
+      '.author': 'author',
     }),
   )),
 );

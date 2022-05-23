@@ -247,6 +247,17 @@ export const selectElemTextEvidence: (queryString: string) => Transform<BrowserP
     saveEvidence(evidenceName),
   );
 };
+
+export const selectEachElemTextEvidence: (queryString: string) => Transform<BrowserPage, unknown> = (queryString) => {
+  const evidenceName = `page.$$(${queryString})`;
+  return compose(
+    selectAll(queryString),
+    forEachDo(compose(
+      getElemText,
+      saveEvidence(evidenceName),
+    )),
+  );
+};
 export const selectCombinedElemTextEvidence: (queryString: string) => Transform<BrowserPage, unknown> = (queryString) => {
   const evidenceName = `page.$$(${queryString})`;
   return compose(
