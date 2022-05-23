@@ -74,3 +74,4 @@ https://transacl.org/ojs/index.php/tacl/article/view/2423
 https://link.springer.com/referenceworkentry/10.1007/978-0-387-39940-9_935
 http://www.digitalhumanities.org/dhq/vol/11/4/000327/000327.html
 https://dl.acm.org/doi/10.1145/3130348.3130350
+https://www.kybernetika.cz/content/2011/3/317

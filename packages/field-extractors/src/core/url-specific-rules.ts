@@ -30,6 +30,7 @@ export const UrlSpecificAttempts = attemptEach(
   u1.nipsCCRule,
   u1.iospressComRule,
   u1.digitalHumanitiesOrg,
+  u1.kybernetikaCz,
   u2.ieeExploreOrgRule,
   u2.linkSpringerComRule,
   u3.neuripsCCRule,

@@ -195,3 +195,19 @@ export const digitalHumanitiesOrg: ExtractionRule = compose(
     }),
   )),
 );
+
+export const kybernetikaCz: ExtractionRule = compose(
+  urlFilter(/kybernetika.cz/),
+  withResponsePage(compose(
+    collectFanout(
+      selectElemTextEvidence('.ar_title'),
+      selectElemTextEvidence('.abstract'),
+      selectEachElemTextEvidence('.authors a'),
+    ),
+    validateEvidence({
+      '.abstract': 'abstract:raw',
+      '.ar_title': 'title',
+      '.authors a': 'author',
+    }),
+  )),
+);
