@@ -1,3 +1,4 @@
+import { boolean } from 'fp-ts';
 import _ from 'lodash';
 
 import {
@@ -10,10 +11,10 @@ import {
 
 export const loadTextFile: Transform<CacheFileKey, string> =
   through((cacheKey: CacheFileKey, { fileContentCache }) =>
-    (cacheKey in fileContentCache
-      ? fileContentCache[cacheKey]
-      : ClientFunc.halt(`cache has no record for key ${cacheKey}`)
-    ), `loadTextFile`);
+  (cacheKey in fileContentCache
+    ? fileContentCache[cacheKey]
+    : ClientFunc.halt(`cache has no record for key ${cacheKey}`)
+  ), `loadTextFile`);
 
 export const splitLines: Transform<string, string[]> =
   through((s: string) => s.split('\n'))
@@ -46,12 +47,81 @@ export const grepTakeUntil: (regex: RegExp) => Transform<string[], string[]> =
 
 export const dropN: (num: number) => Transform<string[], string[]> =
   (num) => through(
-    (lines: string[]) => _.drop(lines, num) ,
+    (lines: string[]) => _.drop(lines, num),
     `dropN(${num})`
   );
 
 export const joinLines: (join: string) => Transform<string[], string> =
   (joinstr) => through(
-      (lines: string[]) => _.join(lines, joinstr),
-      `joinLines(${joinstr})`
+    (lines: string[]) => _.join(lines, joinstr),
+    `joinLines(${joinstr})`
   );
+
+
+////////
+// Ordered Line Matching
+// export interface LineMatchOptions {
+//   lineOffset: number;
+//   lineCount: number;
+//   indentOffset: number;
+//   evidenceEnd: string[];
+// }
+
+// export const defaultLineMatchOptions: LineMatchOptions = {
+//   // lineOffset: 0,
+//   lineCount: 0,
+//   indentOffset: 0,
+//   // evidenceEnd: [],
+// };
+
+export const multiGrepDropUntil: (regexes: RegExp[], includeMatchedLines: boolean) => Transform<string[], string[]> =
+  (regexes, includeMatchedLines) => {
+    return through((lines: string[]) => {
+      return mgrepDropUntil(lines, regexes, includeMatchedLines);
+    }, `multiGrepDropUntil(${regexes.map(r => r.source).join(' __ ')})`);
+  }
+
+export const multiGrepTakeUntil: (regexes: RegExp[], includeMatchedLines: boolean) => Transform<string[], string[]> =
+  (regexes, includeMatchedLines) => {
+    return through((lines: string[]) => {
+      return mgrepTakeUntil(lines, regexes, includeMatchedLines);
+    }, `multiGrepTakeUntil(${regexes.map(r => r.source).join(' __ ')})`);
+  }
+
+export function mgrepDropUntil(lines: string[], matchers: RegExp[], includeMatchedLines: boolean): string[] {
+  const matchBegin = findMultiMatchIndex(lines, matchers);
+
+  if (matchBegin > -1) {
+    const fromIndex = includeMatchedLines ? matchBegin : matchBegin + matchers.length;
+    return lines.slice(fromIndex);
+  }
+  return [];
+}
+
+export function mgrepTakeUntil(lines: string[], matchers: RegExp[], includeMatchedLines: boolean): string[] {
+  const matchBegin = findMultiMatchIndex(lines, matchers);
+
+  if (matchBegin > -1) {
+    const toIndex = includeMatchedLines ? matchBegin + matchers.length : matchBegin;
+    return lines.slice(0, toIndex);
+  }
+  return [];
+}
+
+export function findMultiMatchIndex(
+  lines: string[],
+  matchers: RegExp[],
+): number {
+  if (matchers.length === 0) {
+    return -1;
+  }
+  const index = lines.findIndex((_l, lineNum) => {
+    return _.every(matchers, (regex, matchNum) => {
+      const currLine = lines[lineNum + matchNum];
+      const haveMatch = regex.test(currLine);
+      return currLine !== undefined && haveMatch;
+    });
+  });
+
+  return index;
+}

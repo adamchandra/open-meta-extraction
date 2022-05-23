@@ -16,10 +16,13 @@ import {
 import {
   dropN,
   grepDropUntil,
+  grepFilter,
   grepFilterNot,
   grepTakeUntil,
   joinLines,
   loadTextFile,
+  multiGrepDropUntil,
+  multiGrepTakeUntil,
   splitLines,
 } from "./text-primitives";
 
@@ -38,14 +41,14 @@ import {
 
 
 const selectNeuripsCCAbstract: Transform<string, unknown> = compose(
-    splitLines,
-    grepDropUntil(/Abstract/),
-    dropN(1),
-    grepTakeUntil(/^[ ]+<.div/),
-    grepFilterNot(/^[ ]+<.{1,4}>[ ]*$/),
-    joinLines(' '),
-    saveEvidence('neurips.cc.abstract'),
-  );
+  splitLines,
+  grepDropUntil(/Abstract/),
+  dropN(1),
+  grepTakeUntil(/^[ ]+<.div/),
+  grepFilterNot(/^[ ]+<.{1,4}>[ ]*$/),
+  joinLines(' '),
+  saveEvidence('neurips.cc.abstract'),
+);
 
 export const neuripsCCRule: ExtractionRule = compose(
   urlFilter(/neurips.cc/),
@@ -110,8 +113,20 @@ export const iscaSpeechOrgRule: ExtractionRule = compose(
 );
 
 
-  // withResponsePage(compose(
-    // selectOne('table.main_summaries'),
+const narrowToCol2TD: (re: RegExp) => Transform<string[], string[]> = (re) => compose(
+  multiGrepDropUntil([/<t[dh]/, re], false),
+  multiGrepDropUntil([/<t[dh]/], false),
+  multiGrepTakeUntil([/<\/t[dh]>/], false),
+);
+
+const removeHtmlTags: Transform<string[], string[]> = compose(
+  grepFilterNot(/^[ ]+<.*>[ ]*$/),
+);
+
+const retainAnchorTag: Transform<string[], string[]> = compose(
+  grepFilter(/^[ ]+<a href=.*>[ ]*$/),
+);
+
 export const lrecConfOrg: ExtractionRule = compose(
   urlFilter(/lrec-conf.org/),
   forInputs(/response-body/, compose(
@@ -119,34 +134,26 @@ export const lrecConfOrg: ExtractionRule = compose(
     splitLines,
     collectFanout(
       compose(
-        grepDropUntil(/^[ ]+Abstract/),
-        dropN(1),
-        grepTakeUntil(/<\/tr>/),
-        grepFilterNot(/^[ ]+<.{1,4}>[ ]*$/),
+        narrowToCol2TD(/Abstract/),
+        removeHtmlTags,
         joinLines(' '),
         saveEvidence('abstract'),
       ),
       compose(
-        grepDropUntil(/^[ ]+Title/),
-        dropN(1),
-        grepTakeUntil(/<\/tr>/),
-        grepFilterNot(/^[ ]+<.{1,4}>[ ]*$/),
+        narrowToCol2TD(/Title/),
+        removeHtmlTags,
         joinLines(' '),
         saveEvidence('title'),
       ),
       compose(
-        grepDropUntil(/^[ ]+Authors/),
-        dropN(1),
-        grepTakeUntil(/<\/tr>/),
-        grepFilterNot(/^[ ]+<.{1,4}>[ ]*$/),
+        narrowToCol2TD(/Authors/),
+        removeHtmlTags,
         joinLines(' '),
         saveEvidence('authors-block'),
       ),
       compose(
-        grepDropUntil(/^[ ]+Full Paper/),
-        dropN(1),
-        grepTakeUntil(/<\/tr>/),
-        grepFilterNot(/^[ ]+<.{1,4}>[ ]*$/),
+        narrowToCol2TD(/Full Paper/i),
+        retainAnchorTag,
         joinLines(' '),
         saveEvidence('pdf-block'),
       ),
