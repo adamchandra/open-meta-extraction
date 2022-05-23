@@ -10,7 +10,6 @@ import {
   saveEvidence,
   validateEvidence,
   urlFilter,
-  withResponsePage
 } from "./extraction-primitives";
 
 import {
@@ -39,13 +38,17 @@ import {
 } from './html-query-primitives';
 
 
+const removeHtmlTagsWithoutText: Transform<string[], string[]> = compose(
+  grepFilterNot(/^[ ]*(<\/?\w{1,4}>[ ]*)+$/),
+);
+
 
 const selectNeuripsCCAbstract: Transform<string, unknown> = compose(
   splitLines,
   grepDropUntil(/Abstract/),
   dropN(1),
   grepTakeUntil(/^[ ]+<.div/),
-  grepFilterNot(/^[ ]+<.{1,4}>[ ]*$/),
+  removeHtmlTagsWithoutText,
   joinLines(' '),
   saveEvidence('neurips.cc.abstract'),
 );

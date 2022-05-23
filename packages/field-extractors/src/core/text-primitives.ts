@@ -57,23 +57,6 @@ export const joinLines: (join: string) => Transform<string[], string> =
     `joinLines(${joinstr})`
   );
 
-
-////////
-// Ordered Line Matching
-// export interface LineMatchOptions {
-//   lineOffset: number;
-//   lineCount: number;
-//   indentOffset: number;
-//   evidenceEnd: string[];
-// }
-
-// export const defaultLineMatchOptions: LineMatchOptions = {
-//   // lineOffset: 0,
-//   lineCount: 0,
-//   indentOffset: 0,
-//   // evidenceEnd: [],
-// };
-
 export const multiGrepDropUntil: (regexes: RegExp[], includeMatchedLines: boolean) => Transform<string[], string[]> =
   (regexes, includeMatchedLines) => {
     return through((lines: string[]) => {
