@@ -69,5 +69,8 @@ https://www.isca-speech.org/archive/iswlt_04/slt4_047.html
 https://www.isca-speech.org/archive/odyssey_2020/li20b_odyssey.html
 https://www.isca-speech.org/archive/sltu_2012/nakagawa12_sltu.html
 
-this one is missed but dc.description is valid
+
 https://transacl.org/ojs/index.php/tacl/article/view/2423
+https://link.springer.com/referenceworkentry/10.1007/978-0-387-39940-9_935
+http://www.digitalhumanities.org/dhq/vol/11/4/000327/000327.html
+https://dl.acm.org/doi/10.1145/3130348.3130350

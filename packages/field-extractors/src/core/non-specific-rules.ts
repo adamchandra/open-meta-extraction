@@ -48,6 +48,10 @@ export const GeneralExtractionAttempts = compose(
     validateEvidence({
       'og:title': 'title',
       'og:description': 'abstract',
-    })
+    }),
+    validateEvidence({
+      'DC.Title': 'title',
+      'DC.Description': 'abstract',
+    }),
   )
 );
