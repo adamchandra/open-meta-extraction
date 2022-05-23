@@ -35,4 +35,5 @@ export const UrlSpecificAttempts = attemptEach(
   u2.linkSpringerComRule,
   u3.neuripsCCRule,
   u3.iscaSpeechOrgRule,
+  u3.lrecConfOrg,
 );

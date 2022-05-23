@@ -160,6 +160,15 @@ export async function evalElemText(elem: Elem): Promise<E.Either<string, string>
     });
 }
 
+export async function evalElemOuterHtml(elem: Elem): Promise<E.Either<string, string>> {
+  return elem.evaluate(e => e.outerHTML)
+    .then(text => {
+      if (text === null)
+        return E.left('no outerHtml found for elem');
+      return E.right(text.trim());
+    });
+}
+
 export async function evalElemAttr(elem: Elem, attr: string): Promise<E.Either<string, string>> {
   return elem.evaluate((e, attrname) => e.getAttribute(attrname), attr)
     .then(text => (text === null
@@ -186,6 +195,15 @@ export const getElemText: Transform<Elem, string> =
       TE.mapLeft((msg) => ['continue', msg]),
     );
   }, 'getElemText');
+
+
+export const getElemOuterHtml: Transform<Elem, string> =
+  through((elem: Elem) => {
+    return pipe(
+      () => evalElemOuterHtml(elem),
+      TE.mapLeft((msg) => ['continue', msg]),
+    );
+  }, 'getElemOuterHtml');
 
 
 export const loadBrowserPage: Transform<CacheFileKey, Page> =

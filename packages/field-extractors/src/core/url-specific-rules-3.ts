@@ -1,110 +1,161 @@
 import {
-    Transform,
-    ExtractionRule,
-    collectFanout,
-    compose,
+  Transform,
+  ExtractionRule,
+  collectFanout,
+  compose,
 } from '~/predef/extraction-prelude';
 
 import {
-    forInputs,
-    saveEvidence,
-    validateEvidence,
-    urlFilter
+  forInputs,
+  saveEvidence,
+  validateEvidence,
+  urlFilter,
+  withResponsePage
 } from "./extraction-primitives";
 
 import {
-    dropN,
-    grepDropUntil,
-    grepFilterNot,
-    grepTakeUntil,
-    joinLines,
-    loadTextFile,
-    splitLines,
+  dropN,
+  grepDropUntil,
+  grepFilterNot,
+  grepTakeUntil,
+  joinLines,
+  loadTextFile,
+  splitLines,
 } from "./text-primitives";
 
 import { gatherHighwirePressTags } from './headtag-scripts';
 
 
 import {
-    Elem,
-    elemQueryOne,
-    getElemAttr,
-    getElemText,
-    loadBrowserPage,
-    selectOne
+  Elem,
+  elemQueryOne,
+  getElemAttr,
+  getElemText,
+  loadBrowserPage,
+  selectOne
 } from './html-query-primitives';
 
 
 
-const selectNeuripsCCAbstract: Transform<string,
-    unknown> = compose(
-        splitLines,
-        grepDropUntil(/Abstract/),
-        dropN(1),
-        grepTakeUntil(/^[ ]+<.div/),
-        grepFilterNot(/^[ ]+<.{1,4}>[ ]*$/),
-        joinLines(' '),
-        saveEvidence('neurips.cc.abstract'),
-    );
+const selectNeuripsCCAbstract: Transform<string, unknown> = compose(
+    splitLines,
+    grepDropUntil(/Abstract/),
+    dropN(1),
+    grepTakeUntil(/^[ ]+<.div/),
+    grepFilterNot(/^[ ]+<.{1,4}>[ ]*$/),
+    joinLines(' '),
+    saveEvidence('neurips.cc.abstract'),
+  );
 
 export const neuripsCCRule: ExtractionRule = compose(
-    urlFilter(/neurips.cc/),
-    forInputs(/response-body/, compose(
-        collectFanout(
-            compose(loadBrowserPage, gatherHighwirePressTags),
-            compose(loadTextFile, selectNeuripsCCAbstract)
-        ),
-        validateEvidence({
-            citation_title: 'title',
-            citation_author: 'author',
-            citation_pdf_url: 'pdf-link',
-            'neurips.cc.abstract': 'abstract'
-        }),
-    ))
+  urlFilter(/neurips.cc/),
+  forInputs(/response-body/, compose(
+    collectFanout(
+      compose(loadBrowserPage, gatherHighwirePressTags),
+      compose(loadTextFile, selectNeuripsCCAbstract)
+    ),
+    validateEvidence({
+      citation_title: 'title',
+      citation_author: 'author',
+      citation_pdf_url: 'pdf-link',
+      'neurips.cc.abstract': 'abstract'
+    }),
+  ))
 );
 
 const selectIscaSpeechAbstract: Transform<Elem, void> = compose(
-    elemQueryOne('p'),
-    getElemText,
-    saveEvidence('isca.abstract'),
+  elemQueryOne('p'),
+  getElemText,
+  saveEvidence('isca.abstract'),
 );
 
 
 const selectIscaSpeechTitle: Transform<Elem, void> = compose(
-    elemQueryOne('h3'),
-    getElemText,
-    saveEvidence('isca.title'),
+  elemQueryOne('h3'),
+  getElemText,
+  saveEvidence('isca.title'),
 );
 
 const selectIscaSpeechAuthors: Transform<Elem, void> = compose(
-    elemQueryOne('h5'),
-    getElemText,
-    saveEvidence('isca.authors'),
+  elemQueryOne('h5'),
+  getElemText,
+  saveEvidence('isca.authors'),
 );
 
 
 const selectIscaSpeechPDFLink: Transform<Elem, void> = compose(
-    elemQueryOne('a'),
-    getElemAttr('href'),
-    saveEvidence('isca.pdf-partial-link'),
+  elemQueryOne('a'),
+  getElemAttr('href'),
+  saveEvidence('isca.pdf-partial-link'),
 );
 
 export const iscaSpeechOrgRule: ExtractionRule = compose(
-    urlFilter(/isca-speech.org/),
-    forInputs(/response-body/, compose(
-        loadBrowserPage,
-        selectOne('div.w3-card'),
-        collectFanout(
-            selectIscaSpeechAbstract,
-            selectIscaSpeechAuthors,
-            selectIscaSpeechPDFLink,
-            selectIscaSpeechTitle,
-        ),
-        validateEvidence({
-            title: 'title',
-            authors: 'authors',
-            'pdf-link?': 'pdf-link',
-            'abstract': 'abstract',
-        }),
-    )),
+  urlFilter(/isca-speech.org/),
+  forInputs(/response-body/, compose(
+    loadBrowserPage,
+    selectOne('div.w3-card'),
+    collectFanout(
+      selectIscaSpeechAbstract,
+      selectIscaSpeechAuthors,
+      selectIscaSpeechPDFLink,
+      selectIscaSpeechTitle,
+    ),
+    validateEvidence({
+      title: 'title',
+      authors: 'authors',
+      'pdf-link?': 'pdf-link',
+      'abstract': 'abstract',
+    }),
+  )),
+);
+
+
+  // withResponsePage(compose(
+    // selectOne('table.main_summaries'),
+export const lrecConfOrg: ExtractionRule = compose(
+  urlFilter(/lrec-conf.org/),
+  forInputs(/response-body/, compose(
+    loadTextFile,
+    splitLines,
+    collectFanout(
+      compose(
+        grepDropUntil(/^[ ]+Abstract/),
+        dropN(1),
+        grepTakeUntil(/<\/tr>/),
+        grepFilterNot(/^[ ]+<.{1,4}>[ ]*$/),
+        joinLines(' '),
+        saveEvidence('abstract'),
+      ),
+      compose(
+        grepDropUntil(/^[ ]+Title/),
+        dropN(1),
+        grepTakeUntil(/<\/tr>/),
+        grepFilterNot(/^[ ]+<.{1,4}>[ ]*$/),
+        joinLines(' '),
+        saveEvidence('title'),
+      ),
+      compose(
+        grepDropUntil(/^[ ]+Authors/),
+        dropN(1),
+        grepTakeUntil(/<\/tr>/),
+        grepFilterNot(/^[ ]+<.{1,4}>[ ]*$/),
+        joinLines(' '),
+        saveEvidence('authors-block'),
+      ),
+      compose(
+        grepDropUntil(/^[ ]+Full Paper/),
+        dropN(1),
+        grepTakeUntil(/<\/tr>/),
+        grepFilterNot(/^[ ]+<.{1,4}>[ ]*$/),
+        joinLines(' '),
+        saveEvidence('pdf-block'),
+      ),
+    ),
+    validateEvidence({
+      'abstract': 'abstract',
+      'title': 'title',
+      'authors-block': 'authors-block',
+      'pdf-block?': 'pdf-block',
+    }),
+  )),
 );
