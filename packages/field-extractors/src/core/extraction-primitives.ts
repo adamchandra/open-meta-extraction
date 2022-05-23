@@ -7,7 +7,6 @@ import * as E from 'fp-ts/Either';
 
 import path from 'path';
 
-
 import {
   ArtifactSubdir,
   expandDir,
@@ -48,9 +47,11 @@ import {
 } from '~/predef/extraction-records';
 
 import {
+  BrowserPage,
   expandCaseVariations,
   getElemAttr,
   getElemText,
+  loadBrowserPage,
   selectAll,
   selectElemAttr,
   selectOne
@@ -61,6 +62,7 @@ import {
   CleaningRule,
   CleaningRuleResult
 } from './data-cleaning';
+import { loadTextFile } from './text-primitives';
 
 
 
@@ -90,7 +92,7 @@ export const clearEvidence: (evidenceTest: RegExp) => Transform<unknown, unknown
 };
 
 
-export const saveEvidence: (evidenceName: string) => Transform<string, unknown> =
+export const saveEvidence: (evidenceName: string) => Transform<string, void> =
   (evidenceName) => through((extractedValue: string, env) => {
     const text = extractedValue.trim();
     const savedEvidenceStrings = _.map(env.evidence, ev => ev.evidence);
@@ -171,7 +173,6 @@ const loadXML: Transform<string, any> = through((artifactPath, env) => {
 
   // TODO this use of 'cache', vs '.' is unnecessary and confusing
   const maybeCachedContent = readCorpusTextFile(entryPath, '.', artifactPath);
-  // prettyPrint({ msg: 'loadXML', maybeCachedContent })
 
   if (maybeCachedContent) {
     return pipe(
@@ -229,58 +230,8 @@ const verifyFileType: (urlTest: RegExp) => FilterTransform<string> = (typeTest: 
   return test;
 }, `m/${typeTest.source}/`);
 
-export const readCache: Transform<CacheFileKey, string> = through(
-  (cacheKey: CacheFileKey, { fileContentCache }) => (cacheKey in fileContentCache
-    ? fileContentCache[cacheKey]
-    : ClientFunc.halt(`cache has no record for key ${cacheKey}`)), `readCache`);
 
-
-export const grepFilter: (regex: RegExp) => Transform<CacheFileKey, string[]> = (regex) => compose(
-  readCache,
-  through((content: string) => {
-    const lines = _.split(content, '\n');
-    return _.filter(lines, l => regex.test(l));
-  }, `grep(${regex.source})`)
-);
-
-
-// TODO make this consistent by introducing read/splitstring/etc
-export const grepFilterNot: (regex: RegExp) => Transform<string[], string[]> = (regex) => compose(
-  through((lines: string[]) => {
-    return _.filter(lines, l => !regex.test(l));
-  }, `grep(${regex.source})`)
-);
-
-export const grepDropUntil: (regex: RegExp) => Transform<CacheFileKey, string[]> = (regex) => compose(
-  readCache,
-  through((content: string) => {
-    const lines = _.split(content, '\n');
-    const filtered = _.dropWhile(lines, l => !regex.test(l));
-    return filtered;
-  }, `grepDropUntil(${regex.source})`)
-);
-
-export const grepTakeUntil: (regex: RegExp) => Transform<string[], string[]> = (regex) => compose(
-  through((lines: string[]) => {
-    const filtered = _.takeWhile(lines, l => !regex.test(l));
-    return filtered;
-  }, `grepTakeUntil(${regex.source})`)
-);
-
-export const dropN: (num: number) => Transform<string[], string[]> = (num) => compose(
-  through((lines: string[]) => {
-    return _.drop(lines, num);
-  }, `dropN(${num})`)
-);
-
-export const joinLines: (join: string) => Transform<string[], string> = (joinstr) => compose(
-  through((lines: string[]) => {
-    return _.join(lines, joinstr);
-  }, `joinLines(${joinstr})`)
-);
-
-
-export const selectMetaEvidence: (name: string, attrName?: string) => Transform<CacheFileKey, unknown> = (name, attrName = 'name') => {
+export const selectMetaEvidence: (name: string, attrName?: string) => Transform<BrowserPage, unknown> = (name, attrName = 'name') => {
   const evidenceName = `select:$(meta[${attrName}="${name}"])`;
   return compose(
     selectElemAttr(expandCaseVariations(name, (s) => `meta[${attrName}="${s}"]`), 'content', `meta[${attrName}="${name}"]`),
@@ -288,7 +239,7 @@ export const selectMetaEvidence: (name: string, attrName?: string) => Transform<
   );
 };
 
-export const selectElemTextEvidence: (queryString: string) => Transform<CacheFileKey, unknown> = (queryString) => {
+export const selectElemTextEvidence: (queryString: string) => Transform<BrowserPage, unknown> = (queryString) => {
   const evidenceName = `select:$(${queryString})`;
   return compose(
     selectOne(queryString),
@@ -297,28 +248,30 @@ export const selectElemTextEvidence: (queryString: string) => Transform<CacheFil
   );
 };
 
-export const selectElemAttrEvidence: (queryString: string, contentAttr: string) => Transform<CacheFileKey, unknown> = (queryString, contentAttr) => {
-  const evidenceName = `select:$(${queryString}).attr(${contentAttr})`;
-  return compose(
-    selectElemAttr(queryString, contentAttr),
-    saveEvidence(evidenceName),
-  );
-};
-
-export const selectAllElemAttrEvidence: (queryString: string, contentAttr: string) => Transform<CacheFileKey, unknown> = (queryString, contentAttr) => {
-  const evidenceName = `select-all:$(${queryString}).attr(${contentAttr})`;
-  return compose(
-    selectAll(queryString),
-    forEachDo(compose(
-      getElemAttr(contentAttr),
+export const selectElemAttrEvidence: (queryString: string, contentAttr: string) => Transform<BrowserPage, unknown> =
+  (queryString, contentAttr) => {
+    const evidenceName = `select:$(${queryString}).attr(${contentAttr})`;
+    return compose(
+      selectElemAttr(queryString, contentAttr),
       saveEvidence(evidenceName),
-    )),
-  );
-};
+    );
+  };
+
+export const selectAllElemAttrEvidence: (queryString: string, contentAttr: string) => Transform<BrowserPage, unknown> =
+  (queryString, contentAttr) => {
+    const evidenceName = `select-all:$(${queryString}).attr(${contentAttr})`;
+    return compose(
+      selectAll(queryString),
+      forEachDo(compose(
+        getElemAttr(contentAttr),
+        saveEvidence(evidenceName),
+      )),
+    );
+  };
 
 
 
-export const selectAllMetaEvidence: (name: string, attrName?: string) => Transform<CacheFileKey, unknown> = (name, attrName = 'name') => {
+export const selectAllMetaEvidence: (name: string, attrName?: string) => Transform<BrowserPage, unknown> = (name, attrName = 'name') => {
   const evidenceName = `select-all:$(meta[${attrName}="${name}"])`;
   return compose(
     selectAll(expandCaseVariations(name, (s) => `meta[${attrName}="${s}"]`), `meta[${attrName}="${name}"]`),
@@ -334,7 +287,7 @@ export const selectXMLTag: (selectorPath: string[]) => Transform<CacheFileKey, u
   const sel = selectorPath.join('.');
   const evidenceName = `xml:select:'${sel}'`;
   return compose(
-    readCache,
+    loadTextFile,
     through((a) => {
       const selected = _.get(a, selectorPath);
       const selstr = selected.toString();
@@ -343,11 +296,6 @@ export const selectXMLTag: (selectorPath: string[]) => Transform<CacheFileKey, u
     saveEvidence(evidenceName),
   );
 };
-
-
-/// // End jquery/css selector and Elem functions
-/// ///////////////
-
 
 const urlMatcher: (urlTest: RegExp) => Transform<unknown, unknown> = (regex) => compose(
   through((_a, env) => env.urlFetchData.responseUrl),
@@ -409,60 +357,63 @@ export const forInputs: (re: RegExp, transform: Transform<CacheFileKey, unknown>
     )
   );
 
+// Convenience function for most common case: run a bunch of queries on the response page in the browser
+export const withResponsePage: (transform: Transform<BrowserPage, unknown>) => Transform<unknown, unknown> =
+  transform => forInputs(/response-body/, compose(loadBrowserPage, transform));
 
-export const tryEvidenceMapping: (mapping: Record<string, string>) => Transform<unknown, unknown> = (mapping) => {
-  const evidenceKeys = _.keys(mapping);
-  const filters = _.map(evidenceKeys, e => evidenceExists(e));
-  const keyEvidence = _.join(evidenceKeys, ' ++ ');
+export const validateEvidence: (mapping: Record<string, string>) => Transform<unknown, unknown> =
+  (mapping) => {
+    const evidenceKeys = _.keys(mapping);
+    const filters = _.map(evidenceKeys, e => evidenceExists(e));
+    const keyEvidence = _.join(evidenceKeys, ' ++ ');
 
 
-  return compose(
-    takeWhileSuccess(...filters),
-    tap((_a, env) => {
-      prettyPrint({ candidates: env.fieldCandidates });
+    return compose(
+      takeWhileSuccess(...filters),
+      tap((_a, env) => {
 
-      _.each(evidenceKeys, evKey0 => {
-        const fieldName = mapping[evKey0];
+        _.each(evidenceKeys, evKey0 => {
+          const fieldName = mapping[evKey0];
 
-        const evKey = evKey0.endsWith('?') ? evKey0.slice(0, -1) : evKey0;
+          const evKey = evKey0.endsWith('?') ? evKey0.slice(0, -1) : evKey0;
 
-        const evKeys = _.map(evKey.split('|'), s => s.trim());
+          const evKeys = _.map(evKey.split('|'), s => s.trim());
 
-        _.each(evKeys, (key) => {
-          const maybeCandidates = candidatesForEvidence(env, key);
+          _.each(evKeys, (key) => {
+            const maybeCandidates = candidatesForEvidence(env, key);
 
-          _.each(maybeCandidates, c => {
-            const { text, evidence } = c;
+            _.each(maybeCandidates, c => {
+              const { text, evidence } = c;
 
-            const field: FieldRecord = {
-              name: fieldName,
-              evidence: [...evidence, keyEvidence],
-              value: text
-            };
+              const field: FieldRecord = {
+                name: fieldName,
+                evidence: [...evidence, keyEvidence],
+                value: text
+              };
 
-            if (fieldName === 'abstract:raw') {
-              const [cleaned0, cleaningRuleResults] = applyCleaningRules(AbstractCleaningRules, text);
-              field.name = 'abstract';
-              field.value = cleaned0;
-              const ruleNames = _.map(cleaningRuleResults, r => {
-                return `clean: ${r.rule}`;
-              });
-              field.evidence.push(...ruleNames);
-            }
-            if (field.value !== undefined && field.value.length > 0) {
-              env.fields.push(field);
-            }
+              if (fieldName === 'abstract:raw') {
+                const [cleaned0, cleaningRuleResults] = applyCleaningRules(AbstractCleaningRules, text);
+                field.name = 'abstract';
+                field.value = cleaned0;
+                const ruleNames = _.map(cleaningRuleResults, r => {
+                  return `clean: ${r.rule}`;
+                });
+                field.evidence.push(...ruleNames);
+              }
+              if (field.value !== undefined && field.value.length > 0) {
+                env.fields.push(field);
+              }
+            });
           });
         });
-      });
-      saveFieldRecs(env);
-    }),
-    tap((_a, env) => {
-      _.remove(env.fields, () => true);
-      _.remove(env.fieldCandidates, () => true);
-    })
-  );
-};
+        saveFieldRecs(env);
+      }),
+      tap((_a, env) => {
+        _.remove(env.fields, () => true);
+        _.remove(env.fieldCandidates, () => true);
+      })
+    );
+  };
 
 const candidatesForEvidence: (env: ExtractionEnv, evstr: string) => FieldCandidate[] = (env, evstr) => {
   const regex = new RegExp(evstr);

@@ -7,8 +7,6 @@
 
 import _ from 'lodash';
 
-import { GlobalDocumentMetadata } from '~/predef/ieee-metadata';
-
 import {
   attemptEach,
   ExtractionRule,
@@ -16,7 +14,7 @@ import {
   forEachDo,
   through,
   ClientFunc,
-  gatherSuccess,
+  collectFanout,
   CacheFileKey,
   compose,
 } from '~/predef/extraction-prelude';
@@ -24,11 +22,17 @@ import {
 import {
   forInputs,
   selectElemTextEvidence,
-  tryEvidenceMapping,
+  validateEvidence,
   urlFilter,
   saveEvidence,
-  grepFilter
+  withResponsePage,
 } from '~/core/extraction-primitives';
+
+import {
+  grepFilter,
+  loadTextFile,
+  splitLines,
+} from '~/core/text-primitives';
 
 import {
   gatherHighwirePressTags,
@@ -36,12 +40,16 @@ import {
 } from './headtag-scripts';
 
 import {
+  BrowserPage,
   getElemText,
   selectOne
 } from './html-query-primitives';
 
+type ParsedJson = {
+  json: any
+}
 
-const readSpringerDocumentMetadata: Transform<CacheFileKey, any> = compose(
+const readSpringerDocumentMetadata: Transform<BrowserPage, ParsedJson> = compose(
   selectOne('script[type="application/ld+json"]'),
   getElemText,
   through((jsonText, env) => {
@@ -55,39 +63,41 @@ const readSpringerDocumentMetadata: Transform<CacheFileKey, any> = compose(
     }
     const strippedJson = jsonText.slice(i1, i2 + 1);
     try {
-      return JSON.parse(strippedJson);
+      return { json: JSON.parse(strippedJson) }
     } catch (error) {
       env.log.warn(`readSpringerDocumentMetadata: Could not parse JSON text`);
       return ClientFunc.continue('springer-link.metadata not parsable');
     }
   }, 'readSpringerMetadata'));
 
-const saveMetaDataEvidence: (name: string, f: (m: any) => string[]) => Transform<any, unknown> = (name, f) => compose(
-  through((documentMetadata) => f(documentMetadata), `saveAnyMetaEvidence(${name})`),
-  forEachDo(
-    saveEvidence(name),
-  ),
-);
+const saveMetaDataEvidence: (name: string, f: (m: ParsedJson) => string[]) => Transform<ParsedJson, unknown> =
+  (name, f) => compose(
+    through((documentMetadata) => f(documentMetadata), `saveAnyMetaEvidence(${name})`),
+    forEachDo(
+      saveEvidence(name),
+    )
+  );
 
-const selectSpringerDocumentMetaEvidence: () => Transform<CacheFileKey, unknown> = () => compose(
-  readSpringerDocumentMetadata,
-  gatherSuccess(
-    saveMetaDataEvidence('metadata:title', m => m.headline ? [m.headline] : []),
-    saveMetaDataEvidence('metadata:abstract', m => m.description ? [m.description] : []),
-    saveMetaDataEvidence('metadata:author', m => m.author && _.isArray(m.author) ? m.author.map((a: any) => a.name) : []),
-  )
-);
+const selectSpringerDocumentMetaEvidence: () => Transform<BrowserPage, unknown> =
+  () => compose(
+    readSpringerDocumentMetadata,
+    collectFanout(
+      saveMetaDataEvidence('metadata:title', ({ json }) => json.headline ? [json.headline] : []),
+      saveMetaDataEvidence('metadata:abstract', ({ json }) => json.description ? [json.description] : []),
+      saveMetaDataEvidence('metadata:author', ({ json }) => json.author && _.isArray(json.author) ? json.author.map((a: any) => a.name) : []),
+    )
+  );
 
 export const linkSpringerComRule: ExtractionRule = compose(
   urlFilter(/link.springer.com/),
-  forInputs(/response-body/, compose(
-    gatherSuccess(
+  withResponsePage(compose(
+    collectFanout(
       gatherHighwirePressTags,
       gatherOpenGraphTags,
       selectElemTextEvidence('section#Abs1 > p.Para'),
       compose(
         selectSpringerDocumentMetaEvidence(),
-        tryEvidenceMapping({
+        validateEvidence({
           'metadata:title': 'title',
           'metadata:abstract': 'abstract',
           'metadata:author?': 'author',
@@ -97,7 +107,7 @@ export const linkSpringerComRule: ExtractionRule = compose(
     attemptEach(
       compose(
         urlFilter(/\/chapter\//),
-        tryEvidenceMapping({ // link.springer.com/chapter
+        validateEvidence({ // link.springer.com/chapter
           citation_title: 'title',
           citation_author: 'author',
           citation_pdf_url: 'pdf-link',
@@ -107,7 +117,7 @@ export const linkSpringerComRule: ExtractionRule = compose(
       ),
       compose(
         urlFilter(/\/article\//),
-        tryEvidenceMapping({ // link.springer.com/article
+        validateEvidence({ // link.springer.com/article
           citation_title: 'title',
           citation_author: 'author',
           citation_pdf_url: 'pdf-link',
@@ -118,7 +128,24 @@ export const linkSpringerComRule: ExtractionRule = compose(
   )),
 );
 
+
+interface GlobalDocumentMetadata {
+  title?: string;
+  abstract?: string;
+  authors?: Author[];
+  pdfPath?: string;
+}
+
+interface Author {
+  name: string;
+  firstName: string;
+  lastName: string;
+  affiliation: string;
+}
+
 const readGlobalDocumentMetadata: Transform<CacheFileKey, GlobalDocumentMetadata> = compose(
+  loadTextFile,
+  splitLines,
   grepFilter(/global\.document\.metadata/i),
   through((lines) => {
     if (lines.length === 0) {
@@ -142,7 +169,7 @@ const saveDocumentMetaDataEvidence: (name: string, f: (m: GlobalDocumentMetadata
 
 const selectGlobalDocumentMetaEvidence: () => Transform<CacheFileKey, unknown> = () => compose(
   readGlobalDocumentMetadata,
-  gatherSuccess(
+  collectFanout(
     saveDocumentMetaDataEvidence('metadata:title', m => m.title ? [m.title] : []),
     saveDocumentMetaDataEvidence('metadata:abstract', m => m.abstract ? [m.abstract] : []),
     saveDocumentMetaDataEvidence('metadata:pdf-path', m => m.pdfPath ? [m.pdfPath] : []),
@@ -155,7 +182,7 @@ export const ieeExploreOrgRule: ExtractionRule = compose(
   urlFilter(/ieeexplore.ieee.org/),
   forInputs(/response-body/, compose(
     selectGlobalDocumentMetaEvidence(),
-    tryEvidenceMapping({
+    validateEvidence({
       'metadata:title': 'title',
       'metadata:abstract': 'abstract',
       'metadata:author?': 'author',

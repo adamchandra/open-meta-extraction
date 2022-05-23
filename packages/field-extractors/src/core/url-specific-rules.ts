@@ -28,6 +28,7 @@ export const UrlSpecificAttempts = attemptEach(
   u1.mitpressjournalsOrgRule,
   u1.academicOupComRule,
   u1.nipsCCRule,
+  u1.iospressComRule,
   u2.ieeExploreOrgRule,
   u2.linkSpringerComRule,
   u3.neuripsCCRule,

@@ -35,7 +35,7 @@ const {
   forEachDo,
   attemptEach,
   takeWhileSuccess,
-  gatherSuccess,
+  collectFanout,
 } = fp;
 
 
@@ -95,7 +95,7 @@ async function runTakeFirstSuccess(fns: Transform<string, string>[]): Promise<st
 }
 
 async function runGatherSuccess(fns: Transform<string, string>[]): Promise<string[]> {
-  const res = await gatherSuccess(...fns)(initEnv(`input#${dummy += 1}`))();
+  const res = await collectFanout(...fns)(initEnv(`input#${dummy += 1}`))();
   return getEnvMessages(res);
 }
 
@@ -181,7 +181,7 @@ describe('Extraction Prelude / Primitives', () => {
     // done();
   });
 
-  it('gatherSuccess examples', async () => {
+  it('collectFanout examples', async () => {
     const examples: Array<[Transform<string, string>[], string[]]> = [
       [[emit('A:okay'), emit('B:okay')],
         ['A:okay', 'B:okay']],

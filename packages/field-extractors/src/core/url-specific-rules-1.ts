@@ -6,20 +6,20 @@
  **/
 
 import {
-  gatherSuccess,
+  collectFanout,
   ExtractionRule,
   compose,
 } from '~/predef/extraction-prelude';
 
 import {
-  forInputs,
   selectElemAttrEvidence,
   selectElemTextEvidence,
-  tryEvidenceMapping,
+  validateEvidence,
   urlFilter,
   selectAllElemAttrEvidence,
   selectXMLTag,
   forXMLInputs,
+  withResponsePage,
 } from '~/core/extraction-primitives';
 
 import {
@@ -27,16 +27,16 @@ import {
   gatherHighwirePressTags,
   gatherOpenGraphTags,
 } from './headtag-scripts';
-
+import { getElemAttr, selectElemAttr, selectOne } from './html-query-primitives';
 
 export const arxivOrgRule: ExtractionRule = compose(
   urlFilter(/export.arxiv.org/),
   forXMLInputs(/response-body/, compose(
-    gatherSuccess(
+    collectFanout(
       selectXMLTag(['feed', 'entry', '0', 'summary']),
       selectXMLTag(['feed', 'entry', '0', 'title']),
     ),
-    tryEvidenceMapping({
+    validateEvidence({
       'feed.entry.0.summary': 'abstract',
       'feed.entry.0.title': 'title',
     }),
@@ -45,17 +45,17 @@ export const arxivOrgRule: ExtractionRule = compose(
 
 export const scienceDirectRule: ExtractionRule = compose(
   urlFilter(/sciencedirect.com/),
-  forInputs(/response-body/, compose(
-    gatherSuccess(
+  withResponsePage(compose(
+    collectFanout(
       gatherHighwirePressTags,
       gatherOpenGraphTags,
       selectElemTextEvidence('.Abstracts'),
       selectElemTextEvidence('a.author'), // TODO selectAll??
       selectElemAttrEvidence('div.PdfEmbed a.anchor', 'href'),
     ),
-    tryEvidenceMapping({
+    validateEvidence({
       citation_title: 'title',
-      'og:description': 'abstract-clipped',
+      'og:description': 'abstract-clipped', // TODO fix/figure out naming scheme
       '.Abstracts': 'abstract:raw',
       'a.author': 'author',
       'div.PdfEmbed?': 'pdf-path',
@@ -66,15 +66,15 @@ export const scienceDirectRule: ExtractionRule = compose(
 
 export const dlAcmOrgRule: ExtractionRule = compose(
   urlFilter(/dl.acm.org/),
-  forInputs(/response-body/, compose(
-    gatherSuccess(
+  withResponsePage(compose(
+    collectFanout(
       gatherDublinCoreTags,
       selectElemTextEvidence('.citation__title'),
       selectElemTextEvidence('.abstractInFull'),
       selectAllElemAttrEvidence('a[class="author-name"]', 'title'),
       selectElemAttrEvidence('a[title="PDF"]', 'href'),
     ),
-    tryEvidenceMapping({
+    validateEvidence({
       'DC.Title?': 'title',
       'citation__title?': 'title',
       abstractInFull: 'abstract',
@@ -86,28 +86,28 @@ export const dlAcmOrgRule: ExtractionRule = compose(
 
 export const aclwebOrgRule: ExtractionRule = compose(
   urlFilter(/aclweb.org/),
-  forInputs(/response-body/, compose(
-    gatherSuccess(
+  withResponsePage(compose(
+    collectFanout(
       gatherHighwirePressTags,
       selectElemTextEvidence('.acl-abstract'),
     ),
-    tryEvidenceMapping({
+    validateEvidence({
       citation_title: 'title',
       citation_author: 'author',
       citation_pdf_url: 'pdf-link',
-      '.acl-abstract': 'abstract:raw', // TODO test this w/o leading .
+      '.acl-abstract': 'abstract:raw',
     }),
   )),
 );
 
 export const ijcaiOrgRule: ExtractionRule = compose(
   urlFilter(/ijcai.org/),
-  forInputs(/response-body/, compose(
-    gatherSuccess(
+  withResponsePage(compose(
+    collectFanout(
       gatherHighwirePressTags,
       selectElemTextEvidence('div.col-md-12'),
     ),
-    tryEvidenceMapping({
+    validateEvidence({
       citation_title: 'title',
       citation_author: 'author',
       'div.col-md-12': 'abstract'
@@ -117,13 +117,13 @@ export const ijcaiOrgRule: ExtractionRule = compose(
 
 export const mitpressjournalsOrgRule: ExtractionRule = compose(
   urlFilter(/mitpressjournals.org/),
-  forInputs(/response-body/, compose(
-    gatherSuccess(
+  withResponsePage(compose(
+    collectFanout(
       gatherDublinCoreTags,
       selectElemAttrEvidence('a[class="show-pdf"]', 'href'),
       selectElemTextEvidence('.abstractInFull'),
     ),
-    tryEvidenceMapping({
+    validateEvidence({
       'DC.Title': 'title',
       'DC.Creator': 'author',
       abstractInFull: 'abstract:raw',
@@ -133,12 +133,12 @@ export const mitpressjournalsOrgRule: ExtractionRule = compose(
 );
 export const academicOupComRule: ExtractionRule = compose(
   urlFilter(/academic.oup.com/),
-  forInputs(/response-body/, compose(
-    gatherSuccess(
+  withResponsePage(compose(
+    collectFanout(
       gatherHighwirePressTags,
       selectElemTextEvidence('section[class="abstract"] p[class="chapter-para"]'),
     ),
-    tryEvidenceMapping({
+    validateEvidence({
       citation_title: 'title',
       citation_author: 'author',
       citation_pdf_url: 'pdf-link',
@@ -150,12 +150,12 @@ export const academicOupComRule: ExtractionRule = compose(
 
 export const nipsCCRule: ExtractionRule = compose(
   urlFilter(/nips.cc/),
-  forInputs(/response-body/, compose(
-    gatherSuccess(
+  withResponsePage(compose(
+    collectFanout(
       gatherHighwirePressTags,
       selectElemTextEvidence('h4 + p'),
     ),
-    tryEvidenceMapping({
+    validateEvidence({
       citation_title: 'title',
       citation_author: 'author',
       citation_pdf_url: 'pdf-link',
@@ -164,18 +164,18 @@ export const nipsCCRule: ExtractionRule = compose(
   )),
 );
 
-
-  // compose(
-  //   urlFilter(/content.iospress.com/),
-  //   forInputs(/response-body/, compose(
-  //     gatherSuccess(
-  //       gatherHighwirePressTags,
-  //       selectElemAttrEvidence('a[title="PDF"]', 'href'),
-  //     ),
-  //     tryEvidenceMapping({
-  //       citation_title: 'title',
-  //       citation_author: 'author',
-  //       'div.col-md-12': 'abstract'
-  //     }),
-  //   )),
-  // )
+export const iospressComRule: ExtractionRule = compose(
+  urlFilter(/content.iospress.com/),
+  withResponsePage(compose(
+    collectFanout(
+      gatherHighwirePressTags,
+      selectElemAttrEvidence('[data-abstract]', 'data-abstract'),
+    ),
+    validateEvidence({
+      citation_title: 'title',
+      citation_author: 'author',
+      citation_pdf_url: 'pdf-link',
+      'data-abstract': 'abstract'
+    }),
+  )),
+);

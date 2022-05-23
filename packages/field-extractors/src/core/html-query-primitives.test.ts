@@ -2,14 +2,19 @@ import _ from 'lodash';
 
 import { isLeft, isRight } from 'fp-ts/Either';
 import * as TE from 'fp-ts/TaskEither';
+import * as E from 'fp-ts/Either';
 import { pipe } from 'fp-ts/function';
-import { prettyPrint,  stripMargin } from '@watr/commonlib';
+import { prettyPrint, setLogEnvLevel, stripMargin } from '@watr/commonlib';
 import { BrowserInstance, createBrowserPool, DefaultPageInstanceOptions } from '@watr/spider';
 
 
 import {
+  AttrSelection,
   BrowserPage,
   evalElemAttr,
+  expandCaseVariations,
+  getElemAttrText,
+  queryAllPage,
   queryOneElem,
   queryOnePage,
   selectElementAttrP
@@ -78,17 +83,17 @@ async function withHTMLPage(browserInstance: BrowserInstance, htmlContent: strin
 }
 
 async function withPageContent(htmlContent: string, f: (page: BrowserPage) => Promise<void>): Promise<void> {
-    const browserPool = createBrowserPool();
-    await browserPool.use(async (browserInstance) => {
-      const page = await withHTMLPage(browserInstance, htmlContent);
-      await f(page);
-    });
-    return browserPool.shutdown();
+  const browserPool = createBrowserPool();
+  await browserPool.use(async (browserInstance) => {
+    const page = await withHTMLPage(browserInstance, htmlContent);
+    await f(page);
+  });
+  return browserPool.shutdown();
 }
 
 describe('HTML jquery-like css queries', () => {
-  // type ExampleType = [string, RegExp];
 
+  setLogEnvLevel('info');
 
   it('smokescreen', async () => {
     return withPageContent(tmpHtml, async (page) => {
@@ -99,14 +104,14 @@ describe('HTML jquery-like css queries', () => {
     })
   });
 
-  it.only('should select elements within previously selected elements', async () => {
+  it('should select elements within previously selected elements', async () => {
     const outerInner = stripMargin(`
 |       <div class="outer" id="my-outer">
 |         <div class="inner" id="my-inner">  </div>
 |       </div>
 `);
-    const htmlResult = genHtml('', outerInner)
-    return withPageContent(htmlResult, async (page) => {
+    const htmlContent = genHtml('', outerInner)
+    return withPageContent(htmlContent, async (page) => {
       await pipe(
         TE.right({ page }),
         TE.bind('outer', ({ page }) => () => queryOnePage(page, '.outer')),
@@ -114,15 +119,106 @@ describe('HTML jquery-like css queries', () => {
         TE.bind('outerId', ({ outer }) => () => evalElemAttr(outer, 'id')),
         TE.bind('innerId', ({ inner }) => () => evalElemAttr(inner, 'id')),
         TE.map(({ innerId, outerId }) => {
-          prettyPrint({ innerId, outerId });
+          expect(innerId).toEqual('my-inner')
+          expect(outerId).toEqual('my-outer')
         }),
         TE.mapLeft((error) => {
-          prettyPrint({ error })
+          fail(error)
         })
       )();
     });
   });
 
+  it('should select attributes from given element(s)', async () => {
+    const body = stripMargin(`
+|    <div id="div1" class="c0" attr-one="one">
+|       <div class="c0" attr-one="two"></div>
+|    </div>'
+`);
+    const htmlContent = genHtml('', body)
+    await withPageContent(htmlContent, async (page) => {
+      await pipe(
+        TE.right({ page }),
+        TE.bind('div1', ({ page }) => () => queryOnePage(page, '#div1')),
+        TE.bind('attr', ({ div1 }) => () => getElemAttrText(div1, 'attr-one')),
+        TE.map(({ attr }) => {
+          expect(attr).toEqual('one');
+        }),
+        TE.mapLeft((error) => {
+          fail(error);
+        })
+      )();
+    });
+
+    await withPageContent(htmlContent, async (page) => {
+      await pipe(
+        TE.right({ page }),
+        TE.bind('divs', ({ page }) => () => queryAllPage(page, '.c0')),
+        TE.bind('attrs', ({ divs }) => async () => {
+          const maybeAttrs = divs.map(div => getElemAttrText(div, 'attr-one'));
+          const settled: AttrSelection[] = await Promise.all(maybeAttrs)
+          const attValues = settled.map(maybeAtt => E.fold(
+            () => 'not-found',
+            succ => succ
+          )(maybeAtt));
+          return E.right(attValues);
+        }),
+        TE.map(({ attrs }) => {
+          expect(attrs).toEqual(['one', 'two']);
+        }),
+        TE.mapLeft((error) => {
+          fail(error);
+        })
+      )();
+    });
+
+  });
+
+  it('should select elements based on attribute css [foo=bar]', async () => {
+    const body = stripMargin(`
+|    <div>
+|       <div class="c0" mdata="one"></div>
+|       <div class="c0" mdata="two"></div>
+|    </div>'
+`);
+    const htmlContent = genHtml('', body)
+    await withPageContent(htmlContent, async (page) => {
+      await pipe(
+        TE.right({ page }),
+        TE.bind('div1', ({ page }) => () => queryOnePage(page, '[mdata]')),
+        TE.bind('attr', ({ div1 }) => () => getElemAttrText(div1, 'mdata')),
+        TE.map(({ attr }) => {
+          expect(attr).toEqual('one');
+        }),
+        TE.mapLeft((error) => {
+          fail(error);
+        })
+      )();
+
+      await pipe(
+        TE.right({ page }),
+        TE.bind('div1', ({ page }) => () => queryOnePage(page, '[mdata=two]')),
+        TE.bind('attr', ({ div1 }) => () => getElemAttrText(div1, 'mdata')),
+        TE.map(({ attr }) => {
+          expect(attr).toEqual('two');
+        }),
+        TE.mapLeft((error) => {
+          fail(error);
+        })
+      )();
+    });
+
+  });
+
+  it('should create all expansions', () => {
+    const cases1 = expandCaseVariations('A.B.C', (n) => `meta[name="${n}"]`);
+    const expect1 = 'meta[name="A.B.C"],meta[name="A.B.c"],meta[name="A.b.C"],meta[name="A.b.c"],meta[name="a.B.C"],meta[name="a.B.c"],meta[name="a.b.C"],meta[name="a.b.c"]';
+    expect(cases1).toBe(expect1)
+
+    const cases2 = expandCaseVariations('DC.Creator', (n) => `meta[name="${n}"]`);
+    const expect2 = 'meta[name="DC.Creator"],meta[name="DC.creator"],meta[name="Dc.Creator"],meta[name="Dc.creator"],meta[name="dC.Creator"],meta[name="dC.creator"],meta[name="dc.Creator"],meta[name="dc.creator"]';
+    expect(cases2).toBe(expect2)
+  });
 
   // it('should run assorted css queries', async () => {
   //   const examples: ExampleType[] = [
@@ -185,15 +281,6 @@ describe('HTML jquery-like css queries', () => {
   //   });
   // });
 
-  // it('should create all expansions', () => {
-  //   const cases1 = expandCaseVariations('A.B.C', (n) => `meta[name="${n}"]`);
-  //   const expect1 = 'meta[name="A.B.C"],meta[name="A.B.c"],meta[name="A.b.C"],meta[name="A.b.c"],meta[name="a.B.C"],meta[name="a.B.c"],meta[name="a.b.C"],meta[name="a.b.c"]';
-  //   expect(cases1).toBe(expect1)
-
-  //   const cases2 = expandCaseVariations('DC.Creator', (n) => `meta[name="${n}"]`);
-  //   const expect2 = 'meta[name="DC.Creator"],meta[name="DC.creator"],meta[name="Dc.Creator"],meta[name="Dc.creator"],meta[name="dC.Creator"],meta[name="dC.creator"],meta[name="dc.Creator"],meta[name="dc.creator"]';
-  //   expect(cases2).toBe(expect2)
-  // });
 
   // it('should downcase attributes', async () => {
   //   const examples: [string, RegExp[]][] = [

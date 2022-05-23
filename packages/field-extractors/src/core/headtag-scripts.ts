@@ -1,5 +1,6 @@
 import {
-  gatherSuccess,
+  collectFanout,
+  compose
 } from '~/predef/extraction-prelude';
 
 import {
@@ -8,12 +9,13 @@ import {
   selectElemTextEvidence,
   selectMetaEvidence,
 } from '~/core/extraction-primitives';
+import { loadBrowserPage } from './html-query-primitives';
 
 /**
  * Scripts for gathering metadata from html <head> section
  * */
 
-export const gatherHighwirePressTags = gatherSuccess(
+export const gatherHighwirePressTags = collectFanout(
   selectMetaEvidence('citation_title'),
   selectMetaEvidence('citation_date'),
   selectMetaEvidence('citation_pdf_url'),
@@ -21,7 +23,7 @@ export const gatherHighwirePressTags = gatherSuccess(
   selectAllMetaEvidence('citation_author'),
 );
 
-export const gatherOpenGraphTags = gatherSuccess(
+export const gatherOpenGraphTags = collectFanout(
   selectMetaEvidence('og:url'),
   selectMetaEvidence('og:url', 'property'),
   selectMetaEvidence('og:title'),
@@ -32,7 +34,7 @@ export const gatherOpenGraphTags = gatherSuccess(
   selectMetaEvidence('og:description', 'property'),
 );
 
-export const gatherDublinCoreTags = gatherSuccess(
+export const gatherDublinCoreTags = collectFanout(
   selectMetaEvidence('DC.Description'),
   selectMetaEvidence('DC.Title'),
   selectAllMetaEvidence('DC.Creator'),
@@ -42,16 +44,19 @@ export const gatherDublinCoreTags = gatherSuccess(
 );
 
 export const gatherSchemaEvidence = forInputs(
-  /response-body/,
-  gatherSuccess(
-    gatherHighwirePressTags,
-    gatherOpenGraphTags,
-    gatherDublinCoreTags,
+  /response-body/, compose(
+    loadBrowserPage,
+    collectFanout(
+      gatherHighwirePressTags,
+      gatherOpenGraphTags,
+      gatherDublinCoreTags,
 
-    selectMetaEvidence('description'),
-    selectElemTextEvidence('.abstract'),
-    selectElemTextEvidence('#abstract'),
-    selectElemTextEvidence('#Abstracts'),
-    selectElemTextEvidence('.abstractInFull'),
-  ),
+      selectMetaEvidence('description'),
+      selectElemTextEvidence('.abstract'),
+      selectElemTextEvidence('#abstract'),
+      selectElemTextEvidence('#Abstracts'),
+      selectElemTextEvidence('.abstractInFull'),
+    ),
+  )
+
 );

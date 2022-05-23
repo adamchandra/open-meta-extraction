@@ -12,8 +12,6 @@ type upsertNoteStatusArgs = {
     urlstr?: string
 }
 
-const log = getServiceLogger('query-api');
-
 export async function upsertNoteStatus({
     noteId, urlstr
 }: upsertNoteStatusArgs): Promise<NoteStatus> {
@@ -26,7 +24,6 @@ export async function upsertNoteStatus({
         success => success.toString()
     )(maybeUrl);
 
-    // log.info(`upsertNoteStatus(${noteId}, ${urlOrErrStr})`);
 
     return NoteStatus.findOneAndUpdate(
         { _id: noteId },

@@ -8,7 +8,7 @@ import {
 import {
   addEvidences,
   clearEvidence,
-  tryEvidenceMapping,
+  validateEvidence,
 } from '~/core/extraction-primitives';
 
 import {
@@ -33,19 +33,19 @@ export const GeneralExtractionAttempts = compose(
   gatherSchemaEvidence,
   clearEvidence(/^url:/),
   attemptEach(
-    tryEvidenceMapping({
+    validateEvidence({
       citation_title: 'title',
       citation_author: 'author',
       citation_pdf_url: 'pdf-link',
       'DC.Description|og:description': 'abstract',
     }),
-    tryEvidenceMapping({
+    validateEvidence({
       'citation_title|DC.Title': 'title',
       'citation_author|DC.Creator': 'author',
       'citation_pdf_url?': 'pdf-link',
       '\\.abstractInFull|\\.abstract|#abstract': 'abstract:raw',
     }),
-    tryEvidenceMapping({
+    validateEvidence({
       'og:title': 'title',
       'og:description': 'abstract',
     })

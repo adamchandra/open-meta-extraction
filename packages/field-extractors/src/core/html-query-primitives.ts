@@ -21,10 +21,9 @@ import {
 } from '~/predef/extraction-prelude';
 
 export type AttrSelection = E.Either<string, string>;
-
 export type Elem = ElementHandle<Element>;
-export type ElemSelectOne = E.Either<string, Elem>;
-export type ElemSelectAll = E.Either<string, Elem[]>;
+export type ElemSelection = E.Either<string, Elem>;
+export type ElemMultiSelection = E.Either<string, Elem[]>;
 
 export type BrowserPage = Page;
 
@@ -57,7 +56,7 @@ export function expandCaseVariations(seed: string, sub: (s: string) => string): 
   return expanded;
 }
 
-export async function queryAllPage(page: Page, query: string): Promise<ElemSelectAll> {
+export async function queryAllPage(page: Page, query: string): Promise<ElemMultiSelection> {
   try {
     const elems: ElementHandle<Element>[] = await page.$$(query);
     return E.right(elems);
@@ -67,7 +66,7 @@ export async function queryAllPage(page: Page, query: string): Promise<ElemSelec
   }
 }
 
-export async function queryAllElem(elem: Elem, query: string): Promise<ElemSelectAll> {
+export async function queryAllElem(elem: Elem, query: string): Promise<ElemMultiSelection> {
   try {
     const elems: ElementHandle<Element>[] = await elem.$$(query);
     return E.right(elems);
@@ -77,7 +76,7 @@ export async function queryAllElem(elem: Elem, query: string): Promise<ElemSelec
   }
 }
 
-export async function queryOnePage(page: Page, query: string): Promise<ElemSelectOne> {
+export async function queryOnePage(page: Page, query: string): Promise<ElemSelection> {
   return queryAllPage(page, query)
     .then(elems => {
       return pipe(elems, E.chain(es => {
@@ -88,7 +87,7 @@ export async function queryOnePage(page: Page, query: string): Promise<ElemSelec
     });
 }
 
-export async function queryOneElem(elem: Elem, query: string): Promise<ElemSelectOne> {
+export async function queryOneElem(elem: Elem, query: string): Promise<ElemSelection> {
   return queryAllElem(elem, query)
     .then(elems => {
       return pipe(elems, E.chain(es => {
@@ -127,14 +126,21 @@ export async function selectElementAttrP(
   }
 }
 
+export async function getElemAttrText(
+  elem: Elem,
+  attributeName: string
+): Promise<AttrSelection> {
+  const attrValue = await elem.evaluate((elem: Element, attr: string) => {
+    return elem.getAttribute(attr);
+  }, attributeName)
 
-export const pageQueryOne: (queryString: string) => Transform<BrowserPage, Elem> =
-  (queryString) => through((page: Page, { }) => {
-    return pipe(
-      () => queryOnePage(page, queryString),
-      TE.mapLeft((msg) => ['continue', msg])
-    );
-  }, `page.$(${queryString})`)
+  if (attrValue === null) {
+    return E.left(`no attr ${attributeName} in elem[${attributeName}])`);
+  }
+  return E.right(attrValue);
+}
+
+
 
 export const elemQueryOne: (queryString: string) => Transform<Elem, Elem> =
   (queryString) => through((elem: Elem, { }) => {
@@ -182,7 +188,7 @@ export const getElemText: Transform<Elem, string> =
   }, 'getElemText');
 
 
-export const loadPageFromCache: Transform<CacheFileKey, Page> =
+export const loadBrowserPage: Transform<CacheFileKey, Page> =
   through((cacheKey: CacheFileKey, { browserInstance, fileContentCache, browserPageCache }) => {
     if (cacheKey in browserPageCache) {
       return browserPageCache[cacheKey];
@@ -194,7 +200,6 @@ export const loadPageFromCache: Transform<CacheFileKey, Page> =
           await page.setContent(fileContent, {
             timeout: 8000,
             waitUntil: 'domcontentloaded',
-            // waitUntil: 'load',
           });
           browserPageCache[cacheKey] = page;
           return page;
@@ -205,16 +210,17 @@ export const loadPageFromCache: Transform<CacheFileKey, Page> =
     return ClientFunc.halt(`cache has no record for key ${cacheKey}`);
   });
 
-export const selectOne: (queryString: string) => Transform<CacheFileKey, Elem> =
-  (queryString) => compose(
-    loadPageFromCache,
-    pageQueryOne(queryString)
-  );
+export const selectOne: (queryString: string) => Transform<BrowserPage, Elem> =
+  (queryString) => through((page: Page, { }) => {
+    return pipe(
+      () => queryOnePage(page, queryString),
+      TE.mapLeft((msg) => ['continue', msg])
+    );
+  }, `page.$(${queryString})`)
 
 
-export const selectAll: (queryString: string, abbrev?: string) => Transform<CacheFileKey, Elem[]> =
+export const selectAll: (queryString: string, abbrev?: string) => Transform<Page, Elem[]> =
   (queryString, abbrev) => compose(
-    loadPageFromCache,
     through((page: Page, { }) => {
       return pipe(
         () => queryAllPage(page, queryString),
@@ -223,9 +229,8 @@ export const selectAll: (queryString: string, abbrev?: string) => Transform<Cach
     }, `selectAll(${abbrev ? abbrev : queryString})`)
   );
 
-export const selectElemAttr: (queryString: string, contentAttr: string, queryDesc?: string) => Transform<CacheFileKey, string> =
+export const selectElemAttr: (queryString: string, contentAttr: string, queryDesc?: string) => Transform<Page, string> =
   (queryString, contentAttr, queryDesc) => compose(
-    loadPageFromCache,
     through((page: Page, { }) => {
       return pipe(
         () => selectElementAttrP(page, queryString, contentAttr, queryDesc),

@@ -57,7 +57,7 @@ export const {
   forEachDo,
   attemptEach,
   takeWhileSuccess,
-  gatherSuccess,
+  collectFanout,
 } = fp;
 
 export type ControlInstruction = ft.ControlInstruction;

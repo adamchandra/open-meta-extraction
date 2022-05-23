@@ -24,7 +24,7 @@ export interface FPackage<Env extends BaseEnv> {
 
   forEachDo: <A, B> (arrow: Transform<A, B, Env>) => Transform<A[], B[], Env>;
 
-  gatherSuccess: <A, B> (...arrows: Transform<A, B, Env>[]) => Transform<A, B[], Env>;
+  collectFanout: <A, B> (...arrows: Transform<A, B, Env>[]) => Transform<A, B[], Env>;
   takeWhileSuccess: <A, Env extends BaseEnv> (...arrows: Transform<A, A, Env>[]) => Transform<A, A, Env>;
   attemptEach: <A, B> (...arrows: Transform<A, B, Env>[]) => Transform<A, B, Env>;
 
@@ -58,7 +58,7 @@ export function createFPackage<Env extends BaseEnv>(): FPackage<Env> {
     withNS,
     withCarriedWA,
     forEachDo,
-    gatherSuccess,
+    collectFanout,
     attemptEach,
     takeWhileSuccess,
     through,
@@ -346,7 +346,7 @@ const forEachDo: <A, B, Env extends BaseEnv> (arrow: Transform<A, B, Env>) => Tr
 
 
 // Given a single input A, produce an array of Bs by running the given array of functions on the initial A
-const gatherSuccess:
+const collectFanout:
   <A, B, Env extends BaseEnv>(...arrows: Transform<A, B, Env>[]) => Transform<A, B[], Env> =
   <A, B, Env extends BaseEnv>(...arrows: Transform<A, B, Env>[]) => (ra: ExtractionTask<A, Env>) => {
     return pipe(

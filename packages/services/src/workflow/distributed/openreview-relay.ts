@@ -17,7 +17,7 @@ import { initScraper } from '@watr/spider';
 import { displayRestError, newOpenReviewExchange, Note, Notes, OpenReviewExchange } from '../common/openreview-exchange';
 
 import { WorkflowStatus } from '~/db/schemas';
-import { getNextSpiderableUrl, releaseSpiderableUrl, upsertHostStatus, upsertNoteStatus } from '~/db/query-api';
+import { findNoteStatusById, getNextSpiderableUrl, releaseSpiderableUrl, upsertHostStatus, upsertNoteStatus } from '~/db/query-api';
 
 const log = getServiceLogger('OpenReviewRelay');
 
@@ -59,11 +59,12 @@ export async function runRelayFetch(_offset: number, count: number) {
 
   log.info(`Relay Fetcher: offset: ${offset}, count: ${count} ...`)
   let numProcessed = 0;
+  let foundExistingNote = false;
 
   async function stopCondition(fetchLength: number): Promise<boolean> {
     const atCountLimit = numProcessed >= count;
     const doneFetching = fetchLength === 0;
-    return doneFetching || atCountLimit;
+    return doneFetching || atCountLimit || foundExistingNote;
   }
 
   await asyncDoUntil(
@@ -86,9 +87,13 @@ export async function runRelayFetch(_offset: number, count: number) {
         await asyncEachSeries(notes, async (note: Note) => {
           const shouldStop = await stopCondition(fetchLength);
           if (shouldStop) return 0;
-          // prettyPrint({ note })
 
           const urlstr = note.content.html;
+          const existingNote = await findNoteStatusById(note.id);
+          if (existingNote===undefined) {
+            foundExistingNote = true;
+            log.info(`Found fetched note in local MongoDB; stopping fetcher`);
+          }
 
           const noteStatus = await upsertNoteStatus({ noteId: note.id, urlstr })
           numProcessed += 1;
