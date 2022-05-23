@@ -86,8 +86,8 @@ function formatAbstractStatusByDomain(title: string, byDomain: StrIDCounts[]): s
         return `    ${present}: ${rec.domain}`;
     });
     const allMissingAsStrings = _.map(sort(withAllMissing), (rec) => {
-        const { present } = rec;
-        return `    0/${present}: ${rec.domain}`;
+        const { present, missing } = rec;
+        return `    0/${present+missing}: ${rec.domain}`;
     });
     const somePresentAsStrings = _.map(sort(withSomePresent), (rec) => {
         const { present, missing } = rec;
@@ -131,7 +131,7 @@ function formatHttpStatusByDomain(byDomain: StrIDCounts[]): string[] {
                 return `${code}: ${countstr}`;
             }
         ), '');
-        const domainstr = _.padEnd(domainName, 25)
+        const domainstr = _.padEnd(domainName, 35)
         return `${domainstr}: ${codeCountStrs}`;
     });
 
