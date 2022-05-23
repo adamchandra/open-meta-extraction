@@ -61,23 +61,47 @@ function formatAbstractStatusByDomain(title: string, byDomain: StrIDCounts[]): s
         return { domain, present: 0, missing: count };
     });
 
-    const domainsWithMissing = _.filter(byDomain1, ({ missing }) => missing !== undefined && missing > 0);
-    const domainsWithoutMissing = _.filter(byDomain1, ({ missing }) => missing == undefined || missing === 0);
-    const domainsSorted = _.concat(
-        domainsWithoutMissing,
-        domainsWithMissing
-    );
+    const groupedByDomain = _.values(_.groupBy(byDomain1, (r) => r.domain))
+
+    const countedByDomain = _.map(groupedByDomain, (domains) => {
+        const domainName = domains[0].domain;
+        const empty: Required<DomainPresentOrMissing> = { domain: domainName, missing: 0, present: 0 };
+        _.each(domains, d => {
+            empty.missing += d.missing || 0;
+            empty.present += d.present || 0;
+        });
+        return empty;
+    });
+
+    const [withAllPresent, withSomeMissing] = _.partition(countedByDomain, d => d.missing === 0);
+    const [withAllMissing, withSomePresent] = _.partition(withSomeMissing, d => d.present === 0);
 
 
-    const byDomain3 = _.map(domainsSorted, (rec) => {
-        const present = rec.present !== undefined ? rec.present : 0;
-        const missing = rec.missing !== undefined ? rec.missing : 0;
-        return `    ${present} of ${present + missing}: ${rec.domain}`;
+    function sort(recs: Required<DomainPresentOrMissing>[]): Required<DomainPresentOrMissing>[] {
+        return _.sortBy(recs, r => -(r.missing + r.present));
+    }
+
+    const allPresentAsStrings = _.map(sort(withAllPresent), (rec) => {
+        const { present } = rec;
+        return `    ${present}: ${rec.domain}`;
+    });
+    const allMissingAsStrings = _.map(sort(withAllMissing), (rec) => {
+        const { present } = rec;
+        return `    0/${present}: ${rec.domain}`;
+    });
+    const somePresentAsStrings = _.map(sort(withSomePresent), (rec) => {
+        const { present, missing } = rec;
+        return `    ${present}/${present + missing}: ${rec.domain}`;
     });
 
     return [
         title,
-        ...byDomain3
+        'Fully Successful Domains',
+        ...allPresentAsStrings,
+        'Partially Successful Domains',
+        ...somePresentAsStrings,
+        'Failed Domains',
+        ...allMissingAsStrings,
     ];
 }
 
@@ -87,29 +111,31 @@ function formatHttpStatusByDomain(byDomain: StrIDCounts[]): string[] {
         return { domain, httpCode, count };
     });
 
-    const byDomain2 = _.values(_.groupBy(byDomain1, (r) => r.domain))
-    const byDomain3 = _.map(byDomain2, (domainRecs) => {
-        const compressed = _.map(domainRecs, ({ domain, httpCode, count }) => {
-            const rec: Record<string, string | number> = {};
-            rec['domain'] = domain;
-            rec[httpCode] = count;
-            return rec;
-        });
-        const merged = _.merge({}, ...compressed);
-        const asString = _.join(
-            _.map(
-                _.toPairs(merged), ([k, v]) => {
-                    if (k === 'domain') {
-                        return `${v}:    `;
-                    }
-                    return `${k}: ${v};  `;
-                }
-            ), ' '
-        )
-        return '    ' + asString;
+    const groupedByDomain = _.values(_.groupBy(byDomain1, (r) => r.domain))
+
+    const allCodesByDomain = _.map(groupedByDomain, (domainRecs) => {
+        const domainName = domainRecs[0].domain;
+        const codeCounts: Record<string, number> = {
+            '20x': 0,
+            '30x': 0,
+            '40x': 0,
+            '50x': 0,
+        };
+        _.each(domainRecs, rec => {
+            const { httpCode, count } = rec;
+            _.update(codeCounts, httpCode, (prev) => prev + count)
+        })
+        const codeCountStrs = _.join(_.map(
+            _.toPairs(codeCounts), ([code, count]) => {
+                const countstr = _.padEnd(count.toString(), 6)
+                return `${code}: ${countstr}`;
+            }
+        ), '');
+        const domainstr = _.padEnd(domainName, 25)
+        return `${domainstr}: ${codeCountStrs}`;
     });
 
-    return ['Http Status Counts By Domain', ...byDomain3];
+    return ['Http Status Counts By Domain', ...allCodesByDomain];
 }
 
 
