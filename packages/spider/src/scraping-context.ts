@@ -19,6 +19,7 @@ type Args = {
   initialUrl: string,
   corpusRoot: string
 };
+
 export function createScrapingContext({
   initialUrl,
   corpusRoot

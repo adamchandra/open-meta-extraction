@@ -1,9 +1,9 @@
 import _ from 'lodash';
 import { startSpiderableTestServer } from '~/http-servers/rest-portal/mock-server';
+
 import fs from 'fs-extra';
 import { Server } from 'http';
-import { mockAlphaRecord } from '@watr/spider';
-import axios from 'axios';
+// import axios from 'axios';
 import { setLogEnvLevel } from '@watr/commonlib';
 
 describe('REST Worker Endpoints', () => {
@@ -32,13 +32,11 @@ describe('REST Worker Endpoints', () => {
   });
 
   it('should run end-to-end', async () => {
-    const url = `http://localhost:9100/200~withFields`;
-    const alphaRec = mockAlphaRecord(1, url);
-    const retval = await axios.post(
-      'http://localhost:3100/extractor/url',
-      alphaRec
-    );
-    const response = retval.data;
-    // prettyPrint({ response });
+    // const url = `http://localhost:9100/200~withFields`;
+    // const retval = await axios.post(
+    //   'http://localhost:3100/extractor/url',
+    // );
+    // const response = retval.data;
+    // // prettyPrint({ response });
   });
 });

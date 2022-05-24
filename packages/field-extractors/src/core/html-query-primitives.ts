@@ -10,7 +10,7 @@ import {
   ElementHandle,
 } from 'puppeteer';
 
-import { DefaultPageInstanceOptions } from '@watr/spider';
+import { DefaultPageInstanceOptions, PageInstanceOptions } from '@watr/spider';
 
 import {
   Transform,
@@ -205,15 +205,14 @@ export const getElemOuterHtml: Transform<Elem, string> =
     );
   }, 'getElemOuterHtml');
 
-
-export const loadBrowserPage: Transform<CacheFileKey, Page> =
-  through((cacheKey: CacheFileKey, { browserInstance, fileContentCache, browserPageCache }) => {
+export const loadBrowserPage:  (pageOptions?: PageInstanceOptions) => Transform<CacheFileKey, Page> =
+  (pageOpts = DefaultPageInstanceOptions) => through((cacheKey: CacheFileKey, { browserInstance, fileContentCache, browserPageCache }) => {
     if (cacheKey in browserPageCache) {
       return browserPageCache[cacheKey];
     }
     if (cacheKey in fileContentCache) {
       const fileContent = fileContentCache[cacheKey];
-      const page = browserInstance.newPage(DefaultPageInstanceOptions) // TODO: FIXME this use of defaults is not correct
+      const page = browserInstance.newPage(pageOpts)
         .then(async ({ page }) => {
           await page.setContent(fileContent, {
             timeout: 8000,

@@ -1,8 +1,7 @@
-import { makeHashEncodedPath } from '@watr/commonlib';
-
 import _ from 'lodash';
+import { makeHashEncodedPath } from './hash-encoded-paths';
 
-describe('spider persistence', () => {
+describe('Hash Encoded Paths', () => {
   it('should create hash-encoded paths of specified depth', () => {
     const examples = [
       'http://example.com',

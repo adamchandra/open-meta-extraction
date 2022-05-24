@@ -5,7 +5,6 @@ import onExit from 'signal-exit';
 import { Pool } from 'tarn';
 
 import {
-  HTTPRequest,
   HTTPResponse,
   PuppeteerLifeCycleEvent
 } from 'puppeteer';
@@ -19,6 +18,7 @@ import { interceptRequestCycle, logBrowserEvent, logPageEvents } from './page-ev
 
 import { launchBrowser } from './puppet';
 import { BlockableResource, RewritableUrl, RewritableUrls } from './resource-blocking';
+import { Logger } from 'winston';
 
 
 export interface BrowserPool {
@@ -28,6 +28,7 @@ export interface BrowserPool {
   use<A>(f: (browser: BrowserInstance) => A | Promise<A>): Promise<A>;
   shutdown(): Promise<void>;
   report(): void;
+  // newCachedPage(url: string, opts: PageInstanceOptions): Promise<PageInstance>;
 }
 
 export interface BrowserInstance {
@@ -71,6 +72,16 @@ export const DefaultPageInstanceOptions: PageInstanceOptions = {
 
 }
 
+export const ScriptablePageInstanceOptions: PageInstanceOptions = {
+  cacheEnabled: false,
+  defaultNavigationTimeout: 10_000,
+  defaultTimeout: 10_000,
+  javaScriptEnabled: true,
+  allowedResources: ['document', 'script'],
+  rewriteableUrls: RewritableUrls,
+  waitUntil: 'load',
+}
+
 export function createBrowserPool(logPrefix?: string): BrowserPool {
   const prefix = logPrefix ? logPrefix : '';
   const log = getServiceLogger(`${prefix}:browser-pool`);
@@ -96,7 +107,6 @@ export function createBrowserPool(logPrefix?: string): BrowserPool {
 
             return new Promise(resolve => {
               bproc.removeAllListeners();
-              // bproc.disconnect();
 
               bproc.on('exit', (_signum: number, signame: NodeJS.Signals) => {
                 log.debug(`Killed Browser#${pid}: ${signame}`);
@@ -189,12 +199,6 @@ export function createBrowserPool(logPrefix?: string): BrowserPool {
 
     validate(browserInstance: BrowserInstance) {
       log.debug(`validating Browser#${browserInstance.pid()}`)
-      // return Promise.race([
-      //   browserInstance.newPage().then(p => p.page.close()).then(() => true),
-      //   delay(200).then(() => false)
-      // ]).then(succ => {
-      //   return succ && !browserInstance.isStale();
-      // })
       return !browserInstance.isStale();
     },
 
@@ -328,7 +332,14 @@ export function createBrowserPool(logPrefix?: string): BrowserPool {
         numPendingCreates,
         numPendingValidations,
       });
-    }
+    },
+
+    // async newCachedPage(url: string, opts: PageInstanceOptions): Promise<PageInstance> {
+    //   const browserInstance = await this.acquire()
+    //   const pageInstance = await browserInstance.newPage(opts);
+    //   const maybeResponse = gotoUrlWithRewrites(pageInstance, url, log);
+    // }
+
   };
 }
 
@@ -344,45 +355,32 @@ async function gotoUrlSimpleVersion(pageInstance: PageInstance, url: string): Pr
   ;
 }
 
-async function gotoUrlStepwiseVersion(pageInstance: PageInstance, url: string): Promise<HTTPResponse | undefined> {
-  return new Promise<HTTPResponse | undefined>((resolve, reject) => {
-    const { page } = pageInstance;
-    const run = async () => {
-
-      page.on('response', (response: HTTPResponse) => {
-        const request = response.request();
-        const reqUrl = request.url();
-        const respUrl = response.url();
-        const reqHeaders = request.headers();
-        reqHeaders['referer']
-        reqHeaders['origin']
-        reqHeaders['location']
-        reqHeaders['accept']
-        const respHeaders = response.headers();
-        respHeaders['referer']
-        respHeaders['origin']
-        respHeaders['location']
-        respHeaders['accept']
-
-        const pfh2 = prettyFormat({ respHeaders })
-        putStrLn(`Intercepting Response ${respUrl}, ${pfh2}`)
-        putStrLn(`        Request: ${reqUrl}`)
-      });
-
-      page.on('request', (request: HTTPRequest) => {
-        const reqUrl = request.url();
-        const reqHeaders = request.headers();
-        reqHeaders['referer']
-        reqHeaders['origin']
-        reqHeaders['location']
-        reqHeaders['accept']
-        const pfh = prettyFormat({ reqHeaders })
-        putStrLn(`Intercepting Request ${reqUrl} ${pfh}`)
-      });
-
-      return page.goto(url, { waitUntil: 'load' });
-    };
-
-    resolve(run());
-  });
+async function gotoUrlWithRewrites(
+  pageInstance: PageInstance,
+  url: string,
+  logger: Logger,
+): Promise<E.Either<string, HTTPResponse>> {
+  const urlRewrites = pageInstance.opts.rewriteableUrls;
+  const response = await pageInstance.gotoUrl(url);
+  if (E.isLeft(response)) {
+    const error = response.left;
+    logger.debug(`Attempting Rewrite for ${error}`);
+    const msg = error;
+    const maybeRewrite = _.map(urlRewrites, (rule) => {
+      if (rule.regex.test(msg)) {
+        const newUrl = rule.rewrite(msg);
+        logger.verbose(`    new url: ${newUrl}`);
+        return newUrl;
+      }
+    });
+    const rw0 = maybeRewrite.filter(s => s !== undefined);
+    logger.verbose(`    available rewrites: ${rw0.join(', ')}`);
+    if (rw0.length > 0) {
+      const rewrite = rw0[0];
+      if (rewrite === undefined) return E.left('no rewrites available');
+      logger.info(`Rewrote ${url} to ${rewrite}`)
+      return gotoUrlWithRewrites(pageInstance, rewrite, logger)
+    }
+  }
+  return response;
 }

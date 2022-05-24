@@ -249,21 +249,23 @@ const pushNS:
     );
   };
 
-const popNS: <A, Env extends BaseEnv>() => Transform<A, A, Env> = <A, Env extends BaseEnv>() => (ra: ExtractionTask<A, Env>) => {
-  return pipe(
-    ra,
-    TE.map(([a, env]) => {
-      env.ns.pop();
-      env.exitNS(env.ns);
-      return asW(a, env);
-    }),
-    TE.mapLeft(([a, env]) => {
-      env.ns.pop();
-      env.exitNS(env.ns);
-      return asW(a, env);
-    }),
-  );
-};
+const popNS:
+  <A, Env extends BaseEnv>() => Transform<A, A, Env> =
+  <A, Env extends BaseEnv>() => (ra: ExtractionTask<A, Env>) => {
+    return pipe(
+      ra,
+      TE.map(([a, env]) => {
+        env.ns.pop();
+        env.exitNS(env.ns);
+        return asW(a, env);
+      }),
+      TE.mapLeft(([a, env]) => {
+        env.ns.pop();
+        env.exitNS(env.ns);
+        return asW(a, env);
+      }),
+    );
+  };
 
 const withNS:
   <A, B, Env extends BaseEnv>(name: string, arrow: Transform<A, B, Env>) => Transform<A, B, Env> =

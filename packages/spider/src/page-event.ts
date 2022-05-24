@@ -182,7 +182,7 @@ export function logPageEvents(pageInstance: PageInstance, logger: Logger) {
           break;
         }
         case 'popup': {
-          logger.verbose(`Browser#${pid}/pageEvent: ${e}`);
+          logger.warn(`Browser#${pid}/pageEvent: ${e}`);
           break;
         }
 

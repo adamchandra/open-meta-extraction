@@ -381,7 +381,7 @@ export const forInputs: (re: RegExp, transform: Transform<CacheFileKey, unknown>
 
 // Convenience function for most common case: run a bunch of queries on the response page in the browser
 export const withResponsePage: (transform: Transform<BrowserPage, unknown>) => Transform<unknown, unknown> =
-  transform => forInputs(/response-body/, compose(loadBrowserPage, transform));
+  transform => forInputs(/response-body/, compose(loadBrowserPage(), transform));
 
 export const validateEvidence: (mapping: Record<string, string>) => Transform<unknown, unknown> =
   (mapping) => {

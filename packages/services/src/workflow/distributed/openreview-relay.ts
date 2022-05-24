@@ -211,6 +211,7 @@ export async function runRelayExtract(count: number) {
         httpStatus,
         response: responseUrl
       });
+
       const sharedEnv: ExtractionSharedEnv = {
         log,
         browserPool,

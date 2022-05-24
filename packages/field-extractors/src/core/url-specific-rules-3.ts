@@ -36,6 +36,7 @@ import {
   loadBrowserPage,
   selectOne
 } from './html-query-primitives';
+import { ScriptablePageInstanceOptions } from '@watr/spider';
 
 
 const removeHtmlTagsWithoutText: Transform<string[], string[]> = compose(
@@ -57,7 +58,7 @@ export const neuripsCCRule: ExtractionRule = compose(
   urlFilter(/neurips.cc/),
   forInputs(/response-body/, compose(
     collectFanout(
-      compose(loadBrowserPage, gatherHighwirePressTags),
+      compose(loadBrowserPage(), gatherHighwirePressTags),
       compose(loadTextFile, selectNeuripsCCAbstract)
     ),
     validateEvidence({
@@ -98,7 +99,7 @@ const selectIscaSpeechPDFLink: Transform<Elem, void> = compose(
 export const iscaSpeechOrgRule: ExtractionRule = compose(
   urlFilter(/isca-speech.org/),
   forInputs(/response-body/, compose(
-    loadBrowserPage,
+    loadBrowserPage(),
     selectOne('div.w3-card'),
     collectFanout(
       selectIscaSpeechAbstract,
@@ -168,4 +169,12 @@ export const lrecConfOrg: ExtractionRule = compose(
       'pdf-block?': 'pdf-block',
     }),
   )),
+);
+// linkinghub.elsevier.com/retrieve/pii/S0925231221004501
+export const linkingHubElsevierCom: ExtractionRule = compose(
+  urlFilter(/linkinghub.elsevier.com/),
+  forInputs(/response-body/, compose(
+    loadBrowserPage(ScriptablePageInstanceOptions),
+  ))
+
 );

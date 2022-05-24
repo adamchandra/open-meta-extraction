@@ -4,8 +4,6 @@ import {
   HTTPRequest, HTTPResponse,
 } from 'puppeteer';
 
-import { AlphaRecord } from '@watr/commonlib';
-
 export interface UrlChainLink {
   requestUrl: string;
   responseUrl?: string;
@@ -63,44 +61,4 @@ export function getFetchDataFromResponse(requestUrl: string, response: HTTPRespo
     timestamp: date,
   };
   return metadata;
-}
-
-
-// Testing functions
-export function mockUrl(n: number): string {
-  return `http://doi.org/${n}`;
-}
-
-export function mockUrlFetchData(n: number): UrlFetchData {
-  const fetchChain: UrlChainLink[] = _.map(_.range(n), (n) => {
-    const link: UrlChainLink = {
-      requestUrl: mockUrl(n),
-      responseUrl: mockUrl(n + 1),
-      status: '303',
-      timestamp: '',
-    };
-    return link;
-  });
-
-  const metadata: UrlFetchData = {
-    requestUrl: mockUrl(0),
-    responseUrl: mockUrl(n),
-    status: '200',
-    fetchChain,
-    timestamp: ''
-  };
-
-  return metadata;
-}
-
-
-export function mockAlphaRecord(n: number, _url?: string): AlphaRecord {
-  const url = _url === undefined? mockUrl(n) : _url;
-  return ({
-    noteId: `note-id-${n}`,
-    dblpConfId: `dblp/conf/conf-${n}`, // TODO rename to dblpKey
-    title: `The Title Paper #${n}`,
-    authorId: `auth-${n}`,
-    url
-  });
 }

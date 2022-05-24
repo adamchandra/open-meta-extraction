@@ -45,7 +45,7 @@ export const gatherDublinCoreTags = collectFanout(
 
 export const gatherSchemaEvidence = forInputs(
   /response-body/, compose(
-    loadBrowserPage,
+    loadBrowserPage(),
     collectFanout(
       gatherHighwirePressTags,
       gatherOpenGraphTags,

@@ -97,6 +97,7 @@ describe('HTML jquery-like css queries', () => {
 
   it('smokescreen', async () => {
     return withPageContent(tmpHtml, async (page) => {
+      page.browser()
       const attr0 = await selectElementAttrP(page, 'meta[name=citation_title]', 'content');
       const attr1 = await selectElementAttrP(page, 'meta[name=citation_title]', 'content_');
       expect(isRight(attr0)).toEqual(true);
