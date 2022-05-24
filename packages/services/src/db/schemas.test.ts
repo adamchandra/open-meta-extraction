@@ -7,6 +7,7 @@ import { findHostStatusById, findNoteStatusById, getNextSpiderableUrl, upsertHos
 
 import * as fc from 'fast-check';
 import { isUrl } from '~/workflow/common/datatypes';
+import { genHttpStatus } from './mongo-test-utils';
 
 describe('MongoDB Schemas', () => {
     setLogEnvLevel('debug');
@@ -52,7 +53,8 @@ describe('MongoDB Schemas', () => {
                     }
                     expect(modById.validUrl).toEqual(isUrl(urlstr2));
                 }
-            )
+            ),
+            { verbose: true }
         )
     });
 
@@ -64,7 +66,7 @@ describe('MongoDB Schemas', () => {
                 fc.webUrl(), // requestUrl
                 fc.oneof(fc.string(), fc.webUrl()), // response
                 // fc.oneof(fc.string(), fc.webUrl(), fc.constant(undefined)), // response
-                fc.oneof(fc.constant(200), fc.constant(404), fc.constant(301)), // httpStatus
+                genHttpStatus,
                 fc.string(), // TODO workflowStatus
                 async (noteId, hasAbstract, requestUrl, response, httpStatus, workflowStatus) => {
                     // Insert new document
@@ -82,7 +84,8 @@ describe('MongoDB Schemas', () => {
                     const lockedStatus = await upsertHostStatus(noteId, 'spider:locked', {});
                     prettyPrint({ byId, lockedStatus })
                 }
-            )
+            ),
+            { verbose: true }
         )
     });
 

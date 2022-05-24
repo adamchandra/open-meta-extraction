@@ -1,9 +1,9 @@
 import _ from 'lodash';
 import { HostStatus, HostStatusUpdateFields, NoteStatus, WorkflowStatus } from './schemas';
-import { isUrl, validateUrl } from '~/workflow/common/datatypes';
+import { validateUrl } from '~/workflow/common/datatypes';
 import * as E from 'fp-ts/Either';
-import { getServiceLogger, prettyFormat, prettyPrint } from '@watr/commonlib';
 import { Document } from 'mongoose';
+import { prettyPrint } from '@watr/commonlib';
 
 type HostStatusDocument = Document<unknown, any, HostStatus> & HostStatus;
 
@@ -37,7 +37,11 @@ export async function findNoteStatusById(noteId: string): Promise<NoteStatus | u
     return ret !== null ? ret : undefined;
 }
 
-export async function upsertHostStatus(noteId: string, workflowStatus: WorkflowStatus, fields: HostStatusUpdateFields): Promise<HostStatusDocument> {
+export async function upsertHostStatus(
+    noteId: string,
+    workflowStatus: WorkflowStatus,
+    fields: HostStatusUpdateFields
+): Promise<HostStatusDocument> {
 
     const setQ: Record<string, any> = {};
     const unsetQ: Record<string, any> = {};
@@ -58,14 +62,12 @@ export async function upsertHostStatus(noteId: string, workflowStatus: WorkflowS
         }
     }
 
-
     const updateQ: Record<string, any> = {
         $set: setQ,
         $unset: unsetQ,
     };
-    // const pf = prettyFormat(updateQ);
-    // log.verbose(`upsertHostStatus(id:${noteId}, fields:${pf})`);
-    const updated =  await HostStatus.findOneAndUpdate(
+
+    const updated = await HostStatus.findOneAndUpdate(
         { _id: noteId },
         updateQ,
         { new: true, upsert: true, runValidators: true }
@@ -77,8 +79,6 @@ export async function findHostStatusById(noteId: string): Promise<HostStatusDocu
     const ret = await HostStatus.findOne({ _id: noteId });
     return ret !== null ? ret : undefined;
 }
-
-
 
 export async function getNextSpiderableUrl(): Promise<HostStatusDocument | undefined> {
     const next = await HostStatus.findOneAndUpdate(
@@ -92,4 +92,20 @@ export async function getNextSpiderableUrl(): Promise<HostStatusDocument | undef
 export async function releaseSpiderableUrl(hostStatus: HostStatusDocument, newStatus: WorkflowStatus): Promise<HostStatusDocument> {
     hostStatus.workflowStatus = newStatus;
     return hostStatus.save();
+}
+
+export async function resetUrlsWithoutAbstracts(): Promise<void> {
+    const resetUrlsWithoutAbstractsUpdate = await HostStatus.updateMany({
+        hasAbstract: false,
+        httpStatus: { $not: { $in: [404, 500] } }
+    }, {
+        workflowStatus: 'available'
+    });
+    const resetLockedUrlsUpdate = await HostStatus.updateMany({
+        workflowStatus: { $in: ['spider-locked', 'extractor-locked'] }
+    }, {
+        workflowStatus: 'available'
+    });
+
+    prettyPrint({ resetUrlsWithoutAbstractsUpdate, resetLockedUrlsUpdate });
 }

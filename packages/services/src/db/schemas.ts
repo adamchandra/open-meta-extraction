@@ -51,7 +51,7 @@ const workflowStatusKeys: WorkflowStatusKeys = {
 };
 
 export type WorkflowStatus = keyof WorkflowStatusKeys;
-export const WorkflowStatuses = _.keys(workflowStatusKeys);
+export const WorkflowStatuses: WorkflowStatus[] = _.keys(workflowStatusKeys) as any;
 
 export function isWorkflowStatus(s: unknown): s is WorkflowStatus {
     return typeof s === 'string' && _.includes(WorkflowStatuses, s);
