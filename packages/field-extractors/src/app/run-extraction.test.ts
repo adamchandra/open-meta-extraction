@@ -53,7 +53,7 @@ describe('Field Extraction Pipeline', () => {
       return runFieldExtractor(env, AbstractFieldAttempts);
     }));
 
-    await browserPool.shutdown()
+    await browserPool.shutdown();
 
   });
 });

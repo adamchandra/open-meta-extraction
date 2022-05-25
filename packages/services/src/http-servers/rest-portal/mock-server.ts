@@ -75,7 +75,7 @@ function openreviewRouter(): Router<Koa.DefaultState, Koa.DefaultContext> {
   }
 
   async function getNotes(ctx: Context): Promise<void> {
-    const fmt = prettyFormat(ctx.request.query, { colors: false })
+    const fmt = prettyFormat(ctx.request.query, { colors: false });
     log.info(fmt);
     ctx.response.body = {
       notes: [],
@@ -109,12 +109,12 @@ function htmlRouter(): Router<Koa.DefaultState, Koa.DefaultContext> {
   });
 
   router.use(async (ctx, next) => {
-    log.info(`HTMLS: ${ctx.method} ${ctx.path}`)
+    log.info(`HTMLS: ${ctx.method} ${ctx.path}`);
     await next();
-    log.info(`HTMLS:END: ${ctx.method} ${ctx.path}`)
+    log.info(`HTMLS:END: ${ctx.method} ${ctx.path}`);
   });
 
-  router
+  router;
 
   return router;
 }
@@ -123,15 +123,15 @@ function rootRouter(): Router<Koa.DefaultState, Koa.DefaultContext> {
   const router = new Router();
 
   router.use(async (ctx: Context, next) => {
-    log.info('Root 0')
+    log.info('Root 0');
     ctx.set('Access-Control-Allow-Origin', '*');
     return next();
   });
 
   router.use(async (ctx, next) => {
-    log.info(`ROOT:${ctx.method} ${ctx.path}`)
+    log.info(`ROOT:${ctx.method} ${ctx.path}`);
     await next();
-    log.info(`ROOT:END ${ctx.method} ${ctx.path}`)
+    log.info(`ROOT:END ${ctx.method} ${ctx.path}`);
   });
 
   return router;
@@ -148,9 +148,9 @@ export async function startSpiderableTestServer(): Promise<Server> {
   root.use(hrouter.routes());
 
   app.use(async (ctx, next) => {
-    log.info(`${ctx.method} ${ctx.path}`)
+    log.info(`${ctx.method} ${ctx.path}`);
     await next();
-    log.info(`END ${ctx.method} ${ctx.path} ${ctx.status}`)
+    log.info(`END ${ctx.method} ${ctx.path} ${ctx.status}`);
   });
 
   app.use(root.routes());

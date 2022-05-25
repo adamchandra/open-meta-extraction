@@ -1,4 +1,4 @@
-import { ENV_MODE } from "@watr/commonlib";
+import { ENV_MODE } from '@watr/commonlib';
 import _ from 'lodash';
 
 export interface CLIAppDef {
@@ -6,7 +6,7 @@ export interface CLIAppDef {
   args: string;
 }
 
-const cliScript = './dist/src/cli/index.js'
+const cliScript = './dist/src/cli/index.js';
 
 export function pm2Job(name: string, script: string, conf: Partial<PM2JobConfig>): Partial<PM2JobConfig> {
   const cwd = process.cwd();
@@ -16,13 +16,13 @@ export function pm2Job(name: string, script: string, conf: Partial<PM2JobConfig>
     script,
     cwd,
     env_test: {
-      NODE_ENV: "test",
+      NODE_ENV: 'test',
     },
     env_dev: {
-      NODE_ENV: "dev"
+      NODE_ENV: 'dev'
     },
     env_prod: {
-      NODE_ENV: "prod"
+      NODE_ENV: 'prod'
     },
     ...conf,
   };
@@ -44,13 +44,13 @@ export function appDef(name: string, script: string, args: string): Record<strin
     args,
     cwd,
     env_test: {
-      NODE_ENV: "test"
+      NODE_ENV: 'test'
     },
     env_dev: {
-      NODE_ENV: "dev"
+      NODE_ENV: 'dev'
     },
     env_prod: {
-      NODE_ENV: "prod"
+      NODE_ENV: 'prod'
     },
   };
 }
@@ -61,7 +61,7 @@ export function appDef(name: string, script: string, args: string): Record<strin
  */
 export function makeCLIEcosystem(appDefs: CLIAppDef[]): Record<string, any>[] {
   const ecoSystemList = appDefs.map(def => {
-    return appDef(def.name, cliScript, def.args)
+    return appDef(def.name, cliScript, def.args);
   });
 
   return ecoSystemList;

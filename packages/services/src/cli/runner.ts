@@ -6,21 +6,21 @@ import { spiderCLI } from '@watr/spider';
 import { fieldExtractorCLI } from '@watr/field-extractors';
 
 export function registerAllClis() {
-    workflowCmds.registerCLICommands(arglib.YArgs);
-    scheduling.registerCommands(arglib.YArgs);
-    spiderCLI.registerCommands(arglib.YArgs);
-    fieldExtractorCLI.registerCommands(arglib.YArgs);
+  workflowCmds.registerCLICommands(arglib.YArgs);
+  scheduling.registerCommands(arglib.YArgs);
+  spiderCLI.registerCommands(arglib.YArgs);
+  fieldExtractorCLI.registerCommands(arglib.YArgs);
 }
 
 export async function runCli() {
-    const runResult = arglib.YArgs
-        .demandCommand(1, 'You need at least one command before moving on')
-        .strict()
-        .help()
-        .fail((err) => {
-            console.log('RunCLI Error', err);
-            arglib.YArgs.showHelp();
-        })
-        .argv;
-    return Promise.resolve(runResult);
+  const runResult = arglib.YArgs
+    .demandCommand(1, 'You need at least one command before moving on')
+    .strict()
+    .help()
+    .fail((err) => {
+      console.log('RunCLI Error', err);
+      arglib.YArgs.showHelp();
+    })
+    .argv;
+  return Promise.resolve(runResult);
 }

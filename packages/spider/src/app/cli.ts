@@ -26,5 +26,5 @@ export function registerCommands(yargv: arglib.YArgsT) {
 
 if (require.main === module) {
   registerCommands(arglib.YArgs);
-  arglib.runRegisteredCmds(arglib.YArgs)
+  arglib.runRegisteredCmds(arglib.YArgs);
 }

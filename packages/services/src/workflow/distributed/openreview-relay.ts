@@ -32,19 +32,19 @@ async function doUpdateNote(openReviewExchange: OpenReviewExchange, noteId: stri
     readers: ['everyone'],
     writers: [],
     signatures: ['dblp.org']
-  }
+  };
   log.info(`POSTing updated note ${noteId}`);
-  await openReviewExchange.getCredentials()
+  await openReviewExchange.getCredentials();
   await openReviewExchange.configAxios()
-    .post("/notes", noteUpdate)
+    .post('/notes', noteUpdate)
     .then(r => {
       const updatedNote: Note = r.data;
-      log.info(`updated Note ${noteId}; updateId: ${updatedNote.id}`)
+      log.info(`updated Note ${noteId}; updateId: ${updatedNote.id}`);
     })
     .catch(error => {
       displayRestError(error);
       return undefined;
-    })
+    });
 }
 
 async function doFetchNotes(openReviewExchange: OpenReviewExchange, offset: number): Promise<Notes | undefined> {
@@ -59,16 +59,16 @@ const FetcherDelayTime = 5 * oneMinute;
 export async function runRelayFetch(_initOffset: number, numToFetch: number) {
   let offset = _initOffset;
   const runForever = numToFetch === 0;
-  const openReviewExchange = newOpenReviewExchange(getServiceLogger("OpenReviewExchange"));
+  const openReviewExchange = newOpenReviewExchange(getServiceLogger('OpenReviewExchange'));
 
-  log.info(`Relay Fetcher: offset: ${offset}, numToFetch: ${numToFetch} ...`)
+  log.info(`Relay Fetcher: offset: ${offset}, numToFetch: ${numToFetch} ...`);
 
   let numProcessed = 0;
 
   await asyncForever(
     async function (): Promise<void> {
       if (numProcessed >= numToFetch && !runForever) {
-        log.info(`Note Fetcher reached fetch limit, exiting`);
+        log.info('Note Fetcher reached fetch limit, exiting');
         return Promise.reject(new Error('Note Limit Reached'));
       }
       try {
@@ -81,12 +81,12 @@ export async function runRelayFetch(_initOffset: number, numToFetch: number) {
         const fetchLength = notes.length;
 
         if (fetchLength === 0) {
-          log.info(`Note Fetcher exhausted available notes. Pausing..`);
+          log.info('Note Fetcher exhausted available notes. Pausing..');
           await delay(FetcherDelayTime);
           return;
         }
 
-        log.info(`fetched ${notes.length} (of ${count}) notes`)
+        log.info(`fetched ${notes.length} (of ${count}) notes`);
 
         offset += fetchLength;
 
@@ -97,9 +97,9 @@ export async function runRelayFetch(_initOffset: number, numToFetch: number) {
         const addedNoteCount = await _processNoteBatch(notesToProcess, true);
         log.info(`  ... added ${addedNoteCount} notes`);
         numProcessed += addedNoteCount;
-        log.info(`Upserted (${numProcessed}/${count})`)
+        log.info(`Upserted (${numProcessed}/${count})`);
         if (addedNoteCount < notesToProcess.length) {
-          log.info(`Note Fetcher reached an already added note. Pausing..`);
+          log.info('Note Fetcher reached an already added note. Pausing..');
           await delay(FetcherDelayTime);
         }
       } catch (error) {
@@ -107,7 +107,7 @@ export async function runRelayFetch(_initOffset: number, numToFetch: number) {
       }
     }
   ).catch(error => {
-    log.error(`${error}`)
+    log.error(`${error}`);
   });
 }
 
@@ -122,15 +122,15 @@ async function _processNoteBatch(notes: Note[], stopOnExistingNote: boolean): Pr
     const existingNote = await findNoteStatusById(note.id);
     const noteExists = existingNote !== undefined;
     if (noteExists && stopOnExistingNote) {
-      log.info(`Found fetched note in local MongoDB; stopping fetcher`);
+      log.info('Found fetched note in local MongoDB; stopping fetcher');
       doneProcessing = true;
       return;
     }
 
-    const noteStatus = await upsertNoteStatus({ noteId: note.id, urlstr })
+    const noteStatus = await upsertNoteStatus({ noteId: note.id, urlstr });
     numProcessed += 1;
     if (!noteStatus.validUrl) {
-      log.info(`NoteStatus: invalid url '${urlstr}'`)
+      log.info(`NoteStatus: invalid url '${urlstr}'`);
       return;
     }
     const requestUrl = noteStatus.url;
@@ -141,7 +141,7 @@ async function _processNoteBatch(notes: Note[], stopOnExistingNote: boolean): Pr
     const abs = note.content.abstract;
     const hasAbstract = typeof abs === 'string';
     const status: WorkflowStatus = hasAbstract ? 'extractor:success' : 'available';
-    await upsertHostStatus(note.id, status, { hasAbstract, requestUrl })
+    await upsertHostStatus(note.id, status, { hasAbstract, requestUrl });
   });
 
   return numProcessed;
@@ -149,7 +149,7 @@ async function _processNoteBatch(notes: Note[], stopOnExistingNote: boolean): Pr
 
 async function rateLimit(prevTime: Date, maxRateMs: number): Promise<Date> {
   const currTime = new Date();
-  const elapsedMs = differenceInMilliseconds(currTime, prevTime)
+  const elapsedMs = differenceInMilliseconds(currTime, prevTime);
   const waitTime = maxRateMs - elapsedMs;
 
   if (waitTime > 0) {
@@ -165,7 +165,7 @@ export async function runRelayExtract(count: number) {
   const runForever = count === 0;
 
   const corpusRoot = getCorpusRootDir();
-  const openReviewExchange = newOpenReviewExchange(getServiceLogger("OpenReviewExchange"));
+  const openReviewExchange = newOpenReviewExchange(getServiceLogger('OpenReviewExchange'));
 
   const scraper = await initScraper({ corpusRoot });
   const { browserPool } = scraper;
@@ -184,7 +184,7 @@ export async function runRelayExtract(count: number) {
       const nextSpiderable = await getNextSpiderableUrl();
 
       if (nextSpiderable === undefined) {
-        log.info('runRelayExtract(): no more spiderable urls in mongo')
+        log.info('runRelayExtract(): no more spiderable urls in mongo');
         await resetUrlsWithoutAbstracts();
         return;
       }
@@ -192,7 +192,7 @@ export async function runRelayExtract(count: number) {
       currCount += 1;
 
       const noteId = nextSpiderable._id;
-      const url = nextSpiderable.requestUrl
+      const url = nextSpiderable.requestUrl;
 
       const scrapedUrl = await scraper.scrapeUrl(url, true);
 
@@ -200,7 +200,7 @@ export async function runRelayExtract(count: number) {
         return releaseSpiderableUrl(nextSpiderable, 'spider:fail');
       }
 
-      log.info('Field Extraction starting..')
+      log.info('Field Extraction starting..');
       const urlFetchData = scrapedUrl.right;
       const { status, responseUrl } = urlFetchData;
 
@@ -230,7 +230,7 @@ export async function runRelayExtract(count: number) {
 
       const canonicalFields = getEnvCanonicalFields(extractionEnv);
 
-      prettyPrint({ canonicalFields })
+      prettyPrint({ canonicalFields });
       const abstracts = _.filter(canonicalFields.fields, (field) => field.name === 'abstract');
       const clippedAbstracts = _.filter(canonicalFields.fields, (field) => field.name === 'abstract-clipped');
       let theAbstract: string | undefined;
@@ -253,34 +253,34 @@ export async function runRelayExtract(count: number) {
     stopCondition
   ).finally(() => {
     return browserPool.shutdown();
-  })
+  });
 }
 
-        // await asyncEachSeries(notes, async (note: Note) => {
-        //   const shouldStop = await stopCondition(fetchLength);
-        //   if (shouldStop) return 0;
+// await asyncEachSeries(notes, async (note: Note) => {
+//   const shouldStop = await stopCondition(fetchLength);
+//   if (shouldStop) return 0;
 
-        //   const urlstr = note.content.html;
-        //   const existingNote = await findNoteStatusById(note.id);
-        //   if (existingNote === undefined) {
-        //     foundExistingNote = true;
-        //     log.info(`Found fetched note in local MongoDB; stopping fetcher`);
-        //   }
+//   const urlstr = note.content.html;
+//   const existingNote = await findNoteStatusById(note.id);
+//   if (existingNote === undefined) {
+//     foundExistingNote = true;
+//     log.info(`Found fetched note in local MongoDB; stopping fetcher`);
+//   }
 
-        //   const noteStatus = await upsertNoteStatus({ noteId: note.id, urlstr })
-        //   numProcessed += 1;
-        //   if (!noteStatus.validUrl) {
-        //     log.info(`NoteStatus: invalid url '${urlstr}'`)
-        //     return;
-        //   }
-        //   const requestUrl = noteStatus.url;
-        //   if (requestUrl === undefined) {
-        //     return Promise.reject(`Invalid state: NoteStatus(${note.id}).validUrl===true, url===undefined`);
-        //   }
+//   const noteStatus = await upsertNoteStatus({ noteId: note.id, urlstr })
+//   numProcessed += 1;
+//   if (!noteStatus.validUrl) {
+//     log.info(`NoteStatus: invalid url '${urlstr}'`)
+//     return;
+//   }
+//   const requestUrl = noteStatus.url;
+//   if (requestUrl === undefined) {
+//     return Promise.reject(`Invalid state: NoteStatus(${note.id}).validUrl===true, url===undefined`);
+//   }
 
-        //   const abs = note.content.abstract;
-        //   const hasAbstract = typeof abs === 'string';
-        //   const status: WorkflowStatus = hasAbstract ? 'extractor:success' : 'available';
-        //   const upserted = await upsertHostStatus(note.id, status, { hasAbstract, requestUrl })
-        //   log.info(`Upsert (${numProcessed}/${count}) ${upserted._id}; ${upserted.requestUrl}`)
-        // });
+//   const abs = note.content.abstract;
+//   const hasAbstract = typeof abs === 'string';
+//   const status: WorkflowStatus = hasAbstract ? 'extractor:success' : 'available';
+//   const upserted = await upsertHostStatus(note.id, status, { hasAbstract, requestUrl })
+//   log.info(`Upsert (${numProcessed}/${count}) ${upserted._id}; ${upserted.requestUrl}`)
+// });

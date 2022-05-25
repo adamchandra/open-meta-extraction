@@ -54,10 +54,10 @@ export function registerCLICommands(yargv: arglib.YArgsT) {
 
     await runRelayExtract(count)
       .finally(() => {
-        console.log('run-relay-extract: closing...')
+        console.log('run-relay-extract: closing...');
         return mongoose.connection.close();
       });
-    console.log('done! run-relay-extract')
+    console.log('done! run-relay-extract');
   });
 
   registerCmd(
@@ -68,12 +68,12 @@ export function registerCLICommands(yargv: arglib.YArgsT) {
   )(async (args: any) => {
     const clean: boolean = args.clean;
     initConfig();
-    const conn = mongoConnectionString()
-    putStrLn('Mongo Tools')
-    putStrLn(`Connection: ${conn}`)
+    const conn = mongoConnectionString();
+    putStrLn('Mongo Tools');
+    putStrLn(`Connection: ${conn}`);
 
     if (clean) {
-      putStrLn('Cleaning Database')
+      putStrLn('Cleaning Database');
       const mongoose = await connectToMongoDB();
       putStrLn('dropDatabase..');
       await mongoose.connection.dropDatabase();

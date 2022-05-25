@@ -1,6 +1,7 @@
-export * from './scraper';
-export * from './browser-pool';
-export * from './puppet';
-export * from './url-fetch-chains';
+export * from './core/browser-pool';
+export * from './core/puppet';
+export * from './core/url-fetch-chains';
 
-export * as spiderCLI from './cli';
+export * from './app/scraper';
+
+export * as spiderCLI from '~/app/cli';

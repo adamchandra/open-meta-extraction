@@ -232,7 +232,7 @@ describe('Extraction Prelude / Primitives', () => {
     await asyncEachOf(expected, async (exp: string[], index) => {
       const n = index + 1;
       const inputs = _.map(_.range(4), i => i + 1);
-      prettyPrint({ inputs })
+      prettyPrint({ inputs });
       const env0 = initEnv(inputs);
       const res = await forEachDo(filterMod0(n))(env0)();
       if (isRight(res)) {

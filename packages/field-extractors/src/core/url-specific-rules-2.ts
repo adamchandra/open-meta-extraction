@@ -58,15 +58,15 @@ const readSpringerDocumentMetadata: Transform<BrowserPage, ParsedJson> = compose
       return ClientFunc.continue('springer-link.metadata not found');
     }
     const i1 = jsonText.indexOf('{');
-    const i2 = jsonText.lastIndexOf('}')
+    const i2 = jsonText.lastIndexOf('}');
     if (i1 < 0 || i2 < 0) {
       return ClientFunc.continue('springer-link.metadata doesnt look like json');
     }
     const strippedJson = jsonText.slice(i1, i2 + 1);
     try {
-      return { json: JSON.parse(strippedJson) }
+      return { json: JSON.parse(strippedJson) };
     } catch (error) {
-      env.log.warn(`readSpringerDocumentMetadata: Could not parse JSON text`);
+      env.log.warn('readSpringerDocumentMetadata: Could not parse JSON text');
       return ClientFunc.continue('springer-link.metadata not parsable');
     }
   }, 'readSpringerMetadata'));

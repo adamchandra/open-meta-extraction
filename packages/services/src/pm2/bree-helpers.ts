@@ -56,7 +56,7 @@ export function cliJob(
 ): Bree.JobOptions {
   const baseName = _.upperFirst(_.camelCase(cliApp));
   const qualifiedName = nameModifier ? `${baseName}:${nameModifier}` : baseName;
-  const jobPath = path.join(__dirname, 'jobs', 'run-cli.js')
+  const jobPath = path.join(__dirname, 'jobs', 'run-cli.js');
 
   const job: Bree.JobOptions = {
     name: qualifiedName,
@@ -72,8 +72,8 @@ export function cliJob(
 
 
 export function createBreeScheduler(jobs: Bree.JobOptions[]): Bree {
-  const jobRoot = path.join(__dirname, 'jobs')
-  const log = getBreeLogger("Bree");
+  const jobRoot = path.join(__dirname, 'jobs');
+  const log = getBreeLogger('Bree');
 
   const bree = new Bree({
     root: jobRoot,
@@ -83,9 +83,9 @@ export function createBreeScheduler(jobs: Bree.JobOptions[]): Bree {
 
     errorHandler: (error, workerMetadata) => {
       if (workerMetadata.threadId) {
-        log.error(`There was an error while running a worker ${workerMetadata.name} with thread ID: ${workerMetadata.threadId}`)
+        log.error(`There was an error while running a worker ${workerMetadata.name} with thread ID: ${workerMetadata.threadId}`);
       } else {
-        log.error(`There was an error while running a worker ${workerMetadata.name}`)
+        log.error(`There was an error while running a worker ${workerMetadata.name}`);
       }
 
       log.error(error);
@@ -94,7 +94,7 @@ export function createBreeScheduler(jobs: Bree.JobOptions[]): Bree {
       const { message } = messageInfo;
       switch (message) {
         default:
-          log.info(`jobmsg> ${message}`)
+          log.info(`jobmsg> ${message}`);
       }
     }
   });

@@ -10,7 +10,7 @@ import {
   saveEvidence,
   validateEvidence,
   urlFilter,
-} from "./extraction-primitives";
+} from './extraction-primitives';
 
 import {
   dropN,
@@ -23,7 +23,7 @@ import {
   multiGrepDropUntil,
   multiGrepTakeUntil,
   splitLines,
-} from "./text-primitives";
+} from './text-primitives';
 
 import { gatherHighwirePressTags } from './headtag-scripts';
 

@@ -107,7 +107,7 @@ export function ensureArtifactDir(entryPath: string, artifactDir: ArtifactSubdir
 
 export function cleanArtifactDir(entryPath: string): void {
   if (isValidCorpusEntryPath(entryPath)) {
-    fs.rmSync(entryPath, { recursive: true, force: true })
+    fs.rmSync(entryPath, { recursive: true, force: true });
     fs.mkdirSync(entryPath, { recursive: true });
   }
 }

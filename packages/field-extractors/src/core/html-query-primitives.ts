@@ -132,7 +132,7 @@ export async function getElemAttrText(
 ): Promise<AttrSelection> {
   const attrValue = await elem.evaluate((elem: Element, attr: string) => {
     return elem.getAttribute(attr);
-  }, attributeName)
+  }, attributeName);
 
   if (attrValue === null) {
     return E.left(`no attr ${attributeName} in elem[${attributeName}])`);
@@ -148,7 +148,7 @@ export const elemQueryOne: (queryString: string) => Transform<Elem, Elem> =
       () => queryOneElem(elem, queryString),
       TE.mapLeft((msg) => ['continue', msg])
     );
-  }, `elem.$(${queryString})`)
+  }, `elem.$(${queryString})`);
 
 
 export async function evalElemText(elem: Elem): Promise<E.Either<string, string>> {
@@ -233,7 +233,7 @@ export const selectOne: (queryString: string) => Transform<BrowserPage, Elem> =
       () => queryOnePage(page, queryString),
       TE.mapLeft((msg) => ['continue', msg])
     );
-  }, `page.$(${queryString})`)
+  }, `page.$(${queryString})`);
 
 
 export const selectAll: (queryString: string, abbrev?: string) => Transform<Page, Elem[]> =

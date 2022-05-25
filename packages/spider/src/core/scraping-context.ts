@@ -25,7 +25,7 @@ export function createScrapingContext({
   corpusRoot
 }: Args): ScrapingContext {
   const entryEncPath = getHashEncodedPath(initialUrl);
-  const logger = getServiceLogger('scraper')
+  const logger = getServiceLogger('scraper');
 
   return {
     corpusRoot,

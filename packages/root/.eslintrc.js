@@ -56,7 +56,7 @@ module.exports = {
                         allowDestructuring: true, // Allow `const { props, state } = this`; false by default
                         allowedNames: ['self'] // Allow `const self = this`; `[]` by default
                 }],
-
+                'operator-linebreak': 'off',
 
                 // Disabled b/c it interferes with idomatic identical naming of type/const value in io-types decoders
                 // '@typescript-eslint/no-redeclare': ['error', { ignoreDeclarationMerge: true }],

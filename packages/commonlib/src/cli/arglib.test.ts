@@ -33,7 +33,7 @@ describe('Arglib tests', () => {
 
     _.each(commandNames, (cmdName) => {
       registerCmd(YArgs, cmdName, `run ${cmdName}`,)(() => {
-        prettyPrint({ msg: `running ${cmdName}` })
+        prettyPrint({ msg: `running ${cmdName}` });
         cmdsThatRan.push(cmdName);
       });
     });

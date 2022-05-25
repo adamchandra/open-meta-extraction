@@ -16,7 +16,7 @@ export interface CleaningRuleResult {
 /* eslint-disable  @typescript-eslint/explicit-module-boundary-types */
 export const AbstractCleaningRules: CleaningRule[] = [
   {
-    name: "starts w/'abstract'",
+    name: 'starts w/\'abstract\'',
     guards: [
       /^abstract/i
     ],
@@ -25,7 +25,7 @@ export const AbstractCleaningRules: CleaningRule[] = [
     }
   },
   {
-    name: "starts w/'motivation'",
+    name: 'starts w/\'motivation\'',
     guards: [
       /^motivation/i
     ],
@@ -35,7 +35,7 @@ export const AbstractCleaningRules: CleaningRule[] = [
   },
 
   {
-    name: "clip @ 'References'",
+    name: 'clip @ \'References\'',
     guards: [
       /(References|REFERENCES)/
     ],
@@ -47,7 +47,7 @@ export const AbstractCleaningRules: CleaningRule[] = [
 
 
   {
-    name: "clip @ 'Keywords'",
+    name: 'clip @ \'Keywords\'',
     guards: [
       /(Keywords).*$/
     ],
@@ -132,7 +132,7 @@ export const AbstractCleaningRules: CleaningRule[] = [
   },
 
   {
-    name: "clip @ 'Full Text: PDF'",
+    name: 'clip @ \'Full Text: PDF\'',
     guards: [
       /(Full Text:).*$/
     ],
@@ -142,7 +142,7 @@ export const AbstractCleaningRules: CleaningRule[] = [
     }
   },
   {
-    name: "clip @ 'Related Material'",
+    name: 'clip @ \'Related Material\'',
     guards: [
       /Related Material.*$/
     ],

@@ -1,7 +1,6 @@
 export * from './corpora/corpus-file-walkers';
 export * from './corpora/dirstream';
 export * from './util/basic-logging';
-export * from './util/parse-csv';
 export * from './util/pretty-print';
 export * from './util/stream-utils';
 export * from './util/string-utils';

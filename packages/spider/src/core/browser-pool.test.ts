@@ -67,7 +67,7 @@ describe('browser pooling', () => {
     // 'quit',
     // 'restart',
     // 'webuijserror',
-  ]
+  ];
 
   it('force kill on hang/timeout', async () => {
     const logger = getServiceLogger('browser-pool');
@@ -76,11 +76,11 @@ describe('browser pooling', () => {
     const attemptOne = async (url: string) => {
       putStrLn(`attempting ${url}`);
       const browser = await browserPool.acquire();
-      putStrLn(`acquired browser`);
+      putStrLn('acquired browser');
       const pageInstance = await browser.newPage(DefaultPageInstanceOptions);
-      putStrLn(`acquired page`);
+      putStrLn('acquired page');
       const { page } = pageInstance;
-      putStrLn(`navigating...`);
+      putStrLn('navigating...');
       const httpResponseP = page.goto(`chrome://${url}`, { timeout: 2000 });
 
       const resp = httpResponseP.then(async () => {
@@ -89,17 +89,17 @@ describe('browser pooling', () => {
         logger.info(`httpResponse: ${error}`);
       });
 
-      putStrLn('await resp')
+      putStrLn('await resp');
       await resp;
-      putStrLn('await release')
+      putStrLn('await release');
       await browserPool.release(browser);
-      putStrLn('/done attempt')
-    }
+      putStrLn('/done attempt');
+    };
 
     await Async.forEachSeries(debugUrls, async (dbgUrl) => {
-      putStrLn(`1. Trying chrome://${dbgUrl}`)
+      putStrLn(`1. Trying chrome://${dbgUrl}`);
       await attemptOne(dbgUrl);
-      putStrLn(`2. Trying chrome://${dbgUrl}`)
+      putStrLn(`2. Trying chrome://${dbgUrl}`);
       await attemptOne(dbgUrl);
     });
 

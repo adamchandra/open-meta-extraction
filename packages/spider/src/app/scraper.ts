@@ -8,10 +8,10 @@ import {
   Frame, HTTPResponse
 } from 'puppeteer';
 
-import { getFetchDataFromResponse, UrlFetchData } from './url-fetch-chains';
-import { createScrapingContext } from './scraping-context';
-import { BrowserPool, createBrowserPool, DefaultPageInstanceOptions, PageInstance } from './browser-pool';
-import { blockedResourceReport } from './resource-blocking';
+import { getFetchDataFromResponse, UrlFetchData } from '~/core/url-fetch-chains';
+import { createScrapingContext } from '~/core/scraping-context';
+import { BrowserPool, createBrowserPool, DefaultPageInstanceOptions, PageInstance } from '~/core/browser-pool';
+import { blockedResourceReport } from '~/core/resource-blocking';
 import { Logger } from 'winston';
 
 export interface Scraper {
@@ -78,8 +78,8 @@ async function gotoUrlWithRewrites(
     if (rw0.length > 0) {
       const rewrite = rw0[0];
       if (rewrite === undefined) return E.left('no rewrites available');
-      logger.info(`Rewrote ${url} to ${rewrite}`)
-      return gotoUrlWithRewrites(pageInstance, rewrite, logger)
+      logger.info(`Rewrote ${url} to ${rewrite}`);
+      return gotoUrlWithRewrites(pageInstance, rewrite, logger);
     }
   }
   return response;
@@ -136,8 +136,9 @@ async function scrapeUrl({
       await page.close();
       logger.info(`Scraped ${url}: status: ${status}`);
       const isReqEqualResponse = metadata.requestUrl === metadata.responseUrl;
-      if (!isReqEqualResponse)
-        logger.info(`    --> ${metadata.responseUrl}`)
+      if (!isReqEqualResponse) {
+        logger.info(`    --> ${metadata.responseUrl}`);
+      }
 
       return E.right(metadata);
     } catch (error) {
@@ -190,7 +191,7 @@ async function writeRequestToDisk(
           .then(c => {
             if (counter === 0) {
               clearTimeout(timeout);
-              resolve(c[0])
+              resolve(c[0]);
             }
           }).catch(_err => {
             // Catches Target Closed errors if timeout occurs

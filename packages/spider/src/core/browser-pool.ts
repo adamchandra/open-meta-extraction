@@ -9,7 +9,7 @@ import {
   PuppeteerLifeCycleEvent
 } from 'puppeteer';
 
-import { delay, getServiceLogger, prettyFormat, prettyPrint, putStrLn } from '@watr/commonlib';
+import { delay, getServiceLogger, prettyPrint } from '@watr/commonlib';
 
 import {
   Browser, Page,
@@ -70,7 +70,7 @@ export const DefaultPageInstanceOptions: PageInstanceOptions = {
   rewriteableUrls: RewritableUrls,
   waitUntil: 'domcontentloaded',
 
-}
+};
 
 export const ScriptablePageInstanceOptions: PageInstanceOptions = {
   cacheEnabled: false,
@@ -80,7 +80,7 @@ export const ScriptablePageInstanceOptions: PageInstanceOptions = {
   allowedResources: ['document', 'script'],
   rewriteableUrls: RewritableUrls,
   waitUntil: 'load',
-}
+};
 
 export function createBrowserPool(logPrefix?: string): BrowserPool {
   const prefix = logPrefix ? logPrefix : '';
@@ -88,7 +88,7 @@ export function createBrowserPool(logPrefix?: string): BrowserPool {
 
   const pool = new Pool<BrowserInstance>({
     log(msg: string): void {
-      log.info(msg)
+      log.info(msg);
     },
     async create(): Promise<BrowserInstance> {
       const logPrefix: string = '';
@@ -118,7 +118,7 @@ export function createBrowserPool(logPrefix?: string): BrowserPool {
                 process.kill(pid, 'SIGKILL');
               } catch (error) {
                 log.debug(`process.kill() error: ${error}`);
-                this.events.push('exit')
+                this.events.push('exit');
                 resolve();
               }
             });
@@ -139,7 +139,7 @@ export function createBrowserPool(logPrefix?: string): BrowserPool {
           createdAt: new Date(),
 
           async newPage(opts: PageInstanceOptions): Promise<PageInstance> {
-            const page = await browser.newPage()
+            const page = await browser.newPage();
             page.setDefaultNavigationTimeout(opts.defaultNavigationTimeout);
             page.setDefaultTimeout(opts.defaultTimeout);
             page.setJavaScriptEnabled(opts.javaScriptEnabled);
@@ -155,7 +155,7 @@ export function createBrowserPool(logPrefix?: string): BrowserPool {
               }
             };
             logPageEvents(pageInstance, log);
-            interceptRequestCycle(pageInstance, log)
+            interceptRequestCycle(pageInstance, log);
             return pageInstance;
           }
         };
@@ -179,7 +179,7 @@ export function createBrowserPool(logPrefix?: string): BrowserPool {
       }).catch(error => {
         log.error(error);
         throw error;
-      })
+      });
     },
     async destroy(browserInstance: BrowserInstance): Promise<void> {
       const browser = browserInstance.browser;
@@ -198,7 +198,7 @@ export function createBrowserPool(logPrefix?: string): BrowserPool {
     },
 
     validate(browserInstance: BrowserInstance) {
-      log.debug(`validating Browser#${browserInstance.pid()}`)
+      log.debug(`validating Browser#${browserInstance.pid()}`);
       return !browserInstance.isStale();
     },
 
@@ -208,58 +208,58 @@ export function createBrowserPool(logPrefix?: string): BrowserPool {
 
 
   pool.on('acquireRequest', eventId => {
-    log.verbose(`pool/event: acquireRequest:${eventId}`)
+    log.verbose(`pool/event: acquireRequest:${eventId}`);
   });
   pool.on('acquireSuccess', (eventId, resource) => {
-    log.verbose(`pool/event: acquireSuccess:${eventId}: ${resource.asString()}`)
+    log.verbose(`pool/event: acquireSuccess:${eventId}: ${resource.asString()}`);
   });
   pool.on('acquireFail', (eventId, err) => {
-    log.warn(`pool/event: acquireFail:${eventId}: ${err}`)
+    log.warn(`pool/event: acquireFail:${eventId}: ${err}`);
   });
 
   // resource returned to pool
   pool.on('release', resource => {
-    log.verbose(`pool/event: release ${resource.asString()}`)
+    log.verbose(`pool/event: release ${resource.asString()}`);
   });
 
   // resource was created and added to the pool
   pool.on('createRequest', eventId => {
-    log.verbose(`pool/event: createRequest:${eventId}`)
+    log.verbose(`pool/event: createRequest:${eventId}`);
   });
   pool.on('createSuccess', (eventId, resource) => {
-    log.verbose(`pool/event: createSuccess:${eventId}: ${resource.asString()}`)
+    log.verbose(`pool/event: createSuccess:${eventId}: ${resource.asString()}`);
   });
   pool.on('createFail', (eventId, err) => {
-    log.warn(`pool/event: createFail:${eventId} ${err}`)
+    log.warn(`pool/event: createFail:${eventId} ${err}`);
   });
 
   // resource is destroyed and evicted from pool
   // resource may or may not be invalid when destroySuccess / destroyFail is called
   pool.on('destroyRequest', (eventId, resource) => {
-    log.verbose(`pool/event: destroyRequest:${eventId}: ${resource.asString()}`)
+    log.verbose(`pool/event: destroyRequest:${eventId}: ${resource.asString()}`);
   });
   pool.on('destroySuccess', (eventId, resource) => {
-    log.verbose(`pool/event: destroySuccess:${eventId}: ${resource.asString()}`)
+    log.verbose(`pool/event: destroySuccess:${eventId}: ${resource.asString()}`);
   });
   pool.on('destroyFail', (eventId, resource, err) => {
-    log.warn(`pool/event: destroyFail:${eventId}: ${resource.asString()} ${err}`)
+    log.warn(`pool/event: destroyFail:${eventId}: ${resource.asString()} ${err}`);
   });
 
   // when internal reaping event clock is activated / deactivated
   pool.on('startReaping', () => {
-    log.verbose(`pool/event: startReaping`)
+    log.verbose('pool/event: startReaping');
   });
   pool.on('stopReaping', () => {
-    log.verbose(`pool/event: stopReaping`)
+    log.verbose('pool/event: stopReaping');
   });
 
   // pool is destroyed (after poolDestroySuccess all event handlers are also cleared)
   pool.on('poolDestroyRequest', eventId => {
-    log.verbose(`pool/event: poolDestroyRequest:${eventId}`)
+    log.verbose(`pool/event: poolDestroyRequest:${eventId}`);
   });
 
   pool.on('poolDestroySuccess', eventId => {
-    log.verbose(`pool/event: poolDestroySuccess:${eventId}`)
+    log.verbose(`pool/event: poolDestroySuccess:${eventId}`);
   });
 
   onExit(function (code: number | null, signal: string | null) {
@@ -275,37 +275,37 @@ export function createBrowserPool(logPrefix?: string): BrowserPool {
       return acq.promise;
     },
     async release(b: BrowserInstance): Promise<void> {
-      log.debug(`release: getting open pages`)
+      log.debug('release: getting open pages');
       let normalShutdown = false;
       const pageCloseP = b.browser.pages()
         .then(async pages => {
-          log.debug(`release: closing all pages`)
+          log.debug('release: closing all pages');
           await Promise.all(pages.map(page => page.close()));
-          log.debug(`release: open/close test page`)
+          log.debug('release: open/close test page');
           const page = await b.newPage(DefaultPageInstanceOptions);
           await page.page.goto('about:blank');
-          await page.page.close()
+          await page.page.close();
         }).then(() => {
           normalShutdown = true;
-          log.info(`release: normal shutdown success`)
+          log.info('release: normal shutdown success');
         }).catch(error => {
-          log.debug(`release:${error}`)
+          log.debug(`release:${error}`);
         });
 
       await delay(300);
 
       if (!normalShutdown) {
-        log.info(`release: initiating kill()`)
+        log.info('release: initiating kill()');
         await b.kill();
       }
-      log.debug(`release: awaiting pageClose`)
+      log.debug('release: awaiting pageClose');
       // await pageCloseP;
 
-      log.debug(`release: done`)
+      log.debug('release: done');
       pool.release(b);
     },
     async use<A>(f: (browser: BrowserInstance) => A | Promise<A>): Promise<A> {
-      const acq = this.pool.acquire()
+      const acq = this.pool.acquire();
       const browser = await acq.promise;
       const a = await Promise
         .resolve(f(browser))
@@ -320,11 +320,11 @@ export function createBrowserPool(logPrefix?: string): BrowserPool {
       await pool.destroy();
     },
     report() {
-      const numFree = this.pool.numFree()
-      const numPendingAcquires = this.pool.numPendingAcquires()
-      const numPendingCreates = this.pool.numPendingCreates()
-      const numPendingValidations = this.pool.numPendingValidations()
-      const numUsed = this.pool.numUsed()
+      const numFree = this.pool.numFree();
+      const numPendingAcquires = this.pool.numPendingAcquires();
+      const numPendingCreates = this.pool.numPendingCreates();
+      const numPendingValidations = this.pool.numPendingValidations();
+      const numUsed = this.pool.numUsed();
       prettyPrint({
         numUsed,
         numFree,
@@ -378,8 +378,8 @@ async function gotoUrlWithRewrites(
     if (rw0.length > 0) {
       const rewrite = rw0[0];
       if (rewrite === undefined) return E.left('no rewrites available');
-      logger.info(`Rewrote ${url} to ${rewrite}`)
-      return gotoUrlWithRewrites(pageInstance, rewrite, logger)
+      logger.info(`Rewrote ${url} to ${rewrite}`);
+      return gotoUrlWithRewrites(pageInstance, rewrite, logger);
     }
   }
   return response;

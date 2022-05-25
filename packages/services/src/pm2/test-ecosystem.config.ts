@@ -16,7 +16,7 @@ const apps2 = [
   pm2CliJob('preflight-check', { autorestart: false })
 ];
 
-const apps = _.concat(apps1, apps2)
+const apps = _.concat(apps1, apps2);
 
 module.exports = {
   apps

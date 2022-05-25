@@ -16,9 +16,7 @@ import {
   diffByChars,
   runTidyCmdBuffered,
   runFileCmd,
-  prettyPrint
 } from '@watr/commonlib';
-
 
 import {
   Transform,
@@ -30,7 +28,7 @@ import {
   through,
   filter,
   tap,
-  tapEnvLR,
+  tapEitherEnv,
   ClientFunc,
   ClientResult,
   takeWhileSuccess,
@@ -88,7 +86,7 @@ function removeEvidence(env: ExtractionEnv, regex: RegExp) {
 }
 
 export const clearEvidence: (evidenceTest: RegExp) => Transform<unknown, unknown> = (evidenceTest: RegExp) => {
-  return tapEnvLR((env) => removeEvidence(env, evidenceTest));
+  return tapEitherEnv((env) => removeEvidence(env, evidenceTest));
 };
 
 
@@ -96,7 +94,7 @@ export const saveEvidence: (evidenceName: string) => Transform<string, void> =
   (evidenceName) => through((extractedValue: string, env) => {
     const text = extractedValue.trim();
     const savedEvidenceStrings = _.map(env.evidence, ev => ev.evidence);
-    const evidence = _.concat(savedEvidenceStrings, [evidenceName])
+    const evidence = _.concat(savedEvidenceStrings, [evidenceName]);
     const candidate: FieldCandidate = {
       text,
       evidence,
@@ -186,7 +184,7 @@ const loadXML: Transform<string, any> = through((artifactPath, env) => {
     );
   }
 
-  return ClientFunc.halt(`loadXML Fail for ${artifactPath}`)
+  return ClientFunc.halt(`loadXML Fail for ${artifactPath}`);
 }, 'loadXML');
 
 const runHtmlTidy: Transform<string, string> = through((artifactPath, env) => {
@@ -457,7 +455,7 @@ const evidenceExists: (evstr: string) => FilterTransform<unknown> = (evstr) => f
   });
 }, evstr);
 
-export const summarizeEvidence: Transform<unknown, unknown> = tapEnvLR((env) => {
+export const summarizeEvidence: Transform<unknown, unknown> = tapEitherEnv((env) => {
   const { fieldCandidates, log } = env;
   const url = env.urlFetchData.responseUrl;
 

@@ -53,7 +53,7 @@ export const URLRecord = {
     const err = _.join(paths, '; ');
     return `Error parsing url record at paths: ${err}`;
   }
-}
+};
 
 export type URLRecord = io.TypeOf<typeof URLRecordCodec>;
 

@@ -91,7 +91,7 @@ function getWorkerData(): any {
 type JobLogger = (msg: string) => void;
 
 function getJobLogger(jobFilename: string): JobLogger {
-  const infoLogger = getServiceLogger(`job:${jobFilename}`).info
+  const infoLogger = getServiceLogger(`job:${jobFilename}`).info;
 
   function jobLogger(msg: string): void {
     const { threadId, isMainThread } = workerThreads;
@@ -115,7 +115,7 @@ export async function runJob(
 ): Promise<void> {
   const baseName = path.basename(jobFilename);
   const baseNoExt = baseName.substring(0, baseName.length - 3);
-  const log: JobLogger = getJobLogger(baseNoExt)
+  const log: JobLogger = getJobLogger(baseNoExt);
 
   const workerData = getWorkerData();
   // const wdPretty = prettyFormat({ workerData, workerThreads})
@@ -123,8 +123,8 @@ export async function runJob(
 
   log(`Begin: PM2/RunJob ${baseNoExt}: ${args.join(' ')}`);
 
-  await Promise.resolve(jobFunc(log, workerData))
+  await Promise.resolve(jobFunc(log, workerData));
 
   log(`Done: PM2/RunJob '${baseNoExt}'`);
-  exitJob()
+  exitJob();
 }

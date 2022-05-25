@@ -173,7 +173,7 @@ export function registerCmd(
           return;
         }
         // const time1 = (new Date()).toLocaleTimeString();
-        const res = await Promise.resolve(cb(argv))
+        const res = await Promise.resolve(cb(argv));
         // const time2 = (new Date()).toLocaleTimeString();
         return res;
       }

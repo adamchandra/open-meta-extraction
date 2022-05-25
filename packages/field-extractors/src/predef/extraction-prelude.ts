@@ -1,6 +1,5 @@
 import _ from 'lodash';
 
-import { flow as fptsFlow, pipe } from 'fp-ts/function';
 
 import { Logger } from 'winston';
 import { Page } from 'puppeteer';
@@ -48,6 +47,7 @@ const fp = ft.createFPackage<ExtractionEnv>();
 export const {
   tap,
   tapLeft,
+  tapEitherEnv,
   through,
   log,
   filter,
@@ -72,13 +72,4 @@ export type FilterTransform<A> = ft.FilterTransform<A, EnvT>;
 
 export type ExtractionRule = (ra: ExtractionTask<unknown>) => ExtractionTask<unknown>;
 
-export const compose: typeof fptsFlow = (...fs: []) =>
-  <A extends readonly unknown[]>(a: A) =>
-    pipe(a, ...fs);
-
-export const tapEnvLR: <A>(f: (env: ExtractionEnv) => unknown) => Transform<A, A> = (f) => compose(
-  tap((_0, env) => f(env)),
-  tapLeft((_0, env) => {
-    f(env);
-  })
-);
+export const compose = ft.compose;

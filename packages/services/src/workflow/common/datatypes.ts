@@ -1,4 +1,4 @@
-import { AlphaRecord } from "@watr/commonlib";
+import { AlphaRecord } from '@watr/commonlib';
 import * as E from 'fp-ts/Either';
 
 export interface RecordRequest {

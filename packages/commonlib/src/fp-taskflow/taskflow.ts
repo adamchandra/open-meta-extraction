@@ -1,6 +1,6 @@
 import _ from 'lodash';
 
-import { pipe } from 'fp-ts/function';
+import { pipe, flow as fptsFlow  } from 'fp-ts/function';
 import * as TE from 'fp-ts/TaskEither';
 import * as Task from 'fp-ts/Task';
 import * as E from 'fp-ts/Either';
@@ -18,7 +18,8 @@ export interface FPackage<Env extends BaseEnv> {
   withCarriedWA: <A, Env extends BaseEnv>(arrow: Transform<A, unknown, Env>) => Transform<A, A, Env>;
   through<A, B>(f: ClientFunc<A, B, Env>, name?: string, postHook?: LogHook<A, B, Env>,): Transform<A, B, Env>;
   throughLeft<A>(f: ControlFunc<Env>): Transform<A, A, Env>;
-  tapLeft<A>(f: ControlFunc_<Env>): Transform<A, A, Env>
+  tapLeft<A>(f: ControlFunc_<Env>): Transform<A, A, Env>;
+  tapEitherEnv<A>(f: (e: Env) => unknown): Transform<A, A, Env>;
   tap<A>(f: ClientFunc<A, unknown, Env>, name?: string): Transform<A, A, Env>;
   filter<A>(f: ClientFunc<A, boolean, Env>, name?: string, postHook?: LogHook<A, boolean, Env>,): FilterTransform<A, Env>;
 
@@ -64,6 +65,7 @@ export function createFPackage<Env extends BaseEnv>(): FPackage<Env> {
     through,
     throughLeft,
     tapLeft,
+    tapEitherEnv,
     tap,
     filter,
     log,
@@ -127,8 +129,8 @@ export type PerhapsW<A, Env extends BaseEnv> = E.Either<WCI<Env>, W<A, Env>>;
 export type LogHook<A, B, Env extends BaseEnv> = (a: A, eb: Perhaps<B>, env: Env) => void;
 
 export type ClientResult<A> = Eventual<A>
-  | Eventual<Perhaps<A>>
-  | TE.TaskEither<ControlInstruction, A>
+| Eventual<Perhaps<A>>
+| TE.TaskEither<ControlInstruction, A>
   ;
 
 export type ClientFunc<A, B, Env extends BaseEnv> = (a: A, env: Env) => ClientResult<B>;
@@ -231,8 +233,12 @@ export type ExtractionFunction<A, B, Env extends BaseEnv> = (a: A, env: Env) => 
 export type FilterFunction<A, Env extends BaseEnv> = ExtractionFunction<A, A, Env>;
 export type EnvFunction<B, Env extends BaseEnv> = ExtractionFunction<void, B, Env>;
 
+export const compose: typeof fptsFlow = (...fs: []) =>
+  <A extends readonly unknown[]>(a: A) =>
+    pipe(a, ...fs);
+
 const pushNS:
-  <A, Env extends BaseEnv>(name: string) => Transform<A, A, Env> =
+<A, Env extends BaseEnv>(name: string) => Transform<A, A, Env> =
   <A, Env extends BaseEnv>(name: string) => (ra: ExtractionTask<A, Env>) => {
     return pipe(
       ra,
@@ -250,7 +256,7 @@ const pushNS:
   };
 
 const popNS:
-  <A, Env extends BaseEnv>() => Transform<A, A, Env> =
+<A, Env extends BaseEnv>() => Transform<A, A, Env> =
   <A, Env extends BaseEnv>() => (ra: ExtractionTask<A, Env>) => {
     return pipe(
       ra,
@@ -268,7 +274,7 @@ const popNS:
   };
 
 const withNS:
-  <A, B, Env extends BaseEnv>(name: string, arrow: Transform<A, B, Env>) => Transform<A, B, Env> =
+<A, B, Env extends BaseEnv>(name: string, arrow: Transform<A, B, Env>) => Transform<A, B, Env> =
   <A, B, Env extends BaseEnv>(name: string, arrow: Transform<A, B, Env>) => (ra: ExtractionTask<A, Env>) => pipe(
     ra,
     pushNS(name),
@@ -277,7 +283,7 @@ const withNS:
   );
 
 const carryWA:
-  <A, B, Env extends BaseEnv>(arrow: Transform<A, B, Env>) => Transform<A, [B, W<A, Env>], Env> =
+<A, B, Env extends BaseEnv>(arrow: Transform<A, B, Env>) => Transform<A, [B, W<A, Env>], Env> =
   <A, B, Env extends BaseEnv>(arrow: Transform<A, B, Env>) => {
     let origWA: W<A, Env>;
 
@@ -340,7 +346,7 @@ const forEachDo: <A, B, Env extends BaseEnv> (arrow: Transform<A, B, Env>) => Tr
           const lefts = _.map(_lefts, ([b]) => b);
           const env0 = _.clone(env);
           const leftMsg = lefts.map((ci) => `${ci}`).join(', ');
-          env.log.debug(`forEachDo:lefts:${leftMsg}`)
+          env.log.debug(`forEachDo:lefts:${leftMsg}`);
           return asW(bs, env0);
         })
       );
@@ -352,7 +358,7 @@ const forEachDo: <A, B, Env extends BaseEnv> (arrow: Transform<A, B, Env>) => Tr
 
 // Given a single input A, produce an array of Bs by running the given array of functions on the initial A
 const collectFanout:
-  <A, B, Env extends BaseEnv>(...arrows: Transform<A, B, Env>[]) => Transform<A, B[], Env> =
+<A, B, Env extends BaseEnv>(...arrows: Transform<A, B, Env>[]) => Transform<A, B[], Env> =
   <A, B, Env extends BaseEnv>(...arrows: Transform<A, B, Env>[]) => (ra: ExtractionTask<A, Env>) => {
     return pipe(
       ra,
@@ -389,9 +395,9 @@ const scatterAndSettle: <A, B, Env extends BaseEnv> (
     });
     const sequenced = () => Async
       .mapSeries<ExtractionTask<B, Env>, PerhapsW<B, Env>>(
-        bbs,
-        Async.asyncify(async (er: ExtractionTask<A, Env>) => er())
-      );
+      bbs,
+      Async.asyncify(async (er: ExtractionTask<A, Env>) => er())
+    );
     const pBsTask = pipe(
       sequenced,
       Task.map((perhapsBs) => asW(perhapsBs, env))
@@ -407,7 +413,7 @@ const takeWhileSuccess: <A, Env extends BaseEnv> (...arrows: Transform<A, A, Env
 );
 
 const __takeWhileSuccess:
-  <A, Env extends BaseEnv>(arrows: Transform<A, A, Env>[], arrowCount: number) => Transform<A, A, Env> =
+<A, Env extends BaseEnv>(arrows: Transform<A, A, Env>[], arrowCount: number) => Transform<A, A, Env> =
   <A, Env extends BaseEnv>(arrows: Transform<A, A, Env>[], arrowCount: number) => (ra: ExtractionTask<A, Env>) => {
     // Base Case:
     if (arrows.length === 0) return ra;
@@ -463,7 +469,7 @@ const __attemptEach: <A, B, Env extends BaseEnv>(arrows: Transform<A, B, Env>[],
   };
 
 const hook: <A, B, Env extends BaseEnv>(f: (a: A, b: Perhaps<B>, env: Env) => void) =>
-  LogHook<A, B, Env> = (f) => f;
+LogHook<A, B, Env> = (f) => f;
 
 function shortFormat(v: any): string {
   if (_.isArray(v)) {
@@ -533,6 +539,18 @@ function tapLeft<A, Env extends BaseEnv>(
   );
 }
 
+
+function tapEitherEnv<A, Env extends BaseEnv>(
+  f: (env: Env) => unknown
+): Transform<A, A, Env> {
+  return compose(
+    tap((_0, env) => f(env)),
+    tapLeft((_0, env) => {
+      f(env);
+    })
+  );
+}
+
 function tap<A, Env extends BaseEnv>(f: ClientFunc<A, unknown, Env>, name?: string): Transform<A, A, Env> {
   const arrowf = Transform.lift(f);
   const tapped = name ? withNS(`tap:${name}`, arrowf) : arrowf;
@@ -582,9 +600,9 @@ function filter<A, Env extends BaseEnv>(
 }
 
 export type LogLevel = 'info'
-  | 'debug'
-  | 'warn'
-  | 'error'
+| 'debug'
+| 'warn'
+| 'error'
   ;
 
 

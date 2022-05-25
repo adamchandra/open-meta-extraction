@@ -1,12 +1,10 @@
 import _ from 'lodash';
 
-// import sliceAnsi from 'slice-ansi';
-// import chalk from 'chalk';
-// import wrapAnsi from 'wrap-ansi';
 import * as Diff from 'diff';
 import Crypto from 'crypto-js';
 
 import { parseJSON, isLeft, toError } from 'fp-ts/lib/Either';
+// TODO import { parse as parseJSON } from 'fp-ts/lib/Json';
 
 export function shaEncodeAsHex(str: string): string {
   const cryptoSha = Crypto.SHA1(str);
@@ -26,46 +24,6 @@ export function matchAll(re: RegExp, str: string): Array<[number, number]> {
   }
   return matchOffsets;
 }
-
-
-// export function highlightRegions(input: string, matches: Array<[number, number]>): string {
-//   let res = input;
-//   _.each(matches, ([mstart, mend], mindex) => {
-//     const pre = sliceAnsi(res, 0, mstart);
-//     const mid = sliceAnsi(res, mstart, mend);
-//     const end = sliceAnsi(res, mend);
-//     // prettyPrint({ pre, mid, end });
-//     const r = (mindex * 13 * 13) % 64;
-//     const g = (mindex * 7 * 13) % 64;
-//     const b = (mindex * 5 * 13) % 64;
-//     const midclr = chalk // .underline(mid);
-//       .rgb(r + 128, g + 128, b + 128)
-//       .bgRgb(b, g, r)(mid);
-
-//     res = pre + midclr + end;
-//   });
-
-//   return res;
-// }
-
-// export function clipParagraph(width: number, height: number, para: string): string {
-//   const wrappedLines = wrapAnsi(para, width).split('\n');
-
-//   let clipped: string;
-//   if (wrappedLines.length > height) {
-//     const elidedStartLine = _.clamp(height - 4, 1, wrappedLines.length);
-//     const clippedHead = wrappedLines.slice(0, elidedStartLine).join('\n');
-//     const len = wrappedLines.length;
-//     const clippedEnd = wrappedLines.slice(len - 3).join('\n');
-//     const clippedCount = len - height;
-//     const middle = `... + ${clippedCount} lines`;
-//     clipped = _.join([clippedHead, middle, clippedEnd], '\n');
-//   } else {
-//     clipped = wrappedLines.join('\n');
-//   }
-
-//   return clipped;
-// }
 
 export function stripMargin(block: string): string {
   const lines = block.split('\n');
@@ -157,4 +115,3 @@ export function diffByChars(stra: string, strb: string, opts?: DiffCharsArgs): C
     return ({ kind: 'unchanged', value, count });
   });
 }
-

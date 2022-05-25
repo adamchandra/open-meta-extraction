@@ -97,12 +97,12 @@ describe('HTML jquery-like css queries', () => {
 
   it('smokescreen', async () => {
     return withPageContent(tmpHtml, async (page) => {
-      page.browser()
+      page.browser();
       const attr0 = await selectElementAttrP(page, 'meta[name=citation_title]', 'content');
       const attr1 = await selectElementAttrP(page, 'meta[name=citation_title]', 'content_');
       expect(isRight(attr0)).toEqual(true);
       expect(isLeft(attr1)).toEqual(true);
-    })
+    });
   });
 
   it('should select elements within previously selected elements', async () => {
@@ -111,7 +111,7 @@ describe('HTML jquery-like css queries', () => {
 |         <div class="inner" id="my-inner">  </div>
 |       </div>
 `);
-    const htmlContent = genHtml('', outerInner)
+    const htmlContent = genHtml('', outerInner);
     return withPageContent(htmlContent, async (page) => {
       await pipe(
         TE.right({ page }),
@@ -120,11 +120,11 @@ describe('HTML jquery-like css queries', () => {
         TE.bind('outerId', ({ outer }) => () => evalElemAttr(outer, 'id')),
         TE.bind('innerId', ({ inner }) => () => evalElemAttr(inner, 'id')),
         TE.map(({ innerId, outerId }) => {
-          expect(innerId).toEqual('my-inner')
-          expect(outerId).toEqual('my-outer')
+          expect(innerId).toEqual('my-inner');
+          expect(outerId).toEqual('my-outer');
         }),
         TE.mapLeft((error) => {
-          fail(error)
+          fail(error);
         })
       )();
     });
@@ -136,7 +136,7 @@ describe('HTML jquery-like css queries', () => {
 |       <div class="c0" attr-one="two"></div>
 |    </div>'
 `);
-    const htmlContent = genHtml('', body)
+    const htmlContent = genHtml('', body);
     await withPageContent(htmlContent, async (page) => {
       await pipe(
         TE.right({ page }),
@@ -157,7 +157,7 @@ describe('HTML jquery-like css queries', () => {
         TE.bind('divs', ({ page }) => () => queryAllPage(page, '.c0')),
         TE.bind('attrs', ({ divs }) => async () => {
           const maybeAttrs = divs.map(div => getElemAttrText(div, 'attr-one'));
-          const settled: AttrSelection[] = await Promise.all(maybeAttrs)
+          const settled: AttrSelection[] = await Promise.all(maybeAttrs);
           const attValues = settled.map(maybeAtt => E.fold(
             () => 'not-found',
             succ => succ
@@ -182,7 +182,7 @@ describe('HTML jquery-like css queries', () => {
 |       <div class="c0" mdata="two"></div>
 |    </div>'
 `);
-    const htmlContent = genHtml('', body)
+    const htmlContent = genHtml('', body);
     await withPageContent(htmlContent, async (page) => {
       await pipe(
         TE.right({ page }),
@@ -214,11 +214,11 @@ describe('HTML jquery-like css queries', () => {
   it('should create all expansions', () => {
     const cases1 = expandCaseVariations('A.B.C', (n) => `meta[name="${n}"]`);
     const expect1 = 'meta[name="A.B.C"],meta[name="A.B.c"],meta[name="A.b.C"],meta[name="A.b.c"],meta[name="a.B.C"],meta[name="a.B.c"],meta[name="a.b.C"],meta[name="a.b.c"]';
-    expect(cases1).toBe(expect1)
+    expect(cases1).toBe(expect1);
 
     const cases2 = expandCaseVariations('DC.Creator', (n) => `meta[name="${n}"]`);
     const expect2 = 'meta[name="DC.Creator"],meta[name="DC.creator"],meta[name="Dc.Creator"],meta[name="Dc.creator"],meta[name="dC.Creator"],meta[name="dC.creator"],meta[name="dc.Creator"],meta[name="dc.creator"]';
-    expect(cases2).toBe(expect2)
+    expect(cases2).toBe(expect2);
   });
 
   // it('should run assorted css queries', async () => {

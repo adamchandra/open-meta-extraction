@@ -7,25 +7,25 @@ import { populateDBHostNoteStatus } from './mongo-test-utils';
 import { createCollections } from './schemas';
 
 describe('Create Extraction Status Summary', () => {
-    setLogEnvLevel('debug');
+  setLogEnvLevel('debug');
 
-    let mongoose: Mongoose | undefined = undefined;
+  let mongoose: Mongoose | undefined = undefined;
 
-    beforeEach(async () => {
-        mongoose = await connectToMongoDB();
-        await mongoose.connection.dropDatabase()
-        await createCollections();
-    });
+  beforeEach(async () => {
+    mongoose = await connectToMongoDB();
+    await mongoose.connection.dropDatabase();
+    await createCollections();
+  });
 
-    afterAll(async () => {
-        if (mongoose === undefined) return;
-        return mongoose.connection.close()
-    });
+  afterAll(async () => {
+    if (mongoose === undefined) return;
+    return mongoose.connection.close();
+  });
 
-    it('create status summary', async () => {
-        await populateDBHostNoteStatus(200);
-        const summaryMessages = await showStatusSummary();
-        const formatted = formatStatusMessages(summaryMessages);
-        putStrLn(formatted);
-    });
-})
+  it('create status summary', async () => {
+    await populateDBHostNoteStatus(200);
+    const summaryMessages = await showStatusSummary();
+    const formatted = formatStatusMessages(summaryMessages);
+    putStrLn(formatted);
+  });
+});

@@ -11,6 +11,7 @@
     "noEmitOnError": true,
     "noEmit": false,
     "composite": true,
+    "incremental": true,
     "declaration": true,
     "declarationMap": true,
     "skipLibCheck": true,

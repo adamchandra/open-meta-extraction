@@ -11,13 +11,13 @@ import {
 
 export const loadTextFile: Transform<CacheFileKey, string> =
   through((cacheKey: CacheFileKey, { fileContentCache }) =>
-  (cacheKey in fileContentCache
-    ? fileContentCache[cacheKey]
-    : ClientFunc.halt(`cache has no record for key ${cacheKey}`)
-  ), `loadTextFile`);
+    (cacheKey in fileContentCache
+      ? fileContentCache[cacheKey]
+      : ClientFunc.halt(`cache has no record for key ${cacheKey}`)
+    ), 'loadTextFile');
 
 export const splitLines: Transform<string, string[]> =
-  through((s: string) => s.split('\n'))
+  through((s: string) => s.split('\n'));
 
 export const grepFilter: (regex: RegExp) => Transform<string[], string[]> =
   (regex) => through(
@@ -62,14 +62,14 @@ export const multiGrepDropUntil: (regexes: RegExp[], includeMatchedLines: boolea
     return through((lines: string[]) => {
       return mgrepDropUntil(lines, regexes, includeMatchedLines);
     }, `multiGrepDropUntil(${regexes.map(r => r.source).join(' __ ')})`);
-  }
+  };
 
 export const multiGrepTakeUntil: (regexes: RegExp[], includeMatchedLines: boolean) => Transform<string[], string[]> =
   (regexes, includeMatchedLines) => {
     return through((lines: string[]) => {
       return mgrepTakeUntil(lines, regexes, includeMatchedLines);
     }, `multiGrepTakeUntil(${regexes.map(r => r.source).join(' __ ')})`);
-  }
+  };
 
 export function mgrepDropUntil(lines: string[], matchers: RegExp[], includeMatchedLines: boolean): string[] {
   const matchBegin = findMultiMatchIndex(lines, matchers);

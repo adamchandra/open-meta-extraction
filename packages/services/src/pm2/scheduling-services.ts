@@ -18,33 +18,33 @@ export function registerCommands(yargv: arglib.YArgsT) {
   registerCmd(
     yargv, 'pm2-restart', 'Notification/Restart scheduler'
   )(async () => {
-    const log = getServiceLogger("PM2Restart")
+    const log = getServiceLogger('PM2Restart');
     log.info('PM2 Restart');
 
     const skipRE = /(pm2.?restart|scheduler)/i;
     const appList = await pm2x.list();
-    const appNames = appList.map(a => a.name || '').filter(n => n.length > 0)
+    const appNames = appList.map(a => a.name || '').filter(n => n.length > 0);
 
     await asyncEachSeries(appNames, async (name) => {
       if (skipRE.test(name)) {
         return;
       }
-      log.info(`stopping ${name}`)
+      log.info(`stopping ${name}`);
       return pm2x.stop(name);
     });
     await asyncEachSeries(appNames, async (name) => {
       if (skipRE.test(name)) {
         return;
       }
-      log.info(`restarting ${name}`)
+      log.info(`restarting ${name}`);
       return pm2x.restart(name);
     });
-  })
+  });
 
   registerCmd(
     yargv, 'test-scheduler', 'Testing app for scheduler'
   )(async () => {
-    const log = getServiceLogger("Scheduler")
+    const log = getServiceLogger('Scheduler');
     log.info('Testing Scheduler');
     const timers = [
       'every 4 sec',
@@ -63,13 +63,13 @@ export function registerCommands(yargv: arglib.YArgsT) {
   registerCmd(
     yargv, 'scheduler', 'Notification/Restart scheduler'
   )(async () => {
-    const log = getServiceLogger("Scheduler")
-    log.info('Starting Scheduler')
+    const log = getServiceLogger('Scheduler');
+    log.info('Starting Scheduler');
 
     // Send status email once per day (on restart)
-    const emailJob = jobDef('send-email', [], 'every 12 hours')
+    const emailJob = jobDef('send-email', [], 'every 12 hours');
     // Restart extractor at least once per day
-    const restartJob = cliJob('pm2-restart', [], 'every 24 hours')
+    const restartJob = cliJob('pm2-restart', [], 'every 24 hours');
     // Watch for file/sentinel change to restart
     // Monitor extraction rate and warn when too low
 
@@ -91,25 +91,25 @@ export function registerCommands(yargv: arglib.YArgsT) {
         demandOption: false
       }),
     ))(async (args: any) => {
-      const { message, interval } = args;
+    const { message, interval } = args;
 
-      if (interval && typeof interval === 'number') {
-        let counter = 0;
-        await asyncForever(async () => {
-          putStrLn(`${counter}: ${message}`);
-          counter += 1;
-          await delay(interval);
-        });
-      }
+    if (interval && typeof interval === 'number') {
+      let counter = 0;
+      await asyncForever(async () => {
+        putStrLn(`${counter}: ${message}`);
+        counter += 1;
+        await delay(interval);
+      });
+    }
 
-      putStrLn(`once: ${message}`);
-    });
+    putStrLn(`once: ${message}`);
+  });
 
   registerCmd(
     yargv, 'preflight-check', 'Run checks and stop pm2 apps if everything looks okay'
   )(async () => {
-    const log = getServiceLogger("PreflightCheck")
-    log.info('Starting Preflight Check')
+    const log = getServiceLogger('PreflightCheck');
+    log.info('Starting Preflight Check');
 
     let mongoose: Mongoose | undefined = undefined;
     try {
@@ -121,7 +121,7 @@ export function registerCommands(yargv: arglib.YArgsT) {
       }
       await createCollections();
 
-      log.info('Found Config')
+      log.info('Found Config');
 
       return;
     } catch (error) {
@@ -129,7 +129,7 @@ export function registerCommands(yargv: arglib.YArgsT) {
     }
 
     if (mongoose !== undefined) {
-      await mongoose.connection.close()
+      await mongoose.connection.close();
     }
 
     try {

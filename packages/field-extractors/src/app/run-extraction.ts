@@ -67,7 +67,7 @@ export async function runMainExtractFields({
   const { browserPool } = scraper;
 
   if (E.isRight(scrapedUrl)) {
-    log.info('Field Extraction starting..')
+    log.info('Field Extraction starting..');
     const urlFetchData = scrapedUrl.right;
     const sharedEnv: ExtractionSharedEnv = {
       log,

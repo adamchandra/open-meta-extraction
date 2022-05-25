@@ -52,7 +52,7 @@ export function logBrowserEvent(browserInstance: BrowserInstance, logger: Logger
     BrowserEmittedEvents.TargetCreated,
     BrowserEmittedEvents.TargetDestroyed,
     BrowserEmittedEvents.Disconnected,
-  ]
+  ];
 
   const bproc = browser.process();
   const pid = bproc?.pid;
@@ -79,7 +79,7 @@ function _updateMap<K, V>(
 ): V {
   const oldval = m.get(k);
   if (oldval) {
-    const newval = upfn(oldval)
+    const newval = upfn(oldval);
     m.set(k, newval);
     return newval;
   }
@@ -96,8 +96,8 @@ export function logPageEvents(pageInstance: PageInstance, logger: Logger) {
     logger.error('logPageEvents(): browser.process().pid is undefined');
     return;
   }
-  const eventMap = new Map<string, string[]>()
-  const msgMap = new Map<string, string[]>()
+  const eventMap = new Map<string, string[]>();
+  const msgMap = new Map<string, string[]>();
 
   const reqRespCycleSucceed = new Set<string>([
     'request',
@@ -116,7 +116,7 @@ export function logPageEvents(pageInstance: PageInstance, logger: Logger) {
   function updateEventMap(reqId: string, e: string, msg?: string) {
     const currVal = _updateMap(eventMap, reqId, (evs) => _.concat(evs, [e]), [e]);
     if (msg) {
-      _updateMap(msgMap, reqId, (m) => _.concat(m, [msg]), [msg])
+      _updateMap(msgMap, reqId, (m) => _.concat(m, [msg]), [msg]);
     }
 
     const currSet = new Set(currVal);
@@ -189,7 +189,7 @@ export function logPageEvents(pageInstance: PageInstance, logger: Logger) {
         case 'request': {
           const data: HTTPRequest = _data;
           const resType = data.resourceType();
-          const reqId = data._requestId
+          const reqId = data._requestId;
           const url = data.url();
           const currBlocked = currentlyBlockedResources(pageInstance);
           const clippedUrl = url.replace(/\?.*$/, '?...');
@@ -198,26 +198,26 @@ export function logPageEvents(pageInstance: PageInstance, logger: Logger) {
           if (isBlocked) {
             msg = `blocked: ${resType}`;
           }
-          updateEventMap(reqId, e, msg)
+          updateEventMap(reqId, e, msg);
           break;
         }
         case 'requestfailed': {
           const data: HTTPRequest = _data;
-          const reqId = data._requestId
-          updateEventMap(reqId, e)
+          const reqId = data._requestId;
+          updateEventMap(reqId, e);
           break;
         }
         case 'requestfinished': {
           const data: HTTPRequest = _data;
-          const reqId = data._requestId
-          updateEventMap(reqId, e)
+          const reqId = data._requestId;
+          updateEventMap(reqId, e);
 
           break;
         }
         case 'response': {
           const data: HTTPResponse = _data;
           const reqId = data.request()._requestId;
-          updateEventMap(reqId, e)
+          updateEventMap(reqId, e);
           break;
         }
         case 'workercreated':
@@ -261,7 +261,7 @@ export function interceptRequestCycle(pageInstance: PageInstance, logger: Logger
           });
 
           if (isRewritable) {
-            logger.debug(`Aborting rewritable url ${url}`)
+            logger.debug(`Aborting rewritable url ${url}`);
             request.abort('blockedbyclient');
             break;
           }

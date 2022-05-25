@@ -29,7 +29,7 @@ function isFile(p: string | undefined): boolean {
   return p!==undefined && fs.existsSync(p) && fs.statSync(p).isFile();
 }
 function isDir(p: string | undefined): boolean {
-  return p!==undefined && fs.existsSync(p) && fs.statSync(p).isDirectory()
+  return p!==undefined && fs.existsSync(p) && fs.statSync(p).isDirectory();
 }
 
 export function findAncestorFile(
@@ -62,7 +62,7 @@ export function findAncestorFile(
 export function initConfig(): typeof nconf {
   const envMode = getEnv('NODE_ENV');
   if (!isValidEnvMode(envMode)) {
-    throw new Error("NODE_ENV not set!")
+    throw new Error("NODE_ENV not set!");
   }
 
   const envFile = `config-${envMode}.json`;
