@@ -7,7 +7,7 @@ import * as E from 'fp-ts/Either';
 import { isLeft } from 'fp-ts/Either';
 import { Logger } from 'winston';
 import Async from 'async';
-import { prettyFormat } from '@watr/commonlib';
+import { prettyFormat } from '~/util/pretty-print';
 
 export interface FPackage<Env extends BaseEnv> {
   asW<A>(a: A, w: Env): W<A, Env>;
@@ -337,7 +337,10 @@ const forEachDo: <A, B, Env extends BaseEnv> (arrow: Transform<A, B, Env>) => Tr
         leftRightErrs,
         Task.map(([_lefts, rights]) => {
           const bs = _.map(rights, ([b]) => b);
+          const lefts = _.map(_lefts, ([b]) => b);
           const env0 = _.clone(env);
+          const leftMsg = lefts.map((ci) => `${ci}`).join(', ');
+          env.log.debug(`forEachDo:lefts:${leftMsg}`)
           return asW(bs, env0);
         })
       );
@@ -477,7 +480,7 @@ function shortFormat(v: any): string {
     return line0.substring(0, 50);
   }
 
-  const prettified = prettyFormat(v.trim()).substring(0, 50);
+  const prettified = prettyFormat(v.toString().trim()).substring(0, 50);
   return _.join(_.split(prettified, '\n'), ' ');
 }
 

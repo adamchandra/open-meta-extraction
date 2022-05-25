@@ -18,7 +18,7 @@ export * from './prelude/types';
 export * as radix from './util/radix-tree';
 export * as arglib from './cli/arglib';
 export * as streamUtils from './util/stream-utils';
-// export * as streamPump from './util/stream-pump';
 export * as asyncPlus from './util/async-plus';
 export * as config from './prelude/config';
 export * as types from './prelude/types';
+export * as taskflow from './fp-taskflow/taskflow';

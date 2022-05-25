@@ -1,8 +1,15 @@
 import Async from 'async';
 
+export async function asyncEachOf<A>(
+    inputs: A[],
+    fn: (a: A, n: number) => Promise<unknown>
+): Promise<void> {
+    return Async.eachOf(inputs, Async.asyncify(fn));
+}
+
 export async function asyncEachOfSeries<A>(
     inputs: A[],
-    fn: (a: A) => Promise<unknown>
+    fn: (a: A, n: number) => Promise<unknown>
 ): Promise<void> {
     return Async.eachOfSeries(inputs, Async.asyncify(fn));
 }

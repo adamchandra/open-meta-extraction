@@ -9,8 +9,7 @@ import { UrlFetchData, BrowserPool, BrowserInstance } from '@watr/spider';
 
 import { ExtractionEvidence, FieldCandidate, FieldRecord } from './extraction-records';
 
-import { ExtractionTask } from './function-defs';
-import * as ft from './function-defs';
+import { taskflow as ft } from '@watr/commonlib';
 
 interface NormalForms {
   'css-norm': null;
@@ -64,13 +63,14 @@ export type ControlInstruction = ft.ControlInstruction;
 
 type EnvT = ExtractionEnv;
 
+export type ExtractionTask<A> = ft.ExtractionTask<A, EnvT>;
 export type PerhapsW<A> = ft.PerhapsW<A, EnvT>;
 export type ClientFunc<A, B> = ft.ClientFunc<A, B, EnvT>;
 export type ClientResult<A> = ft.ClientResult<A>;
 export type Transform<A, B> = ft.Transform<A, B, EnvT>;
 export type FilterTransform<A> = ft.FilterTransform<A, EnvT>;
 
-export type ExtractionRule = (ra: ExtractionTask<unknown, ExtractionEnv>) => ExtractionTask<unknown, ExtractionEnv>;
+export type ExtractionRule = (ra: ExtractionTask<unknown>) => ExtractionTask<unknown>;
 
 export const compose: typeof fptsFlow = (...fs: []) =>
   <A extends readonly unknown[]>(a: A) =>

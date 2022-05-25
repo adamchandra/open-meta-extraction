@@ -1,12 +1,14 @@
 import _ from 'lodash';
 
-import { newConsoleTransport, newLogger } from '@watr/commonlib';
+import { newConsoleTransport, newLogger, setLogEnvLevel } from '~/util/basic-logging';
 import * as TE from 'fp-ts/TaskEither';
 import { isRight } from 'fp-ts/Either';
 import Async from 'async';
 import { flow as compose } from 'fp-ts/function';
 import { Logger } from 'winston';
-import * as ft from './function-defs';
+import * as ft from './taskflow';
+import { prettyPrint } from '~/util/pretty-print';
+import { asyncEachOf } from '~/util/async-plus';
 
 
 interface EnvT {
@@ -58,7 +60,7 @@ const emitL = (msg: string) => tapLeft<string>((_a, env) => env.messages.push(ms
 
 
 function initEnv<A>(a: A): ExtractionTask<A> {
-  const logger = newLogger(newConsoleTransport('info'));
+  const logger = newLogger(newConsoleTransport('warn'));
   const env0: EnvT = {
     ns: [],
     b: true,
@@ -68,7 +70,6 @@ function initEnv<A>(a: A): ExtractionTask<A> {
     messages: []
   };
 
-  // return TE.right(asW(`input#${dummy += 1}`, env0));
   return TE.right(asW(a, env0));
 }
 
@@ -211,6 +212,7 @@ describe('Extraction Prelude / Primitives', () => {
     // done();
   });
 
+
   it('forEachDo examples', async () => {
     // Expected results for n=[1..4]
     const expected: Array<string[]> = [
@@ -222,31 +224,25 @@ describe('Extraction Prelude / Primitives', () => {
       ['4:okay'],
     ];
 
-
-    const modOkay = (mod: number) => compose(
-      filter<number>((n) => n % mod === 0),
+    const filterMod0 = (mod: number) => compose(
+      filter<number>((n) => n % mod === 0, '% mod?==0'),
       through((n) => `${n}:okay`, 'modOkay')
     );
 
-
-
-    await Async.eachOf(expected, Async.asyncify(async (exp: string[], _n: number) => {
-      if (typeof _n !== 'number') {
-        fail('_n != "number"');
-      }
-      const n = _n + 1;
+    await asyncEachOf(expected, async (exp: string[], index) => {
+      const n = index + 1;
       const inputs = _.map(_.range(4), i => i + 1);
+      prettyPrint({ inputs })
       const env0 = initEnv(inputs);
-      const res = await forEachDo(modOkay(n))(env0)();
+      const res = await forEachDo(filterMod0(n))(env0)();
       if (isRight(res)) {
-        const [a] = res.right;
-        // prettyPrint({ msg: `example: ${n}`, a });
-        expect(a).toStrictEqual(exp);
+        const [finalValue] = res.right;
+        // prettyPrint({ msg: `example: ${n}`, finalValue });
+        expect(finalValue).toStrictEqual(exp);
       } else {
         fail('!right(res');
       }
-    }));
+    });
 
-    // done();
   });
 });
