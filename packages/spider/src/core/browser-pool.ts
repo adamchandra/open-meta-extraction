@@ -9,7 +9,7 @@ import {
   PuppeteerLifeCycleEvent
 } from 'puppeteer';
 
-import { delay, getServiceLogger, prettyPrint } from '@watr/commonlib';
+import { asyncEach, getServiceLogger, prettyPrint } from '@watr/commonlib';
 
 import {
   Browser, Page,
@@ -18,8 +18,6 @@ import { interceptRequestCycle, logBrowserEvent, logPageEvents } from './page-ev
 
 import { launchBrowser } from './puppet';
 import { BlockableResource, RewritableUrl, RewritableUrls } from './resource-blocking';
-import { Logger } from 'winston';
-
 
 export interface BrowserPool {
   pool: Pool<BrowserInstance>;
@@ -28,7 +26,7 @@ export interface BrowserPool {
   use<A>(f: (browser: BrowserInstance) => A | Promise<A>): Promise<A>;
   shutdown(): Promise<void>;
   report(): void;
-  // newCachedPage(url: string, opts: PageInstanceOptions): Promise<PageInstance>;
+  cachedResources: Record<string, BrowserInstance>;
 }
 
 export interface BrowserInstance {
@@ -273,39 +271,36 @@ export function createBrowserPool(logPrefix?: string): BrowserPool {
 
   return {
     pool,
+    cachedResources: {},
     async acquire(): Promise<BrowserInstance> {
       const acq = pool.acquire();
-      return acq.promise;
+      const b: BrowserInstance = await acq.promise;
+      const pid = b.pid().toString()
+      this.cachedResources[pid] = b;
+      return b;
     },
     async release(b: BrowserInstance): Promise<void> {
-      log.debug('release: getting open pages');
+      const pid = b.pid().toString()
+      log.debug(`pool.release(B<${pid}>)`);
+      delete this.cachedResources[pid];
       let normalShutdown = false;
-      const pageCloseP = b.browser.pages()
-        .then(async pages => {
-          log.debug('release: closing all pages');
-          await Promise.all(pages.map(page => page.close()));
-          log.debug('release: open/close test page');
-          const page = await b.newPage(DefaultPageInstanceOptions);
-          await page.page.goto('about:blank');
-          await page.page.close();
-        }).then(() => {
-          normalShutdown = true;
-          log.info('release: normal shutdown success');
-        }).catch(error => {
-          log.debug(`release:${error}`);
-        });
 
-      await delay(300);
+      b.browser.removeAllListeners();
+      const pages = await b.browser.pages();
 
+      await asyncEach(pages, async (page) => {
+        const url = page.url();
+        page.removeAllListeners();
+        log.debug(`    release(Page<${url}>)`);
+        return page.close();
+      });
+      normalShutdown = true;
       if (!normalShutdown) {
-        log.info('release: initiating kill()');
+        log.warn(`pool.release(B<${pid}>): abnormal shutdown, running kill()`);
         await b.kill();
       }
-      log.debug('release: awaiting pageClose');
-      // await pageCloseP;
-
-      log.debug('release: done');
       pool.release(b);
+      log.debug(`pool.release(B<${pid}>): done`);
     },
     async use<A>(f: (browser: BrowserInstance) => A | Promise<A>): Promise<A> {
       const acq = this.pool.acquire();
@@ -320,6 +315,10 @@ export function createBrowserPool(logPrefix?: string): BrowserPool {
     },
     async shutdown() {
       log.debug('pool.shutdown()');
+      const cachedInstances: Array<[string, BrowserInstance]> = _.toPairs(this.cachedResources);
+      const cachedBrowsers = _.map(cachedInstances, ([, v]) => v);
+      await asyncEach(cachedBrowsers, b => this.release(b));
+
       await pool.destroy();
     },
     report() {
@@ -328,12 +327,18 @@ export function createBrowserPool(logPrefix?: string): BrowserPool {
       const numPendingCreates = this.pool.numPendingCreates();
       const numPendingValidations = this.pool.numPendingValidations();
       const numUsed = this.pool.numUsed();
+
+      const cachedInstances: Array<[string, BrowserInstance]> = _.toPairs(this.cachedResources);
+      const cachedPIDs = _.map(cachedInstances, ([k]) => k);
+      const cachedInstanceIds = cachedPIDs.join('; ');
+
       prettyPrint({
         numUsed,
         numFree,
         numPendingAcquires,
         numPendingCreates,
         numPendingValidations,
+        cachedInstanceIds
       });
     },
 
@@ -355,35 +360,5 @@ async function gotoUrlSimpleVersion(pageInstance: PageInstance, url: string): Pr
     .catch((error: Error) => {
       return E.left(`${error.name}: ${error.message}`);
     })
-  ;
-}
-
-async function gotoUrlWithRewrites(
-  pageInstance: PageInstance,
-  url: string,
-  logger: Logger,
-): Promise<E.Either<string, HTTPResponse>> {
-  const urlRewrites = pageInstance.opts.rewriteableUrls;
-  const response = await pageInstance.gotoUrl(url);
-  if (E.isLeft(response)) {
-    const error = response.left;
-    logger.debug(`Attempting Rewrite for ${error}`);
-    const msg = error;
-    const maybeRewrite = _.map(urlRewrites, (rule) => {
-      if (rule.regex.test(msg)) {
-        const newUrl = rule.rewrite(msg);
-        logger.verbose(`    new url: ${newUrl}`);
-        return newUrl;
-      }
-    });
-    const rw0 = maybeRewrite.filter(s => s !== undefined);
-    logger.verbose(`    available rewrites: ${rw0.join(', ')}`);
-    if (rw0.length > 0) {
-      const rewrite = rw0[0];
-      if (rewrite === undefined) return E.left('no rewrites available');
-      logger.info(`Rewrote ${url} to ${rewrite}`);
-      return gotoUrlWithRewrites(pageInstance, rewrite, logger);
-    }
-  }
-  return response;
+    ;
 }

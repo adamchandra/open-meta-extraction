@@ -514,36 +514,36 @@ function applyCleaningRules(rules: CleaningRule[], initialString: string): [stri
   return [currentString, cleaningResults];
 }
 
-export async function initExtractionEnv(
+// export async function initExtractionEnv(
+//   spiderEnv: SpiderEnv,
+//   urlFetchData: UrlFetchData,
+// ): Promise<ExtractionEnv> {
+
+//   const env: ExtractionEnv = {
+//     ...spiderEnv,
+//     urlFetchData,
+//     fields: [],
+//     fieldRecs: {},
+//     fieldCandidates: [],
+//     evidence: [],
+//     fileContentCache: {},
+//   };
+//   return env;
+// }
+
+export function initExtractionEnv(
   spiderEnv: SpiderEnv,
-  urlFetchData: UrlFetchData | undefined,
-): Promise<ExtractionEnv> {
-  const { entryPath } = spiderEnv;
-
-  const pathPrefix = path.basename(entryPath()).slice(0, 6);
-  const logPrefix = [pathPrefix];
-
-
+  urlFetchData: UrlFetchData,
+): ExtractionEnv {
+  //  TODO maybe replace logger name
   const env: ExtractionEnv = {
     ...spiderEnv,
-    // log,
-    // browserPool,
-    // browserInstance,
-    ns: logPrefix,
-    // entryPath,
     urlFetchData,
     fields: [],
     fieldRecs: {},
     fieldCandidates: [],
     evidence: [],
     fileContentCache: {},
-    // browserPageCache: {},
-    // enterNS(ns: string[]) {
-    //   setLogLabel(log, _.join(ns, '/'));
-    // },
-    // exitNS(ns: string[]) {
-    //   setLogLabel(log, _.join(ns, '/'));
-    // }
   };
   return env;
 }

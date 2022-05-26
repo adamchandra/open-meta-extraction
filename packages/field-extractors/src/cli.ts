@@ -1,6 +1,6 @@
 import { arglib, setLogEnvLevel } from '@watr/commonlib';
 
-import { runMainExtractFields } from '~/app/run-extraction';
+import { runMainExtractFields, runMainSpiderAndExtractFields } from '~/app/run-extraction';
 
 const { opt, config, registerCmd } = arglib;
 
@@ -20,7 +20,8 @@ export function registerCommands(yargv: arglib.YArgsT) {
     const { corpusRoot, url, clean, logLevel } = args;
     setLogEnvLevel(logLevel);
 
-    await runMainExtractFields({
+    // await runMainExtractFields({
+    await runMainSpiderAndExtractFields({
       corpusRoot,
       url,
       clean

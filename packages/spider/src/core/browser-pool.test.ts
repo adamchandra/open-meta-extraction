@@ -7,7 +7,6 @@ describe('browser pooling', () => {
   setLogEnvLevel('verbose');
 
   it('borrow/return to pool', async () => {
-    // const logger = getServiceLogger('browser-pool');
     const browserPool = createBrowserPool();
 
     const browserInstance = await browserPool.acquire();
@@ -23,7 +22,6 @@ describe('browser pooling', () => {
 
   it('shutdown on error', async () => {
     console.log('pos.0');
-    const logger = getServiceLogger('browser-pool');
     const browserPool = createBrowserPool();
 
     console.log('pos.1');
@@ -103,6 +101,20 @@ describe('browser pooling', () => {
       await attemptOne(dbgUrl);
     });
 
+    await browserPool.shutdown();
+  });
+
+  it.only('close all remaining browserInstances on pool.shutdown()', async () => {
+    const browserPool = createBrowserPool();
+    putStrLn('Acquiring browserInstances without releasing...');
+    await browserPool.acquire();
+    await browserPool.acquire();
+    const bi = await browserPool.acquire();
+    putStrLn('Navigating to page');
+    const bp = await bi.newPage(DefaultPageInstanceOptions);
+    const httpResponse = await bp.gotoUrl('chrome://shorthang');
+    browserPool.report();
+    putStrLn('Pool Shutdown');
     await browserPool.shutdown();
   });
 });

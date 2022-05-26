@@ -49,7 +49,7 @@ describe('Field Extraction Pipeline', () => {
       const url = urlFetchData.requestUrl;
 
       const spiderEnv = await createSpiderEnv(log, browserPool, testScratchDir, new URL(url));
-      const env = await initExtractionEnv(spiderEnv, urlFetchData);
+      const env = initExtractionEnv(spiderEnv, urlFetchData);
 
       return runFieldExtractor(env, AbstractFieldAttempts);
     }));

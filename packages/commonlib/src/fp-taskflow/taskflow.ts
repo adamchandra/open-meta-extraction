@@ -8,6 +8,7 @@ import { isLeft } from 'fp-ts/Either';
 import { Logger } from 'winston';
 import Async from 'async';
 import { prettyFormat } from '~/util/pretty-print';
+import { setLogLabel, getServiceLogger } from '~/util/basic-logging';
 
 export interface FPackage<Env extends BaseEnv> {
   asW<A>(a: A, w: Env): W<A, Env>;
@@ -108,6 +109,24 @@ export interface BaseEnv {
   enterNS(ns: string[]): void;
   exitNS(ns: string[]): void;
   log: Logger;
+}
+
+export function initBaseEnv(logOrName: Logger | string): BaseEnv {
+  const log = typeof logOrName === 'string'
+    ? getServiceLogger(logOrName)
+    : logOrName;
+
+  const e: BaseEnv = {
+    log,
+    ns: [],
+    enterNS(ns: string[]) {
+      setLogLabel(log, _.join(ns, '/'));
+    },
+    exitNS(ns: string[]) {
+      setLogLabel(log, _.join(ns, '/'));
+    }
+  };
+  return e;
 }
 
 /**
@@ -556,7 +575,7 @@ function mapEnv<A, Env extends BaseEnv, Env2 extends BaseEnv>(
   fl: (e: Env) => Env2,
   fr: (e: Env, a: A) => Eventual<Env2>
 ): EnvTransform<A, Env, Env2> {
-  const foobar = (taskIn: ExtractionTask<A, Env>) => pipe(
+  const mappedEnv = (taskIn: ExtractionTask<A, Env>) => pipe(
     TE.right({}),
     TE.bind('inW', ({ }) => taskIn),
     TE.bind('a', ({ inW }) => { const [a,] = inW; return TE.right(a); }),
@@ -565,7 +584,7 @@ function mapEnv<A, Env extends BaseEnv, Env2 extends BaseEnv>(
       const env2 = Promise.resolve<Env2>(fr(env1, a)).then(e => E.right<WCI<Env>, Env2>(e))
       return () => env2;
     }),
-    TE.mapLeft(([ci, env1])=> {
+    TE.mapLeft(([ci, env1]) => {
       const envx = fl(env1)
       return asWCI(ci, envx);
     }),
@@ -574,24 +593,8 @@ function mapEnv<A, Env extends BaseEnv, Env2 extends BaseEnv>(
     })
   );
 
-  return foobar;
+  return mappedEnv;
 }
-
-// function withEnvTransform<A, B, Env extends BaseEnv, Env2 extends BaseEnv>(
-//   fr: (a: A, e: Env) => Env2,
-//   continuation: Transform<A, B, Env2>
-// ): Transform<A, B, Env2> {
-//   return (taskIn: ExtractionTask<A, Env>) => pipe(
-//     taskIn,
-//     TE.map(([a, env]) => {
-//       const env2 = fr(a, env);
-//       const wEnv2 = asW<A, Env2>(a, env2);
-//       return wEnv2
-//     }),
-//     // TE.mapLeft(([ci, env]) => asWCI<Env2>(ci, fl(env)))
-//   );
-// }
-
 
 function tapEitherEnv<A, Env extends BaseEnv>(
   f: (env: Env) => unknown
@@ -661,4 +664,7 @@ export type LogLevel = 'info'
   ;
 
 
-const log = <A, Env extends BaseEnv>(level: LogLevel, f: (a: A, env: Env) => string) => tap((a: A, env: Env) => env.log.log(level, `${f(a, env)}`));
+const log = <A, Env extends BaseEnv>(
+  level: LogLevel,
+  f: (a: A, env: Env) => string
+) => tap((a: A, env: Env) => env.log.log(level, `${f(a, env)}`));

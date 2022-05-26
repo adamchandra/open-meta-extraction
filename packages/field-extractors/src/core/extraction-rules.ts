@@ -3,17 +3,17 @@ import _ from 'lodash';
 import {
   attemptEach,
   compose,
-  ExtractionRule,
+  // ExtractionRule,
   Transform,
-  mapEnv,
-  SpiderToExtractionEnvTransform,
+  // mapEnv,
+  // SpiderToExtractionEnvTransform,
   ExtractionEnv,
 } from '~/predef/extraction-prelude';
 
 import {
   summarizeEvidence,
   checkStatusAndNormalize,
-  urlFilter,
+  // urlFilter,
   initExtractionEnv
 } from '~/core/extraction-primitives';
 
@@ -22,16 +22,20 @@ import { GeneralExtractionAttempts } from './non-specific-rules';
 
 
 import {
-  createSpiderEnv,
-  getHttpResponseBody,
+  // createSpiderEnv,
+  // getHttpResponseBody,
   httpResponseToUrlFetchData,
-  scrapeUrl,
+  // scrapeUrl,
   ScriptablePageInstanceOptions,
   writeResponseBody,
   spiderTaskflow as sfp,
-  SpiderEnv,
+  scrapingPrimitives as spPrim,
+  scrapingTaskflow as stflow,
+  // SpiderEnv,
+  ExtractionRule as SPExtractionRule,
   UrlFetchData
 } from '@watr/spider';
+import { HTTPResponse } from 'puppeteer';
 
 
 export const AbstractFieldAttempts: Transform<unknown, unknown> = compose(
@@ -53,34 +57,34 @@ const emptyUrlFetchData: UrlFetchData = {
 
 const envTransform = sfp.mapEnv<UrlFetchData, ExtractionEnv>(
   (env) => initExtractionEnv(env, emptyUrlFetchData) ,
-
   (env, urlFetchData) => initExtractionEnv(env, urlFetchData)
 );
 
 
-const linkinghubSpideringRule: ExtractionRule = compose(
-  urlFilter(/linkinghub.elsevier.com/),
-  scrapeUrl(ScriptablePageInstanceOptions),
+const linkinghubSpideringRule: stflow.Transform<URL, HTTPResponse> = compose(
+  spPrim.urlFilter(/linkinghub.elsevier.com/),
+  spPrim.scrapeUrl(ScriptablePageInstanceOptions),
 )
 
-const defaultSpideringRule: ExtractionRule = compose(
-  scrapeUrl(),
+const defaultSpideringRule: stflow.Transform<URL, HTTPResponse> = compose(
+  spPrim.scrapeUrl(),
 )
 
-const SpideringUrlSpecificAttempts = attemptEach(
+
+const SpideringUrlSpecificAttempts: stflow.Transform<URL, HTTPResponse> = sfp.attemptEach(
   linkinghubSpideringRule,
   defaultSpideringRule
 )
 
-const SpideringPipeline = compose(
+const SpideringPipeline: stflow.Transform<URL, UrlFetchData> = compose(
   SpideringUrlSpecificAttempts,
-  writeResponseBody,
   // getHttpResponseBody,
-  // httpResponseToUrlFetchData
+  spPrim.httpResponseToUrlFetchData
 );
 
-const SpiderAndExtractionTransform = compose(
+export const SpiderAndExtractionTransform = compose(
   SpideringPipeline,
   envTransform,
+  writeResponseBody,
   AbstractFieldAttempts
 )

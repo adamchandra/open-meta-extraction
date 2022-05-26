@@ -1,14 +1,13 @@
 import _ from 'lodash';
 
-import { getServiceLogger, newConsoleTransport, newLogger, setLogEnvLevel } from '~/util/basic-logging';
 import * as TE from 'fp-ts/TaskEither';
 import { isRight } from 'fp-ts/Either';
 import Async from 'async';
 import { flow as compose, pipe } from 'fp-ts/function';
-import { Logger } from 'winston';
 import * as ft from './taskflow';
 import { prettyPrint } from '~/util/pretty-print';
 import { asyncEachOf } from '~/util/async-plus';
+import { setLogEnvLevel } from '~/util/basic-logging';
 
 
 interface EnvT extends ft.BaseEnv {
@@ -17,13 +16,10 @@ interface EnvT extends ft.BaseEnv {
 }
 
 function initEnv<A>(a: A): ExtractionTask<A> {
-  const log = getServiceLogger('first-env')
+  const baseEnv = ft.initBaseEnv('first-env');
   const env0: EnvT = {
-    ns: [],
+    ...baseEnv,
     b: true,
-    enterNS(_ns: string[]) { /* */ },
-    exitNS(_ns: string[]) { /* */ },
-    log,
     messages: []
   };
 
@@ -34,29 +30,24 @@ interface OtherEnvT extends ft.BaseEnv {
   otherField: boolean;
 }
 
-interface Env3T extends ft.BaseEnv {
-  env3Field: number;
-}
-
 function initOtherEnv(): OtherEnvT {
-  const log = getServiceLogger('other-env')
+  const baseEnv = ft.initBaseEnv('other-env');
   const env: OtherEnvT = {
-    ns: [],
-    enterNS(_ns: string[]) { /* */ },
-    exitNS(_ns: string[]) { /* */ },
-    log,
+    ...baseEnv,
     otherField: true
   };
 
   return env;
 }
+
+interface Env3T extends ft.BaseEnv {
+  env3Field: number;
+}
+
 function initEnv3(): Env3T {
-  const log = getServiceLogger('third-env')
+  const baseEnv = ft.initBaseEnv('third-env');
   const env: Env3T = {
-    ns: [],
-    enterNS(_ns: string[]) { /* */ },
-    exitNS(_ns: string[]) { /* */ },
-    log,
+    ...baseEnv,
     env3Field: 42
   };
 
@@ -149,6 +140,7 @@ describe('Extraction Prelude / Primitives', () => {
   // it('tap() composition', async (done) => { });
 
   type ExampleType = [Transform<string, string>[], string[]];
+  setLogEnvLevel('verbose')
 
   it('takeWhileSuccess examples', async () => {
     const examples: ExampleType[] = [
@@ -290,11 +282,11 @@ describe('Extraction Prelude / Primitives', () => {
         e.messages
         e.log.info('hello from env')
       }),
-      mapEnv((e) => otherEnv, (e, a) => otherEnv),
+      mapEnv((_e) => otherEnv, (_e, _a) => otherEnv),
       fpOther.tapEitherEnv(e => {
         e.log.info(`hello from other env ${e.otherField}`)
       }),
-      fpOther.mapEnv((envLeft) => initEnv3(), (envRight, a) => initEnv3Promise()),
+      fpOther.mapEnv((_envLeft) => initEnv3(), (_envRight, _a) => initEnv3Promise()),
       fpEnv3.tapEitherEnv(e => {
         e.log.info(`hello from other env ${e.env3Field}`);
       }),

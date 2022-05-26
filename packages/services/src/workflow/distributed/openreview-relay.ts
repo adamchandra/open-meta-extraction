@@ -12,9 +12,9 @@ import {
   asyncForever
 } from '@watr/commonlib';
 
-import { AbstractFieldAttempts, ExtractionSharedEnv, getEnvCanonicalFields, initExtractionEnv, runFieldExtractor } from '@watr/field-extractors';
+import { AbstractFieldAttempts, getEnvCanonicalFields, initExtractionEnv, runFieldExtractor } from '@watr/field-extractors';
 
-import { initScraper } from '@watr/spider';
+import { createSpiderEnv, initScraper } from '@watr/spider';
 import { displayRestError, newOpenReviewExchange, Note, Notes, OpenReviewExchange } from '../common/openreview-exchange';
 
 import { WorkflowStatus } from '~/db/schemas';
@@ -167,7 +167,7 @@ export async function runRelayExtract(count: number) {
   const corpusRoot = getCorpusRootDir();
   const openReviewExchange = newOpenReviewExchange(getServiceLogger('OpenReviewExchange'));
 
-  const scraper = await initScraper({ corpusRoot });
+  const scraper = initScraper({ corpusRoot });
   const { browserPool } = scraper;
 
   const maxRate = 5 * 1000;// 5 second max spidering rate
@@ -212,14 +212,10 @@ export async function runRelayExtract(count: number) {
         response: responseUrl
       });
 
-      const sharedEnv: ExtractionSharedEnv = {
-        log,
-        browserPool,
-        urlFetchData
-      };
-
-      const entryPath = scraper.getUrlCorpusEntryPath(url);
-      const exEnv = await initExtractionEnv(entryPath, sharedEnv);
+      const spiderEnv = await createSpiderEnv(log, browserPool, corpusRoot, new URL(url));
+      const exEnv = initExtractionEnv(spiderEnv, urlFetchData);
+      // const entryPath = scraper.getUrlCorpusEntryPath(url);
+      // const exEnv = await initExtractionEnv(entryPath, sharedEnv);
       const fieldExtractionResults = await runFieldExtractor(exEnv, AbstractFieldAttempts);
 
       if (E.isLeft(fieldExtractionResults)) {
@@ -310,14 +306,10 @@ export async function runRelayExtractNewVersion(count: number) {
         response: responseUrl
       });
 
-      const sharedEnv: ExtractionSharedEnv = {
-        log,
-        browserPool,
-        urlFetchData
-      };
 
-      const entryPath = scraper.getUrlCorpusEntryPath(url);
-      const exEnv = await initExtractionEnv(entryPath, sharedEnv);
+      const spiderEnv = await createSpiderEnv(log, browserPool, corpusRoot, new URL(url));
+      const exEnv = initExtractionEnv(spiderEnv, urlFetchData);
+
       const fieldExtractionResults = await runFieldExtractor(exEnv, AbstractFieldAttempts);
 
       if (E.isLeft(fieldExtractionResults)) {

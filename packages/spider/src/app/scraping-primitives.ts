@@ -7,6 +7,7 @@ import { pipe } from 'fp-ts/function';
 
 import {
   Transform,
+  FilterTransform,
   ExtractionTask,
   compose,
   through,
@@ -14,6 +15,7 @@ import {
   ControlInstruction,
   ClientResult,
   asWCI,
+  filter,
   SpiderEnv
 } from '~/core/taskflow-defs';
 
@@ -31,7 +33,7 @@ import { blockedResourceReport } from '~/core/resource-blocking';
 import { gotoUrlWithRewrites, writeHttpResponseBody } from './scraper';
 import { UrlFetchData, getFetchDataFromResponse } from '~/core/url-fetch-chains';
 import { Logger } from 'winston';
-import { getHashEncodedPath, setLogLabel } from '@watr/commonlib';
+import { getHashEncodedPath, prettyPrint, taskflow } from '@watr/commonlib';
 
 export async function createSpiderEnv(
   log: Logger,
@@ -44,27 +46,25 @@ export async function createSpiderEnv(
   const entryEncPath = getHashEncodedPath(initialUrl);
 
   const entryPath = () => path.resolve(corpusRoot, entryEncPath.toPath());
+  const baseEnv = taskflow.initBaseEnv(log);
 
   const env: SpiderEnv = {
-    log,
+    ...baseEnv,
     initialUrl,
     entryPath,
     entryEncPath,
-    // scrapingContext,
     browserPool,
-    ns: [],
     browserPageCache: {},
     browserInstance,
-    enterNS(ns: string[]) {
-      setLogLabel(log, _.join(ns, '/'));
-    },
-    exitNS(ns: string[]) {
-      setLogLabel(log, _.join(ns, '/'));
-    }
   };
 
   return env;
 }
+
+export const urlFilter: (urlTest: RegExp) => FilterTransform<unknown> = (regex) => compose(
+  through((_a, env) => env.initialUrl),
+  filter((a: string) => regex.test(a), `url ~= m/${regex.source}/`),
+);
 
 export const scrapeUrl: (pageOpts?: PageInstanceOptions) => Transform<URL, HTTPResponse> =
   (pageOpts = DefaultPageInstanceOptions) => through((url, env) => {

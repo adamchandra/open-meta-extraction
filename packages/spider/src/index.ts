@@ -7,3 +7,7 @@ export * from './app/scraping-primitives';
 export * from './app/scraper';
 
 export * as spiderCLI from '~/app/cli';
+
+export * as scrapingPrimitives from './app/scraping-primitives';
+
+export * as scrapingTaskflow from './core/taskflow-defs';

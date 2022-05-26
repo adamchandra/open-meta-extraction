@@ -5,6 +5,7 @@ import {
   readCorpusJsonFile,
   writeCorpusJsonFile,
   getServiceLogger,
+  asyncEach,
 } from '@watr/commonlib';
 
 
@@ -12,7 +13,7 @@ import {
 import * as TE from 'fp-ts/TaskEither';
 import * as E from 'fp-ts/Either';
 import Async from 'async';
-import { createSpiderEnv, initScraper, UrlFetchData } from '@watr/spider';
+import { createBrowserPool, createSpiderEnv, initScraper, UrlFetchData } from '@watr/spider';
 
 import {
   Transform,
@@ -20,7 +21,10 @@ import {
   ExtractionEnv,
 } from '~/predef/extraction-prelude';
 
-import { AbstractFieldAttempts } from '~/core/extraction-rules';
+import {
+  AbstractFieldAttempts,
+  SpiderAndExtractionTransform,
+} from '~/core/extraction-rules';
 
 import { Page } from 'puppeteer';
 import { CanonicalFieldRecords, FieldRecord } from '~/predef/extraction-records';
@@ -28,6 +32,10 @@ import { initExtractionEnv } from '~/core/extraction-primitives';
 
 
 const extractionRecordFileName = 'extraction-records.json';
+
+export function readUrlFetchData(entryPath: string,): UrlFetchData | undefined {
+  return readCorpusJsonFile<UrlFetchData>(entryPath, '.', 'metadata.json');
+}
 
 export async function runFieldExtractor(
   exEnv: ExtractionEnv,
@@ -70,15 +78,10 @@ export async function runMainExtractFields({
     const urlFetchData = scrapedUrl.right;
 
     const spiderEnv = await createSpiderEnv(log, browserPool, corpusRoot, new URL(url));
-    const exEnv = await initExtractionEnv(spiderEnv, urlFetchData);
+    const exEnv = initExtractionEnv(spiderEnv, urlFetchData);
     await extractFieldsForEntry(exEnv);
     await browserPool.shutdown();
   }
-}
-
-
-export function readUrlFetchData(entryPath: string,): UrlFetchData | undefined {
-  return readCorpusJsonFile<UrlFetchData>(entryPath, '.', 'metadata.json');
 }
 
 export async function extractFieldsForEntry(
@@ -101,6 +104,66 @@ export async function extractFieldsForEntry(
     writeExtractionRecords(env, ['Extraction Failure', `${ci}`]);
   }
 }
+
+
+export async function runMainSpiderAndExtractFields({
+  corpusRoot,
+  url,
+  clean
+}: RMArgs): Promise<void> {
+  const log = getServiceLogger('field-extractor');
+  const browserPool = createBrowserPool();
+  const spiderEnv = await createSpiderEnv(log, browserPool, corpusRoot, new URL(url));
+  const { entryPath, } = spiderEnv;
+  ensureArtifactDirectories(entryPath());
+
+  const init = new URL(url);
+  // const res = await runFieldExtractor(spiderEnv, SpiderAndExtractionTransform);
+  const res = await SpiderAndExtractionTransform(TE.right([init, spiderEnv]))();
+
+  // const browserPages = _.map(_.toPairs(browserPageCache), ([, p]) => p);
+
+  // await asyncEach(browserPages, (page: Page) => page.close());
+
+  // const scraper = initScraper({ corpusRoot });
+
+  // const scrapedUrl = await scraper.scrapeUrl(url, clean);
+
+  // const { browserPool } = scraper;
+
+  // if (E.isRight(scrapedUrl)) {
+  //   log.info('Field Extraction starting..');
+  //   const urlFetchData = scrapedUrl.right;
+
+  //   const spiderEnv = await createSpiderEnv(log, browserPool, corpusRoot, new URL(url));
+  //   const exEnv = await initExtractionEnv(spiderEnv, urlFetchData);
+  //   await extractFieldsForEntry(exEnv);
+  //   await browserPool.shutdown();
+  // }
+  await browserPool.shutdown();
+}
+
+export async function spiderAndExtractFieldsForEntry(
+  exEnv: ExtractionEnv,
+): Promise<void> {
+  const { log, entryPath } = exEnv;
+  log.info(`extracting field in ${entryPath()}`);
+
+  ensureArtifactDirectories(entryPath());
+
+  const res = await runFieldExtractor(exEnv, AbstractFieldAttempts);
+
+  if (E.isRight(res)) {
+    log.info('writing extraction records');
+    const [, env] = res.right;
+    writeExtractionRecords(env, ['Extraction Success']);
+  } else {
+    const [ci, env] = res.left;
+    log.error('error extracting records');
+    writeExtractionRecords(env, ['Extraction Failure', `${ci}`]);
+  }
+}
+
 
 export function getEnvCanonicalFields(env: ExtractionEnv): CanonicalFieldRecords {
   const { fieldRecs } = env;
