@@ -26,6 +26,7 @@ export interface BrowserPool {
   use<A>(f: (browser: BrowserInstance) => A | Promise<A>): Promise<A>;
   shutdown(): Promise<void>;
   report(): void;
+  clearCache(): Promise<void>;
   cachedResources: Record<string, BrowserInstance>;
 }
 
@@ -279,6 +280,17 @@ export function createBrowserPool(logPrefix?: string): BrowserPool {
       this.cachedResources[pid] = b;
       return b;
     },
+    async clearCache(): Promise<void> {
+      log.debug('pool.clearCache()');
+      const cachedResources = this.cachedResources;
+      const cachedInstances: Array<[string, BrowserInstance]> = _.toPairs(cachedResources);
+      const cachedBrowsers = _.map(cachedInstances, ([, v]) => v);
+      const cachedPIDs = _.map(cachedInstances, ([k]) => k);
+      await asyncEach(cachedBrowsers, b => this.release(b));
+      _.each(cachedPIDs, pid => {
+        delete cachedResources[pid];
+      });
+    },
     async release(b: BrowserInstance): Promise<void> {
       const pid = b.pid().toString()
       log.debug(`pool.release(B<${pid}>)`);
@@ -341,12 +353,6 @@ export function createBrowserPool(logPrefix?: string): BrowserPool {
         cachedInstanceIds
       });
     },
-
-    // async newCachedPage(url: string, opts: PageInstanceOptions): Promise<PageInstance> {
-    //   const browserInstance = await this.acquire()
-    //   const pageInstance = await browserInstance.newPage(opts);
-    //   const maybeResponse = gotoUrlWithRewrites(pageInstance, url, log);
-    // }
 
   };
 }

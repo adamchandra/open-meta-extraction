@@ -80,3 +80,7 @@ http://www.lrec-conf.org/proceedings/lrec2018/summaries/163.html
 http://www.lrec-conf.org/proceedings/lrec2016/summaries/150.html
 http://www.lrec-conf.org/proceedings/lrec2018/summaries/1097.html
 http://www.lrec-conf.org/proceedings/lrec2018/summaries/157.html
+
+
+Errors in the forEachDo section:
+http://proceedings.mlr.press/v119/choromanski20a.html

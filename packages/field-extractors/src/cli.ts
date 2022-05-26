@@ -1,6 +1,6 @@
 import { arglib, setLogEnvLevel } from '@watr/commonlib';
 
-import { runMainExtractFields, runMainSpiderAndExtractFields } from '~/app/run-extraction';
+import { runMainSpiderAndExtractFields } from '~/app/run-extraction';
 
 const { opt, config, registerCmd } = arglib;
 

@@ -8,7 +8,7 @@ import { getConsoleAndFileLogger, setLogEnvLevel } from '@watr/commonlib';
 import { FieldExtractionAttempts } from '~/core/extraction-rules';
 import { initExtractionEnv } from '~/core/extraction-primitives';
 
-import { readUrlFetchData, runFieldExtractor } from './run-extraction';
+import { readUrlFetchData } from './run-extraction';
 import { createBrowserPool, createSpiderEnv } from '@watr/spider';
 
 describe('Field Extraction Pipeline', () => {
@@ -51,7 +51,7 @@ describe('Field Extraction Pipeline', () => {
       const spiderEnv = await createSpiderEnv(log, browserPool, testScratchDir, new URL(url));
       const env = initExtractionEnv(spiderEnv, urlFetchData);
 
-      return runFieldExtractor(env, FieldExtractionAttempts);
+      // TODO return runFieldExtractor(env, FieldExtractionAttempts);
     }));
 
     await browserPool.shutdown();

@@ -35,8 +35,6 @@ type Transform<A, B> = stflow.Transform<A, B>
 const {
     attemptEach,
     mapEnv,
-    tap,
-    tapLeft,
 } = sfp;
 
 const {

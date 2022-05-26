@@ -1,5 +1,4 @@
 import { arglib, setLogEnvLevel } from '@watr/commonlib';
-import { initScraper } from './scraper';
 const { opt, config, registerCmd } = arglib;
 
 export function registerCommands(yargv: arglib.YArgsT) {
@@ -17,10 +16,10 @@ export function registerCommands(yargv: arglib.YArgsT) {
     const { url, corpusRoot, clean, logLevel } = args;
     setLogEnvLevel(logLevel);
 
-    const scraper = await initScraper({ corpusRoot });
-    const scrapedUrl = await scraper.scrapeUrl(url, clean);
+    // const scraper = await initScraper({ corpusRoot });
+    // const scrapedUrl = await scraper.scrapeUrl(url, clean);
 
-    await scraper.quit();
+    // await scraper.quit();
   });
 }
 

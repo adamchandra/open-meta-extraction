@@ -35,36 +35,36 @@ import { blockedResourceReport } from '~/core/resource-blocking';
 
 import { Logger } from 'winston';
 
-export interface Scraper {
-  browserPool: BrowserPool;
-  scrapeUrl(url: string, clean: boolean): Promise<E.Either<string, UrlFetchData>>;
-  getUrlCorpusEntryPath(url: string): string;
-  quit(): Promise<void>;
-}
+// export interface Scraper {
+//   browserPool: BrowserPool;
+//   scrapeUrl(url: string, clean: boolean): Promise<E.Either<string, UrlFetchData>>;
+//   getUrlCorpusEntryPath(url: string): string;
+//   quit(): Promise<void>;
+// }
 
-type InitScraperArgs = {
-  corpusRoot: string,
-};
+// type InitScraperArgs = {
+//   corpusRoot: string,
+// };
 
-export function initScraper({ corpusRoot }: InitScraperArgs): Scraper {
-  const logger = getServiceLogger('scraper');
-  const browserPool = createBrowserPool('Scraper');
+// export function initScraper({ corpusRoot }: InitScraperArgs): Scraper {
+//   const logger = getServiceLogger('scraper');
+//   const browserPool = createBrowserPool('Scraper');
 
-  return {
-    browserPool,
-    async scrapeUrl(url: string, clean: boolean): Promise<E.Either<string, UrlFetchData>> {
-      return scrapeUrl({ browserPool, url, corpusRoot, clean });
-    },
-    getUrlCorpusEntryPath(url: string): string {
-      const entryEncPath = getHashEncodedPath(url);
-      return path.resolve(corpusRoot, entryEncPath.toPath());
-    },
-    async quit() {
-      await browserPool.shutdown();
-      logger.debug('Browser Pool is shutdown');
-    }
-  };
-}
+//   return {
+//     browserPool,
+//     async scrapeUrl(url: string, clean: boolean): Promise<E.Either<string, UrlFetchData>> {
+//       return scrapeUrl({ browserPool, url, corpusRoot, clean });
+//     },
+//     getUrlCorpusEntryPath(url: string): string {
+//       const entryEncPath = getHashEncodedPath(url);
+//       return path.resolve(corpusRoot, entryEncPath.toPath());
+//     },
+//     async quit() {
+//       await browserPool.shutdown();
+//       logger.debug('Browser Pool is shutdown');
+//     }
+//   };
+// }
 
 export async function gotoUrlWithRewrites(
   pageInstance: PageInstance,
@@ -96,77 +96,77 @@ export async function gotoUrlWithRewrites(
   return response;
 }
 
-type ScrapeUrlArgs = {
-  browserPool: BrowserPool,
-  url: string,
-  corpusRoot: string,
-  clean: boolean
-};
+// type ScrapeUrlArgs = {
+//   browserPool: BrowserPool,
+//   url: string,
+//   corpusRoot: string,
+//   clean: boolean
+// };
 
-async function scrapeUrl({
-  browserPool,
-  url,
-  corpusRoot,
-  clean
-}: ScrapeUrlArgs): Promise<E.Either<string, UrlFetchData>> {
+// async function scrapeUrl({
+//   browserPool,
+//   url,
+//   corpusRoot,
+//   clean
+// }: ScrapeUrlArgs): Promise<E.Either<string, UrlFetchData>> {
 
-  const scrapingContext = createScrapingContext({ initialUrl: url, corpusRoot });
+//   const scrapingContext = createScrapingContext({ initialUrl: url, corpusRoot });
 
-  const { logger } = scrapingContext;
+//   const { logger } = scrapingContext;
 
-  const entryRootPath = scrapingContext.entryPath();
+//   const entryRootPath = scrapingContext.entryPath();
 
-  if (clean) {
-    logger.info('Cleaning old downloaded artifacts');
-    cleanArtifactDir(entryRootPath);
-  }
+//   if (clean) {
+//     logger.info('Cleaning old downloaded artifacts');
+//     cleanArtifactDir(entryRootPath);
+//   }
 
-  const hasUrlFetchData = hasCorpusFile(entryRootPath, '.', 'metadata.json');
+//   const hasUrlFetchData = hasCorpusFile(entryRootPath, '.', 'metadata.json');
 
-  if (hasUrlFetchData) {
-    logger.warn(`skipping ${url}: metadata file exists`);
-    return E.left(`skipping ${url}: metadata file exists`);
-  }
+//   if (hasUrlFetchData) {
+//     logger.warn(`skipping ${url}: metadata file exists`);
+//     return E.left(`skipping ${url}: metadata file exists`);
+//   }
 
-  return browserPool.use(async (browserInstance) => {
+//   return browserPool.use(async (browserInstance) => {
 
-    logger.info(`downloading ${url} to ${scrapingContext.entryEncPath.toPath()}`);
+//     logger.info(`downloading ${url} to ${scrapingContext.entryEncPath.toPath()}`);
 
-    const pageInstance = await browserInstance.newPage(DefaultPageInstanceOptions);
+//     const pageInstance = await browserInstance.newPage(DefaultPageInstanceOptions);
 
-    blockedResourceReport(pageInstance, logger);
+//     blockedResourceReport(pageInstance, logger);
 
-    try {
-      const maybeResponse = await gotoUrlWithRewrites(pageInstance, url, logger);
+//     try {
+//       const maybeResponse = await gotoUrlWithRewrites(pageInstance, url, logger);
 
-      if (E.isLeft(maybeResponse)) {
-        const msg = maybeResponse.left;
-        logger.warn(`no response ${url}: ${msg}`);
-        return E.left(`no response scraping ${url}: ${msg}`);
-      }
+//       if (E.isLeft(maybeResponse)) {
+//         const msg = maybeResponse.left;
+//         logger.warn(`no response ${url}: ${msg}`);
+//         return E.left(`no response scraping ${url}: ${msg}`);
+//       }
 
-      const response = maybeResponse.right;
+//       const response = maybeResponse.right;
 
-      const { page } = pageInstance;
-      const metadata = getFetchDataFromResponse(url, response);
-      await writeRequestToDisk(response, entryRootPath, pageInstance, metadata);
-      const status = response.status();
-      await page.close();
-      logger.info(`Scraped ${url}: status: ${status}`);
-      const isReqEqualResponse = metadata.requestUrl === metadata.responseUrl;
-      if (!isReqEqualResponse) {
-        logger.info(`    --> ${metadata.responseUrl}`);
-      }
+//       const { page } = pageInstance;
+//       const metadata = getFetchDataFromResponse(url, response);
+//       await writeRequestToDisk(response, entryRootPath, pageInstance, metadata);
+//       const status = response.status();
+//       await page.close();
+//       logger.info(`Scraped ${url}: status: ${status}`);
+//       const isReqEqualResponse = metadata.requestUrl === metadata.responseUrl;
+//       if (!isReqEqualResponse) {
+//         logger.info(`    --> ${metadata.responseUrl}`);
+//       }
 
-      return E.right(metadata);
-    } catch (error) {
-      await pageInstance.page.close();
-      const errorMsg = `Error for ${url}: ${error}`;
-      logger.warn(errorMsg);
-      return E.left(errorMsg);
-    }
-  });
-}
+//       return E.right(metadata);
+//     } catch (error) {
+//       await pageInstance.page.close();
+//       const errorMsg = `Error for ${url}: ${error}`;
+//       logger.warn(errorMsg);
+//       return E.left(errorMsg);
+//     }
+//   });
+// }
 
 export async function writeHttpResponseBody(
   response: HTTPResponse,

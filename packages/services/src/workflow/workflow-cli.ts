@@ -1,6 +1,6 @@
 import _ from 'lodash';
 
-import { arglib, initConfig, putStrLn } from '@watr/commonlib';
+import { arglib, initConfig, prettyPrint, putStrLn } from '@watr/commonlib';
 import { runRelayExtract, runRelayFetch } from './distributed/openreview-relay';
 import { formatStatusMessages, showStatusSummary } from '~/db/extraction-summary';
 import { connectToMongoDB, mongoConnectionString } from '~/db/mongodb';
@@ -47,16 +47,20 @@ export function registerCLICommands(yargv: arglib.YArgsT) {
     'run-relay-extract',
     'Fetch OpenReview Notes into local DB for spidering/extraction',
     opt.num('count', 0),
+    opt.flag('post-results'),
   )(async (args: any) => {
     const count: number = args.count;
-    initConfig();
-    const mongoose = await connectToMongoDB();
+    const postResultsToOpenReview: boolean = args.postResults;
 
-    await runRelayExtract(count)
+    initConfig();
+
+    const mongoose = await connectToMongoDB();
+    await runRelayExtract({ count, postResultsToOpenReview })
       .finally(() => {
         console.log('run-relay-extract: closing...');
         return mongoose.connection.close();
       });
+
     console.log('done! run-relay-extract');
   });
 

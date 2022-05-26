@@ -1,5 +1,6 @@
 import _ from 'lodash';
 import * as E from 'fp-ts/Either';
+import * as TE from 'fp-ts/TaskEither';
 import { differenceInMilliseconds } from 'date-fns';
 
 import {
@@ -12,9 +13,9 @@ import {
   asyncForever
 } from '@watr/commonlib';
 
-import { FieldExtractionAttempts, getEnvCanonicalFields, initExtractionEnv, runFieldExtractor } from '@watr/field-extractors';
+import { getEnvCanonicalFields,  SpiderAndExtractionTransform } from '@watr/field-extractors';
 
-import { createSpiderEnv, initScraper } from '@watr/spider';
+import { createBrowserPool, createSpiderEnv } from '@watr/spider';
 import { displayRestError, newOpenReviewExchange, Note, Notes, OpenReviewExchange } from '../common/openreview-exchange';
 
 import { WorkflowStatus } from '~/db/schemas';
@@ -90,7 +91,7 @@ export async function runRelayFetch(_initOffset: number, numToFetch: number) {
 
         offset += fetchLength;
 
-        const noteSliceEndIndex = runForever? fetchLength : numProcessed + numToFetch;
+        const noteSliceEndIndex = runForever ? fetchLength : numProcessed + numToFetch;
         const notesToProcess = notes.slice(0, noteSliceEndIndex);
 
         log.info(`Processing a batch of size ${notesToProcess.length}`);
@@ -160,15 +161,18 @@ async function rateLimit(prevTime: Date, maxRateMs: number): Promise<Date> {
 }
 
 
-export async function runRelayExtract(count: number) {
+type RunRelayExtract = {
+  count: number,
+  postResultsToOpenReview: boolean
+};
+
+export async function runRelayExtract({ count, postResultsToOpenReview }: RunRelayExtract) {
   let currCount = 0;
   const runForever = count === 0;
 
   const corpusRoot = getCorpusRootDir();
   const openReviewExchange = newOpenReviewExchange(getServiceLogger('OpenReviewExchange'));
-
-  const scraper = initScraper({ corpusRoot });
-  const { browserPool } = scraper;
+  const browserPool = createBrowserPool();
 
   const maxRate = 5 * 1000;// 5 second max spidering rate
   let currTime = new Date();
@@ -194,29 +198,10 @@ export async function runRelayExtract(count: number) {
       const noteId = nextSpiderable._id;
       const url = nextSpiderable.requestUrl;
 
-      const scrapedUrl = await scraper.scrapeUrl(url, true);
-
-      if (E.isLeft(scrapedUrl)) {
-        return releaseSpiderableUrl(nextSpiderable, 'spider:fail');
-      }
-
-      log.info('Field Extraction starting..');
-      const urlFetchData = scrapedUrl.right;
-      const { status, responseUrl } = urlFetchData;
-
-      let httpStatus = 0;
-      try { httpStatus = Number.parseInt(status); } catch { }
-
-      await upsertHostStatus(noteId, 'extractor:locked', {
-        httpStatus,
-        response: responseUrl
-      });
-
       const spiderEnv = await createSpiderEnv(log, browserPool, corpusRoot, new URL(url));
-      const exEnv = initExtractionEnv(spiderEnv, urlFetchData);
-      // const entryPath = scraper.getUrlCorpusEntryPath(url);
-      // const exEnv = await initExtractionEnv(entryPath, sharedEnv);
-      const fieldExtractionResults = await runFieldExtractor(exEnv, FieldExtractionAttempts);
+      const init = new URL(url);
+
+      const fieldExtractionResults = await SpiderAndExtractionTransform(TE.right([init, spiderEnv]))();
 
       if (E.isLeft(fieldExtractionResults)) {
         return releaseSpiderableUrl(nextSpiderable, 'extractor:fail');
@@ -224,9 +209,14 @@ export async function runRelayExtract(count: number) {
 
       const [, extractionEnv] = fieldExtractionResults.right;
 
+      const { status, responseUrl } = extractionEnv.urlFetchData;
+      let httpStatus = 0;
+      try { httpStatus = Number.parseInt(status); } catch { }
+
       const canonicalFields = getEnvCanonicalFields(extractionEnv);
 
       prettyPrint({ canonicalFields });
+
       const abstracts = _.filter(canonicalFields.fields, (field) => field.name === 'abstract');
       const clippedAbstracts = _.filter(canonicalFields.fields, (field) => field.name === 'abstract-clipped');
       let theAbstract: string | undefined;
@@ -238,107 +228,19 @@ export async function runRelayExtract(count: number) {
 
       const hasAbstract = theAbstract !== undefined;
 
-      if (theAbstract !== undefined) {
-        await doUpdateNote(openReviewExchange, noteId, theAbstract);
+      if (postResultsToOpenReview) {
+        if (theAbstract !== undefined) {
+          await doUpdateNote(openReviewExchange, noteId, theAbstract);
+        }
       }
 
       await upsertHostStatus(noteId, 'extractor:success', {
         hasAbstract,
-      });
-    },
-    stopCondition
-  ).finally(() => {
-    return browserPool.shutdown();
-  });
-}
-
-
-
-export async function runRelayExtractNewVersion(count: number) {
-  let currCount = 0;
-  const runForever = count === 0;
-
-  const corpusRoot = getCorpusRootDir();
-  const openReviewExchange = newOpenReviewExchange(getServiceLogger('OpenReviewExchange'));
-
-  const scraper = initScraper({ corpusRoot });
-  const { browserPool } = scraper;
-
-  const maxRate = 5 * 1000;// 5 second max spidering rate
-  let currTime = new Date();
-
-  async function stopCondition(): Promise<boolean> {
-    const atCountLimit = currCount >= count;
-    currTime = await rateLimit(currTime, maxRate);
-    return atCountLimit && !runForever;
-  }
-
-  return asyncDoUntil(
-    async () => {
-      const nextSpiderable = await getNextSpiderableUrl();
-
-      if (nextSpiderable === undefined) {
-        log.info('runRelayExtract(): no more spiderable urls in mongo');
-        await resetUrlsWithoutAbstracts();
-        return;
-      }
-
-      currCount += 1;
-
-      const noteId = nextSpiderable._id;
-      const url = nextSpiderable.requestUrl;
-
-      const scrapedUrl = await scraper.scrapeUrl(url, true);
-
-      if (E.isLeft(scrapedUrl)) {
-        return releaseSpiderableUrl(nextSpiderable, 'spider:fail');
-      }
-
-      log.info('Field Extraction starting..');
-      const urlFetchData = scrapedUrl.right;
-      const { status, responseUrl } = urlFetchData;
-
-      let httpStatus = 0;
-      try { httpStatus = Number.parseInt(status); } catch { }
-
-      await upsertHostStatus(noteId, 'extractor:locked', {
         httpStatus,
         response: responseUrl
       });
 
-
-      const spiderEnv = await createSpiderEnv(log, browserPool, corpusRoot, new URL(url));
-      const exEnv = initExtractionEnv(spiderEnv, urlFetchData);
-
-      const fieldExtractionResults = await runFieldExtractor(exEnv, FieldExtractionAttempts);
-
-      if (E.isLeft(fieldExtractionResults)) {
-        return releaseSpiderableUrl(nextSpiderable, 'extractor:fail');
-      }
-
-      const [, extractionEnv] = fieldExtractionResults.right;
-
-      const canonicalFields = getEnvCanonicalFields(extractionEnv);
-
-      prettyPrint({ canonicalFields });
-      const abstracts = _.filter(canonicalFields.fields, (field) => field.name === 'abstract');
-      const clippedAbstracts = _.filter(canonicalFields.fields, (field) => field.name === 'abstract-clipped');
-      let theAbstract: string | undefined;
-      if (abstracts.length > 0) {
-        theAbstract = abstracts[0].value;
-      } else if (clippedAbstracts.length > 0) {
-        theAbstract = clippedAbstracts[0].value;
-      }
-
-      const hasAbstract = theAbstract !== undefined;
-
-      if (theAbstract !== undefined) {
-        await doUpdateNote(openReviewExchange, noteId, theAbstract);
-      }
-
-      await upsertHostStatus(noteId, 'extractor:success', {
-        hasAbstract,
-      });
+      await browserPool.clearCache();
     },
     stopCondition
   ).finally(() => {

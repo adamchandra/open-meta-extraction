@@ -170,11 +170,10 @@ export const lrecConfOrg: ExtractionRule = compose(
     }),
   )),
 );
-// linkinghub.elsevier.com/retrieve/pii/S0925231221004501
-export const linkingHubElsevierCom: ExtractionRule = compose(
-  urlFilter(/linkinghub.elsevier.com/),
-  forInputs(/response-body/, compose(
-    loadBrowserPage(ScriptablePageInstanceOptions),
-  ))
 
-);
+// export const linkingHubElsevierCom: ExtractionRule = compose(
+//   urlFilter(/linkinghub.elsevier.com/),
+//   forInputs(/response-body/, compose(
+//     loadBrowserPage(ScriptablePageInstanceOptions),
+//   ))
+// );

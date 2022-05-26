@@ -58,9 +58,10 @@ const optAndDesc = (optAndDesc: string, ext?: Options) => (ya: Argv): Argv => {
   return ya.option(optname, opts);
 };
 
-const optFlag = (odesc: string) =>  optAndDesc(odesc, {
+const optFlag = (odesc: string, def?: boolean) =>  optAndDesc(odesc, {
   type: 'boolean',
-  default: false
+  demandOption: def === undefined,
+  default: def
 });
 
 const optNum = (odesc: string, def?: number) =>  optAndDesc(odesc, {
@@ -194,7 +195,6 @@ export async function runRegisteredCmds(useYargs: Argv): Promise<void> {
   await Promise.resolve(res);
 }
 
-// opt.dir.(exists|parentExists|ancestorExists)
 export const opt = {
   config: configFile,
   existingDir,
