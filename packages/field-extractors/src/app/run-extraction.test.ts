@@ -5,7 +5,7 @@ import cproc from 'child_process';
 import Async from 'async';
 
 import { getConsoleAndFileLogger, setLogEnvLevel } from '@watr/commonlib';
-import { AbstractFieldAttempts } from '~/core/extraction-rules';
+import { FieldExtractionAttempts } from '~/core/extraction-rules';
 import { initExtractionEnv } from '~/core/extraction-primitives';
 
 import { readUrlFetchData, runFieldExtractor } from './run-extraction';
@@ -51,7 +51,7 @@ describe('Field Extraction Pipeline', () => {
       const spiderEnv = await createSpiderEnv(log, browserPool, testScratchDir, new URL(url));
       const env = initExtractionEnv(spiderEnv, urlFetchData);
 
-      return runFieldExtractor(env, AbstractFieldAttempts);
+      return runFieldExtractor(env, FieldExtractionAttempts);
     }));
 
     await browserPool.shutdown();

@@ -149,7 +149,7 @@ async function scrapeUrl({
 
       const { page } = pageInstance;
       const metadata = getFetchDataFromResponse(url, response);
-      await writeRequestToDisk(response, entryRootPath, logger, pageInstance, metadata);
+      await writeRequestToDisk(response, entryRootPath, pageInstance, metadata);
       const status = response.status();
       await page.close();
       logger.info(`Scraped ${url}: status: ${status}`);
@@ -187,32 +187,21 @@ export async function writeHttpHeaders(
   const respHeaders = response.headers();
   writeCorpusJsonFile(entryRootPath, '.', 'response-headers.json', respHeaders);
 }
-
-export async function writeRequestToDisk(
-  response: HTTPResponse,
+export async function writeHttpResponseFrames(
   entryRootPath: string,
-  logger: Logger,
   pageInstance: PageInstance,
-  urlFetchData: UrlFetchData
 ): Promise<void> {
-  await writeHttpHeaders(response, entryRootPath);
-  await writeHttpResponseBody(response, entryRootPath);
-
   const { page } = pageInstance;
   const frames = page.frames();
-  const frameCount = frames.length;
-  let frameNum = 0;
   const timeoutMS = 5000;
 
   const allFrameContent = await asyncMapSeries<Frame, string>(
     frames,
     async (frame: Frame): Promise<string> => {
-      logger.verbose(`retrieving frame content ${frameNum} of ${frameCount}`);
       const content = await new Promise<string>((resolve) => {
         let counter = 0;
         const timeout = setTimeout(function () {
           counter += 1;
-          // clearImmediate(immediate);
           resolve(`timeout after ${timeoutMS}ms`);
         }, timeoutMS);
 
@@ -228,7 +217,6 @@ export async function writeRequestToDisk(
           });
       });
 
-      frameNum += 1;
       return content;
     }
   );
@@ -238,6 +226,18 @@ export async function writeRequestToDisk(
       writeCorpusTextFile(entryRootPath, '.', `response-frame-${i}`, frameContent);
     }
   });
+
+}
+
+export async function writeRequestToDisk(
+  response: HTTPResponse,
+  entryRootPath: string,
+  pageInstance: PageInstance,
+  urlFetchData: UrlFetchData
+): Promise<void> {
+  await writeHttpHeaders(response, entryRootPath);
+  await writeHttpResponseBody(response, entryRootPath);
+  await writeHttpResponseFrames(entryRootPath, pageInstance);
 
   writeCorpusJsonFile(entryRootPath, '.', 'metadata.json', urlFetchData);
 }

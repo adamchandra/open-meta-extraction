@@ -12,7 +12,7 @@ import {
   asyncForever
 } from '@watr/commonlib';
 
-import { AbstractFieldAttempts, getEnvCanonicalFields, initExtractionEnv, runFieldExtractor } from '@watr/field-extractors';
+import { FieldExtractionAttempts, getEnvCanonicalFields, initExtractionEnv, runFieldExtractor } from '@watr/field-extractors';
 
 import { createSpiderEnv, initScraper } from '@watr/spider';
 import { displayRestError, newOpenReviewExchange, Note, Notes, OpenReviewExchange } from '../common/openreview-exchange';
@@ -216,7 +216,7 @@ export async function runRelayExtract(count: number) {
       const exEnv = initExtractionEnv(spiderEnv, urlFetchData);
       // const entryPath = scraper.getUrlCorpusEntryPath(url);
       // const exEnv = await initExtractionEnv(entryPath, sharedEnv);
-      const fieldExtractionResults = await runFieldExtractor(exEnv, AbstractFieldAttempts);
+      const fieldExtractionResults = await runFieldExtractor(exEnv, FieldExtractionAttempts);
 
       if (E.isLeft(fieldExtractionResults)) {
         return releaseSpiderableUrl(nextSpiderable, 'extractor:fail');
@@ -310,7 +310,7 @@ export async function runRelayExtractNewVersion(count: number) {
       const spiderEnv = await createSpiderEnv(log, browserPool, corpusRoot, new URL(url));
       const exEnv = initExtractionEnv(spiderEnv, urlFetchData);
 
-      const fieldExtractionResults = await runFieldExtractor(exEnv, AbstractFieldAttempts);
+      const fieldExtractionResults = await runFieldExtractor(exEnv, FieldExtractionAttempts);
 
       if (E.isLeft(fieldExtractionResults)) {
         return releaseSpiderableUrl(nextSpiderable, 'extractor:fail');

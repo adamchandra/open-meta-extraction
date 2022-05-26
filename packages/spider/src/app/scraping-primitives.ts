@@ -8,13 +8,10 @@ import { pipe } from 'fp-ts/function';
 import {
   Transform,
   FilterTransform,
-  ExtractionTask,
   compose,
   through,
-  ClientFunc,
+  tap,
   ControlInstruction,
-  ClientResult,
-  asWCI,
   filter,
   SpiderEnv
 } from '~/core/taskflow-defs';
@@ -30,10 +27,15 @@ import {
 } from 'puppeteer';
 
 import { blockedResourceReport } from '~/core/resource-blocking';
-import { gotoUrlWithRewrites, writeHttpResponseBody } from './scraper';
+import {
+  gotoUrlWithRewrites,
+  writeHttpResponseBody,
+  writeHttpResponseFrames,
+} from './scraper';
+
 import { UrlFetchData, getFetchDataFromResponse } from '~/core/url-fetch-chains';
 import { Logger } from 'winston';
-import { getHashEncodedPath, prettyPrint, taskflow } from '@watr/commonlib';
+import { cleanArtifactDir, getHashEncodedPath, taskflow } from '@watr/commonlib';
 
 export async function createSpiderEnv(
   log: Logger,
@@ -68,10 +70,11 @@ export const urlFilter: (urlTest: RegExp) => FilterTransform<unknown> = (regex) 
 
 export const scrapeUrl: (pageOpts?: PageInstanceOptions) => Transform<URL, HTTPResponse> =
   (pageOpts = DefaultPageInstanceOptions) => through((url, env) => {
-    const { browserInstance, log } = env;
+    const { browserInstance, log, browserPageCache, initialUrl } = env;
 
     const scrapingTask: TE.TaskEither<string, HTTPResponse> = async () => {
       const pageInstance = await browserInstance.newPage(pageOpts);
+      browserPageCache[initialUrl] = pageInstance;
       blockedResourceReport(pageInstance, log);
       return await gotoUrlWithRewrites(pageInstance, url.toString(), log);
     };
@@ -99,7 +102,18 @@ export const getHttpResponseBody: Transform<HTTPResponse, string> = through((htt
   );
 });
 
-export const writeResponseBody: Transform<HTTPResponse, unknown> = through((httpResponse, env) => {
+export const writeResponseBody: Transform<HTTPResponse, HTTPResponse> = tap((httpResponse, env) => {
   const entryPath = env.entryPath();
   return writeHttpResponseBody(httpResponse, entryPath);
-});
+}, 'Writing Response Body');
+
+export const writePageFrames: Transform<unknown, unknown> = tap((_a, env) => {
+  const { browserPageCache, initialUrl, entryPath } = env;
+  const page = browserPageCache[initialUrl];
+  writeHttpResponseFrames(entryPath(), page)
+}, 'Writing Page Frames');
+
+export const cleanArtifacts: Transform<unknown, unknown> = tap((_a, env) => {
+  const entryPath = env.entryPath();
+  cleanArtifactDir(entryPath);
+}, 'Cleaning Artifacts');

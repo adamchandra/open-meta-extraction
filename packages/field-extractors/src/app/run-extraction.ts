@@ -22,7 +22,7 @@ import {
 } from '~/predef/extraction-prelude';
 
 import {
-  AbstractFieldAttempts,
+  FieldExtractionAttempts,
   SpiderAndExtractionTransform,
 } from '~/core/extraction-rules';
 
@@ -92,7 +92,7 @@ export async function extractFieldsForEntry(
 
   ensureArtifactDirectories(entryPath());
 
-  const res = await runFieldExtractor(exEnv, AbstractFieldAttempts);
+  const res = await runFieldExtractor(exEnv, FieldExtractionAttempts);
 
   if (E.isRight(res)) {
     log.info('writing extraction records');
@@ -151,7 +151,7 @@ export async function spiderAndExtractFieldsForEntry(
 
   ensureArtifactDirectories(entryPath());
 
-  const res = await runFieldExtractor(exEnv, AbstractFieldAttempts);
+  const res = await runFieldExtractor(exEnv, FieldExtractionAttempts);
 
   if (E.isRight(res)) {
     log.info('writing extraction records');

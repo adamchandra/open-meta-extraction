@@ -205,23 +205,28 @@ export const getElemOuterHtml: Transform<Elem, string> =
     );
   }, 'getElemOuterHtml');
 
-export const loadBrowserPage:  (pageOptions?: PageInstanceOptions) => Transform<CacheFileKey, Page> =
-  (pageOpts = DefaultPageInstanceOptions) => through((cacheKey: CacheFileKey, { browserInstance, fileContentCache, browserPageCache }) => {
+
+export const loadBrowserPage: (pageOptions?: PageInstanceOptions) => Transform<CacheFileKey, Page> =
+  (pageOpts = DefaultPageInstanceOptions) => through((cacheKey: CacheFileKey, env) => {
+    const{ browserPageCache, fileContentCache, browserInstance } = env;
+
     if (cacheKey in browserPageCache) {
-      return browserPageCache[cacheKey];
+      return browserPageCache[cacheKey].page;
     }
+
     if (cacheKey in fileContentCache) {
       const fileContent = fileContentCache[cacheKey];
-      const page = browserInstance.newPage(pageOpts)
-        .then(async ({ page }) => {
+      const pagePromise = browserInstance.newPage(pageOpts)
+        .then(async (pageInstance) => {
+          const { page } = pageInstance;
           await page.setContent(fileContent, {
             timeout: 8000,
             waitUntil: 'domcontentloaded',
           });
-          browserPageCache[cacheKey] = page;
+          browserPageCache[cacheKey] = pageInstance;
           return page;
         });
-      return page;
+      return pagePromise;
     }
 
     return ClientFunc.halt(`cache has no record for key ${cacheKey}`);

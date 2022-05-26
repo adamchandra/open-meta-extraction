@@ -1,14 +1,13 @@
 import _ from 'lodash';
 
 import { Logger } from 'winston';
-import { Page } from 'puppeteer';
 
 import {
   taskflow as ft,
   HashEncodedPath,
 } from '@watr/commonlib';
 
-import { BrowserInstance, BrowserPool } from './browser-pool';
+import { BrowserInstance, BrowserPool, PageInstance } from './browser-pool';
 
 export interface NamespacedLogging {
   log: Logger;
@@ -19,7 +18,7 @@ export interface NamespacedLogging {
 
 export interface BrowserPoolCachingEnv {
   browserPool: BrowserPool;
-  browserPageCache: Record<string, Page>;
+  browserPageCache: Record<string, PageInstance>;
   browserInstance: BrowserInstance;
 };
 
