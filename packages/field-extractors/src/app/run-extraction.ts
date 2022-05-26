@@ -12,13 +12,12 @@ import {
 import * as TE from 'fp-ts/TaskEither';
 import * as E from 'fp-ts/Either';
 import Async from 'async';
-import { initScraper, UrlFetchData } from '@watr/spider';
+import { createSpiderEnv, initScraper, UrlFetchData } from '@watr/spider';
 
 import {
   Transform,
   PerhapsW,
   ExtractionEnv,
-  ExtractionSharedEnv,
 } from '~/predef/extraction-prelude';
 
 import { AbstractFieldAttempts } from '~/core/extraction-rules';
@@ -60,7 +59,7 @@ export async function runMainExtractFields({
 }: RMArgs): Promise<void> {
   const log = getServiceLogger('field-extractor');
 
-  const scraper = await initScraper({ corpusRoot });
+  const scraper = initScraper({ corpusRoot });
 
   const scrapedUrl = await scraper.scrapeUrl(url, clean);
 
@@ -69,14 +68,9 @@ export async function runMainExtractFields({
   if (E.isRight(scrapedUrl)) {
     log.info('Field Extraction starting..');
     const urlFetchData = scrapedUrl.right;
-    const sharedEnv: ExtractionSharedEnv = {
-      log,
-      browserPool,
-      urlFetchData
-    };
 
-    const entryPath = scraper.getUrlCorpusEntryPath(url);
-    const exEnv = await initExtractionEnv(entryPath, sharedEnv);
+    const spiderEnv = await createSpiderEnv(log, browserPool, corpusRoot, new URL(url));
+    const exEnv = await initExtractionEnv(spiderEnv, urlFetchData);
     await extractFieldsForEntry(exEnv);
     await browserPool.shutdown();
   }
@@ -91,9 +85,9 @@ export async function extractFieldsForEntry(
   exEnv: ExtractionEnv,
 ): Promise<void> {
   const { log, entryPath } = exEnv;
-  log.info(`extracting field in ${entryPath}`);
+  log.info(`extracting field in ${entryPath()}`);
 
-  ensureArtifactDirectories(entryPath);
+  ensureArtifactDirectories(entryPath());
 
   const res = await runFieldExtractor(exEnv, AbstractFieldAttempts);
 
@@ -153,7 +147,7 @@ function writeExtractionRecords(env: ExtractionEnv, messages: string[]) {
   const finalOutput = _.merge({}, empty, output);
 
   writeCorpusJsonFile(
-    entryPath,
+    entryPath(),
     'extracted-fields',
     extractionRecordFileName,
     finalOutput,
@@ -163,7 +157,7 @@ function writeExtractionRecords(env: ExtractionEnv, messages: string[]) {
   const canonicalRecords = getEnvCanonicalFields(env);
 
   writeCorpusJsonFile(
-    entryPath,
+    entryPath(),
     'extracted-fields',
     'canonical-fields.json',
     canonicalRecords,

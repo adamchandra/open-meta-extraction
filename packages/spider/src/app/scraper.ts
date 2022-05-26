@@ -2,16 +2,37 @@ import _ from 'lodash';
 import * as E from 'fp-ts/Either';
 import path from 'path';
 
-import { writeCorpusJsonFile, writeCorpusTextFile, hasCorpusFile, getServiceLogger, cleanArtifactDir, asyncMapSeries, getHashEncodedPath } from '@watr/commonlib';
+import {
+  writeCorpusJsonFile,
+  writeCorpusTextFile,
+  hasCorpusFile,
+  getServiceLogger,
+  cleanArtifactDir,
+  asyncMapSeries,
+  getHashEncodedPath
+} from '@watr/commonlib';
 
 import {
-  Frame, HTTPResponse
+  Frame,
+  HTTPResponse
 } from 'puppeteer';
 
-import { getFetchDataFromResponse, UrlFetchData } from '~/core/url-fetch-chains';
+import {
+  getFetchDataFromResponse,
+  UrlFetchData
+} from '~/core/url-fetch-chains';
+
 import { createScrapingContext } from '~/core/scraping-context';
-import { BrowserPool, createBrowserPool, DefaultPageInstanceOptions, PageInstance } from '~/core/browser-pool';
+
+import {
+  BrowserPool,
+  createBrowserPool,
+  DefaultPageInstanceOptions,
+  PageInstance
+} from '~/core/browser-pool';
+
 import { blockedResourceReport } from '~/core/resource-blocking';
+
 import { Logger } from 'winston';
 
 export interface Scraper {
@@ -25,9 +46,7 @@ type InitScraperArgs = {
   corpusRoot: string,
 };
 
-export async function initScraper({
-  corpusRoot
-}: InitScraperArgs): Promise<Scraper> {
+export function initScraper({ corpusRoot }: InitScraperArgs): Scraper {
   const logger = getServiceLogger('scraper');
   const browserPool = createBrowserPool('Scraper');
 
@@ -47,15 +66,7 @@ export async function initScraper({
   };
 }
 
-type ScrapeUrlArgs = {
-  browserPool: BrowserPool,
-  url: string,
-  corpusRoot: string,
-  clean: boolean
-};
-
-
-async function gotoUrlWithRewrites(
+export async function gotoUrlWithRewrites(
   pageInstance: PageInstance,
   url: string,
   logger: Logger,
@@ -84,6 +95,13 @@ async function gotoUrlWithRewrites(
   }
   return response;
 }
+
+type ScrapeUrlArgs = {
+  browserPool: BrowserPool,
+  url: string,
+  corpusRoot: string,
+  clean: boolean
+};
 
 async function scrapeUrl({
   browserPool,
@@ -150,24 +168,35 @@ async function scrapeUrl({
   });
 }
 
-async function writeRequestToDisk(
+export async function writeHttpResponseBody(
+  response: HTTPResponse,
+  entryRootPath: string,
+): Promise<void> {
+  const respBuffer = await response.buffer();
+  writeCorpusTextFile(entryRootPath, '.', 'response-body', respBuffer.toString());
+}
+
+export async function writeHttpHeaders(
+  response: HTTPResponse,
+  entryRootPath: string,
+): Promise<void> {
+  const request = response.request();
+  const requestHeaders = request.headers();
+  writeCorpusJsonFile(entryRootPath, '.', 'request-headers.json', requestHeaders);
+
+  const respHeaders = response.headers();
+  writeCorpusJsonFile(entryRootPath, '.', 'response-headers.json', respHeaders);
+}
+
+export async function writeRequestToDisk(
   response: HTTPResponse,
   entryRootPath: string,
   logger: Logger,
   pageInstance: PageInstance,
   urlFetchData: UrlFetchData
 ): Promise<void> {
-  const request = response.request();
-  const requestHeaders = request.headers();
-  writeCorpusJsonFile(entryRootPath, '.', 'request-headers.json', requestHeaders);
-  logger.verbose('wrote request headers');
-
-  const respHeaders = response.headers();
-  writeCorpusJsonFile(entryRootPath, '.', 'response-headers.json', respHeaders);
-  logger.verbose('wrote response headers');
-
-  const respBuffer = await response.buffer();
-  writeCorpusTextFile(entryRootPath, '.', 'response-body', respBuffer.toString());
+  await writeHttpHeaders(response, entryRootPath);
+  await writeHttpResponseBody(response, entryRootPath);
 
   const { page } = pageInstance;
   const frames = page.frames();

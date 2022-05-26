@@ -7,10 +7,9 @@ import Async from 'async';
 import { getConsoleAndFileLogger, setLogEnvLevel } from '@watr/commonlib';
 import { AbstractFieldAttempts } from '~/core/extraction-rules';
 import { initExtractionEnv } from '~/core/extraction-primitives';
-import { ExtractionSharedEnv } from '~/predef/extraction-prelude';
 
 import { readUrlFetchData, runFieldExtractor } from './run-extraction';
-import { createBrowserPool } from '@watr/spider';
+import { createBrowserPool, createSpiderEnv } from '@watr/spider';
 
 describe('Field Extraction Pipeline', () => {
   setLogEnvLevel('silly');
@@ -46,10 +45,12 @@ describe('Field Extraction Pipeline', () => {
         console.log('ERROR: no urlFetchData found');
         return;
       }
-      const sharedEnv: ExtractionSharedEnv = {
-        log, browserPool, urlFetchData
-      };
-      const env = await initExtractionEnv(entryPath, sharedEnv);
+
+      const url = urlFetchData.requestUrl;
+
+      const spiderEnv = await createSpiderEnv(log, browserPool, testScratchDir, new URL(url));
+      const env = await initExtractionEnv(spiderEnv, urlFetchData);
+
       return runFieldExtractor(env, AbstractFieldAttempts);
     }));
 

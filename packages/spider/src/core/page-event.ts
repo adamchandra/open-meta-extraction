@@ -1,3 +1,4 @@
+import { prettyFormat, prettyPrint } from '@watr/commonlib';
 import _ from 'lodash';
 
 import {
@@ -36,6 +37,7 @@ const PageEvents: Array<keyof PageEventObject> = [
   'workercreated',
   'workerdestroyed',
 ];
+
 const RequestCycleEvents: Array<keyof PageEventObject> = [
   'request',
   'requestfailed',
@@ -204,6 +206,7 @@ export function logPageEvents(pageInstance: PageInstance, logger: Logger) {
         case 'requestfailed': {
           const data: HTTPRequest = _data;
           const reqId = data._requestId;
+          // prettyPrint({ data })
           updateEventMap(reqId, e);
           break;
         }
@@ -236,7 +239,7 @@ export function logPageEvents(pageInstance: PageInstance, logger: Logger) {
 
 
 export function interceptRequestCycle(pageInstance: PageInstance, logger: Logger) {
-  const { page } = pageInstance;
+  const { page, opts } = pageInstance;
 
   const bproc = page.browser().process();
   const pid = bproc?.pid;
@@ -256,7 +259,7 @@ export function interceptRequestCycle(pageInstance: PageInstance, logger: Logger
             break;
           }
 
-          const isRewritable = pageInstance.opts.rewriteableUrls.some(({regex}) => {
+          const isRewritable = pageInstance.opts.rewriteableUrls.some(({ regex }) => {
             return regex.test(url);
           });
 
@@ -267,6 +270,7 @@ export function interceptRequestCycle(pageInstance: PageInstance, logger: Logger
           }
 
           request.continue();
+
           break;
         }
         default:

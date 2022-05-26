@@ -3,29 +3,33 @@ import _ from 'lodash';
 import { Logger } from 'winston';
 import { Page } from 'puppeteer';
 
-import { taskflow as ft } from '@watr/commonlib';
+import {
+  taskflow as ft,
+  HashEncodedPath,
+} from '@watr/commonlib';
+
 import { BrowserInstance, BrowserPool } from './browser-pool';
-import { UrlFetchData } from './url-fetch-chains';
 
-
-export interface ExtractionSharedEnv {
+export interface NamespacedLogging {
   log: Logger;
-  browserPool: BrowserPool;
-  urlFetchData?: UrlFetchData;
-};
-
-export interface ExtractionEnv extends ExtractionSharedEnv {
   ns: string[];
-  entryPath: string;
-  urlFetchData: UrlFetchData;
-  fileContentCache: Record<string, any>;
-  browserPageCache: Record<string, Page>;
-  browserInstance: BrowserInstance;
   enterNS(ns: string[]): void;
   exitNS(ns: string[]): void;
 };
 
-const fp = ft.createFPackage<ExtractionEnv>();
+export interface BrowserPoolCachingEnv {
+  browserPool: BrowserPool;
+  browserPageCache: Record<string, Page>;
+  browserInstance: BrowserInstance;
+};
+
+export interface SpiderEnv extends NamespacedLogging, BrowserPoolCachingEnv {
+  initialUrl: string;
+  entryEncPath: HashEncodedPath;
+  entryPath(): string;
+};
+
+const fp = ft.createFPackage<SpiderEnv>();
 
 export const {
   tap,
@@ -34,25 +38,29 @@ export const {
   through,
   log,
   filter,
-  ClientFunc,
   Transform,
   forEachDo,
   attemptEach,
   takeWhileSuccess,
   collectFanout,
+  asW,
+  asWCI
 } = fp;
 
-// export type ControlInstruction = ft.ControlInstruction;
+export const spiderTaskflow = fp;
 
-type EnvT = ExtractionEnv;
+type EnvT = SpiderEnv;
 
 export type ExtractionTask<A> = ft.ExtractionTask<A, EnvT>;
 // export type PerhapsW<A> = ft.PerhapsW<A, EnvT>;
-// export type ClientFunc<A, B> = ft.ClientFunc<A, B, EnvT>;
-// export type ClientResult<A> = ft.ClientResult<A>;
+export type ClientFunc<A, B> = ft.ClientFunc<A, B, EnvT>;
+export type ClientResult<A> = ft.ClientResult<A>;
 export type Transform<A, B> = ft.Transform<A, B, EnvT>;
 export type FilterTransform<A> = ft.FilterTransform<A, EnvT>;
 
 export type ExtractionRule = (ra: ExtractionTask<unknown>) => ExtractionTask<unknown>;
 
 export const compose = ft.compose;
+export const ClientFunc = fp.ClientFunc;
+
+export type ControlInstruction = ft.ControlInstruction

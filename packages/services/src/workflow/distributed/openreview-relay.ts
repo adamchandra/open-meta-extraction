@@ -256,31 +256,100 @@ export async function runRelayExtract(count: number) {
   });
 }
 
-// await asyncEachSeries(notes, async (note: Note) => {
-//   const shouldStop = await stopCondition(fetchLength);
-//   if (shouldStop) return 0;
 
-//   const urlstr = note.content.html;
-//   const existingNote = await findNoteStatusById(note.id);
-//   if (existingNote === undefined) {
-//     foundExistingNote = true;
-//     log.info(`Found fetched note in local MongoDB; stopping fetcher`);
-//   }
 
-//   const noteStatus = await upsertNoteStatus({ noteId: note.id, urlstr })
-//   numProcessed += 1;
-//   if (!noteStatus.validUrl) {
-//     log.info(`NoteStatus: invalid url '${urlstr}'`)
-//     return;
-//   }
-//   const requestUrl = noteStatus.url;
-//   if (requestUrl === undefined) {
-//     return Promise.reject(`Invalid state: NoteStatus(${note.id}).validUrl===true, url===undefined`);
-//   }
+export async function runRelayExtractNewVersion(count: number) {
+  let currCount = 0;
+  const runForever = count === 0;
 
-//   const abs = note.content.abstract;
-//   const hasAbstract = typeof abs === 'string';
-//   const status: WorkflowStatus = hasAbstract ? 'extractor:success' : 'available';
-//   const upserted = await upsertHostStatus(note.id, status, { hasAbstract, requestUrl })
-//   log.info(`Upsert (${numProcessed}/${count}) ${upserted._id}; ${upserted.requestUrl}`)
-// });
+  const corpusRoot = getCorpusRootDir();
+  const openReviewExchange = newOpenReviewExchange(getServiceLogger('OpenReviewExchange'));
+
+  const scraper = initScraper({ corpusRoot });
+  const { browserPool } = scraper;
+
+  const maxRate = 5 * 1000;// 5 second max spidering rate
+  let currTime = new Date();
+
+  async function stopCondition(): Promise<boolean> {
+    const atCountLimit = currCount >= count;
+    currTime = await rateLimit(currTime, maxRate);
+    return atCountLimit && !runForever;
+  }
+
+  return asyncDoUntil(
+    async () => {
+      const nextSpiderable = await getNextSpiderableUrl();
+
+      if (nextSpiderable === undefined) {
+        log.info('runRelayExtract(): no more spiderable urls in mongo');
+        await resetUrlsWithoutAbstracts();
+        return;
+      }
+
+      currCount += 1;
+
+      const noteId = nextSpiderable._id;
+      const url = nextSpiderable.requestUrl;
+
+      const scrapedUrl = await scraper.scrapeUrl(url, true);
+
+      if (E.isLeft(scrapedUrl)) {
+        return releaseSpiderableUrl(nextSpiderable, 'spider:fail');
+      }
+
+      log.info('Field Extraction starting..');
+      const urlFetchData = scrapedUrl.right;
+      const { status, responseUrl } = urlFetchData;
+
+      let httpStatus = 0;
+      try { httpStatus = Number.parseInt(status); } catch { }
+
+      await upsertHostStatus(noteId, 'extractor:locked', {
+        httpStatus,
+        response: responseUrl
+      });
+
+      const sharedEnv: ExtractionSharedEnv = {
+        log,
+        browserPool,
+        urlFetchData
+      };
+
+      const entryPath = scraper.getUrlCorpusEntryPath(url);
+      const exEnv = await initExtractionEnv(entryPath, sharedEnv);
+      const fieldExtractionResults = await runFieldExtractor(exEnv, AbstractFieldAttempts);
+
+      if (E.isLeft(fieldExtractionResults)) {
+        return releaseSpiderableUrl(nextSpiderable, 'extractor:fail');
+      }
+
+      const [, extractionEnv] = fieldExtractionResults.right;
+
+      const canonicalFields = getEnvCanonicalFields(extractionEnv);
+
+      prettyPrint({ canonicalFields });
+      const abstracts = _.filter(canonicalFields.fields, (field) => field.name === 'abstract');
+      const clippedAbstracts = _.filter(canonicalFields.fields, (field) => field.name === 'abstract-clipped');
+      let theAbstract: string | undefined;
+      if (abstracts.length > 0) {
+        theAbstract = abstracts[0].value;
+      } else if (clippedAbstracts.length > 0) {
+        theAbstract = clippedAbstracts[0].value;
+      }
+
+      const hasAbstract = theAbstract !== undefined;
+
+      if (theAbstract !== undefined) {
+        await doUpdateNote(openReviewExchange, noteId, theAbstract);
+      }
+
+      await upsertHostStatus(noteId, 'extractor:success', {
+        hasAbstract,
+      });
+    },
+    stopCondition
+  ).finally(() => {
+    return browserPool.shutdown();
+  });
+}

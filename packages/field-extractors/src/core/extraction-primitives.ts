@@ -33,7 +33,7 @@ import {
   ClientResult,
   takeWhileSuccess,
   log,
-  ExtractionSharedEnv,
+  // ExtractionSharedEnv,
   CacheFileKey,
   compose
 } from '~/predef/extraction-prelude';
@@ -61,6 +61,7 @@ import {
   CleaningRuleResult
 } from './data-cleaning';
 import { joinLines, loadTextFile } from './text-primitives';
+import { SpiderEnv, UrlFetchData } from '@watr/spider';
 
 
 
@@ -123,7 +124,7 @@ function saveFieldRecs(env: ExtractionEnv): void {
 const listArtifactFiles: (artifactDir: ArtifactSubdir, regex: RegExp) => Transform<unknown, CacheFileKey[]> =
   (dir, regex) => through((_a, env) => {
     const { entryPath } = env;
-    const artifactRoot = path.join(entryPath, dir);
+    const artifactRoot = path.join(entryPath(), dir);
     const exDir = expandDir(artifactRoot);
     const matching = _.filter(exDir.files, f => regex.test(f));
     const keys: CacheFileKey[] = _.map(matching, f => path.join(dir, f));
@@ -170,7 +171,7 @@ const loadXML: Transform<string, any> = through((artifactPath, env) => {
   }
 
   // TODO this use of 'cache', vs '.' is unnecessary and confusing
-  const maybeCachedContent = readCorpusTextFile(entryPath, '.', artifactPath);
+  const maybeCachedContent = readCorpusTextFile(entryPath(), '.', artifactPath);
 
   if (maybeCachedContent) {
     return pipe(
@@ -189,26 +190,29 @@ const loadXML: Transform<string, any> = through((artifactPath, env) => {
 
 const runHtmlTidy: Transform<string, string> = through((artifactPath, env) => {
   // TODO I don't think the cache key is working...
-  const { fileContentCache, entryPath } = env;
+  const { fileContentCache, entryPath, log } = env;
   const normType: NormalForm = 'tidy-norm';
   const cacheKey = `${artifactPath}.${normType}`;
   if (cacheKey in fileContentCache) {
+    log.debug(`HTMLTidy: Cache key:${cacheKey} hit`);
     return ClientFunc.success(cacheKey);
   }
-  const maybeCachedContent = readCorpusTextFile(entryPath, 'cache', cacheKey);
+  const maybeCachedContent = readCorpusTextFile(entryPath(), 'cache', cacheKey);
   if (maybeCachedContent) {
     fileContentCache[cacheKey] = maybeCachedContent;
+    log.debug(`HTMLTidy: Cache key:${cacheKey} loaded file`);
     return ClientFunc.success(cacheKey);
   }
-  const fullPath = path.resolve(entryPath, artifactPath);
+  const fullPath = path.resolve(entryPath(), artifactPath);
 
   const maybeTidy: ClientResult<string> = pipe(
     tidyHtmlTask(fullPath),
     TE.map((lines: string[]) => {
       const tidiedContent = lines.join('\n');
-      writeCorpusTextFile(entryPath, 'cache', cacheKey, tidiedContent);
+      writeCorpusTextFile(entryPath(), 'cache', cacheKey, tidiedContent);
       fileContentCache[cacheKey] = tidiedContent;
 
+      log.debug(`HTMLTidy: Cache key:${cacheKey} ran`);
       return cacheKey;
     }),
     TE.mapLeft((message) => {
@@ -222,7 +226,7 @@ const runHtmlTidy: Transform<string, string> = through((artifactPath, env) => {
 
 
 const verifyFileType: (urlTest: RegExp) => FilterTransform<string> = (typeTest: RegExp) => filter((filename, env) => {
-  const file = path.resolve(env.entryPath, filename);
+  const file = path.resolve(env.entryPath(), filename);
 
   const test = runFileCmd(file).then(a => typeTest.test(a));
   return test;
@@ -511,36 +515,35 @@ function applyCleaningRules(rules: CleaningRule[], initialString: string): [stri
 }
 
 export async function initExtractionEnv(
-  entryPath: string,
-  sharedEnv: ExtractionSharedEnv,
+  spiderEnv: SpiderEnv,
+  urlFetchData: UrlFetchData | undefined,
 ): Promise<ExtractionEnv> {
-  const { log, browserPool, urlFetchData } = sharedEnv;
-  if (urlFetchData === undefined) throw new Error('error state: urlFetchData is undefined');
+  const { entryPath } = spiderEnv;
 
-  const pathPrefix = path.basename(entryPath).slice(0, 6);
+  const pathPrefix = path.basename(entryPath()).slice(0, 6);
   const logPrefix = [pathPrefix];
 
-  const browserInstance = await browserPool.acquire();
 
   const env: ExtractionEnv = {
-    log,
-    browserPool,
-    browserInstance,
+    ...spiderEnv,
+    // log,
+    // browserPool,
+    // browserInstance,
     ns: logPrefix,
-    entryPath,
+    // entryPath,
     urlFetchData,
     fields: [],
     fieldRecs: {},
     fieldCandidates: [],
     evidence: [],
     fileContentCache: {},
-    browserPageCache: {},
-    enterNS(ns: string[]) {
-      setLogLabel(log, _.join(ns, '/'));
-    },
-    exitNS(ns: string[]) {
-      setLogLabel(log, _.join(ns, '/'));
-    }
+    // browserPageCache: {},
+    // enterNS(ns: string[]) {
+    //   setLogLabel(log, _.join(ns, '/'));
+    // },
+    // exitNS(ns: string[]) {
+    //   setLogLabel(log, _.join(ns, '/'));
+    // }
   };
   return env;
 }

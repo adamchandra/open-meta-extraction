@@ -1,10 +1,6 @@
 import _ from 'lodash';
 
-
-import { Logger } from 'winston';
-import { Page } from 'puppeteer';
-
-import { UrlFetchData, BrowserPool, BrowserInstance } from '@watr/spider';
+import { UrlFetchData, SpiderEnv } from '@watr/spider';
 
 import { ExtractionEvidence, FieldCandidate, FieldRecord } from './extraction-records';
 
@@ -20,26 +16,13 @@ export type NormalForm = keyof NormalForms;
 
 export type CacheFileKey = string;
 
-export interface ExtractionSharedEnv {
-  log: Logger;
-  browserPool: BrowserPool;
-  urlFetchData?: UrlFetchData;
-};
-
-
-export interface ExtractionEnv extends ExtractionSharedEnv {
-  ns: string[];
-  entryPath: string;
+export interface ExtractionEnv extends SpiderEnv {
   urlFetchData: UrlFetchData;
   fieldRecs: Record<string, FieldRecord[]>;
   fields: FieldRecord[];
   evidence: ExtractionEvidence[];
   fieldCandidates: FieldCandidate[];
   fileContentCache: Record<string, any>;
-  browserPageCache: Record<string, Page>;
-  browserInstance: BrowserInstance;
-  enterNS(ns: string[]): void;
-  exitNS(ns: string[]): void;
 };
 
 const fp = ft.createFPackage<ExtractionEnv>();
@@ -49,6 +32,7 @@ export const {
   tapLeft,
   tapEitherEnv,
   through,
+  mapEnv,
   log,
   filter,
   ClientFunc,
@@ -63,6 +47,7 @@ export type ControlInstruction = ft.ControlInstruction;
 
 type EnvT = ExtractionEnv;
 
+
 export type ExtractionTask<A> = ft.ExtractionTask<A, EnvT>;
 export type PerhapsW<A> = ft.PerhapsW<A, EnvT>;
 export type ClientFunc<A, B> = ft.ClientFunc<A, B, EnvT>;
@@ -71,5 +56,8 @@ export type Transform<A, B> = ft.Transform<A, B, EnvT>;
 export type FilterTransform<A> = ft.FilterTransform<A, EnvT>;
 
 export type ExtractionRule = (ra: ExtractionTask<unknown>) => ExtractionTask<unknown>;
+
+
+export type SpiderToExtractionEnvTransform<A> = ft.EnvTransform<A, SpiderEnv, ExtractionEnv>;
 
 export const compose = ft.compose;

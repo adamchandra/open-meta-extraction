@@ -59,6 +59,7 @@ export interface PageInstanceOptions {
   allowedResources: BlockableResource[];
   rewriteableUrls: RewritableUrl[];
   waitUntil: PuppeteerLifeCycleEvent;
+  requestInterception: boolean;
 }
 
 export const DefaultPageInstanceOptions: PageInstanceOptions = {
@@ -69,6 +70,7 @@ export const DefaultPageInstanceOptions: PageInstanceOptions = {
   allowedResources: ['document'],
   rewriteableUrls: RewritableUrls,
   waitUntil: 'domcontentloaded',
+  requestInterception: true,
 
 };
 
@@ -79,7 +81,8 @@ export const ScriptablePageInstanceOptions: PageInstanceOptions = {
   javaScriptEnabled: true,
   allowedResources: ['document', 'script'],
   rewriteableUrls: RewritableUrls,
-  waitUntil: 'load',
+  waitUntil: 'networkidle0',
+  requestInterception: true,
 };
 
 export function createBrowserPool(logPrefix?: string): BrowserPool {
@@ -143,7 +146,7 @@ export function createBrowserPool(logPrefix?: string): BrowserPool {
             page.setDefaultNavigationTimeout(opts.defaultNavigationTimeout);
             page.setDefaultTimeout(opts.defaultTimeout);
             page.setJavaScriptEnabled(opts.javaScriptEnabled);
-            page.setRequestInterception(true);
+            page.setRequestInterception(opts.requestInterception);
 
             const pageInstance: PageInstance = {
               page,

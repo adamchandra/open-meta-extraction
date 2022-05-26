@@ -1,26 +1,74 @@
 import _ from 'lodash';
 
-import { newConsoleTransport, newLogger, setLogEnvLevel } from '~/util/basic-logging';
+import { getServiceLogger, newConsoleTransport, newLogger, setLogEnvLevel } from '~/util/basic-logging';
 import * as TE from 'fp-ts/TaskEither';
 import { isRight } from 'fp-ts/Either';
 import Async from 'async';
-import { flow as compose } from 'fp-ts/function';
+import { flow as compose, pipe } from 'fp-ts/function';
 import { Logger } from 'winston';
 import * as ft from './taskflow';
 import { prettyPrint } from '~/util/pretty-print';
 import { asyncEachOf } from '~/util/async-plus';
 
 
-interface EnvT {
-  ns: [];
+interface EnvT extends ft.BaseEnv {
   b: boolean;
-  enterNS(ns: string[]): void;
-  exitNS(ns: string[]): void;
-  log: Logger;
   messages: string[];
 }
 
+function initEnv<A>(a: A): ExtractionTask<A> {
+  const log = getServiceLogger('first-env')
+  const env0: EnvT = {
+    ns: [],
+    b: true,
+    enterNS(_ns: string[]) { /* */ },
+    exitNS(_ns: string[]) { /* */ },
+    log,
+    messages: []
+  };
+
+  return TE.right(asW(a, env0));
+}
+
+interface OtherEnvT extends ft.BaseEnv {
+  otherField: boolean;
+}
+
+interface Env3T extends ft.BaseEnv {
+  env3Field: number;
+}
+
+function initOtherEnv(): OtherEnvT {
+  const log = getServiceLogger('other-env')
+  const env: OtherEnvT = {
+    ns: [],
+    enterNS(_ns: string[]) { /* */ },
+    exitNS(_ns: string[]) { /* */ },
+    log,
+    otherField: true
+  };
+
+  return env;
+}
+function initEnv3(): Env3T {
+  const log = getServiceLogger('third-env')
+  const env: Env3T = {
+    ns: [],
+    enterNS(_ns: string[]) { /* */ },
+    exitNS(_ns: string[]) { /* */ },
+    log,
+    env3Field: 42
+  };
+
+  return env;
+}
+async function initEnv3Promise(): Promise<Env3T> {
+  return initEnv3();
+}
 const fp = ft.createFPackage<EnvT>();
+
+const fpOther = ft.createFPackage<OtherEnvT>();
+const fpEnv3 = ft.createFPackage<Env3T>();
 
 type ExtractionTask<A> = ft.ExtractionTask<A, EnvT>;
 type Transform<A, B> = ft.Transform<A, B, EnvT>;
@@ -30,10 +78,12 @@ type PerhapsW<A> = ft.PerhapsW<A, EnvT>;
 const {
   tap,
   tapLeft,
+  tapEitherEnv,
   filter,
   Transform,
   through,
   asW,
+  mapEnv,
   forEachDo,
   attemptEach,
   takeWhileSuccess,
@@ -59,19 +109,6 @@ const emit = (msg: string) => tap<string>((_a, env) => env.messages.push(msg));
 const emitL = (msg: string) => tapLeft<string>((_a, env) => env.messages.push(msg));
 
 
-function initEnv<A>(a: A): ExtractionTask<A> {
-  const logger = newLogger(newConsoleTransport('warn'));
-  const env0: EnvT = {
-    ns: [],
-    b: true,
-    enterNS(_ns: string[]) { /* */ },
-    exitNS(_ns: string[]) { /* */ },
-    log: logger,
-    messages: []
-  };
-
-  return TE.right(asW(a, env0));
-}
 
 
 function getEnvMessages(res: PerhapsW<unknown>): string[] {
@@ -116,13 +153,13 @@ describe('Extraction Prelude / Primitives', () => {
   it('takeWhileSuccess examples', async () => {
     const examples: ExampleType[] = [
       [[emit('A:okay'), fbad_, emit('B:bad')],
-        ['A:okay']],
+      ['A:okay']],
       [[emit('A:okay'), emit('B:okay'), fbad_, emit('B:bad')],
-        ['A:okay', 'B:okay']],
+      ['A:okay', 'B:okay']],
       [[emit('A:okay'), fgood_, emit('B:okay'), fbad_, emitL('CL:okay')],
-        ['A:okay', 'B:okay', 'CL:okay']],
+      ['A:okay', 'B:okay', 'CL:okay']],
       [[fbad_, emit('B:bad')],
-        []],
+      []],
     ];
 
 
@@ -147,21 +184,21 @@ describe('Extraction Prelude / Primitives', () => {
     const examples: Array<[Transform<string, string>[], string[]]> = [
       // Always stop at first emit:
       [[emit('A:okay'), emit('B:bad')],
-        ['A:okay']],
+      ['A:okay']],
       [[emit('A:okay'), fgood_, emit('B:bad')],
-        ['A:okay']],
+      ['A:okay']],
       [[emit('A:okay'), fbad_, emit('B:bad')],
-        ['A:okay']],
+      ['A:okay']],
 
       // Skip any initial failures
       [[fbad('1'), emit('A:okay'), emit('B:bad')],
-        ['A:okay']],
+      ['A:okay']],
 
       [[fbad('2'), fbad('3'), emit('A:okay'), emit('B:bad')],
-        ['A:okay']],
+      ['A:okay']],
 
       [[fbad_, fgood_, emit('A:okay'), emit('B:bad')],
-        []],
+      []],
 
     ];
 
@@ -185,13 +222,13 @@ describe('Extraction Prelude / Primitives', () => {
   it('collectFanout examples', async () => {
     const examples: Array<[Transform<string, string>[], string[]]> = [
       [[emit('A:okay'), emit('B:okay')],
-        ['A:okay', 'B:okay']],
+      ['A:okay', 'B:okay']],
       [[emit('A:okay'), fgood_, emit('B:okay')],
-        ['A:okay', 'B:okay']],
+      ['A:okay', 'B:okay']],
       [[emit('A:okay'), fbad_, emit('B:okay')],
-        ['A:okay', 'B:okay']],
+      ['A:okay', 'B:okay']],
       [[fbad_, fgood_, emit('A:okay'), fbad_, emit('B:okay'), fbad_],
-        ['A:okay', 'B:okay']],
+      ['A:okay', 'B:okay']],
     ];
 
 
@@ -202,14 +239,11 @@ describe('Extraction Prelude / Primitives', () => {
       const haveExpectedMessages = _.every(expectedMessages, em => messages.includes(em));
       const haveBadMessages = _.some(messages, msg => /bad/.test(msg));
 
-      // prettyPrint({ msg: `example: ${_n}`, messages, expectedMessages });
-
       expect(haveExpectedMessages).toBe(true);
       expect(haveBadMessages).toBe(false);
     }));
 
 
-    // done();
   });
 
 
@@ -244,5 +278,27 @@ describe('Extraction Prelude / Primitives', () => {
       }
     });
 
+  });
+
+  it('should map env types', async () => {
+    const inputs = _.map(_.range(4), i => i + 1);
+    const env0 = initEnv(inputs);
+    const otherEnv = initOtherEnv();
+    const runnable = pipe(
+      env0,
+      tapEitherEnv(e => {
+        e.messages
+        e.log.info('hello from env')
+      }),
+      mapEnv((e) => otherEnv, (e, a) => otherEnv),
+      fpOther.tapEitherEnv(e => {
+        e.log.info(`hello from other env ${e.otherField}`)
+      }),
+      fpOther.mapEnv((envLeft) => initEnv3(), (envRight, a) => initEnv3Promise()),
+      fpEnv3.tapEitherEnv(e => {
+        e.log.info(`hello from other env ${e.env3Field}`);
+      }),
+    )
+    await runnable()
   });
 });
