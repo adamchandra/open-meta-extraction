@@ -58,5 +58,4 @@ export const gatherSchemaEvidence = forInputs(
       selectElemTextEvidence('.abstractInFull'),
     ),
   )
-
 );

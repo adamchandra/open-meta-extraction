@@ -178,6 +178,7 @@ export async function runRelayExtract({ count, postResultsToOpenReview }: RunRel
   let currTime = new Date();
 
   async function stopCondition(): Promise<boolean> {
+    await browserPool.clearCache();
     const atCountLimit = currCount >= count;
     currTime = await rateLimit(currTime, maxRate);
     return atCountLimit && !runForever;
@@ -185,6 +186,7 @@ export async function runRelayExtract({ count, postResultsToOpenReview }: RunRel
 
   return asyncDoUntil(
     async () => {
+
       const nextSpiderable = await getNextSpiderableUrl();
 
       if (nextSpiderable === undefined) {
@@ -197,6 +199,7 @@ export async function runRelayExtract({ count, postResultsToOpenReview }: RunRel
 
       const noteId = nextSpiderable._id;
       const url = nextSpiderable.requestUrl;
+      log.info(`Starting URL: ${url}`);
 
       const spiderEnv = await createSpiderEnv(log, browserPool, corpusRoot, new URL(url));
       const init = new URL(url);
@@ -240,7 +243,6 @@ export async function runRelayExtract({ count, postResultsToOpenReview }: RunRel
         response: responseUrl
       });
 
-      await browserPool.clearCache();
     },
     stopCondition
   ).finally(() => {

@@ -206,21 +206,19 @@ export function logPageEvents(pageInstance: PageInstance, logger: Logger) {
         case 'requestfailed': {
           const data: HTTPRequest = _data;
           const reqId = data._requestId;
-          // prettyPrint({ data })
-          updateEventMap(reqId, e);
+          updateEventMap(reqId, e, e);
           break;
         }
         case 'requestfinished': {
           const data: HTTPRequest = _data;
           const reqId = data._requestId;
-          updateEventMap(reqId, e);
-
+          updateEventMap(reqId, e, e);
           break;
         }
         case 'response': {
           const data: HTTPResponse = _data;
           const reqId = data.request()._requestId;
-          updateEventMap(reqId, e);
+          updateEventMap(reqId, e, e);
           break;
         }
         case 'workercreated':

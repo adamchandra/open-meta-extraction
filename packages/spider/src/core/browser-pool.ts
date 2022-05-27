@@ -215,6 +215,7 @@ export function createBrowserPool(logPrefix?: string): BrowserPool {
   pool.on('acquireSuccess', (eventId, resource) => {
     log.verbose(`pool/event: acquireSuccess:${eventId}: ${resource.asString()}`);
   });
+
   pool.on('acquireFail', (eventId, err) => {
     log.warn(`pool/event: acquireFail:${eventId}: ${err}`);
   });
