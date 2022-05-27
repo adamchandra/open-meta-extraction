@@ -19,6 +19,7 @@ import {
   CacheFileKey,
   compose
 } from '~/predef/extraction-prelude';
+import { prettyPrint } from '@watr/commonlib';
 
 export type AttrSelection = E.Either<string, string>;
 export type Elem = ElementHandle<Element>;

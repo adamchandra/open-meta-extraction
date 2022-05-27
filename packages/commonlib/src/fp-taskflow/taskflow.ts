@@ -504,6 +504,9 @@ const hook: <A, B, Env extends BaseEnv>(f: (a: A, b: Perhaps<B>, env: Env) => vo
   LogHook<A, B, Env> = (f) => f;
 
 function shortFormat(v: any): string {
+  if (v===undefined) return 'undefined';
+  if (v===null) return 'null';
+
   if (_.isArray(v)) {
     const shortArray = _.join(_.map(v, shortFormat), ', ');
     return `[len=${v.length}: ${shortFormat(shortArray)}]`;
