@@ -1,12 +1,10 @@
 import _ from 'lodash';
 
 import * as TE from 'fp-ts/TaskEither';
-import * as E from 'fp-ts/Either';
 import { pipe } from 'fp-ts/function';
 import { createSpiderEnv, getHttpResponseBody, httpResponseToUrlFetchData, scrapeUrl } from './scraping-primitives';
-import { ScrapingContext, createScrapingContext } from '~/core/scraping-context';
 import { compose, SpiderEnv, through } from '~/core/taskflow-defs';
-import { getServiceLogger, prettyPrint, putStrLn, setLogLabel } from '@watr/commonlib';
+import { getServiceLogger, prettyPrint, putStrLn } from '@watr/commonlib';
 import { createBrowserPool, ScriptablePageInstanceOptions } from '~/core/browser-pool';
 
 describe('scraping primitives', () => {

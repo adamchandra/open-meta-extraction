@@ -1,12 +1,11 @@
 import _ from 'lodash';
-import { prettyPrint, putStrLn, setLogEnvLevel } from '@watr/commonlib';
+import { isUrl, prettyPrint, putStrLn, setLogEnvLevel } from '@watr/commonlib';
 import { connectToMongoDB } from './mongodb';
-import { createCollections, NoteStatus } from './schemas';
+import { createCollections } from './schemas';
 import { Mongoose } from 'mongoose';
-import { findHostStatusById, findNoteStatusById, getNextSpiderableUrl, upsertHostStatus, upsertNoteStatus } from './query-api';
+import { findHostStatusById, findNoteStatusById, upsertHostStatus, upsertNoteStatus } from './query-api';
 
 import * as fc from 'fast-check';
-import { isUrl } from '~/workflow/common/datatypes';
 import { genHttpStatus } from './mongo-test-utils';
 
 describe('MongoDB Schemas', () => {

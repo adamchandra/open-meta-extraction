@@ -3,51 +3,26 @@ import _ from 'lodash';
 import {
   ensureArtifactDirectories,
   readCorpusJsonFile,
-  writeCorpusJsonFile,
   getServiceLogger,
 } from '@watr/commonlib';
 
 
 import * as TE from 'fp-ts/TaskEither';
-import * as E from 'fp-ts/Either';
 import { createBrowserPool, createSpiderEnv, UrlFetchData } from '@watr/spider';
 
 import {
-  Transform,
-  PerhapsW,
   ExtractionEnv,
 } from '~/predef/extraction-prelude';
 
 import {
-  FieldExtractionAttempts,
   SpiderAndExtractionTransform,
 } from '~/core/extraction-rules';
 
-import { Page } from 'puppeteer';
 import { CanonicalFieldRecords, FieldRecord } from '~/predef/extraction-records';
-
-const extractionRecordFileName = 'extraction-records.json';
 
 export function readUrlFetchData(entryPath: string,): UrlFetchData | undefined {
   return readCorpusJsonFile<UrlFetchData>(entryPath, '.', 'metadata.json');
 }
-
-// export async function runFieldExtractor(
-//   exEnv: ExtractionEnv,
-//   extractionPipeline: Transform<unknown, unknown>
-// ): Promise<PerhapsW<unknown>> {
-//   const { urlFetchData, browserPool, browserPageCache, browserInstance } = exEnv;
-
-//   const res = await extractionPipeline(TE.right([urlFetchData, exEnv]))();
-
-//   const browserPages = _.map(_.toPairs(browserPageCache), ([, p]) => p);
-
-//   await Async.each(browserPages, Async.asyncify(async (page: Page) => page.close()));
-
-//   await browserPool.release(browserInstance);
-
-//   return res;
-// }
 
 type RMArgs = {
   corpusRoot: string,
@@ -82,19 +57,6 @@ export async function runMainSpiderAndExtractFields({
   await browserPool.shutdown();
 }
 
-// async function spiderAndExtractFieldsForEntry(
-//   exEnv: ExtractionEnv,
-// ): Promise<void> {
-//   const { log, entryPath } = exEnv;
-//   log.info(`extracting field in ${entryPath()}`);
-
-//   ensureArtifactDirectories(entryPath());
-
-//   const res = await runFieldExtractor(exEnv, FieldExtractionAttempts);
-
-// }
-
-
 export function getEnvCanonicalFields(env: ExtractionEnv): CanonicalFieldRecords {
   const { fieldRecs } = env;
 
@@ -110,62 +72,4 @@ export function getEnvCanonicalFields(env: ExtractionEnv): CanonicalFieldRecords
     fields: fieldRecords
   };
   return canonicalRecords;
-}
-
-
-function writeExtractionRecords(env: ExtractionEnv, messages: string[]) {
-  const { entryPath, fieldRecs } = env;
-  const reshaped = _.mapValues(fieldRecs, (value) => {
-    return {
-      count: value.length,
-      instances: value
-    };
-  });
-  const output = {
-    fields: reshaped
-  };
-
-  const empty = {
-    messages,
-    fields: {
-      title: { count: 0 },
-      abstract: { count: 0 },
-      'abstract-clipped': { count: 0 },
-      author: { count: 0 },
-      'pdf-link': { count: 0 },
-      'pdf-path': { count: 0 },
-    }
-  };
-
-  const finalOutput = _.merge({}, empty, output);
-
-  writeCorpusJsonFile(
-    entryPath(),
-    'extracted-fields',
-    extractionRecordFileName,
-    finalOutput,
-    /* overwrite= */true
-  );
-
-  const canonicalRecords = getEnvCanonicalFields(env);
-
-  writeCorpusJsonFile(
-    entryPath(),
-    'extracted-fields',
-    'canonical-fields.json',
-    canonicalRecords,
-    /* overwrite= */true
-  );
-}
-
-export function readCanonicalFieldRecord(
-  entryPath: string,
-): CanonicalFieldRecords | undefined {
-  const records = readCorpusJsonFile<CanonicalFieldRecords>(
-    entryPath,
-    'extracted-fields',
-    'canonical-fields.json',
-  );
-
-  return records;
 }

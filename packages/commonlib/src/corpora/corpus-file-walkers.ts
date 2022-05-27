@@ -1,8 +1,6 @@
 import _ from 'lodash';
-import { Readable } from 'stream';
 import path from 'path';
 import fs from 'fs-extra';
-import { getDirWalkerStream, stringStreamFilter } from './dirstream';
 import { throughFunc } from '~/util/stream-utils';
 import { shaEncodeAsHex } from '~/util/string-utils';
 
@@ -10,7 +8,6 @@ export interface ExpandedDir {
   dir: string;
   files: string[];
 }
-
 
 export interface CorpusArtifact {
   corpusEntry: CorpusEntry;
@@ -53,26 +50,6 @@ export function expandDir(path: string): ExpandedDir {
 
 export const expandDirTrans = throughFunc(expandDir);
 
-export function walkScrapyCacheCorpus(corpusRoot: string): Readable {
-  const corpusDirStream = getDirWalkerStream(corpusRoot);
-
-  const entryDirFilter = stringStreamFilter((dir: string) => {
-    const shaHexRE = /[\dA-Fa-f]{40}(\.d)?\/?$/;
-    return shaHexRE.test(dir);
-  });
-
-  return corpusDirStream.pipe(entryDirFilter);
-}
-
-export function walkDotDStyleCorpus(corpusRoot: string): Readable {
-  const corpusDirStream = getDirWalkerStream(corpusRoot);
-
-  const entryDirFilter = stringStreamFilter((dir: string) => {
-    return /\/[^/]+\.d$/.test(dir);
-  });
-
-  return corpusDirStream.pipe(entryDirFilter);
-}
 
 const artifactSubdirO = {
   '.': null,

@@ -1,9 +1,8 @@
 import _ from 'lodash';
 import { HostStatus, HostStatusUpdateFields, NoteStatus, WorkflowStatus } from './schemas';
-import { validateUrl } from '~/workflow/common/datatypes';
 import * as E from 'fp-ts/Either';
 import { Document } from 'mongoose';
-import { prettyPrint } from '@watr/commonlib';
+import { prettyPrint, validateUrl } from '@watr/commonlib';
 
 type HostStatusDocument = Document<unknown, any, HostStatus> & HostStatus;
 

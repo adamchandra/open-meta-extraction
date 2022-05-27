@@ -128,12 +128,6 @@ async function runGatherSuccess(fns: Transform<string, string>[]): Promise<strin
   return getEnvMessages(res);
 }
 
-// async function runForEachDo(fn: Transform<number, string>): Promise<string[]> {
-//   const inputs = _.range(4);
-//   const env0 = initEnv(inputs);
-//   const res = await forEachDo(fn)(env0)();
-//   return getEnvMessages(res);
-// }
 
 describe('Extraction Prelude / Primitives', () => {
   // it('should create basic arrows/results', async (done) => {});

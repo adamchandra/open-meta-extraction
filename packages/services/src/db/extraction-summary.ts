@@ -2,7 +2,6 @@ import { HostStatus, NoteStatus } from './schemas';
 import _ from 'lodash';
 
 import { subDays } from 'date-fns';
-import { prettyPrint } from '@watr/commonlib';
 
 interface BoolIDCounts {
   _id: boolean;
@@ -60,6 +59,7 @@ function formatAbstractStatusByDomain(title: string, byDomain: StrIDCounts[]): s
     }
     return { domain, present: 0, missing: count };
   });
+
 
   const groupedByDomain = _.values(_.groupBy(byDomain1, (r) => r.domain));
 

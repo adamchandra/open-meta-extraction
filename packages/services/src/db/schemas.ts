@@ -1,8 +1,7 @@
-import { getServiceLogger } from '@watr/commonlib';
+import { getServiceLogger, isUrl } from '@watr/commonlib';
 import { Schema, model } from 'mongoose';
 import { createCurrentTimeOpt } from './mongodb';
 import _ from 'lodash';
-import { isUrl } from '~/workflow/common/datatypes';
 
 const log = getServiceLogger('MongoSchema');
 
