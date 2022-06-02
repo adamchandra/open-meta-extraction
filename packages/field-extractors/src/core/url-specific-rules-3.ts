@@ -201,9 +201,9 @@ export const cogsciMindmodelingOrg: ExtractionRule = compose(
       compose(loadTextFile, selectCogsciMindmodelingAbstract)
     ),
     validateEvidence({
-      '#abstract?': 'abstract',
-      '.subAbstract?': 'abstract',
-      'grepped.abstract?': 'abstract',
+      '#abstract?': 'abstract:raw',
+      '.subAbstract?': 'abstract:raw',
+      'grepped.abstract?': 'abstract:raw',
     }),
   ))
 );
