@@ -10,6 +10,7 @@ import {
   saveEvidence,
   validateEvidence,
   urlFilter,
+  selectElemTextEvidence,
 } from './extraction-primitives';
 
 import {
@@ -36,7 +37,6 @@ import {
   loadBrowserPage,
   selectOne
 } from './html-query-primitives';
-import { ScriptablePageInstanceOptions } from '@watr/spider';
 
 
 const removeHtmlTagsWithoutText: Transform<string[], string[]> = compose(
@@ -177,3 +177,33 @@ export const lrecConfOrg: ExtractionRule = compose(
 //     loadBrowserPage(ScriptablePageInstanceOptions),
 //   ))
 // );
+
+
+const selectCogsciMindmodelingAbstract: Transform<string, unknown> = compose(
+  splitLines,
+  grepDropUntil(/Abstract/),
+  grepDropUntil(/^[ ]+<blockquote/),
+  dropN(1),
+  grepTakeUntil(/^[ ]+<.blockquote/),
+  removeHtmlTagsWithoutText,
+  joinLines(' '),
+  saveEvidence('grepped.abstract'),
+);
+
+export const cogsciMindmodelingOrg: ExtractionRule = compose(
+  urlFilter(/cogsci.mindmodeling.org/),
+  forInputs(/response-body/, compose(
+    collectFanout(
+      compose(loadBrowserPage(), collectFanout(
+        selectElemTextEvidence('#abstract'),
+        selectElemTextEvidence('.subAbstract'),
+      )),
+      compose(loadTextFile, selectCogsciMindmodelingAbstract)
+    ),
+    validateEvidence({
+      '#abstract?': 'abstract',
+      '.subAbstract?': 'abstract',
+      'grepped.abstract?': 'abstract',
+    }),
+  ))
+);

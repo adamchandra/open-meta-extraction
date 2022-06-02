@@ -183,7 +183,7 @@ export function writeJson<T>(filePath: string, obj: T): boolean {
   return true;
 }
 
-function readTextOrUndef(filePath: string): string | undefined {
+export function readTextOrUndef(filePath: string): string | undefined {
   if (!fs.existsSync(filePath)) return;
   return fs.readFileSync(filePath).toString();
 }

@@ -1,4 +1,4 @@
-import { prettyFormat, prettyPrint } from '@watr/commonlib';
+import { prettyFormat, prettyPrint, putStrLn } from '@watr/commonlib';
 import _ from 'lodash';
 
 import {
@@ -217,6 +217,16 @@ export function logPageEvents(pageInstance: PageInstance, logger: Logger) {
         }
         case 'response': {
           const data: HTTPResponse = _data;
+          const request = data.request();
+          const url = request.url();
+          const resType = request.resourceType();
+          if (resType === 'document') {
+            putStrLn(`Document resource url ${url}`)
+            // const bodyP = data.buffer().then(body => body.toString());
+            // bodyP.then(body => {
+            //   putStrLn(body)
+            // })
+          }
           const reqId = data.request()._requestId;
           updateEventMap(reqId, e, e);
           break;

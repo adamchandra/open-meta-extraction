@@ -5,7 +5,7 @@ import path from 'path';
 
 import yargs, { Argv, Arguments, Options, MiddlewareFunction } from 'yargs';
 
-import { putStrLn } from '~/util/pretty-print';
+import { prettyPrint, putStrLn } from '~/util/pretty-print';
 import { AllLogLevels } from '~/util/basic-logging';
 export const YArgs = yargs;
 
@@ -102,6 +102,10 @@ const existingPath = (pathAndDesc: string) => (ya: Argv) => {
     if (p && fs.existsSync(p)) {
       return;
     }
+
+    const errorMsg = `--${pathname}: Path doesn't exist: ${p}`;
+
+    putStrLn(errorMsg)
 
     _.update(argv, ['errors'], (prev: string[] | undefined | null) => {
       const newval = prev || [];

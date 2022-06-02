@@ -33,14 +33,6 @@ export async function populateDBHostNoteStatus(n: number) {
   );
 }
 
-function genSpiderSuccess(): boolean {
-  return false;
-}
-function genExtractorSuccess(): boolean {
-  return false;
-}
-
-
 const a200s = Array(20).fill(200);
 const a404s = Array(4).fill(200);
 const aCodes = _.concat(a200s, a404s, [301, 302, 500]);

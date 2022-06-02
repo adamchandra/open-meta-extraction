@@ -17,6 +17,7 @@ import {
     scrapingPrimitives as spPrim,
     scrapingTaskflow as stflow,
     UrlFetchData,
+    urlMatchAny,
 
 } from '@watr/spider';
 
@@ -38,7 +39,6 @@ const {
 } = sfp;
 
 const {
-    urlFilter,
     scrapeUrl,
     httpResponseToUrlFetchData,
     writeResponseBody,
@@ -46,8 +46,12 @@ const {
     cleanArtifacts,
 } = spPrim;
 
+const allowJSInBrowserUrls = [
+    /linkinghub.elsevier.com/,
+    /aaai.org/
+];
 const linkinghubSpideringRule: Transform<URL, HTTPResponse> = compose(
-    urlFilter(/linkinghub.elsevier.com/),
+    urlMatchAny(allowJSInBrowserUrls),
     scrapeUrl(ScriptablePageInstanceOptions),
 )
 

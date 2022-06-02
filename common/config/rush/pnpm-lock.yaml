@@ -51,8 +51,7 @@ specifiers:
   eslint-plugin-promise: ^6.0.0
   eslint-plugin-react: ^7.30.0
   eslint-plugin-unicorn: ^40.1.0
-  fast-check: ~2.25.0
-  fast-csv: ^4.3.6
+  fast-check: ~3.0.0
   fp-ts: 2.12.1
   fs-extra: ^10.1.0
   io-ts: ^2.2.16
@@ -66,8 +65,6 @@ specifiers:
   mongodb: ~4.6.0
   mongoose: ~6.3.4
   nconf: ~0.12.0
-  pg: ^8.7.3
-  pg-hstore: ^2.3.4
   pm2: ~5.2.0
   pumpify: ^2.0.1
   puppeteer: ^14.1.1
@@ -75,10 +72,8 @@ specifiers:
   puppeteer-extra-plugin-anonymize-ua: ^2.3.3
   puppeteer-extra-plugin-block-resources: ^2.3.0
   puppeteer-extra-plugin-stealth: ^2.9.0
-  sequelize: ^6.20.0
   signal-exit: ~3.0.7
   split: ^1.0.1
-  sqlite3: ~5.0.8
   tarn: ~3.0.2
   through2: ^4.0.2
   ts-jest: ^28.0.3
@@ -141,8 +136,7 @@ dependencies:
   eslint-plugin-promise: 6.0.0_eslint@7.32.0
   eslint-plugin-react: 7.30.0_eslint@7.32.0
   eslint-plugin-unicorn: 40.1.0_eslint@7.32.0
-  fast-check: 2.25.0
-  fast-csv: 4.3.6
+  fast-check: 3.0.0
   fp-ts: 2.12.1
   fs-extra: 10.1.0
   io-ts: 2.2.16_fp-ts@2.12.1
@@ -156,8 +150,6 @@ dependencies:
   mongodb: 4.6.0
   mongoose: 6.3.4
   nconf: 0.12.0
-  pg: 8.7.3
-  pg-hstore: 2.3.4
   pm2: 5.2.0
   pumpify: 2.0.1
   puppeteer: 14.1.1
@@ -165,10 +157,8 @@ dependencies:
   puppeteer-extra-plugin-anonymize-ua: 2.3.3_puppeteer-extra@3.2.3
   puppeteer-extra-plugin-block-resources: 2.3.0_puppeteer-extra@3.2.3
   puppeteer-extra-plugin-stealth: 2.9.0_puppeteer-extra@3.2.3
-  sequelize: 6.20.0_b9e1bb07005edeabebc482ce68941a0e
   signal-exit: 3.0.7
   split: 1.0.1
-  sqlite3: 5.0.8
   tarn: 3.0.2
   through2: 4.0.2
   ts-jest: 28.0.3_85c12564b990a24c49a73e059906a0f5
@@ -3474,8 +3464,8 @@ packages:
       - supports-color
     dev: false
 
-  /fast-check/2.25.0:
-    resolution: {integrity: sha512-wRUT2KD2lAmT75WNIJIHECawoUUMHM0I5jrlLXGtGeqmPL8jl/EldUDjY1VCp6fDY8yflyfUeIOsOBrIbIiArg==}
+  /fast-check/3.0.0:
+    resolution: {integrity: sha512-uujtrFJEQQqnIMO52ARwzPcuV4omiL1OJBUBLE9WnNFeu0A97sREXDOmCIHY+Z6KLVcemUf09rWr0q0Xy/Y/Ew==}
     engines: {node: '>=8.0.0'}
     dependencies:
       pure-rand: 5.0.1
@@ -8277,7 +8267,7 @@ packages:
     dev: false
 
   file:projects/commonlib.tgz_ts-node@10.8.0:
-    resolution: {integrity: sha512-zUxHh1GdOYqGGVqoqiPaCiOnb27IzLdPV0VqhKD4zSCL2cE9HNftZOlx4/J+yG46FYQpEtfbpPj6c5gH5IEI4Q==, tarball: file:projects/commonlib.tgz}
+    resolution: {integrity: sha512-iKhCm0hcUvEtavnRX1q5P+55XOZh6J8+tzg/UHKNwCVXvvUsuT+7ID0mXbKhV6556kv/zFQJvBQRmGddBhR/UA==, tarball: file:projects/commonlib.tgz}
     id: file:projects/commonlib.tgz
     name: '@rush-temp/commonlib'
     version: 0.0.0
@@ -8393,7 +8383,7 @@ packages:
     dev: false
 
   file:projects/services.tgz:
-    resolution: {integrity: sha512-I4zh78umsRHjATnSAe36FKnW194IeCarT7TykKjKChvBHMiTXFcRVtvfZiZxPqTfJa85rrFz2dHrDGKyUhxqrw==, tarball: file:projects/services.tgz}
+    resolution: {integrity: sha512-+kZVJQcdOM19WjrCaa0CzX4wXR8zJy2e+OQYx5sh0isjMtW5TK1ToXFkPBsms+c5uVZcMTfNOstaszBcgGJf+A==, tarball: file:projects/services.tgz}
     name: '@rush-temp/services'
     version: 0.0.0
     dependencies:
@@ -8419,7 +8409,7 @@ packages:
       chai: 4.3.6
       date-fns: 2.28.0
       eslint: 7.32.0
-      fast-check: 2.25.0
+      fast-check: 3.0.0
       fp-ts: 2.12.1
       fs-extra: 10.1.0
       jest: 28.1.0_a0a5d7e3b38ce2620b4f7d175638de89
@@ -8445,15 +8435,8 @@ packages:
       - '@swc/wasm'
       - bufferutil
       - debug
-      - encoding
-      - ibm_db
-      - mariadb
-      - mysql2
       - node-notifier
-      - pg-native
-      - snowflake-sdk
       - supports-color
-      - tedious
       - utf-8-validate
     dev: false
 

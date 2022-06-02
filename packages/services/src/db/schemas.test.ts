@@ -1,5 +1,5 @@
 import _ from 'lodash';
-import { isUrl, prettyPrint, putStrLn, setLogEnvLevel } from '@watr/commonlib';
+import { isUrl,  putStrLn, setLogEnvLevel } from '@watr/commonlib';
 import { connectToMongoDB } from './mongodb';
 import { createCollections } from './schemas';
 import { Mongoose } from 'mongoose';
@@ -57,7 +57,7 @@ describe('MongoDB Schemas', () => {
     );
   });
 
-  it.only('should create/find host status', async () => {
+  it('should create/find host status', async () => {
     await fc.assert(
       fc.asyncProperty(
         fc.string(), // noteId
@@ -80,8 +80,8 @@ describe('MongoDB Schemas', () => {
           expect(byId.validResponseUrl).toEqual(isUrl(response));
           expect(byId.responseHost !== undefined).toEqual(isUrl(response));
 
-          const lockedStatus = await upsertHostStatus(noteId, 'spider:locked', {});
-          prettyPrint({ byId, lockedStatus });
+          // const lockedStatus = await upsertHostStatus(noteId, 'spider:locked', {});
+          // prettyPrint({ byId, lockedStatus });
         }
       ),
       { verbose: true }

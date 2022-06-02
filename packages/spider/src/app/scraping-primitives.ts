@@ -68,6 +68,14 @@ export const urlFilter: (urlTest: RegExp) => FilterTransform<unknown> = (regex) 
   filter((a: string) => regex.test(a), `url ~= m/${regex.source}/`),
 );
 
+export const urlMatchAny: (urlTests: RegExp[]) => FilterTransform<unknown> = (urlTests) => {
+  const runTests = (url: string) => urlTests.some(regex => regex.test(url));
+  return compose(
+    through((_a, env) => env.initialUrl),
+    filter((a: string) => runTests(a), 'urlMatchAny'),
+  );
+}
+
 export const scrapeUrl: (pageOpts?: PageInstanceOptions) => Transform<URL, HTTPResponse> =
   (pageOpts = DefaultPageInstanceOptions) => through((url, env) => {
     const { browserInstance, log, browserPageCache, initialUrl } = env;

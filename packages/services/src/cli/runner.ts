@@ -17,8 +17,8 @@ export async function runCli() {
     .demandCommand(1, 'You need at least one command before moving on')
     .strict()
     .help()
-    .fail((err) => {
-      console.log('RunCLI Error', err);
+    .fail((msg, err, yargs) => {
+      // console.log('RunCLI Error (svc)', msg, err, yargs);
       arglib.YArgs.showHelp();
     })
     .argv;
