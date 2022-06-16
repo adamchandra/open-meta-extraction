@@ -48,9 +48,12 @@ Run 'rush' commands from project root
 
 *** Config file(s)
 Create at least one of the three config files:
+
+#+begin_example
 config-test.json: to run tests
 config-dev.json:  to run command line apps locally with a dev database instance
 config-prod.json: for pm2 production deployment
+#+end_example
 
 **** Format:
 
