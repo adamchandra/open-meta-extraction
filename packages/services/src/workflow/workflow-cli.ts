@@ -27,7 +27,7 @@ export function registerCLICommands(yargv: arglib.YArgsT) {
   registerCmd(
     yargv,
     'run-relay-fetch',
-    'Fetch OpenReview Notes into local DB for spidering/extraction',
+    'Fetch new OpenReview URLs into local DB for spidering/extraction',
     opt.num('offset', 0),
     opt.num('count', Number.MAX_SAFE_INTEGER),
   )(async (args: any) => {
@@ -45,7 +45,7 @@ export function registerCLICommands(yargv: arglib.YArgsT) {
   registerCmd(
     yargv,
     'run-relay-extract',
-    'Fetch OpenReview Notes into local DB for spidering/extraction',
+    'Spider new URLs, extract metadata, and POST results back to OpenReview API',
     opt.num('count', 0),
     opt.flag('post-results'),
   )(async (args: any) => {

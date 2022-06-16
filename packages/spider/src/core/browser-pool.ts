@@ -363,7 +363,12 @@ async function gotoUrlSimpleVersion(pageInstance: PageInstance, url: string): Pr
   const { waitUntil } = opts;
 
   return page.goto(url, { waitUntil })
-    .then(E.right)
+    .then(resp => {
+      if (resp===null) {
+        return E.left(`null HTTPResponse to ${url}`);
+      }
+      return E.right(resp);
+    })
     .catch((error: Error) => {
       return E.left(`${error.name}: ${error.message}`);
     })
