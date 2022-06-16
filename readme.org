@@ -22,29 +22,29 @@ results, that fact is returned along with the results.
 
 *** Requirements
 - node >= v16.15
-  I install via n (https://github.com/tj/n) or other node version management
+  - I install via n (https://github.com/tj/n) or other node version management
 - rush
-  > npm install -g @microsoft/rush
+  - > npm install -g @microsoft/rush
 - pm2
-  > npm install -g pm2
+  - > npm install -g pm2
 - Chrome dependencies (runs headless via puppeteer)
-  > sudo apt install libnss3-dev libatk1.0-0 libatk-bridge2.0-0 libcups2 libgbm1 libpangocairo-1.0-0 libgtk-3-0
+  - > sudo apt install libnss3-dev libatk1.0-0 libatk-bridge2.0-0 libcups2 libgbm1 libpangocairo-1.0-0 libgtk-3-0
 - HTML Tidy
-  > sudo apt install tidy
+  - > sudo apt install tidy
 - dotenv (optional, helps with development)
 - MongoDB, tested against v4.4.14
 
 *** Project install/update/building
 Run 'rush' commands from project root
 - Initial installation
-  > rush install
+  - > rush install
 - Update dependencies after version bump in package.json
-  > rush update
+  - > rush update
 - Build/Full rebuild
-  > rush build
-  > rush rebuild
+  - > rush build
+  - > rush rebuild
 - Run tests
-  > rush test
+  - > rush test
 
 *** Config file(s)
 Create at least one of the three config files:
@@ -53,6 +53,8 @@ config-dev.json:  to run command line apps locally with a dev database instance
 config-prod.json: for pm2 production deployment
 
 **** Format:
+
+#+begin_example
 {
     "openreview": {
         "restApi": "https://api.openreview.net",
@@ -64,11 +66,13 @@ config-prod.json: for pm2 production deployment
         "dbName": "meta-extract-(dev|prod|test)"
     }
 }
+#+end_example
 
 
 *** Running from command line
 All functionality is available from the command line via bin/cli in the root folder.
 
+#+begin_src
 > bin/cli --env dev
 run> node ./packages/services/dist/src/cli
 cli <command>
@@ -94,7 +98,10 @@ Options:
   --version  Show version number                                       [boolean]
   --help     Show help                                                 [boolean]
 
+#+end_src
 **** Examples
+
+#+begin_src
 Spider a URL and save results to local filesystem (delete any previously downloaded files via --clean)
 > ./bin/cli spider-url --corpus-root local.corpus.d --url 'https://doi.org/10.3389/fncom.2014.00139' --clean
 
@@ -113,10 +120,12 @@ Spider/extract any unprocessed URLs in mongo, optionally posting results back to
 Show extraction stats for dev database
 > ./bin/cli --env=dev extraction-summary
 
+#+end_src
 *** Running with PM2
 PM2 wrapper script will set *_ENV evironment variables, flush pm2 logs, then run
 pm2 with correct *.ecosystem.json and tail the logfiles.
 
+#+begin_src
 > bin/pm2-control
 PM2 Control
 Usage: bin/pm2-control [--(no-)verbose] [--(no-)dry-run] [--env <ENVMODE>] [--start] [--reset] [--restart] [-h|--help]
@@ -128,3 +137,4 @@ Usage: bin/pm2-control [--(no-)verbose] [--(no-)dry-run] [--env <ENVMODE>] [--st
 
 To restart the system with clean log files:
 > bin/pm2-control --env=prod --restart
+#+end_src
