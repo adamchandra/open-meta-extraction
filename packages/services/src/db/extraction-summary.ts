@@ -258,8 +258,6 @@ export async function showStatusSummary(): Promise<string[][]> {
 
   const hostStatusSummary: ExtractionStatusSummary = res[0];
 
-  prettyPrint({ res })
-
   const noteCount = noteStatusSummary.noteCount.length === 0 ? 0 : noteStatusSummary.noteCount[0].total;
 
   const updateByDayMessage: string[] = [

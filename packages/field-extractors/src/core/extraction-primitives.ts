@@ -16,6 +16,7 @@ import {
   runTidyCmdBuffered,
   runFileCmd,
   toUrl,
+  prettyPrint,
 } from '@watr/commonlib';
 
 import {
@@ -305,6 +306,15 @@ export const selectAllMetaEvidence: (name: string, attrName?: string) => Transfo
   );
 };
 
+export const selectXMLPath: (selectorPath: string[]) => Transform<CacheFileKey, unknown> = (selectorPath) => {
+  return compose(
+    loadTextFile,
+    through((a) => {
+      const selected = _.get(a, selectorPath);
+      return E.right(selected);
+    }),
+  );
+};
 
 export const selectXMLTag: (selectorPath: string[]) => Transform<CacheFileKey, unknown> = (selectorPath) => {
   const sel = selectorPath.join('.');
@@ -312,7 +322,9 @@ export const selectXMLTag: (selectorPath: string[]) => Transform<CacheFileKey, u
   return compose(
     loadTextFile,
     through((a) => {
+      // prettyPrint({ a, selectorPath })
       const selected = _.get(a, selectorPath);
+      // prettyPrint({ selected })
       const selstr = selected.toString();
       return E.right(selstr);
     }),

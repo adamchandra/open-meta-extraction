@@ -5,10 +5,14 @@
  * and to avoid overly long files
  **/
 
+import _ from 'lodash';
+import * as E from 'fp-ts/Either';
+
 import {
   collectFanout,
   ExtractionRule,
   compose,
+  through
 } from '~/predef/extraction-prelude';
 
 import {
@@ -19,8 +23,10 @@ import {
   urlFilter,
   selectAllElemAttrEvidence,
   selectXMLTag,
+  selectXMLPath,
   forXMLInputs,
   withResponsePage,
+  saveEvidence
 } from '~/core/extraction-primitives';
 
 import {
@@ -29,16 +35,31 @@ import {
   gatherOpenGraphTags,
 } from './headtag-scripts';
 
+// <link title="pdf" href="http://arxiv.org/pdf/2207.11596v1" rel="related" type="application/pdf"/>
 export const arxivOrgRule: ExtractionRule = compose(
   urlFilter(/export.arxiv.org/),
   forXMLInputs(/response-body/, compose(
     collectFanout(
       selectXMLTag(['feed', 'entry', '0', 'summary']),
       selectXMLTag(['feed', 'entry', '0', 'title']),
+      compose(
+        selectXMLPath(['feed', 'entry', '0', 'link']),
+        through((linkArray: unknown) => {
+          const links: any[] = linkArray as any;
+          const pdfLinks = _.filter(links, l => l['$']['type'] === 'application/pdf');
+          if (pdfLinks.length > 0) {
+            const pdfLink = pdfLinks[0]['$']['href'];
+            return E.right(pdfLink)
+          }
+          return E.left('pdf link not found')
+        }),
+        saveEvidence('xml:feed.entry[0].link[]'),
+      ),
     ),
     validateEvidence({
       'feed.entry.0.summary': 'abstract',
       'feed.entry.0.title': 'title',
+      'link': 'pdf-link',
     }),
   )),
 );
