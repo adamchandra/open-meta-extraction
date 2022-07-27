@@ -154,9 +154,11 @@ async function _processNoteBatch(notes: Note[], stopOnExistingNote: boolean): Pr
     }
 
     const abs = note.content.abstract;
+    const pdfLink = note.content.pdf;
     const hasAbstract = typeof abs === 'string';
-    const status: WorkflowStatus = hasAbstract ? 'extractor:success' : 'available';
-    await upsertHostStatus(note.id, status, { hasAbstract, requestUrl });
+    const hasPdfLink = typeof pdfLink === 'string';
+    const status: WorkflowStatus = hasAbstract && hasPdfLink ? 'extractor:success' : 'available';
+    await upsertHostStatus(note.id, status, { hasAbstract, hasPdfLink, requestUrl });
   });
 
   return numProcessed;
@@ -251,6 +253,7 @@ export async function runRelayExtract({ count, postResultsToOpenReview }: RunRel
 
       await upsertHostStatus(noteId, 'extractor:success', {
         hasAbstract,
+        hasPdfLink,
         httpStatus,
         response: responseUrl
       });

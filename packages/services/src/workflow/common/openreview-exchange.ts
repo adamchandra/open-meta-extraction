@@ -27,6 +27,7 @@ export interface Credentials {
 
 export interface NoteContent {
   'abstract'?: string;
+  pdf?: string;
   html?: string; // this is a URL
   venueid: string;
   title: string;
