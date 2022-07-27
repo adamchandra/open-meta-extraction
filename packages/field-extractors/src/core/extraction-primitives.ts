@@ -11,11 +11,11 @@ import {
   ArtifactSubdir,
   expandDir,
   readCorpusTextFile,
-  setLogLabel,
   writeCorpusTextFile,
   diffByChars,
   runTidyCmdBuffered,
   runFileCmd,
+  toUrl,
 } from '@watr/commonlib';
 
 import {
@@ -62,7 +62,6 @@ import {
 } from './data-cleaning';
 import { joinLines, loadTextFile } from './text-primitives';
 import { SpiderEnv, UrlFetchData } from '@watr/spider';
-
 
 
 
@@ -385,6 +384,21 @@ export const forInputs: (re: RegExp, transform: Transform<CacheFileKey, unknown>
 export const withResponsePage: (transform: Transform<BrowserPage, unknown>) => Transform<unknown, unknown> =
   transform => forInputs(/response-body/, compose(loadBrowserPage(), transform));
 
+function validateAndCleanAbstract(field: FieldRecord): void {
+  const [cleaned0, cleaningRuleResults] = applyCleaningRules(AbstractCleaningRules, field.value);
+  field.value = cleaned0;
+  const ruleNames = _.map(cleaningRuleResults, r => {
+    return `clean: ${r.rule}`;
+  });
+  field.evidence.push(...ruleNames);
+
+}
+
+function validateAndCleanPdfLinks(field: FieldRecord, pageUrl: string): void {
+  const maybeUrl = toUrl(field.value, pageUrl)
+  field.value = typeof maybeUrl === 'string'? '' : maybeUrl.toString();
+}
+
 export const validateEvidence: (mapping: Record<string, string>) => Transform<unknown, unknown> =
   (mapping) => {
     const evidenceKeys = _.keys(mapping);
@@ -395,6 +409,7 @@ export const validateEvidence: (mapping: Record<string, string>) => Transform<un
     return compose(
       takeWhileSuccess(...filters),
       tap((_a, env) => {
+        const url = env.urlFetchData.responseUrl;
 
         _.each(evidenceKeys, evKey0 => {
           const fieldName = mapping[evKey0];
@@ -415,14 +430,10 @@ export const validateEvidence: (mapping: Record<string, string>) => Transform<un
                 value: text
               };
 
-              if (fieldName === 'abstract:raw') {
-                const [cleaned0, cleaningRuleResults] = applyCleaningRules(AbstractCleaningRules, text);
-                field.name = 'abstract';
-                field.value = cleaned0;
-                const ruleNames = _.map(cleaningRuleResults, r => {
-                  return `clean: ${r.rule}`;
-                });
-                field.evidence.push(...ruleNames);
+              if (fieldName === 'abstract') {
+                validateAndCleanAbstract(field);
+              } else if (fieldName.startsWith('pdf-')) {
+                validateAndCleanPdfLinks(field, url);
               }
               if (field.value !== undefined && field.value.length > 0) {
                 env.fields.push(field);

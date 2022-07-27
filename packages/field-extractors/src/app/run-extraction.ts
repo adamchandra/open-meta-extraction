@@ -95,12 +95,6 @@ export async function spiderAndExtractFields(
 
   await SpiderAndExtractionTransform(TE.right([url, spiderEnv]))();
   await browserPool.clearCache();
-
-  //   if (E.isRight(res)) {
-  //     writeExtractionRecords(env, ['Extraction Success']);
-  //   } else {
-  //     writeExtractionRecords(env, ['Extraction Failure', `${ci}`]);
-
 }
 
 export function getEnvCanonicalFields(env: ExtractionEnv): CanonicalFieldRecords {

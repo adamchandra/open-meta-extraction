@@ -89,7 +89,7 @@ export async function getNextSpiderableUrl(): Promise<HostStatusDocument | undef
 }
 
 export async function releaseSpiderableUrl(hostStatus: HostStatusDocument, newStatus: WorkflowStatus): Promise<HostStatusDocument> {
-  hostStatus.workflowStatus = newStatus;
+ hostStatus.workflowStatus = newStatus;
   return hostStatus.save();
 }
 

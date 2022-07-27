@@ -3,6 +3,7 @@ import {
   ExtractionRule,
   collectFanout,
   compose,
+  through,
 } from '~/predef/extraction-prelude';
 
 import {
@@ -93,7 +94,7 @@ const selectIscaSpeechAuthors: Transform<Elem, void> = compose(
 const selectIscaSpeechPDFLink: Transform<Elem, void> = compose(
   elemQueryOne('a'),
   getElemAttr('href'),
-  saveEvidence('isca.pdf-partial-link'),
+  saveEvidence('pdf-link'),
 );
 
 export const iscaSpeechOrgRule: ExtractionRule = compose(
@@ -123,13 +124,18 @@ const narrowToCol2TD: (re: RegExp) => Transform<string[], string[]> = (re) => co
   multiGrepTakeUntil([/<\/t[dh]>/], false),
 );
 
-const removeHtmlTags: Transform<string[], string[]> = compose(
-  grepFilterNot(/^[ ]+<.*>[ ]*$/),
-);
+const removeHtmlTags: Transform<string[], string[]> =
+  grepFilterNot(/^[ ]+<.*>[ ]*$/);
 
-const retainAnchorTag: Transform<string[], string[]> = compose(
-  grepFilter(/^[ ]+<a href=.*>[ ]*$/),
-);
+const retainAnchorTag: Transform<string[], string[]> =
+  grepFilter(/^[ ]+<a href=.*>[ ]*$/);
+
+const getAnchorHref: Transform<string, string> =
+  through((anchorTag) => {
+    return anchorTag
+      .replace(/^.*href="/, '')
+      .replace(/".*$/, '')
+  });
 
 export const lrecConfOrg: ExtractionRule = compose(
   urlFilter(/lrec-conf.org/),
@@ -159,14 +165,15 @@ export const lrecConfOrg: ExtractionRule = compose(
         narrowToCol2TD(/Full Paper/i),
         retainAnchorTag,
         joinLines(' '),
-        saveEvidence('pdf-block'),
+        getAnchorHref,
+        saveEvidence('pdf-link'),
       ),
     ),
     validateEvidence({
       'abstract': 'abstract',
       'title': 'title',
       'authors-block': 'authors-block',
-      'pdf-block?': 'pdf-block',
+      'pdf-link?': 'pdf-link',
     }),
   )),
 );
@@ -201,9 +208,9 @@ export const cogsciMindmodelingOrg: ExtractionRule = compose(
       compose(loadTextFile, selectCogsciMindmodelingAbstract)
     ),
     validateEvidence({
-      '#abstract?': 'abstract:raw',
-      '.subAbstract?': 'abstract:raw',
-      'grepped.abstract?': 'abstract:raw',
+      '#abstract?': 'abstract',
+      '.subAbstract?': 'abstract',
+      'grepped.abstract?': 'abstract',
     }),
   ))
 );

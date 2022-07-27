@@ -33,6 +33,5 @@ export const FieldExtractionAttempts: Transform<unknown, unknown> = compose(
 export const SpiderAndExtractionTransform = compose(
   SpideringPipeline,
   SpiderToExtractionEnv,
-  tapLeft((_ci, env) => env.log.info("LEFT: post-transform")),
   FieldExtractionAttempts
 )

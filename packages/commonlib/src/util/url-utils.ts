@@ -1,6 +1,6 @@
 import * as E from 'fp-ts/Either';
 
-export function toUrl(instr: unknown): URL | string {
+export function toUrl(instr: unknown, baseUrl: string|URL|undefined = undefined): URL | string {
   if (typeof instr !== 'string') {
     return 'toURL error: input must be string';
   }
@@ -10,7 +10,7 @@ export function toUrl(instr: unknown): URL | string {
   }
 
   try {
-    return new URL(str); // eslint-disable-line no-new
+    return new URL(str, baseUrl); // eslint-disable-line no-new
   } catch (error) {
     return `toURL error: new URL() threw ${error}`;
   }

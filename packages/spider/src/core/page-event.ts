@@ -1,4 +1,4 @@
-import { prettyFormat, prettyPrint, putStrLn } from '@watr/commonlib';
+import { putStrLn } from '@watr/commonlib';
 import _ from 'lodash';
 
 import {
@@ -191,7 +191,10 @@ export function logPageEvents(pageInstance: PageInstance, logger: Logger) {
         case 'request': {
           const data: HTTPRequest = _data;
           const resType = data.resourceType();
-          const reqId = data._requestId;
+          // NB: _requestId was taken out of typescript type defs, but still
+          // exists in js def This use of internal data should be changed in the
+          // future to preserve compatibility with puppeteer
+          const reqId: string = (data as any)._requestId;
           const url = data.url();
           const currBlocked = currentlyBlockedResources(pageInstance);
           const clippedUrl = url.replace(/\?.*$/, '?...');
@@ -205,13 +208,19 @@ export function logPageEvents(pageInstance: PageInstance, logger: Logger) {
         }
         case 'requestfailed': {
           const data: HTTPRequest = _data;
-          const reqId = data._requestId;
+          // NB: _requestId was taken out of typescript type defs, but still
+          // exists in js def This use of internal data should be changed in the
+          // future to preserve compatibility with puppeteer
+          const reqId: string = (data as any)._requestId;
           updateEventMap(reqId, e, e);
           break;
         }
         case 'requestfinished': {
           const data: HTTPRequest = _data;
-          const reqId = data._requestId;
+          // NB: _requestId was taken out of typescript type defs, but still
+          // exists in js def This use of internal data should be changed in the
+          // future to preserve compatibility with puppeteer
+          const reqId: string = (data as any)._requestId;
           updateEventMap(reqId, e, e);
           break;
         }
@@ -227,7 +236,10 @@ export function logPageEvents(pageInstance: PageInstance, logger: Logger) {
             //   putStrLn(body)
             // })
           }
-          const reqId = data.request()._requestId;
+          // NB: _requestId was taken out of typescript type defs, but still
+          // exists in js def This use of internal data should be changed in the
+          // future to preserve compatibility with puppeteer
+          const reqId: string = (data as any)._requestId;
           updateEventMap(reqId, e, e);
           break;
         }

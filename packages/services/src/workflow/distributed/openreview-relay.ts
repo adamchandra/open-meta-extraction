@@ -13,7 +13,7 @@ import {
   asyncForever
 } from '@watr/commonlib';
 
-import { getEnvCanonicalFields,  SpiderAndExtractionTransform } from '@watr/field-extractors';
+import { CanonicalFieldRecords, getEnvCanonicalFields, SpiderAndExtractionTransform } from '@watr/field-extractors';
 
 import { createBrowserPool, createSpiderEnv } from '@watr/spider';
 import { displayRestError, newOpenReviewExchange, Note, Notes, OpenReviewExchange } from '../common/openreview-exchange';
@@ -23,13 +23,26 @@ import { findNoteStatusById, getNextSpiderableUrl, releaseSpiderableUrl, resetUr
 
 const log = getServiceLogger('OpenReviewRelay');
 
-async function doUpdateNote(openReviewExchange: OpenReviewExchange, noteId: string, abs: string): Promise<void> {
+const UpdateInvitations = {
+  abstract: 'dblp.org/-/abstract',
+  pdf: 'dblp.org/-/pdf',
+};
+
+type UpdatableField = keyof typeof UpdateInvitations;
+
+async function doUpdateNoteField(
+  openReviewExchange: OpenReviewExchange,
+  noteId: string,
+  fieldName: UpdatableField,
+  fieldValue: string
+): Promise<void> {
+  const content: Record<string, string> = {};
+  content[fieldName] = fieldValue;
+  const invitation = UpdateInvitations[fieldName];
   const noteUpdate = {
     referent: noteId,
-    content: {
-      'abstract': abs
-    },
-    invitation: 'dblp.org/-/abstract',
+    content,
+    invitation,
     readers: ['everyone'],
     writers: [],
     signatures: ['dblp.org']
@@ -40,7 +53,7 @@ async function doUpdateNote(openReviewExchange: OpenReviewExchange, noteId: stri
     .post('/notes', noteUpdate)
     .then(r => {
       const updatedNote: Note = r.data;
-      log.info(`updated Note ${noteId}; updateId: ${updatedNote.id}`);
+      log.info(`updated Note.${fieldName} ${noteId}; updateId: ${updatedNote.id}`);
     })
     .catch(error => {
       displayRestError(error);
@@ -220,20 +233,18 @@ export async function runRelayExtract({ count, postResultsToOpenReview }: RunRel
 
       prettyPrint({ canonicalFields });
 
-      const abstracts = _.filter(canonicalFields.fields, (field) => field.name === 'abstract');
-      const clippedAbstracts = _.filter(canonicalFields.fields, (field) => field.name === 'abstract-clipped');
-      let theAbstract: string | undefined;
-      if (abstracts.length > 0) {
-        theAbstract = abstracts[0].value;
-      } else if (clippedAbstracts.length > 0) {
-        theAbstract = clippedAbstracts[0].value;
-      }
-
+      const theAbstract = getCanonicalAbstract(canonicalFields);
       const hasAbstract = theAbstract !== undefined;
+      const pdfLink = getCanonicalPdfLink(canonicalFields);
+      const hasPdfLink = pdfLink !== undefined;
+
 
       if (postResultsToOpenReview) {
-        if (theAbstract !== undefined) {
-          await doUpdateNote(openReviewExchange, noteId, theAbstract);
+        if (hasAbstract) {
+          await doUpdateNoteField(openReviewExchange, noteId, 'abstract', theAbstract);
+        }
+        if (hasPdfLink) {
+          await doUpdateNoteField(openReviewExchange, noteId, 'pdf', pdfLink);
         }
       }
 
@@ -248,4 +259,24 @@ export async function runRelayExtract({ count, postResultsToOpenReview }: RunRel
   ).finally(() => {
     return browserPool.shutdown();
   });
+}
+
+function getCanonicalAbstract(canonicalFields: CanonicalFieldRecords): string | undefined {
+  const abstracts = _.filter(canonicalFields.fields, (field) => field.name === 'abstract');
+  const clippedAbstracts = _.filter(canonicalFields.fields, (field) => field.name === 'abstract-clipped');
+  let theAbstract: string | undefined;
+  if (abstracts.length > 0) {
+    theAbstract = abstracts[0].value;
+  } else if (clippedAbstracts.length > 0) {
+    theAbstract = clippedAbstracts[0].value;
+  }
+
+  return theAbstract;
+}
+
+function getCanonicalPdfLink(canonicalFields: CanonicalFieldRecords): string | undefined {
+  const pdfLinks = _.filter(canonicalFields.fields, (field) => field.name === 'pdf-link');
+  if (pdfLinks.length > 0) {
+    return pdfLinks[0].value;
+  }
 }

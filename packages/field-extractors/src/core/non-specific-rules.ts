@@ -43,7 +43,7 @@ export const GeneralExtractionAttempts = compose(
       'citation_title|DC.Title': 'title',
       'citation_author|DC.Creator': 'author',
       'citation_pdf_url?': 'pdf-link',
-      '\\.abstractInFull|\\.abstract|#abstract': 'abstract:raw',
+      '\\.abstractInFull|\\.abstract|#abstract': 'abstract',
     }),
     validateEvidence({
       'og:title': 'title',

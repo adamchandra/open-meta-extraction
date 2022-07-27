@@ -172,19 +172,21 @@ const readGlobalDocumentMetadata: Transform<CacheFileKey, GlobalDocumentMetadata
   }, 'readGlobalMetadata'));
 
 
-const saveDocumentMetaDataEvidence: (name: string, f: (m: GlobalDocumentMetadata) => string[]) => Transform<GlobalDocumentMetadata, unknown> = (name, f) => compose(
-  through((documentMetadata) => f(documentMetadata), `saveMetaEvidence(${name})`),
-  forEachDo(
-    saveEvidence(name),
-  ),
-);
+const saveDocumentMetaDataEvidence: (name: string, f: (m: GlobalDocumentMetadata) => string[]) =>
+  Transform<GlobalDocumentMetadata, unknown> = (name, f) =>
+    compose(
+      through((documentMetadata) => f(documentMetadata), `saveMetaEvidence(${name})`),
+      forEachDo(
+        saveEvidence(name),
+      ),
+    );
 
 const selectGlobalDocumentMetaEvidence: () => Transform<CacheFileKey, unknown> = () => compose(
   readGlobalDocumentMetadata,
   collectFanout(
     saveDocumentMetaDataEvidence('metadata:title', m => m.title ? [m.title] : []),
     saveDocumentMetaDataEvidence('metadata:abstract', m => m.abstract ? [m.abstract] : []),
-    saveDocumentMetaDataEvidence('metadata:pdf-path', m => m.pdfPath ? [m.pdfPath] : []),
+    saveDocumentMetaDataEvidence('metadata:pdf-link', m => m.pdfPath ? [m.pdfPath] : []),
     saveDocumentMetaDataEvidence('metadata:author', m => m.authors && _.isArray(m.authors) ? m.authors.map(a => a.name) : []),
   )
 );
@@ -198,7 +200,7 @@ export const ieeExploreOrgRule: ExtractionRule = compose(
       'metadata:title': 'title',
       'metadata:abstract': 'abstract',
       'metadata:author?': 'author',
-      'metadata:pdf-path?': 'pdf-path',
+      'metadata:pdf-link?': 'pdf-link',
     }),
   )),
 );

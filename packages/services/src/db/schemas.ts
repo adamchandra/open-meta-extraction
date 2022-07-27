@@ -59,6 +59,7 @@ export function isWorkflowStatus(s: unknown): s is WorkflowStatus {
 export interface HostStatus {
   _id: string;
   hasAbstract: boolean;
+  // hasPdfLink: boolean;
   validResponseUrl: boolean
 
   requestUrl: string;
@@ -70,7 +71,11 @@ export interface HostStatus {
   updatedAt: Date;
 }
 
-export type HostStatusUpdateFields = Partial<Pick<HostStatus, 'hasAbstract' | 'response' | 'requestUrl' | 'httpStatus'>>;
+export type HostStatusUpdateFields = Partial<
+  Pick<
+    HostStatus,
+    'hasAbstract' |  'response' | 'requestUrl' | 'httpStatus' // | 'hasPdfLink'
+  >>;
 
 function NonNullable(v: unknown): boolean {
   return v !== null;
@@ -80,6 +85,7 @@ function NonNullable(v: unknown): boolean {
 export const HostStatusSchema = new Schema<HostStatus>({
   _id: { type: String },
   hasAbstract: { type: Boolean, required: true },
+  // hasPdfLink: { type: Boolean, required: true },
   requestUrl: { type: String, required: true, index: true, validate: isUrl },
   validResponseUrl: { type: Boolean, required: false, validate: NonNullable },
   response: { type: String, required: false, },

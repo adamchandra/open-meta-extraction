@@ -47,7 +47,7 @@ Run 'rush' commands from project root
   - > rush test
 
 *** Config file(s)
-Create at least one of the three config files:
+Create at least one of the three config files in project root (or in an ancestor directory):
 
 #+begin_example
 config-test.json: to run tests

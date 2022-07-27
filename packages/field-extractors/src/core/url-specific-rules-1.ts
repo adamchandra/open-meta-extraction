@@ -56,9 +56,9 @@ export const scienceDirectRule: ExtractionRule = compose(
     validateEvidence({
       citation_title: 'title',
       'og:description': 'abstract-clipped', // TODO fix/figure out naming scheme
-      '.Abstracts': 'abstract:raw',
+      '.Abstracts': 'abstract',
       'a.author': 'author',
-      'div.PdfEmbed?': 'pdf-path',
+      'div.PdfEmbed?': 'pdf-link',
     }),
   )),
 );
@@ -79,7 +79,7 @@ export const dlAcmOrgRule: ExtractionRule = compose(
       'citation__title?': 'title',
       abstractInFull: 'abstract',
       'DC.Creator?': 'author',
-      'PDF?': 'pdf-path',
+      'PDF?': 'pdf-link',
     }),
   )),
 );
@@ -95,7 +95,7 @@ export const aclwebOrgRule: ExtractionRule = compose(
       citation_title: 'title',
       citation_author: 'author',
       citation_pdf_url: 'pdf-link',
-      '.acl-abstract': 'abstract:raw',
+      '.acl-abstract': 'abstract',
     }),
   )),
 );
@@ -126,7 +126,7 @@ export const mitpressjournalsOrgRule: ExtractionRule = compose(
     validateEvidence({
       'DC.Title': 'title',
       'DC.Creator': 'author',
-      abstractInFull: 'abstract:raw',
+      abstractInFull: 'abstract',
       'show-pdf': 'pdf-link',
     }),
   )),
@@ -142,7 +142,7 @@ export const academicOupComRule: ExtractionRule = compose(
       citation_title: 'title',
       citation_author: 'author',
       citation_pdf_url: 'pdf-link',
-      abstract: 'abstract:raw',
+      abstract: 'abstract',
     }),
   )),
 );
@@ -189,7 +189,7 @@ export const digitalHumanitiesOrg: ExtractionRule = compose(
       selectEachElemTextEvidence('.author'),
     ),
     validateEvidence({
-      '#abstract': 'abstract:raw',
+      '#abstract': 'abstract',
       '.articleTitle': 'title',
       '.author': 'author',
     }),
@@ -205,7 +205,7 @@ export const kybernetikaCz: ExtractionRule = compose(
       selectEachElemTextEvidence('.authors a'),
     ),
     validateEvidence({
-      '.abstract': 'abstract:raw',
+      '.abstract': 'abstract',
       '.ar_title': 'title',
       '.authors a': 'author',
     }),
