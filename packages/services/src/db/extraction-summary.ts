@@ -2,6 +2,7 @@ import { HostStatus, NoteStatus } from './schemas';
 import _ from 'lodash';
 
 import { subDays } from 'date-fns';
+import { prettyPrint } from '@watr/commonlib';
 
 interface BoolIDCounts {
   _id: boolean;
@@ -29,6 +30,7 @@ interface ExtractionStatusSummary {
   updateByDay: StrIDCounts[];
   workflowStatus: StrIDCounts[];
   totalWithAbstracts: BoolIDCounts[];
+  totalWithPdfLinks: BoolIDCounts[];
   withAbstractsByDomain: StrIDCounts[];
   withHttpStatusByDomain: StrIDCounts[];
 }
@@ -171,6 +173,14 @@ export async function showStatusSummary(): Promise<string[][]> {
       },
     }
   };
+  const groupByHavePdfLinks = {
+    $group: {
+      _id: '$hasPdfLink',
+      count: {
+        $sum: 1
+      },
+    }
+  };
 
   const groupByHaveUrl = {
     $group: {
@@ -239,6 +249,7 @@ export async function showStatusSummary(): Promise<string[][]> {
       noteCount: [count],
       updateByDay: [selectOneWeek, groupByUpdateDay, { $sort: { _id: 1 } }],
       totalWithAbstracts: [groupByHaveAbs],
+      totalWithPdfLinks: [groupByHavePdfLinks],
       workflowStatus: [groupByWorkflowStatus],
       withAbstractsByDomain: [selectValidResponse, groupByDomainHasAbstract, { $sort: { _id: 1 } }],
       withHttpStatusByDomain: [selectValidResponse, groupByDomainHttpStatus, { $sort: { _id: 1 } }],
@@ -247,7 +258,7 @@ export async function showStatusSummary(): Promise<string[][]> {
 
   const hostStatusSummary: ExtractionStatusSummary = res[0];
 
-  // prettyPrint({ res })
+  prettyPrint({ res })
 
   const noteCount = noteStatusSummary.noteCount.length === 0 ? 0 : noteStatusSummary.noteCount[0].total;
 
@@ -261,6 +272,9 @@ export async function showStatusSummary(): Promise<string[][]> {
 
   const totalWithAbstractsMessage: string[] = _.flatMap(hostStatusSummary.totalWithAbstracts, ({ _id, count }) => {
     return _id ? [`Notes With Abstracts: ${count}`] : [];
+  });
+  const totalWithPdfLinkMessage: string[] = _.flatMap(hostStatusSummary.totalWithPdfLinks, ({ _id, count }) => {
+    return _id ? [`Notes With PDF Links: ${count}`] : [`Notes Without PDF Links: ${count}`] ;
   });
 
   const totalWithUrlsMessage = _.flatMap(noteStatusSummary.totalWithUrls, ({ _id, count }) => {
@@ -282,6 +296,7 @@ export async function showStatusSummary(): Promise<string[][]> {
     [`Recorded Note Count: ${noteCount}`,],
     totalWithUrlsMessage,
     totalWithAbstractsMessage,
+    totalWithPdfLinkMessage,
     updateByDayMessage,
     absByDomainMessages,
     httpStatusByDomainMessages,

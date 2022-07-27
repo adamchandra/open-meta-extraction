@@ -42,7 +42,9 @@
     "bree": "~9.1.1",
     "@ladjs/graceful": "~3.0.2",
     "date-fns": "~2.29.1",
-    "fast-check": "~3.1.1"
+    "fast-check": "~3.1.1",
+    "migrate-mongo": "~9.0.0",
+    "@types/migrate-mongo": "~8.2.0"
   },
   "devDependencies": {
     "@watr/root": "0.1.0",

@@ -19,7 +19,7 @@ import { createBrowserPool, createSpiderEnv } from '@watr/spider';
 import { displayRestError, newOpenReviewExchange, Note, Notes, OpenReviewExchange } from '../common/openreview-exchange';
 
 import { WorkflowStatus } from '~/db/schemas';
-import { findNoteStatusById, getNextSpiderableUrl, releaseSpiderableUrl, resetUrlsWithoutAbstracts, upsertHostStatus, upsertNoteStatus } from '~/db/query-api';
+import { findNoteStatusById, getNextSpiderableUrl, releaseSpiderableUrl, resetUrlsWithMissingFields, upsertHostStatus, upsertNoteStatus } from '~/db/query-api';
 
 const log = getServiceLogger('OpenReviewRelay');
 
@@ -54,6 +54,7 @@ async function doUpdateNoteField(
     .then(r => {
       const updatedNote: Note = r.data;
       log.info(`updated Note.${fieldName} ${noteId}; updateId: ${updatedNote.id}`);
+      log.info(`      = '${fieldValue.slice(0, 75)} ...'`);
     })
     .catch(error => {
       displayRestError(error);
@@ -204,7 +205,7 @@ export async function runRelayExtract({ count, postResultsToOpenReview }: RunRel
 
       if (nextSpiderable === undefined) {
         log.info('runRelayExtract(): no more spiderable urls in mongo');
-        await resetUrlsWithoutAbstracts();
+        await resetUrlsWithMissingFields();
         return;
       }
 
