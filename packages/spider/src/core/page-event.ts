@@ -285,6 +285,7 @@ export function interceptRequestCycle(pageInstance: PageInstance, logger: Logger
 
           if (isRewritable) {
             logger.debug(`Aborting rewritable url ${url}`);
+            // request.respond
             request.abort('blockedbyclient');
             break;
           }

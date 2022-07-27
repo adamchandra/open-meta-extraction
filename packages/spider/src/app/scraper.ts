@@ -33,6 +33,7 @@ export async function gotoUrlWithRewrites(
   if (E.isLeft(response)) {
     const error = response.left;
     logger.debug(`Attempting Rewrite for ${error}`);
+    logger.debug(` Rewrite url ${url}`);
     const msg = error;
     const maybeRewrite = _.map(urlRewrites, (rule) => {
       if (rule.regex.test(msg)) {

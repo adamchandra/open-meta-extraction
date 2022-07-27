@@ -70,5 +70,15 @@ export const RewritableUrls: RewritableUrl[] = [
       const arxivId = matches[1];
       return `http://export.arxiv.org/api/query?id_list=${arxivId}`;
     }
+  },
+  {
+    regex: new RegExp('/doi.org/.+/arXiv'),
+    rewrite(srcUrl: string): string | undefined {
+      const re = new RegExp('arXiv\.(.*)$');
+      const matches = srcUrl.match(re);
+      if (matches === null || matches.length < 2) return;
+      const arxivId = matches[1];
+      return `http://export.arxiv.org/api/query?id_list=${arxivId}`;
+    }
   }
 ];
