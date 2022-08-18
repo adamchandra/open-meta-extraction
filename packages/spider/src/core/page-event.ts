@@ -1,4 +1,4 @@
-import { putStrLn } from '@watr/commonlib';
+import { prettyPrint, putStrLn } from '@watr/commonlib';
 import _ from 'lodash';
 
 import {
@@ -59,7 +59,6 @@ export function logBrowserEvent(browserInstance: BrowserInstance, logger: Logger
   const bproc = browser.process();
   const pid = bproc?.pid;
   if (bproc === null || pid === undefined) {
-    // prettyPrint({ bproc, pid })
     logger.error('logBrowserEvents(): browser.process().pid is undefined');
     return;
   }
@@ -89,15 +88,17 @@ function _updateMap<K, V>(
   return defaultVal;
 }
 
-export function logPageEvents(pageInstance: PageInstance, logger: Logger) {
+export function interceptPageEvents(pageInstance: PageInstance, logger: Logger) {
   const { page } = pageInstance;
+  logger.debug('interceptPageEvents():begin');
 
   const bproc = page.browser().process();
   const pid = bproc?.pid;
   if (bproc === null || pid === undefined) {
-    logger.error('logPageEvents(): browser.process().pid is undefined');
+    logger.error('interceptPageEvents(): browser.process().pid is undefined');
     return;
   }
+
   const eventMap = new Map<string, string[]>();
   const msgMap = new Map<string, string[]>();
 
@@ -191,6 +192,7 @@ export function logPageEvents(pageInstance: PageInstance, logger: Logger) {
         case 'request': {
           const data: HTTPRequest = _data;
           const resType = data.resourceType();
+          // prettyPrint({ msg: 'request intercept', request: data })
           // NB: _requestId was taken out of typescript type defs, but still
           // exists in js def This use of internal data should be changed in the
           // future to preserve compatibility with puppeteer
@@ -227,19 +229,16 @@ export function logPageEvents(pageInstance: PageInstance, logger: Logger) {
         case 'response': {
           const data: HTTPResponse = _data;
           const request = data.request();
+          // prettyPrint({ msg: 'response intercept', request, response: data })
           const url = request.url();
           const resType = request.resourceType();
-          if (resType === 'document') {
-            putStrLn(`Document resource url ${url}`)
-            // const bodyP = data.buffer().then(body => body.toString());
-            // bodyP.then(body => {
-            //   putStrLn(body)
-            // })
-          }
           // NB: _requestId was taken out of typescript type defs, but still
           // exists in js def This use of internal data should be changed in the
           // future to preserve compatibility with puppeteer
-          const reqId: string = (data as any)._requestId;
+          const reqId: string = (request as any)._requestId;
+          if (resType === 'document') {
+            putStrLn(`Document (request id: ${reqId}) resource url ${url}`)
+          }
           updateEventMap(reqId, e, e);
           break;
         }
@@ -285,7 +284,7 @@ export function interceptRequestCycle(pageInstance: PageInstance, logger: Logger
 
           if (isRewritable) {
             logger.debug(`Aborting rewritable url ${url}`);
-            // request.respond
+            request.respond
             request.abort('blockedbyclient');
             break;
           }

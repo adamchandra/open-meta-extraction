@@ -34,24 +34,10 @@ export const GeneralExtractionAttempts = compose(
   clearEvidence(/^url:/),
   attemptEach(
     validateEvidence({
-      citation_title: 'title',
-      citation_author: 'author',
-      citation_pdf_url: 'pdf-link',
-      'DC.Description|og:description': 'abstract',
-    }),
-    validateEvidence({
-      'citation_title|DC.Title': 'title',
-      'citation_author|DC.Creator': 'author',
-      'citation_pdf_url?': 'pdf-link',
-      '\\.abstractInFull|\\.abstract|#abstract': 'abstract',
-    }),
-    validateEvidence({
-      'og:title': 'title',
-      'og:description': 'abstract',
-    }),
-    validateEvidence({
-      'DC.Title': 'title',
-      'DC.Description': 'abstract',
+      'title': 'title',
+      'description|abstract': 'abstract',
+      'author|creator?': 'author',
+      'pdf?': 'pdf-link',
     }),
   )
 );

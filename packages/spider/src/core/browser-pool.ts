@@ -14,7 +14,7 @@ import { asyncEach, getServiceLogger, prettyPrint } from '@watr/commonlib';
 import {
   Browser, Page,
 } from 'puppeteer';
-import { interceptRequestCycle, logBrowserEvent, logPageEvents } from './page-event';
+import { interceptRequestCycle, logBrowserEvent, interceptPageEvents } from './page-event';
 
 import { launchBrowser } from './puppet';
 import { BlockableResource, RewritableUrl, RewritableUrls } from './resource-blocking';
@@ -156,7 +156,7 @@ export function createBrowserPool(logPrefix?: string): BrowserPool {
                 return gotoUrlSimpleVersion(this, url);
               }
             };
-            logPageEvents(pageInstance, log);
+            interceptPageEvents(pageInstance, log);
             interceptRequestCycle(pageInstance, log);
             return pageInstance;
           }

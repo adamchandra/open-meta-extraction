@@ -118,7 +118,7 @@ export const writeResponseBody: Transform<HTTPResponse, HTTPResponse> = tap((htt
 export const writePageFrames: Transform<unknown, unknown> = tap((_a, env) => {
   const { browserPageCache, initialUrl, entryPath } = env;
   const page = browserPageCache[initialUrl];
-  writeHttpResponseFrames(entryPath(), page)
+  return writeHttpResponseFrames(entryPath(), page)
 }, 'Writing Page Frames');
 
 export const cleanArtifacts: Transform<unknown, unknown> = tap((_a, env) => {

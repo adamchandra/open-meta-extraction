@@ -74,6 +74,7 @@ export async function writeHttpHeaders(
   const respHeaders = response.headers();
   writeCorpusJsonFile(entryRootPath, '.', 'response-headers.json', respHeaders);
 }
+
 export async function writeHttpResponseFrames(
   entryRootPath: string,
   pageInstance: PageInstance,

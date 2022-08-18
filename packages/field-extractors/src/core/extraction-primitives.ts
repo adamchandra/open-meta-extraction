@@ -16,7 +16,6 @@ import {
   runTidyCmdBuffered,
   runFileCmd,
   toUrl,
-  prettyPrint,
 } from '@watr/commonlib';
 
 import {
@@ -463,7 +462,7 @@ export const validateEvidence: (mapping: Record<string, string>) => Transform<un
   };
 
 const candidatesForEvidence: (env: ExtractionEnv, evstr: string) => FieldCandidate[] = (env, evstr) => {
-  const regex = new RegExp(evstr);
+  const regex = new RegExp(evstr, 'i');
   return _.filter(env.fieldCandidates, (fc) => {
     return _.some(fc.evidence, ev => regex.test(ev));
   });
@@ -472,7 +471,7 @@ const candidatesForEvidence: (env: ExtractionEnv, evstr: string) => FieldCandida
 
 const evidenceExists: (evstr: string) => FilterTransform<unknown> = (evstr) => filter((_a, env) => {
   if (evstr.endsWith('?')) return true;
-  const evRes = _.map(evstr.split('|'), s => new RegExp(s.trim()));
+  const evRes = _.map(evstr.split('|'), s => new RegExp(s.trim(), 'i'));
   return _.some(evRes, regex => {
     return _.some(
       env.fieldCandidates, (fc) => {
@@ -536,23 +535,6 @@ function applyCleaningRules(rules: CleaningRule[], initialString: string): [stri
   });
   return [currentString, cleaningResults];
 }
-
-// export async function initExtractionEnv(
-//   spiderEnv: SpiderEnv,
-//   urlFetchData: UrlFetchData,
-// ): Promise<ExtractionEnv> {
-
-//   const env: ExtractionEnv = {
-//     ...spiderEnv,
-//     urlFetchData,
-//     fields: [],
-//     fieldRecs: {},
-//     fieldCandidates: [],
-//     evidence: [],
-//     fileContentCache: {},
-//   };
-//   return env;
-// }
 
 export function initExtractionEnv(
   spiderEnv: SpiderEnv,

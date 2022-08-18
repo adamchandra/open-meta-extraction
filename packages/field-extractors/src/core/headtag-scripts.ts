@@ -37,6 +37,7 @@ export const gatherOpenGraphTags = collectFanout(
 
 export const gatherDublinCoreTags = collectFanout(
   selectMetaEvidence('DC.Description'),
+  selectMetaEvidence('DCTERMS.Abstract'),
   selectMetaEvidence('DC.Title'),
   selectAllMetaEvidence('DC.Creator'),
   selectAllMetaEvidence('DC.Subject'),

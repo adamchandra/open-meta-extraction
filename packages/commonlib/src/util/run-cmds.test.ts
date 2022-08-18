@@ -55,10 +55,4 @@ describe('run command-line utils', () => {
     expect(padLeftLens).toStrictEqual([0, 0, 4, 8]);
   });
 
-  it('should convert html -> markdown', async () => {
-    const htmlFile = path.resolve(testDirPath, 'neurips.response_body.html');
-    const lines = await runPandocHtmlToMarkdown(htmlFile);
-
-    expect(lines.length > 0).toBe(true);
-  });
 });
