@@ -81,7 +81,12 @@ export async function findHostStatusById(noteId: string): Promise<HostStatusDocu
 
 export async function getNextSpiderableUrl(): Promise<HostStatusDocument | undefined> {
   const next = await HostStatus.findOneAndUpdate(
-    { hasAbstract: false, workflowStatus: 'available' },
+    {
+      $and: [
+        { $or: [{ hasAbstract: false }, { hasPdfLink: false }] },
+        { workflowStatus: 'available' }
+      ]
+    },
     { workflowStatus: 'spider:locked' },
     { new: true }
   );
@@ -89,7 +94,7 @@ export async function getNextSpiderableUrl(): Promise<HostStatusDocument | undef
 }
 
 export async function releaseSpiderableUrl(hostStatus: HostStatusDocument, newStatus: WorkflowStatus): Promise<HostStatusDocument> {
- hostStatus.workflowStatus = newStatus;
+  hostStatus.workflowStatus = newStatus;
   return hostStatus.save();
 }
 
