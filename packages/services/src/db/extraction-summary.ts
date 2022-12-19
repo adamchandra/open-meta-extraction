@@ -2,7 +2,6 @@ import { HostStatus, NoteStatus } from './schemas';
 import _ from 'lodash';
 
 import { subDays } from 'date-fns';
-import { prettyPrint } from '@watr/commonlib';
 
 interface BoolIDCounts {
   _id: boolean;

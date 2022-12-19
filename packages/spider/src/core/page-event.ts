@@ -1,4 +1,4 @@
-import { prettyPrint, putStrLn } from '@watr/commonlib';
+import { putStrLn } from '@watr/commonlib';
 import _ from 'lodash';
 
 import {

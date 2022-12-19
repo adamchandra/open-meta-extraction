@@ -120,19 +120,3 @@ export async function resetUrlsWithMissingFields(): Promise<void> {
 
   prettyPrint({ resetUrlsWithoutAbstractsUpdate, resetUrlsWithoutPdfLinkUpdate, resetLockedUrlsUpdate });
 }
-
-export async function resetUrlsWithoutAbstracts(): Promise<void> {
-  const resetUrlsWithoutAbstractsUpdate = await HostStatus.updateMany({
-    hasAbstract: false,
-    httpStatus: { $not: { $in: [404, 500] } }
-  }, {
-    workflowStatus: 'available'
-  });
-  const resetLockedUrlsUpdate = await HostStatus.updateMany({
-    workflowStatus: { $in: ['spider-locked', 'extractor-locked'] }
-  }, {
-    workflowStatus: 'available'
-  });
-
-  prettyPrint({ resetUrlsWithoutAbstractsUpdate, resetLockedUrlsUpdate });
-}

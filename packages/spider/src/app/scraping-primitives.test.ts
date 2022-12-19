@@ -37,7 +37,7 @@ describe('scraping primitives', () => {
   });
 
 
-  it.only('should use a page supporting javascript if needed', async () => {
+  it('should use a page supporting javascript if needed', async () => {
     // const url = new URL('http://example.com')
     const url = new URL('https://linkinghub.elsevier.com/retrieve/pii/S0893608007001189')
     const log = getServiceLogger('scraper')

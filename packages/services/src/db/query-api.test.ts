@@ -3,7 +3,7 @@ import { setLogEnvLevel } from '@watr/commonlib';
 import { connectToMongoDB } from './mongodb';
 import { createCollections } from './schemas';
 import { Mongoose } from 'mongoose';
-import {  getNextSpiderableUrl, resetUrlsWithoutAbstracts, upsertHostStatus, upsertNoteStatus } from './query-api';
+import {  getNextSpiderableUrl, resetUrlsWithMissingFields, upsertHostStatus, upsertNoteStatus } from './query-api';
 import {  populateDBHostNoteStatus } from './mongo-test-utils';
 
 describe('MongoDB Queries', () => {
@@ -44,7 +44,7 @@ describe('MongoDB Queries', () => {
   it('should release all locks, allow for re-extraction of failed notes', async () => {
     await populateDBHostNoteStatus(200);
     // putStrLn(formatStatusMessages(await showStatusSummary()));
-    await resetUrlsWithoutAbstracts();
+    await resetUrlsWithMissingFields();
     // putStrLn(formatStatusMessages(await showStatusSummary()));
   });
 });

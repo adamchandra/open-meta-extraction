@@ -1,4 +1,3 @@
-
 ** Use of dotenv
 To ease the process of running node apps from within the various packages, I use
 dotenv (on Linux), with an '.envrc' file in each package folder (spider,
@@ -8,3 +7,4 @@ tests, linting (jest and eslint), as well as command line apps easier to run whe
 developing.
 
 A sample .envrc file is included in the ./docs folder
+

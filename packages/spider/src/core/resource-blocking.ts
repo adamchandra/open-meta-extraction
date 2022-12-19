@@ -20,6 +20,7 @@ const AllBlockableResources = {
   texttrack: null,
   websocket: null,
   xhr: null,
+  prefetch: null
 };
 
 type BlockableResources = typeof AllBlockableResources;

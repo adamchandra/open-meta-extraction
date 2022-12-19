@@ -104,7 +104,7 @@ describe('browser pooling', () => {
     await browserPool.shutdown();
   });
 
-  it.only('close all remaining browserInstances on pool.shutdown()', async () => {
+  it('close all remaining browserInstances on pool.shutdown()', async () => {
     const browserPool = createBrowserPool();
     putStrLn('Acquiring browserInstances without releasing...');
     await browserPool.acquire();

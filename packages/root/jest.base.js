@@ -28,19 +28,26 @@ function makeConfig(modulePackage) {
       "^~/(.*)$": tildePathMap,
     },
     transform: {
-      "\\.tsx?$": "ts-jest"
-    },
-    // testRunner: "jest-jasmine2",
-    moduleFileExtensions: ["ts", "js", "json", "node"],
-    setupFilesAfterEnv: ['./test/jest.setup.ts'],
-    globals: {
-      'ts-jest': {
+      // "\\.tsx?$": "ts-jest"
+      "\\.tsx?$": ['ts-jest', {
         tsconfig,
         diagnostics: true,
         isolatedModules: false,
         noEmit: true,
         useESM: true
-      }
+      }]
+    },
+    // testRunner: "jest-jasmine2",
+    moduleFileExtensions: ["ts", "js", "json", "node"],
+    setupFilesAfterEnv: ['./test/jest.setup.ts'],
+    globals: {
+      // 'ts-jest': {
+      //   tsconfig,
+      //   diagnostics: true,
+      //   isolatedModules: false,
+      //   noEmit: true,
+      //   useESM: true
+      // }
     },
   };
   return config;
