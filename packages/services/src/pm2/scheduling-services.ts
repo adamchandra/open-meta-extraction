@@ -2,6 +2,7 @@ import {
   arglib, delay, getServiceLogger, initConfig, putStrLn,
   asyncEachSeries, asyncForever
 } from '@watr/commonlib';
+
 const { opt, config, registerCmd } = arglib;
 
 import _ from 'lodash';
