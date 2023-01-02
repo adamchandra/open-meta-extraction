@@ -5,6 +5,8 @@ file_version: 1.1.0
 app_version: 1.0.0
 ---
 
+# Overview
+
 # Extraction Primitives
 
 ## Text Primitives
@@ -18,8 +20,6 @@ app_version: 1.0.0
 ## Scatter/gather
 
 ## Browser redirection
-
-<br/>
 
 <br/>
 
