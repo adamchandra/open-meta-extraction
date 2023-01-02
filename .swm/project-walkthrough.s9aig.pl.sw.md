@@ -11,12 +11,12 @@ app_version: 1.0.0
 <br/>
 
 <!-- Steps - Do not remove this comment -->
-1. [Field Extraction](field-extraction.3g09c.sw.md)
-2. [Common Utils](common-utils.rznrj.sw.md)
-3. [Spider/scraper](spiderscraper.ya137.sw.md)
-4. [Prior Art](prior-art.f05pj.sw.md)
+1. [Spider/scraper](spiderscraper.ya137.sw.md)
+2. [Field Extraction](field-extraction.3g09c.sw.md)
+3. [Adding a URL-specific Rule](adding-a-url-specific-rule.cg8jn.sw.md)
+4. [Common Utils](common-utils.rznrj.sw.md)
 5. [Service Installation](service-installation.g9lpd.sw.md)
-6. [Adding a URL-specific Rule](adding-a-url-specific-rule.cg8jn.sw.md)
+6. [Prior Art](prior-art.f05pj.sw.md)
 
 
 <br/>
