@@ -6,6 +6,10 @@ app_version: 1.0.0
 ---
 
 <!-- Intro - Do not remove this comment -->
+This is a project walkthrough
+
+<br/>
+
 <br/>
 
 <br/>
@@ -18,6 +22,13 @@ app_version: 1.0.0
 5. [Service Installation](service-installation.g9lpd.sw.md)
 6. [Prior Art](prior-art.f05pj.sw.md)
 
+
+<br/>
+
+<!-- Summary - Do not remove this comment -->
+Here is my summary statement:
+
+<br/>
 
 <br/>
 
