@@ -51,7 +51,6 @@ export const spiderTaskflow = fp;
 type EnvT = SpiderEnv;
 
 export type ExtractionTask<A> = ft.ExtractionTask<A, EnvT>;
-// export type PerhapsW<A> = ft.PerhapsW<A, EnvT>;
 export type ClientFunc<A, B> = ft.ClientFunc<A, B, EnvT>;
 export type ClientResult<A> = ft.ClientResult<A>;
 export type Transform<A, B> = ft.Transform<A, B, EnvT>;
