@@ -13,7 +13,9 @@ From the root of the project, run:
 
 # Scraping Primitives
 The spidering package provided a set of primitive functions, designed to be pipelined via
-[taskflow-defs](`📄 packages/spider/src/core/taskflow-defs.ts`)
+[taskflow-defs](
+`📄 packages/spider/src/core/taskflow-defs.ts`
+)
 
 
 # Logging
