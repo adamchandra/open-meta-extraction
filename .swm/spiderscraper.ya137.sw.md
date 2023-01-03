@@ -5,15 +5,27 @@ file_version: 1.1.0
 app_version: 1.0.0
 ---
 
+# Overview
+The spidering package provided a set of primitive functions which may be composed to create a web scraper.
+
+The scraping primitives are defined in `📄 packages/spider/src/app/scraping-primitives.ts`.
+
+The composition functions are defined in `📄 packages/spider/src/core/taskflow-defs.ts`.
+
+An example of a function which takes a URL, deletes any prior downloaded artifacts for that URL, then fetches are writes the response body is:
+```typescript
+const runScraper: Transform<URL, unknown> = compose(
+  cleanArtifacts,
+  fetchUrl(),
+  writeResponseBody()
+);
+```
+
+
 # Command line
 From the root of the project, run:
 
 ```> ./bin/run spider-url```
-
-
-# Scraping Primitives
-The spidering package provided a set of primitive functions, designed to be pipelined via `📄 packages/spider/src/core/taskflow-defs.ts`
-
 
 # Logging
 ```sh
@@ -68,8 +80,6 @@ Spider success: {
 
 
 # Browser page caching
-
-
 
 
 <br/>
