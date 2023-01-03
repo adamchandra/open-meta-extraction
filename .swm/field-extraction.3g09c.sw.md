@@ -2,7 +2,7 @@
 id: 3g09c
 name: Field Extraction
 file_version: 1.1.0
-app_version: 1.0.0
+app_version: 1.0.1
 ---
 
 # Overview
@@ -10,6 +10,8 @@ app_version: 1.0.0
 # Extraction Primitives
 
 ## Text Primitives
+
+`📄 packages/field-extractors/src/core/extraction-primitives.ts`
 
 ## CSS-Selector primitives
 
