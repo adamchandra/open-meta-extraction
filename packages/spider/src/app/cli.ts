@@ -1,5 +1,33 @@
-import { arglib, setLogEnvLevel } from '@watr/commonlib';
-const { opt, config, registerCmd } = arglib;
+import { pipe } from 'fp-ts/function';
+import * as TE from 'fp-ts/TaskEither';
+import {
+  arglib,
+  getServiceLogger,
+  setLogEnvLevel,
+  putStrLn
+} from '@watr/commonlib';
+
+import { createBrowserPool } from '~/core/browser-pool';
+
+import {
+  SpiderEnv,
+  compose,
+  through
+} from '~/core/taskflow-defs';
+
+import {
+  cleanArtifacts,
+  createSpiderEnv,
+  getHttpResponseBody,
+  httpResponseToUrlFetchData,
+  scrapeUrl
+} from './scraping-primitives';
+
+const {
+   opt,
+  config,
+  registerCmd
+} = arglib;
 
 export function registerCommands(yargv: arglib.YArgsT) {
   registerCmd(
@@ -9,21 +37,37 @@ export function registerCommands(yargv: arglib.YArgsT) {
     config(
       opt.existingDir('corpus-root: root directory for corpus files'),
       opt.str('url'),
-      opt.flag('clean'),
+      opt.flag('clean', false),
       opt.logLevel('info'),
     )
   )(async (args: any) => {
     const { url, corpusRoot, clean, logLevel } = args;
+    cleanArtifacts
+
+    const log = getServiceLogger('spider')
+
     setLogEnvLevel(logLevel);
 
-    // const scraper = await initScraper({ corpusRoot });
-    // const scrapedUrl = await scraper.scrapeUrl(url, clean);
+    const browserPool = createBrowserPool();
 
-    // await scraper.quit();
+    const env: SpiderEnv = await createSpiderEnv(log, browserPool, corpusRoot, url);
+
+    const spiderPipeline = compose(
+      scrapeUrl(),
+      httpResponseToUrlFetchData
+    );
+
+    const pipeline = spiderPipeline(TE.right([url, env]));
+
+    const testPipeline = pipe(
+      pipeline,
+      through((succ) => {
+        putStrLn('Spider success:', succ)
+      })
+    )
+
+    await testPipeline();
+    await browserPool.release(env.browserInstance)
+    await browserPool.shutdown()
   });
-}
-
-if (require.main === module) {
-  registerCommands(arglib.YArgs);
-  arglib.runRegisteredCmds(arglib.YArgs);
 }

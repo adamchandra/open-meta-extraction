@@ -107,7 +107,7 @@ export function registerCommands(yargv: arglib.YArgsT) {
   });
 
   registerCmd(
-    yargv, 'preflight-check', 'Run checks and stop pm2 apps if everything looks okay'
+    yargv, 'preflight-check', 'Run checks at startup and halt pm2 apps if anything looks wrong'
   )(async () => {
     const log = getServiceLogger('PreflightCheck');
     log.info('Starting Preflight Check');

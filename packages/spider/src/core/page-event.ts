@@ -1,3 +1,9 @@
+/**
+ * Register handlers for all browser/page events
+ * Initialize event logging and create interception hooks
+ *
+ */
+
 import { putStrLn } from '@watr/commonlib';
 import _ from 'lodash';
 
@@ -46,6 +52,9 @@ const RequestCycleEvents: Array<keyof PageEventObject> = [
 ];
 
 
+/*
+ * Log all events when log level = Verbose
+ */
 export function logBrowserEvent(browserInstance: BrowserInstance, logger: Logger) {
   const { browser } = browserInstance;
 
@@ -298,85 +307,3 @@ export function interceptRequestCycle(pageInstance: PageInstance, logger: Logger
     });
   });
 }
-
-
-/*
-
-    page.$(selector)
-    page.$$(selector)
-    page.$$eval(selector, pageFunction[, ...args])
-    page.$eval(selector, pageFunction[, ...args])
-    page.$x(expression)
-    page.accessibility
-    page.addScriptTag(options)
-    page.addStyleTag(options)
-    page.authenticate(credentials)
-    page.bringToFront()
-    page.browser()
-    page.browserContext()
-    page.click(selector[, options])
-    page.close([options])
-    page.content()
-    page.cookies([...urls])
-    page.coverage
-    page.deleteCookie(...cookies)
-    page.emulate(options)
-    page.emulateMediaFeatures(features)
-    page.emulateMediaType(type)
-    page.emulateTimezone(timezoneId)
-    page.emulateVisionDeficiency(type)
-    page.evaluate(pageFunction[, ...args])
-    page.evaluateHandle(pageFunction[, ...args])
-    page.evaluateOnNewDocument(pageFunction[, ...args])
-    page.exposeFunction(name, puppeteerFunction)
-    page.focus(selector)
-    page.frames()
-    page.goBack([options])
-    page.goForward([options])
-    page.goto(url[, options])
-    page.hover(selector)
-    page.isClosed()
-    page.isJavaScriptEnabled()
-    page.keyboard
-    page.mainFrame()
-    page.metrics()
-    page.mouse
-    page.pdf([options])
-    page.queryObjects(prototypeHandle)
-    page.reload([options])
-    page.screenshot([options])
-    page.select(selector, ...values)
-    page.setBypassCSP(enabled)
-    page.setCacheEnabled([enabled])
-    page.setContent(html[, options])
-    page.setCookie(...cookies)
-    page.setDefaultNavigationTimeout(timeout)
-    page.setDefaultTimeout(timeout)
-    page.setExtraHTTPHeaders(headers)
-    page.setGeolocation(options)
-    page.setJavaScriptEnabled(enabled)
-    page.setOfflineMode(enabled)
-    page.setRequestInterception(value)
-    page.setUserAgent(userAgent)
-    page.setViewport(viewport)
-    page.tap(selector)
-    page.target()
-    page.title()
-    page.touchscreen
-    page.tracing
-    page.type(selector, text[, options])
-    page.url()
-    page.viewport()
-    page.waitFor(selectorOrFunctionOrTimeout[, options[, ...args]])
-    page.waitForFileChooser([options])
-    page.waitForFunction(pageFunction[, options[, ...args]])
-    page.waitForNavigation([options])
-    page.waitForRequest(urlOrPredicate[, options])
-    page.waitForResponse(urlOrPredicate[, options])
-    page.waitForSelector(selector[, options])
-    page.waitForXPath(xpath[, options])
-    page.workers()
-    GeolocationOptions
-    WaitTimeoutOptions
-
-  */

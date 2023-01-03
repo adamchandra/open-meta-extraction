@@ -1,4 +1,4 @@
-import { arglib } from '@watr/commonlib';
+import { arglib, putStrLn } from '@watr/commonlib';
 
 import * as workflowCmds from '~/workflow/workflow-cli';
 import * as scheduling from '~/pm2/scheduling-services';
@@ -18,9 +18,20 @@ export async function runCli() {
     .strict()
     .help()
     .fail((msg, err, yargs) => {
-      // console.log('RunCLI Error (svc)', msg, err, yargs);
+      let errorMessage = `Error:
+      ${msg}
+      `;
+
+      if (err !== undefined) {
+        errorMessage += `
+        Error was: ${err}
+        `;
+      }
+      putStrLn(errorMessage)
       arglib.YArgs.showHelp();
+      process.exit(1);
     })
     .argv;
+
   return Promise.resolve(runResult);
 }

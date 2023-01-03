@@ -9,7 +9,7 @@ import { createBrowserPool, ScriptablePageInstanceOptions } from '~/core/browser
 
 describe('scraping primitives', () => {
   const corpusRoot = 'test.d';
-  it('should smokescreen', async () => {
+  it('should scrape a simple url', async () => {
     const url = new URL('http://example.com')
     const log = getServiceLogger('scraper')
 
@@ -38,7 +38,6 @@ describe('scraping primitives', () => {
 
 
   it('should use a page supporting javascript if needed', async () => {
-    // const url = new URL('http://example.com')
     const url = new URL('https://linkinghub.elsevier.com/retrieve/pii/S0893608007001189')
     const log = getServiceLogger('scraper')
 

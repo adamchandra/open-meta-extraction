@@ -62,7 +62,7 @@ export function getServiceLogger(label: string): Logger {
           }),
           format.label({ label, message: true }),
           // format.simple(),
-          format.printf(info => `${info.timestamp} ${info.level}: ${info.message}`)
+          format.printf(info => `${info.timestamp} ${info.level} ${info.message}`)
         ),
       })
     ],

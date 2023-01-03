@@ -1,4 +1,9 @@
+/**
+ * Launch Puppeteer controlled browser with appropriate starting arguments
+ **/
+
 import _ from 'lodash';
+
 
 import {
   Browser as PBrowser,

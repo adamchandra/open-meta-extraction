@@ -42,7 +42,7 @@ arg() {
 
 ####
 ## Run the given command, allowing for --dry-run option to just print the command
-doit() {
+do_or_dry() {
     arg dry_run
     arg env
     test "$env" == "unspecified" && _PRINT_HELP=yes die "Error: must specify --env=..."
@@ -55,6 +55,20 @@ doit() {
         echo "run> ${cmds[*]}"
         "${cmds[@]}"
     fi
+
+    echo ""
+}
+
+####
+## Run the given command, allowing for --dry-run option to just print the command
+doit() {
+    arg env
+    test "$env" == "unspecified" && _PRINT_HELP=yes die "Error: must specify --env=..."
+    export NODE_ENV="$env"
+
+    local cmds=("$@")
+    echo "run> ${cmds[*]}"
+    "${cmds[@]}"
 
     echo ""
 }

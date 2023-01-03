@@ -4,12 +4,9 @@
 # ARGBASH_SET_INDENT([  ])
 # DEFINE_SCRIPT_DIR([_script_dir])
 #
-# ARG_OPTIONAL_BOOLEAN([dry-run],[])
-#
-# ARG_OPTIONAL_SINGLE([env],[],[Env Mode; Required],[unspecified])
+# ARG_OPTIONAL_SINGLE([env],[],[Env Mode],[dev])
 # ARG_TYPE_GROUP_SET([envmode],[ENVMODE],[env],[dev,test,prod],[])
 # ARG_LEFTOVERS([])
-# ARG_HELP([RunCLI],[Run a command line app])
 #
 # ARGBASH_GO()
 # needed because of Argbash --> m4_ignore([
@@ -51,7 +48,7 @@ envmode()
 # This is required in order to support getopts-like short options grouping.
 begins_with_short_option()
 {
-  local first_option all_short_options='h'
+  local first_option all_short_options=''
   first_option="${1:0:1}"
   test "$all_short_options" = "${all_short_options/$first_option/}" && return 1 || return 0
 }
@@ -62,8 +59,7 @@ begins_with_short_option()
 _positionals=()
 _arg_leftovers=()
 # THE DEFAULTS INITIALIZATION - OPTIONALS
-_arg_dry_run="off"
-_arg_env="unspecified"
+_arg_env="dev"
 
 
 # Function that prints general usage of the script.
@@ -71,11 +67,8 @@ _arg_env="unspecified"
 # and it makes sense to remind the user how the script is supposed to be called.
 print_help()
 {
-  printf '%s\n' "RunCLI"
-  printf 'Usage: %s [--(no-)dry-run] [--env <ENVMODE>] [-h|--help] ... \n' "$0"
-  printf '\t%s\n' "--env: Env Mode; Required. Can be one of: 'dev', 'test' and 'prod' (default: 'unspecified')"
-  printf '\t%s\n' "-h, --help: Prints help"
-  printf '\n%s\n' "Run a command line app"
+  printf 'Usage: %s [--env <ENVMODE>] ... \n' "$0"
+  printf '\t%s\n' "--env: Env Mode. Can be one of: 'dev', 'test' and 'prod' (default: 'dev')"
 }
 
 
@@ -87,12 +80,6 @@ parse_commandline()
   do
     _key="$1"
     case "$_key" in
-      # The dry-run argurment doesn't accept a value,
-      # we expect the --dry-run, so we watch for it.
-      --no-dry-run|--dry-run)
-        _arg_dry_run="on"
-        test "${1:0:5}" = "--no-" && _arg_dry_run="off"
-        ;;
       # We support whitespace as a delimiter between option argument and its value.
       # Therefore, we expect the --env value, so we watch for --env.
       # Since we know that we got the long option,
@@ -108,19 +95,6 @@ parse_commandline()
       # to get the argument value
       --env=*)
         _arg_env="$(envmode "${_key##--env=}" "env")" || exit 1
-        ;;
-      # See the comment of option '--dry-run' to see what's going on here - principle is the same.
-      -h|--help)
-        print_help
-        exit 0
-        ;;
-      # We support getopts-style short arguments clustering,
-      # so as -h doesn't accept value, other short options may be appended to it, so we watch for -h*.
-      # After stripping the leading -h from the argument, we have to make sure
-      # that the first character that follows coresponds to a short option.
-      -h*)
-        print_help
-        exit 0
         ;;
       *)
         _last_positional="$1"

@@ -46,10 +46,12 @@ const {
     cleanArtifacts,
 } = spPrim;
 
+// Hard-code a few URLs that require js to run to retrieve metadata
 const allowJSInBrowserUrls = [
     /linkinghub.elsevier.com/,
     /aaai.org/
 ];
+
 const linkinghubSpideringRule: Transform<URL, HTTPResponse> = compose(
     urlMatchAny(allowJSInBrowserUrls),
     scrapeUrl(ScriptablePageInstanceOptions),

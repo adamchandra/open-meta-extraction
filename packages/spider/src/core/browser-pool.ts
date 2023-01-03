@@ -84,14 +84,10 @@ export const ScriptablePageInstanceOptions: PageInstanceOptions = {
   requestInterception: true,
 };
 
-export function createBrowserPool(logPrefix?: string): BrowserPool {
-  const prefix = logPrefix ? logPrefix : '';
-  const log = getServiceLogger(`${prefix}:browser-pool`);
+export function createBrowserPool(): BrowserPool {
+  const log = getServiceLogger(`browser-pool`);
 
   const pool = new Pool<BrowserInstance>({
-    log(msg: string): void {
-      log.info(msg);
-    },
     async create(): Promise<BrowserInstance> {
       const logPrefix: string = '';
       return launchBrowser().then(browser => {
@@ -104,6 +100,7 @@ export function createBrowserPool(logPrefix?: string): BrowserPool {
           async kill(): Promise<void> {
             const bproc = this.browser.process();
             if (bproc === null) return;
+
             const pid = bproc.pid;
             if (pid === undefined) return;
 

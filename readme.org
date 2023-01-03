@@ -38,11 +38,15 @@ results, that fact is returned along with the results.
 Run 'rush' commands from project root
 - Initial installation
   - > rush install
+
 - Update dependencies after version bump in package.json
   - > rush update
+
 - Build/Full rebuild
   - > rush build
+  - > rush build:watch
   - > rush rebuild
+
 - Run tests
   - > rush test
 
