@@ -12,11 +12,12 @@ From the root of the project, run:
 
 
 # Scraping Primitives
+The spidering package provided a set of primitive functions, designed to be pipelined via
+[taskflow-defs](`📄 packages/spider/src/core/taskflow-defs.ts`)
+
 
 # Logging
-<span style="color:red">some *red* text</span>.
 ```sh
-<span style="color:blue">embedded *blue* text</span>.
 ➜ bin/cli --env dev --log-level=verbose spider-url --corpus-root ./tmp.d --url 'https://doi.org/10.48550/arXiv.2205.02979'
 run> node ./packages/services/dist/src/cli --log-level=verbose spider-url --corpus-root ./tmp.d --url https://doi.org/10.48550/arXiv.2205.02979
 10:36:18:1818 verbose [browser-pool] pool/event: acquireRequest:1
