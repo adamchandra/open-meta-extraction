@@ -1,18 +1,16 @@
 ---
 id: cg8jn
 name: Adding a URL-specific Rule
-file_version: 1.0.2
-app_version: 0.10.5
+file_version: 1.1.0
+app_version: 1.0.2
 file_blobs:
   packages/field-extractors/src/core/url-specific-rules-1.ts: f7378165dc12ae27934ad3b34adb775f63df147d
+  packages/field-extractors/src/core/html-query-primitives.ts: 0362c0140c7bfa18312a61349f04562cb6dea0db
 ---
 
-# Overview
-This section outlines the process for extending the scraping rules, perhaps with a special case
-for a new domain, or by adding or extending fallback rules to apply when no domain-specific
-rule is found.
+All rules are aggregated in `📄 packages/field-extractors/src/core/url-specific-rules.ts`
 
-All currently defined rules are aggregated in `📄 packages/field-extractors/src/core/url-specific-rules.ts`
+Rules are grouped according to the method used to extract them.
 
 <br/>
 
@@ -21,8 +19,8 @@ As a first example, consider this rule for pages in the "dl.acm.org" domain.
 ### 📄 packages/field-extractors/src/core/url-specific-rules-1.ts
 ```typescript
 ⬜ 85     );
-⬜ 86
-⬜ 87
+⬜ 86     
+⬜ 87     
 🟩 88     export const dlAcmOrgRule: ExtractionRule = compose(
 🟩 89       urlFilter(/dl.acm.org/),
 🟩 90       withResponsePage(compose(
@@ -42,10 +40,28 @@ As a first example, consider this rule for pages in the "dl.acm.org" domain.
 🟩 104        }),
 🟩 105      )),
 🟩 106    );
-⬜ 107
+⬜ 107    
 ⬜ 108    export const aclwebOrgRule: ExtractionRule = compose(
 ⬜ 109      urlFilter(/aclweb.org/),
 ```
+
+<br/>
+
+<br/>
+
+<br/>
+
+Function ref
+<!-- NOTE-swimm-snippet: the lines below link your snippet to Swimm -->
+### 📄 packages/field-extractors/src/core/html-query-primitives.ts
+```typescript
+🟩 43     export function expandCaseVariations(seed: string, sub: (s: string) => string): string {
+🟩 44       const variations = _.reduce(seed, (acc, char) => {
+```
+
+<br/>
+
+<br/>
 
 <br/>
 
