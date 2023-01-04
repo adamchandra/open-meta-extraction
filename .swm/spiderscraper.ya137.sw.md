@@ -6,8 +6,11 @@ app_version: 1.0.0
 ---
 
 # Overview
-The spidering package provided a set of primitive functions which may be composed to create a web scraper.
+The spidering package provides an API to manage a headless browser. It wraps Puppeteer, and provides page caching,
 
+provides functions for navigation,
+
+# Usage
 The scraping primitives are defined in `📄 packages/spider/src/app/scraping-primitives.ts`.
 
 The composition functions are defined in `📄 packages/spider/src/core/taskflow-defs.ts`.

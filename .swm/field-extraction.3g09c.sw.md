@@ -6,13 +6,16 @@ app_version: 1.0.1
 ---
 
 # Overview
-The field extraction module provides the  building blocks to create web
-page  scrapers. It  includes a  set of  specialized scrapers,  some tailored  to
-specific URL domains, other more general purpose functions to use as fallbacks.
+The field  extraction module  provides the  building blocks  to create  web page
+scrapers. It  includes a collection  of metadata scrapers tailored  for specific
+domains, along with  other more general purpose  scrapers to
+use as fallbacks. It aims to be readily extensible, as the list of URL domains
+grows over time.
+
 
 # Extraction Primitives
 
-## HTMLTidy normalization
+
 
 ## CSS-Selector primitives
 The simplest  method for  extracting data  from html/xml is  using CSS  or XPath
@@ -83,6 +86,8 @@ For example,
 ```typescript
 
 ```
+
+## HTML Normalization
 ## JSON/XML primitives
 
 ## Evidence gathering

@@ -4,6 +4,16 @@ name: Service Installation
 file_version: 1.1.0
 app_version: 1.0.0
 ---
+# Overview
+The  Services  package is  responsible  for  integrating  the spider  and  field
+extractors with  OpenReview. It regularly  retrieves updated lists of  URLs from
+OpenReview and runs the extraction pipeline. It includes:
+
+- Deployment definitions for running services under PM2.
+- Service monitoring and restart
+- A local database to maintain the current state of the extractor
+- Scheduled messages summarizing the state and progress of the system
+- Communication with OpenReview via REST API
 
 # PM2
 

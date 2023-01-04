@@ -7,9 +7,12 @@ file_blobs:
   packages/field-extractors/src/core/url-specific-rules-1.ts: f7378165dc12ae27934ad3b34adb775f63df147d
 ---
 
-All rules are aggregated in `📄 packages/field-extractors/src/core/url-specific-rules.ts`
+# Overview
+This section outlines the process for extending the scraping rules, perhaps with a special case
+for a new domain, or by adding or extending fallback rules to apply when no domain-specific
+rule is found.
 
-Rules are grouped according to the method used to extract them.
+All currently defined rules are aggregated in `📄 packages/field-extractors/src/core/url-specific-rules.ts`
 
 <br/>
 
@@ -18,8 +21,8 @@ As a first example, consider this rule for pages in the "dl.acm.org" domain.
 ### 📄 packages/field-extractors/src/core/url-specific-rules-1.ts
 ```typescript
 ⬜ 85     );
-⬜ 86     
-⬜ 87     
+⬜ 86
+⬜ 87
 🟩 88     export const dlAcmOrgRule: ExtractionRule = compose(
 🟩 89       urlFilter(/dl.acm.org/),
 🟩 90       withResponsePage(compose(
@@ -39,7 +42,7 @@ As a first example, consider this rule for pages in the "dl.acm.org" domain.
 🟩 104        }),
 🟩 105      )),
 🟩 106    );
-⬜ 107    
+⬜ 107
 ⬜ 108    export const aclwebOrgRule: ExtractionRule = compose(
 ⬜ 109      urlFilter(/aclweb.org/),
 ```
