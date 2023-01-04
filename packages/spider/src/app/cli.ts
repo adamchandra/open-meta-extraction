@@ -20,7 +20,7 @@ import {
   createSpiderEnv,
   getHttpResponseBody,
   httpResponseToUrlFetchData,
-  scrapeUrl
+  fetchUrl
 } from './scraping-primitives';
 
 const {
@@ -53,7 +53,7 @@ export function registerCommands(yargv: arglib.YArgsT) {
     const env: SpiderEnv = await createSpiderEnv(log, browserPool, corpusRoot, url);
 
     const spiderPipeline = compose(
-      scrapeUrl(),
+      fetchUrl(),
       httpResponseToUrlFetchData
     );
 

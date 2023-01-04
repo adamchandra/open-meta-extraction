@@ -39,7 +39,7 @@ const {
 } = sfp;
 
 const {
-    scrapeUrl,
+    fetchUrl,
     httpResponseToUrlFetchData,
     writeResponseBody,
     writePageFrames,
@@ -54,11 +54,11 @@ const allowJSInBrowserUrls = [
 
 const linkinghubSpideringRule: Transform<URL, HTTPResponse> = compose(
     urlMatchAny(allowJSInBrowserUrls),
-    scrapeUrl(ScriptablePageInstanceOptions),
+    fetchUrl(ScriptablePageInstanceOptions),
 )
 
 const defaultSpideringRule: Transform<URL, HTTPResponse> = compose(
-    scrapeUrl(),
+    fetchUrl(),
 )
 
 const SpideringUrlSpecificAttempts: Transform<URL, HTTPResponse> = attemptEach(

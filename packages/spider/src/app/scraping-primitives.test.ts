@@ -2,7 +2,7 @@ import _ from 'lodash';
 
 import * as TE from 'fp-ts/TaskEither';
 import { pipe } from 'fp-ts/function';
-import { createSpiderEnv, getHttpResponseBody, httpResponseToUrlFetchData, scrapeUrl } from './scraping-primitives';
+import { createSpiderEnv, getHttpResponseBody, httpResponseToUrlFetchData, fetchUrl } from './scraping-primitives';
 import { compose, SpiderEnv, through } from '~/core/taskflow-defs';
 import { getServiceLogger, prettyPrint, putStrLn } from '@watr/commonlib';
 import { createBrowserPool, ScriptablePageInstanceOptions } from '~/core/browser-pool';
@@ -18,7 +18,7 @@ describe('scraping primitives', () => {
     const env: SpiderEnv = await createSpiderEnv(log, browserPool, corpusRoot, url);
 
     const spiderPipeline = compose(
-      scrapeUrl(),
+      fetchUrl(),
       httpResponseToUrlFetchData
     );
 
@@ -46,7 +46,7 @@ describe('scraping primitives', () => {
     const env: SpiderEnv = await createSpiderEnv(log, browserPool, corpusRoot, url);
 
     const spiderPipeline = compose(
-      scrapeUrl(ScriptablePageInstanceOptions),
+      fetchUrl(ScriptablePageInstanceOptions),
       getHttpResponseBody,
       // httpResponseToUrlFetchData
     );

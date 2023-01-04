@@ -1,3 +1,10 @@
+/**
+ * Functions for gathering metadata from html <head> section
+ * These include many of the 'standard' metadata formats, (DublinCore et. al),
+ * along with some non-standard variations found in the wild.
+ **/
+
+
 import {
   collectFanout,
   compose
@@ -12,9 +19,6 @@ import {
 
 import { loadBrowserPage } from './html-query-primitives';
 
-/**
- * Scripts for gathering metadata from html <head> section
- * */
 
 export const gatherHighwirePressTags = collectFanout(
   selectMetaEvidence('citation_title'),

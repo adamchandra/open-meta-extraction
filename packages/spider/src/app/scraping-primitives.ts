@@ -76,7 +76,8 @@ export const urlMatchAny: (urlTests: RegExp[]) => FilterTransform<unknown> = (ur
   );
 }
 
-export const scrapeUrl: (pageOpts?: PageInstanceOptions) => Transform<URL, HTTPResponse> =
+// Fetch an HTTPResponse for the given URL
+export const fetchUrl: (pageOpts?: PageInstanceOptions) => Transform<URL, HTTPResponse> =
   (pageOpts = DefaultPageInstanceOptions) => through((url, env) => {
     const { browserInstance, log, browserPageCache, initialUrl } = env;
 

@@ -28,7 +28,7 @@ export const grepFilter: (regex: RegExp) => Transform<string[], string[]> =
 export const grepFilterNot: (regex: RegExp) => Transform<string[], string[]> =
   (regex) => through(
     (lines: string[]) => _.filter(lines, l => !regex.test(l)),
-    `grep(${regex.source})`
+    `grep.not(${regex.source})`
   );
 
 

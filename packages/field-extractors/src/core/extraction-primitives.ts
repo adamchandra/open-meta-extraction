@@ -486,8 +486,7 @@ export const summarizeEvidence: Transform<unknown, unknown> = tapEitherEnv((env)
   const url = env.urlFetchData.responseUrl;
 
   log.log('info', `summary: URL= ${url}`);
-
-  log.log('info', 'summary: Field Candidates');
+  log.log('info', 'Field Candidates');
   _.each(fieldCandidates, fc => {
     log.log('info', `summary:     ${fc.text}`);
     _.each(fc.evidence, ev => {
