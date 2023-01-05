@@ -8,7 +8,12 @@ app_version: 1.0.2
 <!-- Intro - Do not remove this comment -->
 ## Overview
 
-OpenMetaExtraction is a service provider for OpenReview.net. Its goal is to retrieve the details of academic research papers (e.g., abstracts, PDF links, authorship links), given the landing page URLs for those papers. It consists of a spidering package to retrieve and query a web page, an extensible set of rules to scrape the metadata, and a service module to handle scheduled tasks, communication with OpenReview , and monitoring during deployment.
+OpenMetaExtraction  is a  service provider  for OpenReview.net.  Its goal  is to
+retrieve the  details of academic  research papers (e.g., abstracts,  PDF links,
+authorship links), given the landing page  URLs for those papers. It consists of
+a spidering package to retrieve and query a web page, an extensible set of rules
+to  scrape  the metadata,  and  a  service  module  to handle  scheduled  tasks,
+communication with OpenReview , and monitoring during deployment.
 
 <br/>
 
@@ -25,7 +30,6 @@ OpenMetaExtraction is a service provider for OpenReview.net. Its goal is to retr
 <br/>
 
 <!-- Summary - Do not remove this comment -->
-Here is my summary statement:
 
 <br/>
 
