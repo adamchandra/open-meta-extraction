@@ -1,3 +1,7 @@
+/*
+ * Runtime Environment and execution patterns for scraper
+ */
+
 import _ from 'lodash';
 
 import { Logger } from 'winston';
@@ -42,8 +46,8 @@ export const {
   attemptEach,
   takeWhileSuccess,
   collectFanout,
-  asW,
-  asWCI
+  valueEnvPair,
+  controlEnvPair
 } = fp;
 
 export const spiderTaskflow = fp;

@@ -23,7 +23,7 @@ function initEnv<A>(a: A): ExtractionTask<A> {
     messages: []
   };
 
-  return TE.right(asW(a, env0));
+  return TE.right(valueEnvPair(a, env0));
 }
 
 interface OtherEnvT extends ft.BaseEnv {
@@ -73,7 +73,7 @@ const {
   filter,
   Transform,
   through,
-  asW,
+  valueEnvPair,
   mapEnv,
   forEachDo,
   attemptEach,

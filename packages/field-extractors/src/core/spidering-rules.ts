@@ -17,7 +17,7 @@ import {
     scrapingPrimitives as spPrim,
     scrapingTaskflow as stflow,
     UrlFetchData,
-    urlMatchAny,
+    urlFilterAny,
 
 } from '@watr/spider';
 
@@ -53,7 +53,7 @@ const allowJSInBrowserUrls = [
 ];
 
 const linkinghubSpideringRule: Transform<URL, HTTPResponse> = compose(
-    urlMatchAny(allowJSInBrowserUrls),
+    urlFilterAny(allowJSInBrowserUrls),
     fetchUrl(ScriptablePageInstanceOptions),
 )
 

@@ -12,19 +12,24 @@ import { createBrowserPool } from '~/core/browser-pool';
 import {
   SpiderEnv,
   compose,
-  through
+  tap,
+  Transform,
+  tapLeft,
+  valueEnvPair
 } from '~/core/taskflow-defs';
 
 import {
   cleanArtifacts,
   createSpiderEnv,
-  getHttpResponseBody,
   httpResponseToUrlFetchData,
-  fetchUrl
+  fetchUrl,
+  writeResponseBody,
+  writePageFrames
 } from './scraping-primitives';
+import { HTTPResponse } from 'puppeteer';
 
 const {
-   opt,
+  opt,
   config,
   registerCmd
 } = arglib;
@@ -37,12 +42,12 @@ export function registerCommands(yargv: arglib.YArgsT) {
     config(
       opt.existingDir('corpus-root: root directory for corpus files'),
       opt.str('url'),
-      opt.flag('clean', false),
+      opt.flag('clean: remove downloaded artifacts from prior runs', false),
+      opt.flag('write: write the html page(s) to disk', false),
       opt.logLevel('info'),
     )
   )(async (args: any) => {
-    const { url, corpusRoot, clean, logLevel } = args;
-    cleanArtifacts
+    const { url, corpusRoot, clean, logLevel, write } = args;
 
     const log = getServiceLogger('spider')
 
@@ -52,22 +57,44 @@ export function registerCommands(yargv: arglib.YArgsT) {
 
     const env: SpiderEnv = await createSpiderEnv(log, browserPool, corpusRoot, url);
 
-    const spiderPipeline = compose(
+    let spiderPipeline: Transform<URL, HTTPResponse> = compose(
       fetchUrl(),
-      httpResponseToUrlFetchData
     );
 
-    const pipeline = spiderPipeline(TE.right([url, env]));
+    if (clean) {
+      spiderPipeline = compose(
+        cleanArtifacts(),
+        spiderPipeline,
+      );
+    }
 
-    const testPipeline = pipe(
-      pipeline,
-      through((succ) => {
-        putStrLn('Spider success:', succ)
+    if (write) {
+      spiderPipeline = compose(
+        spiderPipeline,
+        writeResponseBody,
+        writePageFrames(),
+      );
+    }
+
+    const pipeline = compose(
+      spiderPipeline,
+      httpResponseToUrlFetchData,
+      tap((result) => {
+        putStrLn('Success:', result)
+      }),
+      tapLeft((error) => {
+        putStrLn('Error:', error)
       })
-    )
+    );
 
-    await testPipeline();
-    await browserPool.release(env.browserInstance)
-    await browserPool.shutdown()
+    const arg = TE.right(valueEnvPair(url, env));
+    const runnable = pipe(arg, pipeline)
+
+    try {
+      await runnable()
+    } finally {
+      await browserPool.release(env.browserInstance)
+      await browserPool.shutdown()
+    }
   });
 }

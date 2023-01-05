@@ -53,12 +53,12 @@ export function getFetchDataFromResponse(requestUrl: string, response: HTTPRespo
   const status = response.status().toString();
   const { date } = response.headers();
 
-  const metadata: UrlFetchData = {
+  const fetchData: UrlFetchData = {
     requestUrl,
     responseUrl,
     status,
     fetchChain,
     timestamp: date,
   };
-  return metadata;
+  return fetchData;
 }

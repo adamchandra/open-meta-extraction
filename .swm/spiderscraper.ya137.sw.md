@@ -6,29 +6,48 @@ app_version: 1.0.0
 ---
 
 # Overview
-The spidering package provides an API to manage a headless browser. It wraps Puppeteer, and provides page caching,
+The spidering package  provides an API to build simple  web page scrapers. Under
+the hood  it uses Puppeteer  to manage a  headless browser. It  provides several
+preconfigured  levels  of script  and  resource  blocking, utilities  to  manage
+collections of  downloaded pages, and  extensive logging for  monitoring browser
+events.
 
-provides functions for navigation,
+# API Usage
 
-# Usage
-The scraping primitives are defined in `📄 packages/spider/src/app/scraping-primitives.ts`.
+A basic fetch function might look like the following:
 
-The composition functions are defined in `📄 packages/spider/src/core/taskflow-defs.ts`.
-
-An example of a function which takes a URL, deletes any prior downloaded artifacts for that URL, then fetches are writes the response body is:
 ```typescript
 const runScraper: Transform<URL, unknown> = compose(
-  cleanArtifacts,
-  fetchUrl(),
-  writeResponseBody()
+  cleanArtifacts(), // delete any previously downloaded files for input URL
+  fetchUrl(), // run the fetcher
+  writeResponseBody() // write to disk
 );
 ```
 
+A more complex  example might allow JavaScript to run  on certain domains, while
+other domains would  only fetch the HTML document and  block all other resources
+(the default behavior)
 
-# Command line
-From the root of the project, run:
+```typescript
+const tryAlternates = attemptEach(
+  compose(
+    urlFilterAny([/aaai.org/, /umass.edu/]),
+    fetchUrl({javaScriptEnabled=true, allowedResources=['document', 'script'] }),
+  ),
+  compose(
+    fetchUrl(),
+  )
+);
+```
 
-```> ./bin/run spider-url```
+A working example is available in `📄 packages/spider/src/app/cli.ts`,
+
+
+Scraping primitives are defined in
+`📄 packages/spider/src/app/scraping-primitives.ts`,
+and  combinators are defined in
+`📄 packages/spider/src/core/taskflow-defs.ts`.
+
 
 # Logging
 ```sh

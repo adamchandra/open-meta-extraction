@@ -1,3 +1,7 @@
+/**
+ * Basic web scraping functions to control the browser
+ **/
+
 import _ from 'lodash';
 import path from 'path';
 
@@ -37,6 +41,7 @@ import { UrlFetchData, getFetchDataFromResponse } from '~/core/url-fetch-chains'
 import { Logger } from 'winston';
 import { cleanArtifactDir, getHashEncodedPath, taskflow } from '@watr/commonlib';
 
+// Initialize SpiderEnv
 export async function createSpiderEnv(
   log: Logger,
   browserPool: BrowserPool,
@@ -63,18 +68,22 @@ export async function createSpiderEnv(
   return env;
 }
 
-export const urlFilter: (urlTest: RegExp) => FilterTransform<unknown> = (regex) => compose(
-  through((_a, env) => env.initialUrl),
-  filter((a: string) => regex.test(a), `url ~= m/${regex.source}/`),
-);
-
-export const urlMatchAny: (urlTests: RegExp[]) => FilterTransform<unknown> = (urlTests) => {
-  const runTests = (url: string) => urlTests.some(regex => regex.test(url));
-  return compose(
+// Allow URLs that match the given regex
+export const urlFilter: (urlTest: RegExp) => FilterTransform<unknown> =
+  (regex) => compose(
     through((_a, env) => env.initialUrl),
-    filter((a: string) => runTests(a), 'urlMatchAny'),
+    filter((a: string) => regex.test(a), `url ~= m/${regex.source}/`),
   );
-}
+
+// Allow URLs that match any of the given regexes
+export const urlFilterAny: (urlTests: RegExp[]) => FilterTransform<unknown> =
+  (urlTests) => {
+    const runTests = (url: string) => urlTests.some(regex => regex.test(url));
+    return compose(
+      through((_a, env) => env.initialUrl),
+      filter((a: string) => runTests(a), 'urlFilterAny'),
+    );
+  }
 
 // Fetch an HTTPResponse for the given URL
 export const fetchUrl: (pageOpts?: PageInstanceOptions) => Transform<URL, HTTPResponse> =
@@ -98,31 +107,37 @@ export const fetchUrl: (pageOpts?: PageInstanceOptions) => Transform<URL, HTTPRe
   });
 
 
-export const httpResponseToUrlFetchData: Transform<HTTPResponse, UrlFetchData> = through((httpResponse, env) => {
-  const requestUrl = env.initialUrl
-  return getFetchDataFromResponse(requestUrl, httpResponse);
-});
+export const httpResponseToUrlFetchData: Transform<HTTPResponse, UrlFetchData> =
+  through((httpResponse, env) => {
+    const requestUrl = env.initialUrl
+    return getFetchDataFromResponse(requestUrl, httpResponse);
+  });
 
 
-export const getHttpResponseBody: Transform<HTTPResponse, string> = through((httpResponse) => {
-  return pipe(
-    () => httpResponse.buffer().then(body => E.right(body.toString())),
-    TE.mapLeft((msg) => ['continue', msg])
-  );
-});
+// Return HTTPResponse as an HTML string
+export const getHttpResponseBody: Transform<HTTPResponse, string> =
+  through((httpResponse) => {
+    return pipe(
+      () => httpResponse.buffer().then(body => E.right(body.toString())),
+      TE.mapLeft((msg) => ['continue', msg])
+    );
+  });
 
-export const writeResponseBody: Transform<HTTPResponse, HTTPResponse> = tap((httpResponse, env) => {
-  const entryPath = env.entryPath();
-  return writeHttpResponseBody(httpResponse, entryPath);
-}, 'Writing Response Body');
+export const writeResponseBody: Transform<HTTPResponse, HTTPResponse> =
+  tap((httpResponse, env) => {
+    const entryPath = env.entryPath();
+    return writeHttpResponseBody(httpResponse, entryPath);
+  }, 'Writing Response Body');
 
-export const writePageFrames: Transform<unknown, unknown> = tap((_a, env) => {
-  const { browserPageCache, initialUrl, entryPath } = env;
-  const page = browserPageCache[initialUrl];
-  return writeHttpResponseFrames(entryPath(), page)
-}, 'Writing Page Frames');
+export const writePageFrames: <A>() => Transform<A, A> =
+  () => tap((_a, env) => {
+    const { browserPageCache, initialUrl, entryPath } = env;
+    const page = browserPageCache[initialUrl];
+    return writeHttpResponseFrames(entryPath(), page)
+  }, 'Writing Page Frames');
 
-export const cleanArtifacts: Transform<unknown, unknown> = tap((_a, env) => {
-  const entryPath = env.entryPath();
-  cleanArtifactDir(entryPath);
-}, 'Cleaning Artifacts');
+export const cleanArtifacts: <A>() => Transform<A, A> =
+  () => tap((_a, env) => {
+    const entryPath = env.entryPath();
+    cleanArtifactDir(entryPath);
+  }, 'Cleaning Artifacts');

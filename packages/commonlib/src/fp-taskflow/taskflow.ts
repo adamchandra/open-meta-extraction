@@ -11,8 +11,8 @@ import { prettyFormat } from '~/util/pretty-print';
 import { setLogLabel, getServiceLogger } from '~/util/basic-logging';
 
 export interface FPackage<Env extends BaseEnv> {
-  asW<A>(a: A, w: Env): W<A, Env>;
-  asWCI(ci: ControlInstruction, w: Env): WCI<Env>;
+  valueEnvPair<A>(a: A, w: Env): W<A, Env>;
+  controlEnvPair(ci: ControlInstruction, w: Env): WCI<Env>;
 
   // Pair an Transform function with a runtime Env
   withNS: <A, B>(name: string, arrow: Transform<A, B, Env>) => Transform<A, B, Env>;
@@ -61,8 +61,8 @@ export interface FPackage<Env extends BaseEnv> {
 
 export function createFPackage<Env extends BaseEnv>(): FPackage<Env> {
   const fp: FPackage<Env> = {
-    asW,
-    asWCI,
+    valueEnvPair,
+    controlEnvPair,
     withNS,
     withCarriedWA,
     forEachDo,
@@ -133,12 +133,13 @@ export function initBaseEnv(logOrName: Logger | string): BaseEnv {
  * Return value with user defined Environment
  */
 export type W<A, Env extends BaseEnv> = [a: A, env: Env];
-function asW<A, Env extends BaseEnv>(a: A, w: Env): W<A, Env> {
+
+function valueEnvPair<A, Env extends BaseEnv>(a: A, w: Env): W<A, Env> {
   return [a, w];
 }
 
 export type WCI<Env extends BaseEnv> = W<ControlInstruction, Env>;
-function asWCI<Env extends BaseEnv>(ci: ControlInstruction, w: Env): WCI<Env> {
+function controlEnvPair<Env extends BaseEnv>(ci: ControlInstruction, w: Env): WCI<Env> {
   return [ci, w];
 }
 
@@ -177,22 +178,22 @@ const ClientFunc = {
 
 export type EventualResult<A, Env extends BaseEnv> = Promise<PerhapsW<A, Env>>;
 const EventualResult = {
-  lift: <A, Env extends BaseEnv>(a: Eventual<A>, env: Env): EventualResult<A, Env> => Promise.resolve<A>(a).then(a0 => E.right(asW(a0, env))),
+  lift: <A, Env extends BaseEnv>(a: Eventual<A>, env: Env): EventualResult<A, Env> => Promise.resolve<A>(a).then(a0 => E.right(valueEnvPair(a0, env))),
 
   liftW: <A, Env extends BaseEnv>(wa: Eventual<W<A, Env>>): EventualResult<A, Env> => Promise.resolve<W<A, Env>>(wa).then(wa0 => E.right(wa0)),
 
-  liftFail: <A, Env extends BaseEnv>(ci: Eventual<ControlInstruction>, env: Env): EventualResult<A, Env> => Promise.resolve<ControlInstruction>(ci).then(ci0 => E.left(asW(ci0, env))),
+  liftFail: <A, Env extends BaseEnv>(ci: Eventual<ControlInstruction>, env: Env): EventualResult<A, Env> => Promise.resolve<ControlInstruction>(ci).then(ci0 => E.left(valueEnvPair(ci0, env))),
 };
 
 // Basic type representing either success/fail for extracting a value A with an Environment Env
 export type ExtractionTask<A, Env extends BaseEnv> = TE.TaskEither<WCI<Env>, W<A, Env>>;
 
 const ExtractionTask = {
-  lift: <A, Env extends BaseEnv>(a: Eventual<A>, env: Env): ExtractionTask<A, Env> => () => Promise.resolve<A>(a).then(a0 => E.right(asW(a0, env))),
+  lift: <A, Env extends BaseEnv>(a: Eventual<A>, env: Env): ExtractionTask<A, Env> => () => Promise.resolve<A>(a).then(a0 => E.right(valueEnvPair(a0, env))),
 
   liftW: <A, Env extends BaseEnv>(wa: Eventual<W<A, Env>>): ExtractionTask<A, Env> => () => Promise.resolve<W<A, Env>>(wa).then(wa0 => E.right(wa0)),
 
-  liftFail: <A, Env extends BaseEnv>(ci: Eventual<ControlInstruction>, env: Env): ExtractionTask<A, Env> => () => Promise.resolve<ControlInstruction>(ci).then(ci0 => E.left(asW(ci0, env))),
+  liftFail: <A, Env extends BaseEnv>(ci: Eventual<ControlInstruction>, env: Env): ExtractionTask<A, Env> => () => Promise.resolve<ControlInstruction>(ci).then(ci0 => E.left(valueEnvPair(ci0, env))),
 };
 
 export interface Transform<A, B, Env extends BaseEnv> {
@@ -277,12 +278,12 @@ const pushNS:
       TE.map(([a, env]) => {
         env.ns.push(name);
         env.enterNS(env.ns);
-        return asW(a, env);
+        return valueEnvPair(a, env);
       }),
       TE.mapLeft(([a, env]) => {
         env.ns.push(name);
         env.enterNS(env.ns);
-        return asW(a, env);
+        return valueEnvPair(a, env);
       })
     );
   };
@@ -295,12 +296,12 @@ const popNS:
       TE.map(([a, env]) => {
         env.ns.pop();
         env.exitNS(env.ns);
-        return asW(a, env);
+        return valueEnvPair(a, env);
       }),
       TE.mapLeft(([a, env]) => {
         env.ns.pop();
         env.exitNS(env.ns);
-        return asW(a, env);
+        return valueEnvPair(a, env);
       }),
     );
   };
@@ -327,7 +328,7 @@ const carryWA:
       }),
       arrow,
       TE.chain(([b, env]) => {
-        return TE.right(asW([b, origWA], env));
+        return TE.right(valueEnvPair([b, origWA], env));
       }),
     );
   };
@@ -368,7 +369,7 @@ const forEachDo: <A, B, Env extends BaseEnv> (arrow: Transform<A, B, Env>) => Tr
       const [aas, env] = wa;
       const bbs = _.map(aas, (a) => {
         const env0 = _.clone(env);
-        return arrow(TE.right(asW<A, Env>(a, env0)));
+        return arrow(TE.right(valueEnvPair<A, Env>(a, env0)));
       });
       const leftRightErrs = separateResults(bbs);
       const rightTasks = pipe(
@@ -379,7 +380,7 @@ const forEachDo: <A, B, Env extends BaseEnv> (arrow: Transform<A, B, Env>) => Tr
           const env0 = _.clone(env);
           const leftMsg = lefts.map((ci) => `${ci}`).join(', ');
           env.log.debug(`forEachDo:lefts:${leftMsg}`);
-          return asW(bs, env0);
+          return valueEnvPair(bs, env0);
         })
       );
       return TE.fromTask(rightTasks);
@@ -410,7 +411,7 @@ const collectFanout:
           }
         });
         env.log.debug(`End fanOut(${arrows.length}); ${bs.length}/${fails} succ/fail`);
-        return TE.right(asW(bs, env));
+        return TE.right(valueEnvPair(bs, env));
       })
     );
   };
@@ -418,31 +419,35 @@ const collectFanout:
 
 const scatterAndSettle: <A, B, Env extends BaseEnv> (
   ...arrows: Transform<A, B, Env>[]
-) => Transform<A, PerhapsW<B, Env>[], Env> = <A, B, Env extends BaseEnv>(...arrows: Transform<A, B, Env>[]) => (ra: ExtractionTask<A, Env>) => pipe(
-  ra,
-  TE.chain(([a, env]: W<A, Env>) => {
-    const bbs = _.map(arrows, (arrow) => {
-      const env0 = _.clone(env);
-      return arrow(TE.right(asW(a, env0)));
-    });
-    const sequenced = () => Async
-      .mapSeries<ExtractionTask<B, Env>, PerhapsW<B, Env>>(
-        bbs,
-        Async.asyncify(async (er: ExtractionTask<A, Env>) => er())
+) => Transform<A, PerhapsW<B, Env>[], Env> =
+  <A, B, Env extends BaseEnv>(...arrows: Transform<A, B, Env>[]) =>
+    (ra: ExtractionTask<A, Env>) =>
+      pipe(
+        ra,
+        TE.chain(([a, env]: W<A, Env>) => {
+          const bbs = _.map(arrows, (arrow) => {
+            const env0 = _.clone(env);
+            return arrow(TE.right(valueEnvPair(a, env0)));
+          });
+          const sequenced = () => Async
+            .mapSeries<ExtractionTask<B, Env>, PerhapsW<B, Env>>(
+              bbs,
+              Async.asyncify(async (er: ExtractionTask<A, Env>) => er())
+            );
+          const pBsTask = pipe(
+            sequenced,
+            Task.map((perhapsBs) => valueEnvPair(perhapsBs, env))
+          );
+          return TE.fromTask(pBsTask);
+        })
       );
-    const pBsTask = pipe(
-      sequenced,
-      Task.map((perhapsBs) => asW(perhapsBs, env))
-    );
-    return TE.fromTask(pBsTask);
-  })
-);
 
 // Compose arrows
-const takeWhileSuccess: <A, Env extends BaseEnv> (...arrows: Transform<A, A, Env>[]) => Transform<A, A, Env> = (...arrows) => withNS(
-  `takeWhileSuccess:${arrows.length}`,
-  __takeWhileSuccess(arrows, arrows.length)
-);
+const takeWhileSuccess: <A, Env extends BaseEnv> (...arrows: Transform<A, A, Env>[]) => Transform<A, A, Env> =
+  (...arrows) => withNS(
+    `takeWhileSuccess:${arrows.length}`,
+    __takeWhileSuccess(arrows, arrows.length)
+  );
 
 const __takeWhileSuccess:
   <A, Env extends BaseEnv>(arrows: Transform<A, A, Env>[], arrowCount: number) => Transform<A, A, Env> =
@@ -476,7 +481,7 @@ const __attemptEach: <A, B, Env extends BaseEnv>(arrows: Transform<A, B, Env>[],
       return pipe(
         ra,
         TE.chain(([, env]) => {
-          return TE.left(asWCI('continue', env));
+          return TE.left(controlEnvPair('continue', env));
         })
       );
     }
@@ -490,7 +495,7 @@ const __attemptEach: <A, B, Env extends BaseEnv>(arrows: Transform<A, B, Env>[],
     return pipe(
       ra,
       TE.chain(([a, env]) => {
-        const origWA = TE.right(asW(a, env));
+        const origWA = TE.right(valueEnvPair(a, env));
 
         const headAttempt = pipe(origWA, withNS(ns, headTransform));
         const fallback = pipe(origWA, __attemptEach(tailTransforms, arrowCount));
@@ -504,8 +509,8 @@ const hook: <A, B, Env extends BaseEnv>(f: (a: A, b: Perhaps<B>, env: Env) => vo
   LogHook<A, B, Env> = (f) => f;
 
 function shortFormat(v: any): string {
-  if (v===undefined) return 'undefined';
-  if (v===null) return 'null';
+  if (v === undefined) return 'undefined';
+  if (v === null) return 'null';
 
   if (_.isArray(v)) {
     const shortArray = _.join(_.map(v, shortFormat), ', ');
@@ -557,7 +562,7 @@ function throughLeft<A, Env extends BaseEnv>(
     TE.mapLeft(([ci, env]) => {
       const fres = f(ci, env);
       const ci0 = fres || ci;
-      return asW(ci0, env);
+      return valueEnvPair(ci0, env);
     }),
   );
 }
@@ -569,7 +574,7 @@ function tapLeft<A, Env extends BaseEnv>(
     ra,
     TE.mapLeft(([ci, env]) => {
       f(ci, env);
-      return asW(ci, env);
+      return valueEnvPair(ci, env);
     }),
   );
 }
@@ -580,7 +585,7 @@ function mapEnv<A, Env extends BaseEnv, Env2 extends BaseEnv>(
 ): EnvTransform<A, Env, Env2> {
   const mappedEnv = (taskIn: ExtractionTask<A, Env>) => pipe(
     TE.right({}),
-    TE.bind('inW', ({ }) => taskIn),
+    TE.bind('inW', ({}) => taskIn),
     TE.bind('a', ({ inW }) => { const [a,] = inW; return TE.right(a); }),
     TE.bind('env1', ({ inW }) => { const [, env1] = inW; return TE.right(env1); }),
     TE.bind('env2', ({ a, env1 }) => {
@@ -589,10 +594,10 @@ function mapEnv<A, Env extends BaseEnv, Env2 extends BaseEnv>(
     }),
     TE.mapLeft(([ci, env1]) => {
       const envx = fl(env1)
-      return asWCI(ci, envx);
+      return controlEnvPair(ci, envx);
     }),
     TE.map(({ a, env2 }) => {
-      return asW(a, env2)
+      return valueEnvPair(a, env2)
     })
   );
 
@@ -652,7 +657,7 @@ function filter<A, Env extends BaseEnv>(
       TE.chain(([[cond, origWA], env]) => {
         return cond
           ? TE.right(origWA)
-          : TE.left<WCI<Env>, W<A, Env>>(asW('halt', env));
+          : TE.left<WCI<Env>, W<A, Env>>(valueEnvPair('halt', env));
       }),
     );
   };
