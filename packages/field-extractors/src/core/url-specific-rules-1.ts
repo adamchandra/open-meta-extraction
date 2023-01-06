@@ -35,7 +35,6 @@ import {
   gatherOpenGraphTags,
 } from './headtag-scripts';
 
-// <link title="pdf" href="http://arxiv.org/pdf/2207.11596v1" rel="related" type="application/pdf"/>
 export const arxivOrgRule: ExtractionRule = compose(
   urlFilter(/export.arxiv.org/),
   forXMLInputs(/response-body/, compose(
@@ -71,12 +70,12 @@ export const scienceDirectRule: ExtractionRule = compose(
       gatherHighwirePressTags,
       gatherOpenGraphTags,
       selectElemTextEvidence('.Abstracts'),
-      selectElemTextEvidence('a.author'), // TODO selectAll??
+      selectElemTextEvidence('a.author'),
       selectElemAttrEvidence('div.PdfEmbed a.anchor', 'href'),
     ),
     validateEvidence({
       citation_title: 'title',
-      'og:description': 'abstract-clipped', // TODO fix/figure out naming scheme
+      'og:description': 'abstract-clipped', 
       '.Abstracts': 'abstract',
       'a.author': 'author',
       'div.PdfEmbed?': 'pdf-link',

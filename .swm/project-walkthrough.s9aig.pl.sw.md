@@ -15,6 +15,19 @@ a spidering package to retrieve and query a web page, an extensible set of rules
 to  scrape  the metadata,  and  a  service  module  to handle  scheduled  tasks,
 communication with OpenReview , and monitoring during deployment.
 
+The system consists of four packages:
+
+- Spider, which
+- FieldExtractors
+- CommonLib, which defines the basic control-flow abstractions
+- Services
+- Root, which contains shared configurations for building, testing, and linting
+
+## Requirements
+- Import new URLs from OpenReview on a regular schedule
+- Retrieve metadata for each imported URL, and post it back to OpenReview
+- Deliver daily report on extraction process
+
 <br/>
 
 <!-- Steps - Do not remove this comment -->

@@ -178,14 +178,6 @@ export const lrecConfOrg: ExtractionRule = compose(
   )),
 );
 
-// export const linkingHubElsevierCom: ExtractionRule = compose(
-//   urlFilter(/linkinghub.elsevier.com/),
-//   forInputs(/response-body/, compose(
-//     loadBrowserPage(ScriptablePageInstanceOptions),
-//   ))
-// );
-
-
 const selectCogsciMindmodelingAbstract: Transform<string, unknown> = compose(
   splitLines,
   grepDropUntil(/Abstract/),

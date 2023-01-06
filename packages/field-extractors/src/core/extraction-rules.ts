@@ -4,7 +4,6 @@ import {
   attemptEach,
   compose,
   Transform,
-  tapLeft,
 } from '~/predef/extraction-prelude';
 
 import {
@@ -21,6 +20,7 @@ import {
 } from './spidering-rules';
 
 
+// Field extraction pipeline
 export const FieldExtractionAttempts: Transform<unknown, unknown> = compose(
   checkStatusAndNormalize,
   attemptEach(
@@ -30,8 +30,9 @@ export const FieldExtractionAttempts: Transform<unknown, unknown> = compose(
   summarizeEvidence,
 );
 
+// Full spidering + extraction pipeline
 export const SpiderAndExtractionTransform = compose(
   SpideringPipeline,
   SpiderToExtractionEnv,
   FieldExtractionAttempts
-)
+);

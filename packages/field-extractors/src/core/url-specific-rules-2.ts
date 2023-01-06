@@ -50,6 +50,8 @@ type ParsedJson = {
   json: any
 }
 
+// Springer documents have JSon embedded as a string within <script> tags,
+// this will attempt to locate and parse it
 const readSpringerDocumentMetadata: Transform<BrowserPage, ParsedJson> = compose(
   selectOne('script[type="application/ld+json"]'),
   getElemText,

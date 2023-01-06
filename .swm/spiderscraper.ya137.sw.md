@@ -29,14 +29,12 @@ other domains would  only fetch the HTML document and  block all other resources
 (the default behavior)
 
 ```typescript
-const tryAlternates = attemptEach(
+const tryAlternates = attemptEach( // try each function, stopping at first success
   compose(
     urlFilterAny([/aaai.org/, /umass.edu/]),
     fetchUrl({javaScriptEnabled=true, allowedResources=['document', 'script'] }),
   ),
-  compose(
-    fetchUrl(),
-  )
+  fetchUrl(),
 );
 ```
 
@@ -45,66 +43,9 @@ A working example is available in `📄 packages/spider/src/app/cli.ts`,
 
 Scraping primitives are defined in
 `📄 packages/spider/src/app/scraping-primitives.ts`,
-and  combinators are defined in
+and  control-flow primitives are defined in
 `📄 packages/spider/src/core/taskflow-defs.ts`.
 
-
-# Logging
-```sh
-➜ bin/cli --env dev --log-level=verbose spider-url --corpus-root ./tmp.d --url 'https://doi.org/10.48550/arXiv.2205.02979'
-run> node ./packages/services/dist/src/cli --log-level=verbose spider-url --corpus-root ./tmp.d --url https://doi.org/10.48550/arXiv.2205.02979
-10:36:18:1818 verbose [browser-pool] pool/event: acquireRequest:1
-10:36:18:1818 verbose [browser-pool] pool/event: createRequest:2
-10:36:19:1919 verbose [browser-pool] pool/event: createSuccess:2: Browser#324380
-10:36:19:1919 debug [browser-pool] validating Browser#324380
-10:36:19:1919 verbose [browser-pool] pool/event: startReaping
-10:36:19:1919 verbose [browser-pool] pool/event: acquireSuccess:1: Browser#324380
-10:36:19:1919 verbose [browser-pool] Browser#324380: browserEvent: targetcreated, targetType: undefined, targetUrl: undefined
-10:36:19:1919 debug [browser-pool] interceptPageEvents():begin
-10:36:19:1919 debug [spider] [] Resource permissions:
-10:36:19:1919 debug [spider] []    Blocked: cspviolationreport, eventsource, fetch, font, image, manifest, media, other, ping, preflight, script, stylesheet, signedexchange, texttrack, websocket, xhr, prefetch
-10:36:19:1919 debug [spider] []    Allowed: document
-10:36:19:1919 verbose [browser-pool] Browser#324380/pageEvent: domcontentloaded
-10:36:19:1919 debug [browser-pool] Aborting rewritable url https://doi.org/10.48550/arXiv.2205.02979
-10:36:19:1919 debug [browser-pool] B<324380> / Fail<7FA4422E9AAC1CCBC93FD2FB3972167D> resource: document https://doi.org/10.48550/arXiv.2205.02979, requestfailed
-10:36:19:1919 debug [spider] [] Attempting Rewrite for Error: net::ERR_BLOCKED_BY_CLIENT at https://doi.org/10.48550/arXiv.2205.02979
-10:36:19:1919 debug [spider] []  Rewrite url https://doi.org/10.48550/arXiv.2205.02979
-10:36:19:1919 info [spider] [] Rewrote https://doi.org/10.48550/arXiv.2205.02979 to http://export.arxiv.org/api/query?id_list=2205.02979
-Document (request id: F89EAC554D247B5493695BB354A478BF) resource url http://export.arxiv.org/api/query?id_list=2205.02979
-10:36:19:1919 verbose [browser-pool] Browser#324380: browserEvent: targetchanged, targetType: undefined, targetUrl: undefined
-10:36:19:1919 verbose [browser-pool] Browser#324380/pageEvent: framenavigated
-10:36:19:1919 debug [browser-pool] B<324380> / Success<F89EAC554D247B5493695BB354A478BF> resource: document http://export.arxiv.org/api/query?..., response, requestfinished
-10:36:19:1919 verbose [browser-pool] Browser#324380/pageEvent: load
-Spider success: {
-  requestUrl: 'https://doi.org/10.48550/arXiv.2205.02979',
-  responseUrl: 'http://export.arxiv.org/api/query?id_list=2205.02979',
-  status: '200',
-  fetchChain: [],
-  timestamp: 'Tue, 03 Jan 2023 15:36:19 GMT'
-}
-10:36:19:1919 debug [browser-pool] pool.release(B<324380>)
-10:36:19:1919 verbose [browser-pool] Browser#324380/pageEvent: domcontentloaded
-10:36:19:1919 debug [browser-pool]     release(Page<about:blank>)
-10:36:19:1919 debug [browser-pool]     release(Page<http://export.arxiv.org/api/query?id_list=2205.02979>)
-10:36:19:1919 verbose [browser-pool] pool/event: release Browser#324380
-10:36:19:1919 debug [browser-pool] pool.release(B<324380>): done
-10:36:19:1919 debug [browser-pool] pool.shutdown()
-10:36:19:1919 verbose [browser-pool] pool/event: poolDestroyRequest:3
-10:36:19:1919 verbose [browser-pool] pool/event: stopReaping
-10:36:19:1919 verbose [browser-pool] pool/event: destroyRequest:4: Browser#324380
-10:36:19:1919 debug [browser-pool] Browser#324380 onExit: null
-10:36:19:1919 debug [browser-pool] Browser#324380 closed
-10:36:19:1919 verbose [browser-pool] pool/event: destroySuccess:4: Browser#324380
-10:36:19:1919 verbose [browser-pool] pool/event: poolDestroySuccess:3
-10:36:19:1919 debug [browser-pool] Browser#324380 onClose: null
-10:36:19:1919 debug [browser-pool] Node process got null/0; cleaning up browser pool
-```
-
-
-# Browser page caching
-
-
-<br/>
 
 <br/>
 

@@ -57,7 +57,6 @@ export type FilterTransform<A> = ft.FilterTransform<A, EnvT>;
 
 export type ExtractionRule = (ra: ExtractionTask<unknown>) => ExtractionTask<unknown>;
 
-
 export type SpiderToExtractionEnvTransform<A> = ft.EnvTransform<A, SpiderEnv, ExtractionEnv>;
 
 export const compose = ft.compose;

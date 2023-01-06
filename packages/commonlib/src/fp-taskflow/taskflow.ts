@@ -203,10 +203,6 @@ export interface Transform<A, B, Env extends BaseEnv> {
 export type EnvTransform<A, EnvA extends BaseEnv, EnvB extends BaseEnv> =
   (t: ExtractionTask<A, EnvA>) => ExtractionTask<A, EnvB>;
 
-export type EnvTransformX<A, B, EnvA extends BaseEnv, EnvB extends BaseEnv> =
-  (t: ExtractionTask<A, EnvA>) => Transform<A, B, EnvB>;
-
-
 const Transform = {
   lift: <A, B, Env extends BaseEnv>(
     fab: ClientFunc<A, B, Env>,

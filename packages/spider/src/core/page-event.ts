@@ -1,7 +1,6 @@
 /**
  * Register handlers for all browser/page events
  * Initialize event logging and create interception hooks
- *
  */
 
 import { putStrLn } from '@watr/commonlib';
@@ -266,8 +265,11 @@ export function interceptPageEvents(pageInstance: PageInstance, logger: Logger) 
 }
 
 
+// Optionally abort a request before it is made, if that request is for
+// a blocked resource type, or if the requested URL will be rewritten
+// and the request re-sent
 export function interceptRequestCycle(pageInstance: PageInstance, logger: Logger) {
-  const { page, opts } = pageInstance;
+  const { page } = pageInstance;
 
   const bproc = page.browser().process();
   const pid = bproc?.pid;
@@ -293,7 +295,6 @@ export function interceptRequestCycle(pageInstance: PageInstance, logger: Logger
 
           if (isRewritable) {
             logger.debug(`Aborting rewritable url ${url}`);
-            request.respond
             request.abort('blockedbyclient');
             break;
           }
