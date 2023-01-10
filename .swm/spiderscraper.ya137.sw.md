@@ -2,19 +2,16 @@
 id: ya137
 name: Spider/scraper
 file_version: 1.1.0
-app_version: 1.0.0
+app_version: 1.0.6
 ---
 
-# Overview
-The spidering package  provides an API to build simple  web page scrapers. Under
-the hood  it uses Puppeteer  to manage a  headless browser. It  provides several
-preconfigured  levels  of script  and  resource  blocking, utilities  to  manage
-collections of  downloaded pages, and  extensive logging for  monitoring browser
-events.
+# _Overview_
 
-# API Usage
+_The spidering package provides an API to build simple web page scrapers. Under the hood it uses Puppeteer to manage a headless browser. It provides several preconfigured levels of script and resource blocking, utilities to manage collections of downloaded pages, and extensive logging for monitoring browser events._
 
-A basic fetch function might look like the following:
+# _API Usage_
+
+_A basic fetch function might look like the following:_
 
 ```typescript
 const runScraper: Transform<URL, unknown> = compose(
@@ -24,9 +21,7 @@ const runScraper: Transform<URL, unknown> = compose(
 );
 ```
 
-A more complex  example might allow JavaScript to run  on certain domains, while
-other domains would  only fetch the HTML document and  block all other resources
-(the default behavior)
+_A more complex example might allow JavaScript to run on certain domains, while other domains would only fetch the HTML document and block all other resources (the default behavior)_
 
 ```typescript
 const tryAlternates = attemptEach( // try each function, stopping at first success
@@ -38,14 +33,9 @@ const tryAlternates = attemptEach( // try each function, stopping at first succe
 );
 ```
 
-A working example is available in `📄 packages/spider/src/app/cli.ts`,
+_A working example is available in `📄 packages/spider/src/app/cli.ts`,_
 
-
-Scraping primitives are defined in
-`📄 packages/spider/src/app/scraping-primitives.ts`,
-and  control-flow primitives are defined in
-`📄 packages/spider/src/core/taskflow-defs.ts`.
-
+_Scraping primitives are defined in `📄 packages/spider/src/app/scraping-primitives.ts`, and control-flow primitives are defined in `📄 packages/spider/src/core/taskflow-defs.ts`._
 
 <br/>
 

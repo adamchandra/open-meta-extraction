@@ -2,7 +2,7 @@
 id: s9aig
 name: Project Walkthrough
 file_version: 1.1.0
-app_version: 1.0.2
+app_version: 1.0.6
 ---
 
 <!-- Intro - Do not remove this comment -->
@@ -42,6 +42,7 @@ The system consists of four packages:
 
 <br/>
 
+<!-- Summary - Do not remove this comment -->
 <!-- Summary - Do not remove this comment -->
 
 <br/>
