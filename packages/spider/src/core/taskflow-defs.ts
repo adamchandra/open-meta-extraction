@@ -32,7 +32,7 @@ export interface SpiderEnv extends NamespacedLogging, BrowserPoolCachingEnv {
   entryPath(): string;
 };
 
-const fp = ft.createFPackage<SpiderEnv>();
+const fp = ft.createTaskFlow<SpiderEnv>();
 
 export const {
   tap,
@@ -43,7 +43,7 @@ export const {
   filter,
   Transform,
   forEachDo,
-  attemptEach,
+  eachOrElse,
   takeWhileSuccess,
   collectFanout,
   valueEnvPair,

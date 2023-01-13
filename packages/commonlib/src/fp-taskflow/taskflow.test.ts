@@ -2,7 +2,6 @@ import _ from 'lodash';
 
 import * as TE from 'fp-ts/TaskEither';
 import { isRight } from 'fp-ts/Either';
-import Async from 'async';
 import { flow as compose, pipe } from 'fp-ts/function';
 import * as ft from './taskflow';
 import { prettyPrint } from '~/util/pretty-print';
@@ -10,14 +9,14 @@ import { asyncEachOf } from '~/util/async-plus';
 import { setLogEnvLevel } from '~/util/basic-logging';
 
 
-interface EnvT extends ft.BaseEnv {
+interface FirstEnvT extends ft.BaseEnv {
   b: boolean;
   messages: string[];
 }
 
-function initEnv<A>(a: A): ExtractionTask<A> {
+function initFirstEnv<A>(a: A): ExtractionTask<A> {
   const baseEnv = ft.initBaseEnv('first-env');
-  const env0: EnvT = {
+  const env0: FirstEnvT = {
     ...baseEnv,
     b: true,
     messages: []
@@ -26,13 +25,13 @@ function initEnv<A>(a: A): ExtractionTask<A> {
   return TE.right(valueEnvPair(a, env0));
 }
 
-interface OtherEnvT extends ft.BaseEnv {
+interface SecondEnvT extends ft.BaseEnv {
   otherField: boolean;
 }
 
-function initOtherEnv(): OtherEnvT {
-  const baseEnv = ft.initBaseEnv('other-env');
-  const env: OtherEnvT = {
+function initSecondEnv(): SecondEnvT {
+  const baseEnv = ft.initBaseEnv('second-env');
+  const env: SecondEnvT = {
     ...baseEnv,
     otherField: true
   };
@@ -40,31 +39,13 @@ function initOtherEnv(): OtherEnvT {
   return env;
 }
 
-interface Env3T extends ft.BaseEnv {
-  env3Field: number;
-}
+const fp1 = ft.createTaskFlow<FirstEnvT>();
+const fp2 = ft.createTaskFlow<SecondEnvT>();
 
-function initEnv3(): Env3T {
-  const baseEnv = ft.initBaseEnv('third-env');
-  const env: Env3T = {
-    ...baseEnv,
-    env3Field: 42
-  };
-
-  return env;
-}
-async function initEnv3Promise(): Promise<Env3T> {
-  return initEnv3();
-}
-const fp = ft.createFPackage<EnvT>();
-
-const fpOther = ft.createFPackage<OtherEnvT>();
-const fpEnv3 = ft.createFPackage<Env3T>();
-
-type ExtractionTask<A> = ft.ExtractionTask<A, EnvT>;
-type Transform<A, B> = ft.Transform<A, B, EnvT>;
-type PerhapsW<A> = ft.PerhapsW<A, EnvT>;
-// type FilterTransform<A> = ft.FilterTransform<A, EnvT>;
+type ExtractionTask<A> = ft.ExtractionTask<A, FirstEnvT>;
+type Transform<A, B> = ft.Transform<A, B, FirstEnvT>;
+type PerhapsW<A> = ft.PerhapsWithEnv<A, FirstEnvT>;
+// type FilterTransform<A> = ft.FilterTransform<A, FirstEnvT>;
 
 const {
   tap,
@@ -76,31 +57,27 @@ const {
   valueEnvPair,
   mapEnv,
   forEachDo,
-  attemptEach,
+  eachOrElse,
   takeWhileSuccess,
   collectFanout,
-} = fp;
+} = fp1;
 
 
-const withMessage: <A, B>(name: string, arrow: Transform<A, B>) => Transform<A, B> = (name, arrow) => compose(
-  // ra,
-  tap((_a, env) => env.messages.push(`${name}:enter:right`)),
-  tapLeft((_a, env) => env.messages.push(`${name}:enter:left`)),
-  arrow,
-  tap((_a, env) => env.messages.push(`${name}:exit:right`)),
-  tapLeft((_a, env) => env.messages.push(`${name}:exit:left`)),
+const traceFunc: <A, B>(name: string, func: Transform<A, B>) => Transform<A, B> = (name, func) => compose(
+  tap((_a, env) => env.messages.push(`${name}:in:right`)),
+  tapLeft((_a, env) => env.messages.push(`${name}:in:left`)),
+  func,
+  tap((_a, env) => env.messages.push(`${name}:out:right`)),
+  tapLeft((_a, env) => env.messages.push(`${name}:out:left`)),
 );
 
 
-// const fgood: (s: string) => Transform<string, string> = s => withMessage(`succ:${s}`, filter<string>(() => true));
-const fbad: (s: string) => Transform<string, string> = s => withMessage(`fail:${s}`, filter<string>(() => false));
-const fgood_: Transform<string, string> = withMessage('succ', filter<string>(() => true));
-const fbad_: Transform<string, string> = withMessage('fail', filter<string>(() => false));
+// const fgood: (s: string) => Transform<string, string> = s => traceFunc(`succ:${s}`, filter<string>(() => true));
+const fbad: (s: string) => Transform<string, string> = s => traceFunc(`fail:${s}`, filter<string>(() => false));
+const fgood_: Transform<string, string> = traceFunc('succ', filter<string>(() => true));
+const fbad_: Transform<string, string> = traceFunc('fail', filter<string>(() => false));
 const emit = (msg: string) => tap<string>((_a, env) => env.messages.push(msg));
 const emitL = (msg: string) => tapLeft<string>((_a, env) => env.messages.push(msg));
-
-
-
 
 function getEnvMessages(res: PerhapsW<unknown>): string[] {
   if (isRight(res)) {
@@ -113,60 +90,66 @@ function getEnvMessages(res: PerhapsW<unknown>): string[] {
 
 let dummy = 0;
 async function runTakeWhileSuccess(fns: Transform<string, string>[]): Promise<string[]> {
-  const res = await takeWhileSuccess(...fns)(initEnv(`input#${dummy += 1}`))();
+  const res = await takeWhileSuccess(...fns)(initFirstEnv(`input#${dummy += 1}`))();
   return getEnvMessages(res);
 }
 
-
 async function runTakeFirstSuccess(fns: Transform<string, string>[]): Promise<string[]> {
-  const res = await attemptEach(...fns)(initEnv(`input#${dummy += 1}`))();
+  const res = await eachOrElse(...fns)(initFirstEnv(`input#${dummy += 1}`))();
   return getEnvMessages(res);
 }
 
 async function runGatherSuccess(fns: Transform<string, string>[]): Promise<string[]> {
-  const res = await collectFanout(...fns)(initEnv(`input#${dummy += 1}`))();
+  const res = await collectFanout(...fns)(initFirstEnv(`input#${dummy += 1}`))();
   return getEnvMessages(res);
 }
 
 
-describe('Extraction Prelude / Primitives', () => {
-  // it('should create basic arrows/results', async (done) => {});
+describe('TaskFlow control flow primitives', () => {
+  // it('should create basic funcs/results', async (done) => {});
   // it('tap() composition', async (done) => { });
 
-  type ExampleType = [Transform<string, string>[], string[]];
+  type TestTransforms = Transform<string, string>[];
+  type ExpectedTrace = string[];
+  type ExampleType = [TestTransforms, ExpectedTrace];
+
   setLogEnvLevel('verbose')
 
-  it('takeWhileSuccess examples', async () => {
+  it.only('takeWhileSuccess examples', async () => {
     const examples: ExampleType[] = [
-      [[emit('A:okay'), fbad_, emit('B:bad')],
-      ['A:okay']],
-      [[emit('A:okay'), emit('B:okay'), fbad_, emit('B:bad')],
-      ['A:okay', 'B:okay']],
-      [[emit('A:okay'), fgood_, emit('B:okay'), fbad_, emitL('CL:okay')],
-      ['A:okay', 'B:okay', 'CL:okay']],
-      [[fbad_, emit('B:bad')],
-      []],
+      [
+        [emit('A:okay'), fbad_, emit('B:bad')],
+        ['A:okay']
+      ], [
+        [emit('A:okay'), emit('B:okay'), fbad_, emit('B:bad')],
+        ['A:okay', 'B:okay']
+      ], [
+        [emit('A:okay'), fgood_, emit('B:okay'), fbad_, emitL('CL:okay')],
+        ['A:okay', 'B:okay', 'CL:okay']
+      ], [
+        [fbad_, emit('B:bad')],
+        []
+      ],
     ];
 
 
-    await Async.eachOf(examples, Async.asyncify(async (ex: ExampleType) => {
+    await asyncEachOf(examples, async (ex: ExampleType, n) => {
       const [example, expectedMessages] = ex;
       const messages = await runTakeWhileSuccess(example);
 
       const haveExpectedMessages = _.every(expectedMessages, em => messages.includes(em));
       const haveBadMessages = _.some(messages, msg => /bad/.test(msg));
 
-      // prettyPrint({ msg: `example: ${n}`, messages, expectedMessages });
+      prettyPrint({ msg: `example: ${n}`, messages, expectedMessages });
 
       expect(haveExpectedMessages).toBe(true);
       expect(haveBadMessages).toBe(false);
-    }));
-
+    });
 
     // done();
   });
 
-  it('attemptEach examples', async () => {
+  it('eachOrElse examples', async () => {
     const examples: Array<[Transform<string, string>[], string[]]> = [
       // Always stop at first emit:
       [[emit('A:okay'), emit('B:bad')],
@@ -189,7 +172,7 @@ describe('Extraction Prelude / Primitives', () => {
     ];
 
 
-    await Async.eachOf(examples, Async.asyncify(async (ex: ExampleType) => {
+    await asyncEachOf(examples, async (ex: ExampleType) => {
       const [example, expectedMessages] = ex;
       const messages = await runTakeFirstSuccess(example);
       const haveExpectedMessages = _.every(expectedMessages, em => messages.includes(em));
@@ -199,7 +182,7 @@ describe('Extraction Prelude / Primitives', () => {
 
       expect(haveExpectedMessages).toBe(true);
       expect(haveBadMessages).toBe(false);
-    }));
+    });
 
 
     // done();
@@ -218,7 +201,7 @@ describe('Extraction Prelude / Primitives', () => {
     ];
 
 
-    await Async.eachOf(examples, Async.asyncify(async (ex: ExampleType) => {
+    await asyncEachOf(examples, async (ex: ExampleType) => {
 
       const [example, expectedMessages] = ex;
       const messages = await runGatherSuccess(example);
@@ -227,9 +210,7 @@ describe('Extraction Prelude / Primitives', () => {
 
       expect(haveExpectedMessages).toBe(true);
       expect(haveBadMessages).toBe(false);
-    }));
-
-
+    });
   });
 
 
@@ -253,7 +234,7 @@ describe('Extraction Prelude / Primitives', () => {
       const n = index + 1;
       const inputs = _.map(_.range(4), i => i + 1);
       prettyPrint({ inputs });
-      const env0 = initEnv(inputs);
+      const env0 = initFirstEnv(inputs);
       const res = await forEachDo(filterMod0(n))(env0)();
       if (isRight(res)) {
         const [finalValue] = res.right;
@@ -268,8 +249,8 @@ describe('Extraction Prelude / Primitives', () => {
 
   it('should map env types', async () => {
     const inputs = _.map(_.range(4), i => i + 1);
-    const env0 = initEnv(inputs);
-    const otherEnv = initOtherEnv();
+    const env0 = initFirstEnv(inputs);
+    const otherEnv = initSecondEnv();
     const runnable = pipe(
       env0,
       tapEitherEnv(e => {
@@ -277,13 +258,14 @@ describe('Extraction Prelude / Primitives', () => {
         e.log.info('hello from env')
       }),
       mapEnv((_e) => otherEnv, (_e, _a) => otherEnv),
-      fpOther.tapEitherEnv(e => {
+      fp2.tapEitherEnv(e => {
         e.log.info(`hello from other env ${e.otherField}`)
       }),
-      fpOther.mapEnv((_envLeft) => initEnv3(), (_envRight, _a) => initEnv3Promise()),
-      fpEnv3.tapEitherEnv(e => {
-        e.log.info(`hello from other env ${e.env3Field}`);
-      }),
+      // Map back to env1
+      // fp2.mapEnv((_envLeft) => initThirdEnv(), (_envRight, _a) => initThirdEnvPromise()),
+      // fpThirdEnv.tapEitherEnv(e => {
+      //   e.log.info(`hello from other env ${e.env3Field}`);
+      // }),
     )
     await runnable()
   });

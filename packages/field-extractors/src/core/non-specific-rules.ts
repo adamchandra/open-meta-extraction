@@ -2,7 +2,7 @@ import parseUrl from 'url-parse';
 
 import {
   compose,
-  attemptEach,
+  eachOrElse,
 } from '~/predef/extraction-prelude';
 
 import {
@@ -32,7 +32,7 @@ export const GeneralExtractionAttempts = compose(
   addUrlEvidence,
   gatherSchemaEvidence,
   clearEvidence(/^url:/),
-  attemptEach(
+  eachOrElse(
     validateEvidence({
       'title': 'title',
       'description|abstract': 'abstract',

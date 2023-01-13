@@ -6,8 +6,11 @@ app_version: 1.0.6
 ---
 
 # _Overview_
-
-_The spidering package provides an API to build simple web page scrapers. Under the hood it uses Puppeteer to manage a headless browser. It provides several preconfigured levels of script and resource blocking, utilities to manage collections of downloaded pages, and extensive logging for monitoring browser events._
+The spidering package  provides an API to build simple  web page scrapers. Under
+the hood  it uses Puppeteer  to manage a  headless browser. It  provides several
+preconfigured  levels  of script  and  resource  blocking, utilities  to  manage
+collections of  downloaded pages, and  extensive logging for  monitoring browser
+events.
 
 # _API Usage_
 
@@ -21,10 +24,10 @@ const runScraper: Transform<URL, unknown> = compose(
 );
 ```
 
-_A more complex example might allow JavaScript to run on certain domains, while other domains would only fetch the HTML document and block all other resources (the default behavior)_
+A more complex example might allow JavaScript to run on certain domains, while other domains would only fetch the HTML document and block all other resources (the default behavior)
 
 ```typescript
-const tryAlternates = attemptEach( // try each function, stopping at first success
+const tryAlternates = eachOrElse( // try each function, stopping at first success
   compose(
     urlFilterAny([/aaai.org/, /umass.edu/]),
     fetchUrl({javaScriptEnabled=true, allowedResources=['document', 'script'] }),
@@ -33,9 +36,9 @@ const tryAlternates = attemptEach( // try each function, stopping at first succe
 );
 ```
 
-_A working example is available in `📄 packages/spider/src/app/cli.ts`,_
+A working example is available in `📄 packages/spider/src/app/cli.ts`,
 
-_Scraping primitives are defined in `📄 packages/spider/src/app/scraping-primitives.ts`, and control-flow primitives are defined in `📄 packages/spider/src/core/taskflow-defs.ts`._
+Scraping primitives are defined in `📄 packages/spider/src/app/scraping-primitives.ts`, and control-flow primitives are defined in `📄 packages/spider/src/core/taskflow-defs.ts`.
 
 <br/>
 

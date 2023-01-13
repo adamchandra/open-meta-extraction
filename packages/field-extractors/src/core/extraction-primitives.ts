@@ -364,7 +364,7 @@ export const checkStatusAndNormalize = compose(
 );
 
 
-export const forXMLInputs: (re: RegExp, arrow: Transform<string, unknown>) => Transform<unknown, unknown> = (re, transform) => compose(
+export const forXMLInputs: (re: RegExp, func: Transform<string, unknown>) => Transform<unknown, unknown> = (re, transform) => compose(
   listArtifactFiles('.', re),
   forEachDo(
     compose(

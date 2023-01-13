@@ -25,7 +25,7 @@ export interface ExtractionEnv extends SpiderEnv {
   fileContentCache: Record<string, any>;
 };
 
-const fp = ft.createFPackage<ExtractionEnv>();
+const fp = ft.createTaskFlow<ExtractionEnv>();
 
 export const {
   tap,
@@ -38,7 +38,7 @@ export const {
   ClientFunc,
   Transform,
   forEachDo,
-  attemptEach,
+  eachOrElse,
   takeWhileSuccess,
   collectFanout,
 } = fp;
@@ -49,7 +49,7 @@ type EnvT = ExtractionEnv;
 
 
 export type ExtractionTask<A> = ft.ExtractionTask<A, EnvT>;
-export type PerhapsW<A> = ft.PerhapsW<A, EnvT>;
+export type PerhapsW<A> = ft.PerhapsWithEnv<A, EnvT>;
 export type ClientFunc<A, B> = ft.ClientFunc<A, B, EnvT>;
 export type ClientResult<A> = ft.ClientResult<A>;
 export type Transform<A, B> = ft.Transform<A, B, EnvT>;

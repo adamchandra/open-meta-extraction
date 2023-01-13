@@ -17,11 +17,11 @@ communication with OpenReview , and monitoring during deployment.
 
 The system consists of four packages:
 
-- Spider, which
-- FieldExtractors
-- CommonLib, which defines the basic control-flow abstractions
-- Services
-- Root, which contains shared configurations for building, testing, and linting
+- Spider, A collection of utilities to navigate URLs using a headless browser
+- FieldExtractors, A set of functions to scrape information from HTML, XML, JSon
+- CommonLib, which defines the basic control-flow abstractions and shared utilities
+- Services, Integration for Spider and FieldExtractors with OpenReview; local DB and deployment configuration
+- Root, which contains shared project configurations
 
 ## Requirements
 - Import new URLs from OpenReview on a regular schedule
@@ -42,7 +42,6 @@ The system consists of four packages:
 
 <br/>
 
-<!-- Summary - Do not remove this comment -->
 <!-- Summary - Do not remove this comment -->
 
 <br/>

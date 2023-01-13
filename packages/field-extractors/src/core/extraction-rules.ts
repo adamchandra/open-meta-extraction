@@ -1,7 +1,7 @@
 import _ from 'lodash';
 
 import {
-  attemptEach,
+  eachOrElse,
   compose,
   Transform,
 } from '~/predef/extraction-prelude';
@@ -23,7 +23,7 @@ import {
 // Field extraction pipeline
 export const FieldExtractionAttempts: Transform<unknown, unknown> = compose(
   checkStatusAndNormalize,
-  attemptEach(
+  eachOrElse(
     UrlSpecificAttempts,
     GeneralExtractionAttempts
   ),

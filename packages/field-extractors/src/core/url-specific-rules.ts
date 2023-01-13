@@ -6,7 +6,7 @@
  **/
 
 import {
-  attemptEach,
+  eachOrElse,
 } from '~/predef/extraction-prelude';
 
 import {
@@ -19,7 +19,7 @@ import * as u1 from './url-specific-rules-1';
 import * as u2 from './url-specific-rules-2';
 import * as u3 from './url-specific-rules-3';
 
-export const UrlSpecificAttempts = attemptEach(
+export const UrlSpecificAttempts = eachOrElse(
   u1.arxivOrgRule,
   u1.scienceDirectRule,
   u1.dlAcmOrgRule,

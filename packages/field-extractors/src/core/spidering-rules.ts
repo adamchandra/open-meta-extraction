@@ -34,7 +34,7 @@ const emptyUrlFetchData: UrlFetchData = {
 type Transform<A, B> = stflow.Transform<A, B>
 
 const {
-    attemptEach,
+    eachOrElse,
     mapEnv,
 } = sfp;
 
@@ -61,7 +61,7 @@ const defaultSpideringRule: Transform<URL, HTTPResponse> = compose(
     fetchUrl(),
 )
 
-const SpideringUrlSpecificAttempts: Transform<URL, HTTPResponse> = attemptEach(
+const SpideringUrlSpecificAttempts: Transform<URL, HTTPResponse> = eachOrElse(
     linkinghubSpideringRule,
     defaultSpideringRule
 )

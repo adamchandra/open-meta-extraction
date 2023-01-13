@@ -1,3 +1,8 @@
+/**
+ * Definitions for control flow abstractions for creating pipelines for
+ * spidering, field extractors
+ **/
+
 import _ from 'lodash';
 
 import { pipe, flow as fptsFlow } from 'fp-ts/function';
@@ -10,19 +15,39 @@ import Async from 'async';
 import { prettyFormat } from '~/util/pretty-print';
 import { setLogLabel, getServiceLogger } from '~/util/basic-logging';
 
-export interface FPackage<Env extends BaseEnv> {
-  valueEnvPair<A>(a: A, w: Env): W<A, Env>;
-  controlEnvPair(ci: ControlInstruction, w: Env): WCI<Env>;
+export interface TaskFlow<Env extends BaseEnv> {
+  // Construct a [value, env] pair
+  valueEnvPair<A>(a: A, w: Env): WithEnv<A, Env>;
 
-  // Pair an Transform function with a runtime Env
-  withNS: <A, B>(name: string, arrow: Transform<A, B, Env>) => Transform<A, B, Env>;
-  withCarriedWA: <A, Env extends BaseEnv>(arrow: Transform<A, unknown, Env>) => Transform<A, A, Env>;
+  // Construct a [control, env] pair
+  controlEnvPair(ci: ControlInstruction, w: Env): CIWithEnv<Env>;
+
+
+  // Namespace support for logging:
+  // Bracket the given function by  pushing/popping the given name onto a stack in Env
+  // Allows log functions to include a context prefix for better execution tracing
+  useNamespace: <A, B>(name: string, func: Transform<A, B, Env>) => Transform<A, B, Env>;
+
+  //
+  withCarriedWA: <A, Env extends BaseEnv>(func: Transform<A, unknown, Env>) => Transform<A, A, Env>;
+
+  // Create a Transform that runs the supplied function iff input is Success/Right(...)
   through<A, B>(f: ClientFunc<A, B, Env>, name?: string, postHook?: LogHook<A, B, Env>,): Transform<A, B, Env>;
-  throughLeft<A>(f: ControlFunc<Env>): Transform<A, A, Env>;
-  tapLeft<A>(f: ControlFunc_<Env>): Transform<A, A, Env>;
-  tapEitherEnv<A>(f: (e: Env) => unknown): Transform<A, A, Env>;
-  tap<A>(f: ClientFunc<A, unknown, Env>, name?: string): Transform<A, A, Env>;
 
+  // Create a Tap Transform that runs the supplied function iff input is Failure/Left(...)
+  throughLeft<A>(f: ControlFunc<Env>): Tap<A, Env>;
+
+  // Create a Tap Transform that runs the supplied function iff input is Failure/Left(...)
+  tapLeft<A>(f: ControlFunc_<Env>): Tap<A, Env>;
+
+  // Create a Tap Transform that runs on Env in both success/failure cases
+  tapEitherEnv<A>(f: (e: Env) => unknown): Tap<A, Env>;
+
+  // Create a Tap Transform that runs the supplied function iff input is Success/Right(...)
+  tap<A>(f: ClientFunc<A, unknown, Env>, name?: string): Tap<A, Env>;
+
+  // Convert one Env type into another. Used when two pipelines defined with
+  // different Env types need to be run in sequence.
   mapEnv<A, Env2 extends BaseEnv>(
     fl: (e: Env) => Env2,
     fr: (e: Env, a: A) => Eventual<Env2>
@@ -30,11 +55,12 @@ export interface FPackage<Env extends BaseEnv> {
 
   filter<A>(f: ClientFunc<A, boolean, Env>, name?: string, postHook?: LogHook<A, boolean, Env>,): FilterTransform<A, Env>;
 
-  forEachDo: <A, B> (arrow: Transform<A, B, Env>) => Transform<A[], B[], Env>;
+  // Turn a transform (A) => B  into a transform (A[]) => B[]
+  forEachDo: <A, B> (func: Transform<A, B, Env>) => Transform<A[], B[], Env>;
 
-  collectFanout: <A, B> (...arrows: Transform<A, B, Env>[]) => Transform<A, B[], Env>;
-  takeWhileSuccess: <A, Env extends BaseEnv> (...arrows: Transform<A, A, Env>[]) => Transform<A, A, Env>;
-  attemptEach: <A, B> (...arrows: Transform<A, B, Env>[]) => Transform<A, B, Env>;
+  collectFanout: <A, B> (...funcs: Transform<A, B, Env>[]) => Transform<A, B[], Env>;
+  takeWhileSuccess: <A, Env extends BaseEnv> (...funcs: Transform<A, A, Env>[]) => Transform<A, A, Env>;
+  eachOrElse: <A, B> (...funcs: Transform<A, B, Env>[]) => Transform<A, B, Env>;
 
   log: <A>(level: LogLevel, f: (a: A, env: Env) => string) => Transform<A, A, Env>;
 
@@ -48,7 +74,7 @@ export interface FPackage<Env extends BaseEnv> {
 
   ExtractionTask: {
     lift: <A>(a: Eventual<A>, env: Env) => ExtractionTask<A, Env>;
-    liftW: <A>(wa: Eventual<W<A, Env>>) => ExtractionTask<A, Env>;
+    liftW: <A>(wa: Eventual<WithEnv<A, Env>>) => ExtractionTask<A, Env>;
     liftFail: <A>(ci: Eventual<ControlInstruction>, env: Env) => ExtractionTask<A, Env>;
   };
 
@@ -59,15 +85,15 @@ export interface FPackage<Env extends BaseEnv> {
   }
 }
 
-export function createFPackage<Env extends BaseEnv>(): FPackage<Env> {
-  const fp: FPackage<Env> = {
+export function createTaskFlow<Env extends BaseEnv>(): TaskFlow<Env> {
+  const fp: TaskFlow<Env> = {
     valueEnvPair,
     controlEnvPair,
-    withNS,
+    useNamespace,
     withCarriedWA,
     forEachDo,
     collectFanout,
-    attemptEach,
+    eachOrElse,
     takeWhileSuccess,
     through,
     throughLeft,
@@ -130,16 +156,17 @@ export function initBaseEnv(logOrName: Logger | string): BaseEnv {
 }
 
 /**
- * Return value with user defined Environment
+ * A [value, environment] pair, the basic  unit that is passed through Transform
+ * functions
  */
-export type W<A, Env extends BaseEnv> = [a: A, env: Env];
+export type WithEnv<A, Env extends BaseEnv> = [a: A, env: Env];
 
-function valueEnvPair<A, Env extends BaseEnv>(a: A, w: Env): W<A, Env> {
+function valueEnvPair<A, Env extends BaseEnv>(a: A, w: Env): WithEnv<A, Env> {
   return [a, w];
 }
 
-export type WCI<Env extends BaseEnv> = W<ControlInstruction, Env>;
-function controlEnvPair<Env extends BaseEnv>(ci: ControlInstruction, w: Env): WCI<Env> {
+export type CIWithEnv<Env extends BaseEnv> = WithEnv<ControlInstruction, Env>;
+function controlEnvPair<Env extends BaseEnv>(ci: ControlInstruction, w: Env): CIWithEnv<Env> {
   return [ci, w];
 }
 
@@ -150,7 +177,7 @@ function controlEnvPair<Env extends BaseEnv>(ci: ControlInstruction, w: Env): WC
 export type Eventual<A> = A | Promise<A>;
 
 export type Perhaps<A> = E.Either<ControlInstruction, A>;
-export type PerhapsW<A, Env extends BaseEnv> = E.Either<WCI<Env>, W<A, Env>>;
+export type PerhapsWithEnv<A, Env extends BaseEnv> = E.Either<CIWithEnv<Env>, WithEnv<A, Env>>;
 
 export type LogHook<A, B, Env extends BaseEnv> = (a: A, eb: Perhaps<B>, env: Env) => void;
 
@@ -160,6 +187,7 @@ export type ClientResult<A> = Eventual<A>
   ;
 
 export type ClientFunc<A, B, Env extends BaseEnv> = (a: A, env: Env) => ClientResult<B>;
+
 export type ControlFunc<Env extends BaseEnv> =
   (ci: ControlInstruction, env: Env) => ControlInstruction;
 
@@ -176,22 +204,22 @@ const ClientFunc = {
 /// ///////////
 /// Lifted function types
 
-export type EventualResult<A, Env extends BaseEnv> = Promise<PerhapsW<A, Env>>;
+export type EventualResult<A, Env extends BaseEnv> = Promise<PerhapsWithEnv<A, Env>>;
 const EventualResult = {
   lift: <A, Env extends BaseEnv>(a: Eventual<A>, env: Env): EventualResult<A, Env> => Promise.resolve<A>(a).then(a0 => E.right(valueEnvPair(a0, env))),
 
-  liftW: <A, Env extends BaseEnv>(wa: Eventual<W<A, Env>>): EventualResult<A, Env> => Promise.resolve<W<A, Env>>(wa).then(wa0 => E.right(wa0)),
+  liftW: <A, Env extends BaseEnv>(wa: Eventual<WithEnv<A, Env>>): EventualResult<A, Env> => Promise.resolve<WithEnv<A, Env>>(wa).then(wa0 => E.right(wa0)),
 
   liftFail: <A, Env extends BaseEnv>(ci: Eventual<ControlInstruction>, env: Env): EventualResult<A, Env> => Promise.resolve<ControlInstruction>(ci).then(ci0 => E.left(valueEnvPair(ci0, env))),
 };
 
-// Basic type representing either success/fail for extracting a value A with an Environment Env
-export type ExtractionTask<A, Env extends BaseEnv> = TE.TaskEither<WCI<Env>, W<A, Env>>;
+// Basic Task type, which when run will produce either success as Right([A,  Env]), or failure as Left([Control, Env])
+export type ExtractionTask<A, Env extends BaseEnv> = TE.TaskEither<CIWithEnv<Env>, WithEnv<A, Env>>;
 
 const ExtractionTask = {
   lift: <A, Env extends BaseEnv>(a: Eventual<A>, env: Env): ExtractionTask<A, Env> => () => Promise.resolve<A>(a).then(a0 => E.right(valueEnvPair(a0, env))),
 
-  liftW: <A, Env extends BaseEnv>(wa: Eventual<W<A, Env>>): ExtractionTask<A, Env> => () => Promise.resolve<W<A, Env>>(wa).then(wa0 => E.right(wa0)),
+  liftW: <A, Env extends BaseEnv>(wa: Eventual<WithEnv<A, Env>>): ExtractionTask<A, Env> => () => Promise.resolve<WithEnv<A, Env>>(wa).then(wa0 => E.right(wa0)),
 
   liftFail: <A, Env extends BaseEnv>(ci: Eventual<ControlInstruction>, env: Env): ExtractionTask<A, Env> => () => Promise.resolve<ControlInstruction>(ci).then(ci0 => E.left(valueEnvPair(ci0, env))),
 };
@@ -199,6 +227,8 @@ const ExtractionTask = {
 export interface Transform<A, B, Env extends BaseEnv> {
   (ra: ExtractionTask<A, Env>): ExtractionTask<B, Env>;
 }
+
+export type Tap<A, Env extends BaseEnv> = Transform<A, A, Env>;
 
 export type EnvTransform<A, EnvA extends BaseEnv, EnvB extends BaseEnv> =
   (t: ExtractionTask<A, EnvA>) => ExtractionTask<A, EnvB>;
@@ -302,19 +332,19 @@ const popNS:
     );
   };
 
-const withNS:
-  <A, B, Env extends BaseEnv>(name: string, arrow: Transform<A, B, Env>) => Transform<A, B, Env> =
-  <A, B, Env extends BaseEnv>(name: string, arrow: Transform<A, B, Env>) => (ra: ExtractionTask<A, Env>) => pipe(
+const useNamespace:
+  <A, B, Env extends BaseEnv>(name: string, func: Transform<A, B, Env>) => Transform<A, B, Env> =
+  <A, B, Env extends BaseEnv>(name: string, func: Transform<A, B, Env>) => (ra: ExtractionTask<A, Env>) => pipe(
     ra,
     pushNS(name),
-    arrow,
+    func,
     popNS()
   );
 
 const carryWA:
-  <A, B, Env extends BaseEnv>(arrow: Transform<A, B, Env>) => Transform<A, [B, W<A, Env>], Env> =
-  <A, B, Env extends BaseEnv>(arrow: Transform<A, B, Env>) => {
-    let origWA: W<A, Env>;
+  <A, B, Env extends BaseEnv>(func: Transform<A, B, Env>) => Transform<A, [B, WithEnv<A, Env>], Env> =
+  <A, B, Env extends BaseEnv>(func: Transform<A, B, Env>) => {
+    let origWA: WithEnv<A, Env>;
 
     return (ra: ExtractionTask<A, Env>) => pipe(
       ra,
@@ -322,7 +352,7 @@ const carryWA:
         origWA = wa;
         return wa;
       }),
-      arrow,
+      func,
       TE.chain(([b, env]) => {
         return TE.right(valueEnvPair([b, origWA], env));
       }),
@@ -330,21 +360,21 @@ const carryWA:
   };
 
 
-const withCarriedWA: <A, Env extends BaseEnv>(arrow: Transform<A, unknown, Env>) => Transform<A, A, Env> = (arrow) => ra => pipe(
+const withCarriedWA: <A, Env extends BaseEnv>(func: Transform<A, unknown, Env>) => Transform<A, A, Env> = (func) => ra => pipe(
   ra,
-  carryWA(arrow),
+  carryWA(func),
   TE.map(([[_b, wa], _envb]) => wa),
 );
 
 function separateResults<A, Env extends BaseEnv>(
   extractionResults: ExtractionTask<A, Env>[]
-): Task.Task<[Array<W<ControlInstruction, Env>>, Array<W<A, Env>>]> {
-  return () => Async.mapSeries<ExtractionTask<A, Env>, PerhapsW<A, Env>>(
+): Task.Task<[Array<WithEnv<ControlInstruction, Env>>, Array<WithEnv<A, Env>>]> {
+  return () => Async.mapSeries<ExtractionTask<A, Env>, PerhapsWithEnv<A, Env>>(
     extractionResults,
     Async.asyncify(async (er: ExtractionTask<A, Env>) => er()))
-    .then((settled: PerhapsW<A, Env>[]) => {
-      const lefts: WCI<Env>[] = [];
-      const rights: W<A, Env>[] = [];
+    .then((settled: PerhapsWithEnv<A, Env>[]) => {
+      const lefts: CIWithEnv<Env>[] = [];
+      const rights: WithEnv<A, Env>[] = [];
       _.each(settled, result => {
         if (isLeft(result)) lefts.push(result.left);
         else rights.push(result.right);
@@ -356,16 +386,16 @@ function separateResults<A, Env extends BaseEnv>(
 
 // Control flow primitives
 /// given as: A[]
-/// given arrow: A => B
-//  each(as, a => arrow(a)), then filter(isRight)
-const forEachDo: <A, B, Env extends BaseEnv> (arrow: Transform<A, B, Env>) => Transform<A[], B[], Env> = <A, B, Env extends BaseEnv>(arrow: Transform<A, B, Env>) => (ra: ExtractionTask<A[], Env>) => {
+/// given func: A => B
+//  each(as, a => func(a)), then filter(isRight)
+const forEachDo: <A, B, Env extends BaseEnv> (func: Transform<A, B, Env>) => Transform<A[], B[], Env> = <A, B, Env extends BaseEnv>(func: Transform<A, B, Env>) => (ra: ExtractionTask<A[], Env>) => {
   return pipe(
     ra,
-    TE.chain((wa: W<A[], Env>) => {
+    TE.chain((wa: WithEnv<A[], Env>) => {
       const [aas, env] = wa;
       const bbs = _.map(aas, (a) => {
         const env0 = _.clone(env);
-        return arrow(TE.right(valueEnvPair<A, Env>(a, env0)));
+        return func(TE.right(valueEnvPair<A, Env>(a, env0)));
       });
       const leftRightErrs = separateResults(bbs);
       const rightTasks = pipe(
@@ -387,14 +417,14 @@ const forEachDo: <A, B, Env extends BaseEnv> (arrow: Transform<A, B, Env>) => Tr
 
 // Given a single input A, produce an array of Bs by running the given array of functions on the initial A
 const collectFanout:
-  <A, B, Env extends BaseEnv>(...arrows: Transform<A, B, Env>[]) => Transform<A, B[], Env> =
-  <A, B, Env extends BaseEnv>(...arrows: Transform<A, B, Env>[]) => (ra: ExtractionTask<A, Env>) => {
+  <A, B, Env extends BaseEnv>(...funcs: Transform<A, B, Env>[]) => Transform<A, B[], Env> =
+  <A, B, Env extends BaseEnv>(...funcs: Transform<A, B, Env>[]) => (ra: ExtractionTask<A, Env>) => {
     return pipe(
       ra,
       tap((_a, { log }) => {
-        log.info(`Begin fanOut(${arrows.length})`);
+        log.info(`Begin fanOut(${funcs.length})`);
       }),
-      withNS(`fanOut(${arrows.length})`, scatterAndSettle(...arrows)),
+      useNamespace(`fanOut(${funcs.length})`, scatterAndSettle(...funcs)),
       TE.chain(([settledBs, env]) => {
         const bs: B[] = [];
         let fails = 0;
@@ -406,7 +436,7 @@ const collectFanout:
             fails += 1;
           }
         });
-        env.log.debug(`End fanOut(${arrows.length}); ${bs.length}/${fails} succ/fail`);
+        env.log.debug(`End fanOut(${funcs.length}); ${bs.length}/${fails} succ/fail`);
         return TE.right(valueEnvPair(bs, env));
       })
     );
@@ -414,19 +444,19 @@ const collectFanout:
 
 
 const scatterAndSettle: <A, B, Env extends BaseEnv> (
-  ...arrows: Transform<A, B, Env>[]
-) => Transform<A, PerhapsW<B, Env>[], Env> =
-  <A, B, Env extends BaseEnv>(...arrows: Transform<A, B, Env>[]) =>
+  ...funcs: Transform<A, B, Env>[]
+) => Transform<A, PerhapsWithEnv<B, Env>[], Env> =
+  <A, B, Env extends BaseEnv>(...funcs: Transform<A, B, Env>[]) =>
     (ra: ExtractionTask<A, Env>) =>
       pipe(
         ra,
-        TE.chain(([a, env]: W<A, Env>) => {
-          const bbs = _.map(arrows, (arrow) => {
+        TE.chain(([a, env]: WithEnv<A, Env>) => {
+          const bbs = _.map(funcs, (func) => {
             const env0 = _.clone(env);
-            return arrow(TE.right(valueEnvPair(a, env0)));
+            return func(TE.right(valueEnvPair(a, env0)));
           });
           const sequenced = () => Async
-            .mapSeries<ExtractionTask<B, Env>, PerhapsW<B, Env>>(
+            .mapSeries<ExtractionTask<B, Env>, PerhapsWithEnv<B, Env>>(
               bbs,
               Async.asyncify(async (er: ExtractionTask<A, Env>) => er())
             );
@@ -438,28 +468,28 @@ const scatterAndSettle: <A, B, Env extends BaseEnv> (
         })
       );
 
-// Compose arrows
-const takeWhileSuccess: <A, Env extends BaseEnv> (...arrows: Transform<A, A, Env>[]) => Transform<A, A, Env> =
-  (...arrows) => withNS(
-    `takeWhileSuccess:${arrows.length}`,
-    __takeWhileSuccess(arrows, arrows.length)
+// Compose funcs
+const takeWhileSuccess: <A, Env extends BaseEnv> (...funcs: Transform<A, A, Env>[]) => Transform<A, A, Env> =
+  (...funcs) => useNamespace(
+    `takeWhileSuccess:${funcs.length}`,
+    __takeWhileSuccess(funcs, funcs.length)
   );
 
 const __takeWhileSuccess:
-  <A, Env extends BaseEnv>(arrows: Transform<A, A, Env>[], arrowCount: number) => Transform<A, A, Env> =
-  <A, Env extends BaseEnv>(arrows: Transform<A, A, Env>[], arrowCount: number) => (ra: ExtractionTask<A, Env>) => {
+  <A, Env extends BaseEnv>(funcs: Transform<A, A, Env>[], arrowCount: number) => Transform<A, A, Env> =
+  <A, Env extends BaseEnv>(funcs: Transform<A, A, Env>[], arrowCount: number) => (ra: ExtractionTask<A, Env>) => {
     // Base Case:
-    if (arrows.length === 0) return ra;
+    if (funcs.length === 0) return ra;
 
     // Recursive Step:
-    const headTransform: Transform<A, A, Env> = arrows[0];
-    const tailTransforms: Transform<A, A, Env>[] = arrows.slice(1);
-    const arrowNum = arrowCount - arrows.length;
+    const headTransform: Transform<A, A, Env> = funcs[0];
+    const tailTransforms: Transform<A, A, Env>[] = funcs.slice(1);
+    const arrowNum = arrowCount - funcs.length;
     const ns = `#${arrowNum}`;
 
     return pipe(
       ra,
-      withCarriedWA(withNS(
+      withCarriedWA(useNamespace(
         ns,
         headTransform
       )),
@@ -467,13 +497,13 @@ const __takeWhileSuccess:
     );
   };
 
-const attemptEach: <A, B, Env extends BaseEnv> (...arrows: Transform<A, B, Env>[]) => Transform<A, B, Env> =
-  (...arrows) => __attemptEach(arrows, arrows.length);
+const eachOrElse: <A, B, Env extends BaseEnv> (...funcs: Transform<A, B, Env>[]) => Transform<A, B, Env> =
+  (...funcs) => __eachOrElse(funcs, funcs.length);
 
-const __attemptEach: <A, B, Env extends BaseEnv>(arrows: Transform<A, B, Env>[], arrowCount: number) => Transform<A, B, Env> =
-  (arrows, arrowCount) => (ra) => {
+const __eachOrElse: <A, B, Env extends BaseEnv>(funcs: Transform<A, B, Env>[], arrowCount: number) => Transform<A, B, Env> =
+  (funcs, arrowCount) => (ra) => {
     // Base Case:
-    if (arrows.length === 0) {
+    if (funcs.length === 0) {
       return pipe(
         ra,
         TE.chain(([, env]) => {
@@ -483,9 +513,9 @@ const __attemptEach: <A, B, Env extends BaseEnv>(arrows: Transform<A, B, Env>[],
     }
 
     // Recursive Step:
-    const headTransform = arrows[0];
-    const tailTransforms = arrows.slice(1);
-    const arrowNum = arrowCount - arrows.length;
+    const headTransform = funcs[0];
+    const tailTransforms = funcs.slice(1);
+    const arrowNum = arrowCount - funcs.length;
     const ns = `attempt(${arrowNum + 1} of ${arrowCount})`;
 
     return pipe(
@@ -493,8 +523,8 @@ const __attemptEach: <A, B, Env extends BaseEnv>(arrows: Transform<A, B, Env>[],
       TE.chain(([a, env]) => {
         const origWA = TE.right(valueEnvPair(a, env));
 
-        const headAttempt = pipe(origWA, withNS(ns, headTransform));
-        const fallback = pipe(origWA, __attemptEach(tailTransforms, arrowCount));
+        const headAttempt = pipe(origWA, useNamespace(ns, headTransform));
+        const fallback = pipe(origWA, __eachOrElse(tailTransforms, arrowCount));
 
         return TE.orElse(() => fallback)(headAttempt);
       }),
@@ -585,7 +615,7 @@ function mapEnv<A, Env extends BaseEnv, Env2 extends BaseEnv>(
     TE.bind('a', ({ inW }) => { const [a,] = inW; return TE.right(a); }),
     TE.bind('env1', ({ inW }) => { const [, env1] = inW; return TE.right(env1); }),
     TE.bind('env2', ({ a, env1 }) => {
-      const env2 = Promise.resolve<Env2>(fr(env1, a)).then(e => E.right<WCI<Env>, Env2>(e))
+      const env2 = Promise.resolve<Env2>(fr(env1, a)).then(e => E.right<CIWithEnv<Env>, Env2>(e))
       return () => env2;
     }),
     TE.mapLeft(([ci, env1]) => {
@@ -615,7 +645,7 @@ function tap<A, Env extends BaseEnv>(
   f: ClientFunc<A, unknown, Env>, name?: string
 ): Transform<A, A, Env> {
   const arrowf = Transform.lift(f);
-  const tapped = name ? withNS(`tap:${name}`, arrowf) : arrowf;
+  const tapped = name ? useNamespace(`tap:${name}`, arrowf) : arrowf;
   return withCarriedWA(tapped);
 }
 
@@ -646,14 +676,14 @@ function filter<A, Env extends BaseEnv>(
 
     return pipe(
       ra,
-      carryWA(withNS(
+      carryWA(useNamespace(
         ns,
         liftFilter(f, name, postHook)
       )),
       TE.chain(([[cond, origWA], env]) => {
         return cond
           ? TE.right(origWA)
-          : TE.left<WCI<Env>, W<A, Env>>(valueEnvPair('halt', env));
+          : TE.left<CIWithEnv<Env>, WithEnv<A, Env>>(valueEnvPair('halt', env));
       }),
     );
   };

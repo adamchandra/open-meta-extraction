@@ -8,7 +8,7 @@
 import _ from 'lodash';
 
 import {
-  attemptEach,
+  eachOrElse,
   ExtractionRule,
   Transform,
   forEachDo,
@@ -108,7 +108,7 @@ export const linkSpringerComRule: ExtractionRule = compose(
         }),
       ),
     ),
-    attemptEach(
+    eachOrElse(
       compose(
         urlFilter(/\/chapter\//),
         validateEvidence({ // link.springer.com/chapter
