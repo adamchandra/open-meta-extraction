@@ -1,5 +1,5 @@
 import _ from 'lodash';
-import { startSpiderableTestServer } from '~/http-servers/rest-portal/mock-server';
+import { startSpiderableTestServer } from './test-http-server';
 
 import fs from 'fs-extra';
 import { Server } from 'http';

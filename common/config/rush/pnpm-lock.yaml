@@ -8939,7 +8939,7 @@ packages:
     dev: false
 
   file:projects/services.tgz:
-    resolution: {integrity: sha512-QAi0AMTbncZRRu0J9ps7KTdq5QRkSkU5eyw6Z6jE/IVJ97q1g3BoQ6628TCdVMrv2BRh9OiHO1nQsdSa9yrGNQ==, tarball: file:projects/services.tgz}
+    resolution: {integrity: sha512-Ix4lEU0m+rhNuD5FZTV0LrPNaR6VP4vL2qMc+InW2TCn3jR3z3SuBAZuewiJoR7AKSUv65uihJiczcSHuc5Dow==, tarball: file:projects/services.tgz}
     name: '@rush-temp/services'
     version: 0.0.0
     dependencies:
@@ -9000,21 +9000,30 @@ packages:
     dev: false
 
   file:projects/spider.tgz_ts-node@10.9.1:
-    resolution: {integrity: sha512-GVNO/haBwrlWU81IrBGo/akgngu013JGZTNRqV2axG33r3o/c3+UIHPYddSXc00qpvMjNtP5Y4aj6dt4bvaZ2A==, tarball: file:projects/spider.tgz}
+    resolution: {integrity: sha512-NgiPgwKX1DMwwKTyno6Ru/g364S2tmvXYz/nV8aWRLYwnAHt1leOZIolKXhOyJNpNwAAunXBRH5fav5HhINIWw==, tarball: file:projects/spider.tgz}
     id: file:projects/spider.tgz
     name: '@rush-temp/spider'
     version: 0.0.0
     dependencies:
+      '@koa/router': 12.0.0
       '@types/async': 3.2.15
       '@types/chai': 4.3.3
+      '@types/fs-extra': 9.0.13
       '@types/jest': 29.2.1
+      '@types/koa': 2.13.5
+      '@types/koa__router': 12.0.0
+      '@types/koa-json': 2.0.20
       '@types/lodash': 4.14.187
       '@types/node': 18.11.9
       '@types/signal-exit': 3.0.1
       async: 3.2.4
       eslint: 7.32.0
       fp-ts: 2.13.1
+      fs-extra: 10.1.0
       jest: 29.2.2_70d4953900ede8d3dd438a81bd203eaa
+      koa: 2.13.4
+      koa-body: 6.0.1
+      koa-json: 2.0.2
       lodash: 4.17.21
       puppeteer: 19.2.2
       puppeteer-extra: 3.3.4_puppeteer@19.2.2
