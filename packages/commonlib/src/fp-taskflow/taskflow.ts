@@ -388,31 +388,33 @@ function separateResults<A, Env extends BaseEnv>(
 /// given as: A[]
 /// given func: A => B
 //  each(as, a => func(a)), then filter(isRight)
-const forEachDo: <A, B, Env extends BaseEnv> (func: Transform<A, B, Env>) => Transform<A[], B[], Env> = <A, B, Env extends BaseEnv>(func: Transform<A, B, Env>) => (ra: ExtractionTask<A[], Env>) => {
-  return pipe(
-    ra,
-    TE.chain((wa: WithEnv<A[], Env>) => {
-      const [aas, env] = wa;
-      const bbs = _.map(aas, (a) => {
-        const env0 = _.clone(env);
-        return func(TE.right(valueEnvPair<A, Env>(a, env0)));
-      });
-      const leftRightErrs = separateResults(bbs);
-      const rightTasks = pipe(
-        leftRightErrs,
-        Task.map(([_lefts, rights]) => {
-          const bs = _.map(rights, ([b]) => b);
-          const lefts = _.map(_lefts, ([b]) => b);
+const forEachDo:
+  <A, B, Env extends BaseEnv> (func: Transform<A, B, Env>) => Transform<A[], B[], Env> =
+  <A, B, Env extends BaseEnv>(func: Transform<A, B, Env>) => (ra: ExtractionTask<A[], Env>) => {
+    return pipe(
+      ra,
+      TE.chain((wa: WithEnv<A[], Env>) => {
+        const [aas, env] = wa;
+        const bbs = _.map(aas, (a) => {
           const env0 = _.clone(env);
-          const leftMsg = lefts.map((ci) => `${ci}`).join(', ');
-          env.log.debug(`forEachDo:lefts:${leftMsg}`);
-          return valueEnvPair(bs, env0);
-        })
-      );
-      return TE.fromTask(rightTasks);
-    })
-  );
-};
+          return func(TE.right(valueEnvPair<A, Env>(a, env0)));
+        });
+        const leftRightErrs = separateResults(bbs);
+        const rightTasks = pipe(
+          leftRightErrs,
+          Task.map(([_lefts, rights]) => {
+            const bs = _.map(rights, ([b]) => b);
+            const lefts = _.map(_lefts, ([b]) => b);
+            const env0 = _.clone(env);
+            const leftMsg = lefts.map((ci) => `${ci}`).join(', ');
+            env.log.debug(`forEachDo:lefts:${leftMsg}`);
+            return valueEnvPair(bs, env0);
+          })
+        );
+        return TE.fromTask(rightTasks);
+      })
+    );
+  };
 
 
 // Given a single input A, produce an array of Bs by running the given array of functions on the initial A

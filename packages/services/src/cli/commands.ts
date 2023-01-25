@@ -1,10 +1,12 @@
 import _ from 'lodash';
 
-import { arglib, initConfig, prettyPrint, putStrLn } from '@watr/commonlib';
-import { runRelayExtract, runRelayFetch } from './distributed/openreview-relay';
+import { arglib, initConfig, putStrLn } from '@watr/commonlib';
 import { formatStatusMessages, showStatusSummary } from '~/db/extraction-summary';
 import { connectToMongoDB, mongoConnectionString } from '~/db/mongodb';
 import { createCollections } from '~/db/schemas';
+import { FetchService } from '~/components/fetch-service';
+import { ExtractionService } from '~/components/extraction-service';
+
 const { opt, config, registerCmd } = arglib;
 
 export function registerCLICommands(yargv: arglib.YArgsT) {
@@ -35,8 +37,9 @@ export function registerCLICommands(yargv: arglib.YArgsT) {
     const count: number = args.count;
     initConfig();
     const mongoose = await connectToMongoDB();
+    const fetchService = new FetchService();
 
-    await runRelayFetch(offset, count)
+    await fetchService.runRelayFetch(offset, count)
       .finally(() => {
         return mongoose.connection.close();
       });
@@ -54,8 +57,10 @@ export function registerCLICommands(yargv: arglib.YArgsT) {
 
     initConfig();
 
+    const extractionService = new ExtractionService();
     const mongoose = await connectToMongoDB();
-    await runRelayExtract({ count, postResultsToOpenReview })
+
+    await extractionService.runRelayExtract({ count, postResultsToOpenReview })
       .finally(() => {
         console.log('run-relay-extract: closing...');
         return mongoose.connection.close();

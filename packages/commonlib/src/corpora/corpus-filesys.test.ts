@@ -2,7 +2,6 @@ import _ from 'lodash';
 import path from 'path';
 import fs from 'fs-extra';
 import { updateCorpusJsonFile, readCorpusJsonFile } from './corpus-file-walkers';
-import { prettyPrint } from '~/util/pretty-print';
 
 export function initTestCorpusDirs(scratchDir: string): { corpusRoot: string, corpusPath: string } {
   if (fs.existsSync(scratchDir)) {
@@ -32,15 +31,12 @@ describe('Corpus filesystem access utilities', () => {
     fs.emptyDirSync(scratchTestDir);
   });
 
-  // it("should stream corpus entry directories", () => {});
-
   it('should read/write/update artifact files', () => {
     interface Foo {
       count: number;
     }
 
     const { corpusRoot, corpusPath } = initTestCorpusDirs(scratchTestDir);
-    prettyPrint({ corpusPath, corpusRoot });
     const entry0Path = path.resolve(corpusPath, 'corpus-entry0');
     fs.mkdirSync(entry0Path);
     _.each(_.range(10), () => {

@@ -1,8 +1,9 @@
 import { getServiceLogger, isTestingEnv } from '@watr/commonlib';
 import { formatStatusMessages, showStatusSummary } from '~/db/extraction-summary';
 import { connectToMongoDB } from '~/db/mongodb';
-import { newOpenReviewExchange } from '~/workflow/common/openreview-exchange';
+import { newOpenReviewExchange } from '~/components/openreview-exchange';
 import { runJob } from '../pm2-helpers';
+
 
 runJob(__filename, async (logger, workerData: any) => {
   const log = getServiceLogger('SendEMail');

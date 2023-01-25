@@ -1,3 +1,7 @@
+/*
+ * Interface to communicate with OpenReview
+ */
+
 import _ from 'lodash';
 
 import axios from 'axios';
@@ -64,15 +68,23 @@ export interface OpenReviewExchange {
   postLogin(user: string, password: string): Promise<Credentials>;
   apiGET<R>(url: string, query: Record<string, string | number>, retries?: number): Promise<R | undefined>;
   apiPOST<PD extends object, R>(url: string, postData: PD, retries?: number): Promise<R | undefined>;
+
+
+  /**
+   * Send status notifications
+   * The body of the request requires
+   * { subject: <Some Status Title>, message: <Body>, groups: [ 'OpenReview.net/Status' ] }
+   */
   postStatusMessage(subject: string, message: string): Promise<void>;
   log: Logger;
 }
 
-// Send emails using the POST /messages endpoint.
-// The body of the request requires
-// { subject: <Some Status Title>, message: <Body>, groups: [ 'OpenReview.net/Status' ] }
-
-export function makeMessagePost(subject: string, message: string): MessagePostData {
+/**
+ * Construct a status message
+ *   The body of the request requires
+ *   { subject: <Some Status Title>, message: <Body>, groups: [ 'OpenReview.net/Status' ] }
+ */
+function makeMessagePost(subject: string, message: string): MessagePostData {
   return {
     subject,
     message,

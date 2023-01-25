@@ -27,16 +27,7 @@ function initFirstEnv<A>(a: A): ExtractionTask<A> {
 
 interface SecondEnvT extends ft.BaseEnv {
   otherField: boolean;
-}
-
-function initSecondEnv(): SecondEnvT {
-  const baseEnv = ft.initBaseEnv('second-env');
-  const env: SecondEnvT = {
-    ...baseEnv,
-    otherField: true
-  };
-
-  return env;
+  messages: string[]
 }
 
 const fp1 = ft.createTaskFlow<FirstEnvT>();
@@ -71,13 +62,55 @@ const traceFunc: <A, B>(name: string, func: Transform<A, B>) => Transform<A, B> 
   tapLeft((_a, env) => env.messages.push(`${name}:out:left`)),
 );
 
+const traceArg: <A, B>(func: Transform<string, string>) => Transform<string, string> = (func) => {
+  let aIn: string;
+  return compose(
+    tap((a) => aIn = a),
+    tap((_a, env) => env.messages.push(`${aIn}:in:right`)),
+    tapLeft((_a, env) => env.messages.push(`${aIn}:in:left`)),
+    func,
+    tap((_a, env) => env.messages.push(`${aIn}:out:right`)),
+    tapLeft((_a, env) => env.messages.push(`${aIn}:out:left`)),
+  )
+}
 
-// const fgood: (s: string) => Transform<string, string> = s => traceFunc(`succ:${s}`, filter<string>(() => true));
-const fbad: (s: string) => Transform<string, string> = s => traceFunc(`fail:${s}`, filter<string>(() => false));
-const fgood_: Transform<string, string> = traceFunc('succ', filter<string>(() => true));
-const fbad_: Transform<string, string> = traceFunc('fail', filter<string>(() => false));
-const emit = (msg: string) => tap<string>((_a, env) => env.messages.push(msg));
-const emitL = (msg: string) => tapLeft<string>((_a, env) => env.messages.push(msg));
+const succWith: (msg: string) => Transform<string, string> = msg => traceFunc(msg, filter<string>(() => true));
+const failWith: (msg: string) => Transform<string, string> = msg => traceFunc(msg, filter<string>(() => false));
+
+
+const isVowel: Transform<string, string> =
+  traceArg(filter<string>(s => new RegExp("^[AEIOU]$", 'i').test(s), 'isVowel'));
+
+function succInFailOut(s: string): (msgs: string[]) => boolean {
+  return (msgs) => {
+    const isInRight = _.some(msgs, msg => msg === `${s}:in:right`);
+    const isOutLeft = _.some(msgs, msg => msg === `${s}:out:left`);
+    return isInRight && isOutLeft;
+  };
+}
+
+function succInOut(s: string): (msgs: string[]) => boolean {
+  return (msgs) => {
+    const isInRight = _.some(msgs, msg => msg === `${s}:in:right`);
+    const isOutRight = _.some(msgs, msg => msg === `${s}:out:right`);
+    return isInRight && isOutRight;
+  };
+}
+
+function failInOut(s: string): (msgs: string[]) => boolean {
+  return (msgs) => {
+    const isInLeft = _.some(msgs, msg => msg === `${s}:in:left`);
+    const isOutLeft = _.some(msgs, msg => msg === `${s}:out:left`);
+    return isInLeft && isOutLeft;
+  };
+}
+
+function noneOf(s: string): (msgs: string[]) => boolean {
+  return (msgs) => {
+    const hasMsg = _.some(msgs, msg => msg.startsWith(`${s}:`));
+    return !hasMsg;
+  };
+}
 
 function getEnvMessages(res: PerhapsW<unknown>): string[] {
   if (isRight(res)) {
@@ -94,179 +127,142 @@ async function runTakeWhileSuccess(fns: Transform<string, string>[]): Promise<st
   return getEnvMessages(res);
 }
 
-async function runTakeFirstSuccess(fns: Transform<string, string>[]): Promise<string[]> {
+async function runEachOrElse(fns: Transform<string, string>[]): Promise<string[]> {
   const res = await eachOrElse(...fns)(initFirstEnv(`input#${dummy += 1}`))();
   return getEnvMessages(res);
 }
 
-async function runGatherSuccess(fns: Transform<string, string>[]): Promise<string[]> {
+async function runCollectFanout(fns: Transform<string, string>[]): Promise<string[]> {
   const res = await collectFanout(...fns)(initFirstEnv(`input#${dummy += 1}`))();
   return getEnvMessages(res);
 }
-
 
 describe('TaskFlow control flow primitives', () => {
   // it('should create basic funcs/results', async (done) => {});
   // it('tap() composition', async (done) => { });
 
-  type TestTransforms = Transform<string, string>[];
-  type ExpectedTrace = string[];
-  type ExampleType = [TestTransforms, ExpectedTrace];
+  type XTestTransforms = Transform<string, string>[];
+  type XAssertFunc = (ss: string[]) => boolean;
+  type XExpectedTrace = XAssertFunc[];
+  type XExampleType = [XTestTransforms, XExpectedTrace];
 
-  setLogEnvLevel('verbose')
+  setLogEnvLevel('silly')
 
-  it.only('takeWhileSuccess examples', async () => {
-    const examples: ExampleType[] = [
+  it('takeWhileSuccess examples', async () => {
+    const examples: XExampleType[] = [
       [
-        [emit('A:okay'), fbad_, emit('B:bad')],
-        ['A:okay']
+        [succWith('A'), failWith('B'), succWith('C')],
+        [succInOut('A'), succInFailOut('B'), failInOut('C')]
       ], [
-        [emit('A:okay'), emit('B:okay'), fbad_, emit('B:bad')],
-        ['A:okay', 'B:okay']
+        [failWith('A'), succWith('B')],
+        [succInFailOut('A'), failInOut('B')]
       ], [
-        [emit('A:okay'), fgood_, emit('B:okay'), fbad_, emitL('CL:okay')],
-        ['A:okay', 'B:okay', 'CL:okay']
-      ], [
-        [fbad_, emit('B:bad')],
-        []
+        [succWith('A'), succWith('B')],
+        [succInOut('A'), succInOut('B')]
       ],
     ];
 
 
-    await asyncEachOf(examples, async (ex: ExampleType, n) => {
-      const [example, expectedMessages] = ex;
+    await asyncEachOf(examples, async (ex: XExampleType) => {
+      const [example, assertFuncs] = ex;
       const messages = await runTakeWhileSuccess(example);
-
-      const haveExpectedMessages = _.every(expectedMessages, em => messages.includes(em));
-      const haveBadMessages = _.some(messages, msg => /bad/.test(msg));
-
-      prettyPrint({ msg: `example: ${n}`, messages, expectedMessages });
-
-      expect(haveExpectedMessages).toBe(true);
-      expect(haveBadMessages).toBe(false);
+      const assertionsPass = _.every(assertFuncs, f => f(messages));
+      expect(assertionsPass).toBe(true);
     });
-
-    // done();
   });
 
   it('eachOrElse examples', async () => {
-    const examples: Array<[Transform<string, string>[], string[]]> = [
-      // Always stop at first emit:
-      [[emit('A:okay'), emit('B:bad')],
-      ['A:okay']],
-      [[emit('A:okay'), fgood_, emit('B:bad')],
-      ['A:okay']],
-      [[emit('A:okay'), fbad_, emit('B:bad')],
-      ['A:okay']],
-
-      // Skip any initial failures
-      [[fbad('1'), emit('A:okay'), emit('B:bad')],
-      ['A:okay']],
-
-      [[fbad('2'), fbad('3'), emit('A:okay'), emit('B:bad')],
-      ['A:okay']],
-
-      [[fbad_, fgood_, emit('A:okay'), emit('B:bad')],
-      []],
-
+    const examples: XExampleType[] = [
+      [
+        [succWith('A'), failWith('B'), succWith('C')],
+        [succInOut('A'), noneOf('B'), noneOf('C')]
+      ],
+      [
+        [failWith('A'), succWith('B'), succWith('C')],
+        [succInFailOut('A'), succInOut('B'), noneOf('C')]
+      ],
     ];
 
 
-    await asyncEachOf(examples, async (ex: ExampleType) => {
-      const [example, expectedMessages] = ex;
-      const messages = await runTakeFirstSuccess(example);
-      const haveExpectedMessages = _.every(expectedMessages, em => messages.includes(em));
-      const haveBadMessages = _.some(messages, msg => /bad/.test(msg));
-
-      // prettyPrint({ msg: `example: ${n}`, messages, expectedMessages });
-
-      expect(haveExpectedMessages).toBe(true);
-      expect(haveBadMessages).toBe(false);
+    await asyncEachOf(examples, async (ex: XExampleType) => {
+      const [example, assertFuncs] = ex;
+      const messages = await runEachOrElse(example);
+      const assertionsPass = _.every(assertFuncs, f => f(messages));
+      expect(assertionsPass).toBe(true);
     });
-
-
-    // done();
   });
+
 
   it('collectFanout examples', async () => {
-    const examples: Array<[Transform<string, string>[], string[]]> = [
-      [[emit('A:okay'), emit('B:okay')],
-      ['A:okay', 'B:okay']],
-      [[emit('A:okay'), fgood_, emit('B:okay')],
-      ['A:okay', 'B:okay']],
-      [[emit('A:okay'), fbad_, emit('B:okay')],
-      ['A:okay', 'B:okay']],
-      [[fbad_, fgood_, emit('A:okay'), fbad_, emit('B:okay'), fbad_],
-      ['A:okay', 'B:okay']],
+    const examples: XExampleType[] = [
+      [
+        [failWith('A'), succWith('B')],
+        [succInFailOut('A'), succInOut('B')]
+      ], [
+        [succWith('A'), failWith('B'), succWith('C')],
+        [succInOut('A'), succInFailOut('B'), succInOut('C')]
+      ],
     ];
 
 
-    await asyncEachOf(examples, async (ex: ExampleType) => {
-
-      const [example, expectedMessages] = ex;
-      const messages = await runGatherSuccess(example);
-      const haveExpectedMessages = _.every(expectedMessages, em => messages.includes(em));
-      const haveBadMessages = _.some(messages, msg => /bad/.test(msg));
-
-      expect(haveExpectedMessages).toBe(true);
-      expect(haveBadMessages).toBe(false);
+    await asyncEachOf(examples, async (ex: XExampleType) => {
+      const [example, assertFuncs] = ex;
+      const messages = await runCollectFanout(example);
+      const assertionsPass = _.every(assertFuncs, f => f(messages));
+      expect(assertionsPass).toBe(true);
     });
   });
-
 
   it('forEachDo examples', async () => {
-    // Expected results for n=[1..4]
-    const expected: Array<string[]> = [
-      // if n % 1 === 0 output 'n:okay'
-      ['1:okay', '2:okay', '3:okay', '4:okay'],
-      // if n % 2 === 0 output 'n:okay'
-      ['2:okay', '4:okay'],
-      ['3:okay'],
-      ['4:okay'],
-    ];
+    // run one function on each element of an array, return array of successful results
+    const input = 'ACE'.split('');
+    const assertFuncs = [succInOut('A'), succInFailOut('C'), succInOut('E')];
 
-    const filterMod0 = (mod: number) => compose(
-      filter<number>((n) => n % mod === 0, '% mod?==0'),
-      through((n) => `${n}:okay`, 'modOkay')
-    );
-
-    await asyncEachOf(expected, async (exp: string[], index) => {
-      const n = index + 1;
-      const inputs = _.map(_.range(4), i => i + 1);
-      prettyPrint({ inputs });
-      const env0 = initFirstEnv(inputs);
-      const res = await forEachDo(filterMod0(n))(env0)();
-      if (isRight(res)) {
-        const [finalValue] = res.right;
-        // prettyPrint({ msg: `example: ${n}`, finalValue });
-        expect(finalValue).toStrictEqual(exp);
-      } else {
-        fail('!right(res');
-      }
-    });
+    const env0 = initFirstEnv(input);
+    const res = await forEachDo(isVowel)(env0)();
+    const messages = getEnvMessages(res);
+    const assertionsPass = _.every(assertFuncs, f => f(messages));
+    expect(assertionsPass).toBe(true);
 
   });
 
-  it('should map env types', async () => {
-    const inputs = _.map(_.range(4), i => i + 1);
-    const env0 = initFirstEnv(inputs);
-    const otherEnv = initSecondEnv();
+  it('should convert between env types', async () => {
+    function convertEnv1ToEnv2(env1: FirstEnvT): SecondEnvT {
+      const baseEnv = ft.initBaseEnv('second-env');
+      return {
+        ...baseEnv,
+        messages: [...env1.messages],
+        otherField: true,
+      }
+    }
+    function convertEnv2ToEnv1(env2: SecondEnvT): FirstEnvT {
+      const baseEnv = ft.initBaseEnv('second-env');
+      return {
+        ...baseEnv,
+        messages: [...env2.messages],
+        b: env2.otherField,
+      }
+    }
+
     const runnable = pipe(
-      env0,
+      initFirstEnv('in'),
       tapEitherEnv(e => {
-        e.messages
-        e.log.info('hello from env')
+        e.messages.push('Env1/1')
       }),
-      mapEnv((_e) => otherEnv, (_e, _a) => otherEnv),
+      mapEnv((e) => convertEnv1ToEnv2(e), (e) => convertEnv1ToEnv2(e)),
       fp2.tapEitherEnv(e => {
-        e.log.info(`hello from other env ${e.otherField}`)
+        e.messages.push('Env2')
       }),
-      // Map back to env1
-      // fp2.mapEnv((_envLeft) => initThirdEnv(), (_envRight, _a) => initThirdEnvPromise()),
-      // fpThirdEnv.tapEitherEnv(e => {
-      //   e.log.info(`hello from other env ${e.env3Field}`);
-      // }),
-    )
-    await runnable()
+
+      fp2.mapEnv((e) => convertEnv2ToEnv1(e), (e) => convertEnv2ToEnv1(e)),
+      tapEitherEnv(e => {
+        e.messages.push('Env1/2')
+      }),
+    );
+
+    const res = await runnable()
+    const messages = getEnvMessages(res);
+    prettyPrint({ messages })
+    expect(messages).toStrictEqual(['Env1/1', 'Env2', 'Env1/2'])
   });
 });

@@ -1,9 +1,9 @@
 import { arglib, putStrLn } from '@watr/commonlib';
 
-import * as workflowCmds from '~/workflow/workflow-cli';
-import * as scheduling from '~/pm2/scheduling-services';
 import { spiderCLI } from '@watr/spider';
 import { fieldExtractorCLI } from '@watr/field-extractors';
+import * as workflowCmds from './commands';
+import * as scheduling from '~/pm2/scheduling-services';
 
 export function registerAllClis() {
   workflowCmds.registerCLICommands(arglib.YArgs);
@@ -17,7 +17,7 @@ export async function runCli() {
     .demandCommand(1, 'You need at least one command before moving on')
     .strict()
     .help()
-    .fail((msg, err, yargs) => {
+    .fail((msg, err) => {
       let errorMessage = `Error:
       ${msg}
       `;

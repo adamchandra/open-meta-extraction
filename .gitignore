@@ -80,7 +80,7 @@ puppeteer@13.0.0.local-chromium/
 
 dist/
 
-/config-*.json
+config-*.json
 
 # Markdown temp files created by emacs previewer
 *.md.tmp

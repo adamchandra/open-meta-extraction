@@ -4,7 +4,7 @@ import * as E from 'fp-ts/Either';
 import { Document } from 'mongoose';
 import { prettyPrint, validateUrl } from '@watr/commonlib';
 
-type HostStatusDocument = Document<unknown, any, HostStatus> & HostStatus;
+export type HostStatusDocument = Document<unknown, any, HostStatus> & HostStatus;
 
 type upsertNoteStatusArgs = {
   noteId: string,
