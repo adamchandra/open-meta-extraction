@@ -1,9 +1,16 @@
 import _ from 'lodash';
 import Koa, { Context } from 'koa';
-import koaBody from 'koa-body';
 import Router from '@koa/router';
 import { Server } from 'http';
-import { delay, prettyPrint, stripMargin, getServiceLogger, prettyFormat } from '@watr/commonlib';
+
+import {
+  putStrLn,
+  stripMargin,
+  getServiceLogger,
+  prettyPrint
+} from '@watr/commonlib';
+
+import fs from 'fs-extra';
 
 const withFields = stripMargin(`
 |<html>
@@ -59,42 +66,52 @@ const htmlSamples: Record<string, string> = {
 
 const log = getServiceLogger('test-server');
 
-function openreviewRouter(): Router<Koa.DefaultState, Koa.DefaultContext> {
-  const router = new Router({
-    prefix: '/api.openreview.net'
-  });
+// function openreviewRouter(): Router<Koa.DefaultState, Koa.DefaultContext> {
+//   const router = new Router({
+//     prefix: '/api.openreview.net'
+//   });
 
-  async function postLogin(ctx: Context): Promise<void> {
-    const { user, password } = ctx.request.body;
-    log.info(`user: ${user}: password: ${password}`);
-    // interface Credentials {
-    ctx.response.body = {
-      token: 'mock-token',
-      user: { id: 29 }
-    };
-  }
+//   async function postLogin(ctx: Context): Promise<void> {
+//     const { user, password } = ctx.request.body;
+//     log.info(`user: ${user}: password: ${password}`);
+//     // interface Credentials {
+//     ctx.response.body = {
+//       token: 'mock-token',
+//       user: { id: 29 }
+//     };
+//   }
 
-  async function getNotes(ctx: Context): Promise<void> {
-    const fmt = prettyFormat(ctx.request.query, { colors: false });
-    log.info(fmt);
-    ctx.response.body = {
-      notes: [],
-      count: 0
-    };
-  }
+//   async function getNotes(ctx: Context): Promise<void> {
+//     const fmt = prettyFormat(ctx.request.query, { colors: false });
+//     log.info(fmt);
+//     ctx.response.body = {
+//       notes: [],
+//       count: 0
+//     };
+//   }
 
-  router.post('/login', koaBody(), postLogin);
+//   router.post('/login', koaBody(), postLogin);
 
-  router.get('/notes', getNotes);
+//   router.get('/notes', getNotes);
 
-  return router;
-}
+//   return router;
+// }
 
 function htmlRouter(): Router<Koa.DefaultState, Koa.DefaultContext> {
-  const router = new Router({ routerPath: '/htmls' });
+  const router = new Router({ routerPath: '/echo' });
 
-  router.get(/[/].*/, async (ctx: Context, next: () => Promise<any>) => {
+  router.get('/echo', async (ctx: Context) => {
+    log.info(`${ctx.method} ${ctx.path}`);
+    const { response } = ctx;
+    const query = ctx.query;
+    response.type = 'application/json';
+    response.status = 200;
+    response.body = query || {};
+  })
+
+  router.get(/[/]htmls[/].*/, async (ctx: Context, next: () => Promise<any>) => {
     const { response, path } = ctx;
+    log.info(`html router; ${path}`);
     prettyPrint({ testServer: path });
     const pathTail = path.slice('/htmls/'.length);
     // const pathTail = path.slice(1);
@@ -108,57 +125,43 @@ function htmlRouter(): Router<Koa.DefaultState, Koa.DefaultContext> {
     await next();
   });
 
-  router.use(async (ctx, next) => {
-    log.info(`HTMLS: ${ctx.method} ${ctx.path}`);
-    await next();
-    log.info(`HTMLS:END: ${ctx.method} ${ctx.path}`);
-  });
-
-  router;
 
   return router;
 }
 
-function rootRouter(): Router<Koa.DefaultState, Koa.DefaultContext> {
-  const router = new Router();
 
-  router.use(async (ctx: Context, next) => {
-    log.info('Root 0');
-    ctx.set('Access-Control-Allow-Origin', '*');
-    return next();
-  });
-
-  router.use(async (ctx, next) => {
-    log.info(`ROOT:${ctx.method} ${ctx.path}`);
-    await next();
-    log.info(`ROOT:END ${ctx.method} ${ctx.path}`);
-  });
-
-  return router;
-}
-
-export async function startSpiderableTestServer(): Promise<Server> {
+export async function startTestServer(): Promise<Server> {
   const app = new Koa();
 
   const port = 9100;
 
-  const root = rootRouter();
-  const hrouter = htmlRouter();
+  const htmlRoutes = htmlRouter();
 
-  root.use(hrouter.routes());
-
-  app.use(async (ctx, next) => {
-    log.info(`${ctx.method} ${ctx.path}`);
-    await next();
-    log.info(`END ${ctx.method} ${ctx.path} ${ctx.status}`);
-  });
-
-  app.use(root.routes());
+  app.use(htmlRoutes.routes());
+  app.use(htmlRoutes.allowedMethods());
 
   return new Promise((resolve) => {
     const server = app.listen(port, () => {
       log.info(`Koa is listening to http://localhost:${port}`);
       resolve(server);
     });
+  });
+}
+
+export async function resetTestServer(workingDir: string): Promise<Server> {
+  fs.emptyDirSync(workingDir);
+  fs.removeSync(workingDir);
+  fs.mkdirSync(workingDir);
+  return startTestServer();
+}
+
+export async function closeTestServer(server: Server | undefined): Promise<void> {
+  return new Promise((resolve) => {
+    if (server === undefined) return;
+    server.on('close', () => {
+      putStrLn('test server stopped');
+      resolve(undefined);
+    });
+    server.close();
   });
 }

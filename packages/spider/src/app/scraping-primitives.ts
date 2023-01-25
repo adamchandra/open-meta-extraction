@@ -23,7 +23,8 @@ import {
 import {
   PageInstanceOptions,
   DefaultPageInstanceOptions,
-  BrowserPool
+  BrowserPool,
+  PageInstance
 } from '~/core/browser-pool';
 
 import {
@@ -63,6 +64,9 @@ export async function createSpiderEnv(
     browserPool,
     browserPageCache: {},
     browserInstance,
+    getCachedPageInstance(): PageInstance | undefined {
+      return _.get(this.browserPageCache, [initialUrl])
+    }
   };
 
   return env;

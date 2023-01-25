@@ -1,10 +1,12 @@
-import { getServiceLogger, putStrLn, setLogEnvLevel } from '@watr/commonlib';
+import { getServiceLogger, setLogEnvLevel } from '@watr/commonlib';
 import { BrowserInstance, createBrowserPool, DefaultPageInstanceOptions } from './browser-pool';
 
 import Async from 'async';
 
 describe('browser pooling', () => {
-  setLogEnvLevel('verbose');
+  setLogEnvLevel('info');
+
+  const log = getServiceLogger('pool')
 
   it('borrow/return to pool', async () => {
     const browserPool = createBrowserPool();
@@ -12,7 +14,6 @@ describe('browser pooling', () => {
     const browserInstance = await browserPool.acquire();
     const { page } = await browserInstance.newPage(DefaultPageInstanceOptions);
 
-    await page.goto('https://google.com/');
     await page.close();
 
     await browserPool.release(browserInstance);
@@ -21,17 +22,17 @@ describe('browser pooling', () => {
   });
 
   it('shutdown on error', async () => {
-    console.log('pos.0');
+    log.debug('pos.0');
     const browserPool = createBrowserPool();
 
-    console.log('pos.1');
+    log.debug('pos.1');
 
     await browserPool.use(async (_browserInstance: BrowserInstance) => {
-      console.log('pos.2');
+      log.debug('pos.2');
       throw new Error('problem');
     }).catch((_err) => {
-      console.log('pos.4');
-      console.log('but we are okay now...');
+      log.debug('pos.4');
+      log.debug('but we are okay now...');
     });
 
     const browser = await browserPool.acquire();
@@ -39,7 +40,7 @@ describe('browser pooling', () => {
 
     await browserPool.shutdown();
 
-    console.log('pos.7');
+    log.debug('pos.7');
   });
 
   ///// Debug urls to simulate events in chrome, call as chrome://url
@@ -68,36 +69,35 @@ describe('browser pooling', () => {
   ];
 
   it('force kill on hang/timeout', async () => {
-    const logger = getServiceLogger('browser-pool');
     const browserPool = createBrowserPool();
 
     const attemptOne = async (url: string) => {
-      putStrLn(`attempting ${url}`);
+      log.debug(`attempting ${url}`);
       const browser = await browserPool.acquire();
-      putStrLn('acquired browser');
+      log.debug('acquired browser');
       const pageInstance = await browser.newPage(DefaultPageInstanceOptions);
-      putStrLn('acquired page');
+      log.debug('acquired page');
       const { page } = pageInstance;
-      putStrLn('navigating...');
+      log.debug('navigating...');
       const httpResponseP = page.goto(`chrome://${url}`, { timeout: 2000 });
 
       const resp = httpResponseP.then(async () => {
-        logger.info(`finished page.goto( ${url} )`);
+        log.debug(`finished page.goto( ${url} )`);
       }).catch(error => {
-        logger.info(`httpResponse: ${error}`);
+        log.debug(`httpResponse: ${error}`);
       });
 
-      putStrLn('await resp');
+      log.debug('await resp');
       await resp;
-      putStrLn('await release');
+      log.debug('await release');
       await browserPool.release(browser);
-      putStrLn('/done attempt');
+      log.debug('/done attempt');
     };
 
     await Async.forEachSeries(debugUrls, async (dbgUrl) => {
-      putStrLn(`1. Trying chrome://${dbgUrl}`);
+      log.debug(`1. Trying chrome://${dbgUrl}`);
       await attemptOne(dbgUrl);
-      putStrLn(`2. Trying chrome://${dbgUrl}`);
+      log.debug(`2. Trying chrome://${dbgUrl}`);
       await attemptOne(dbgUrl);
     });
 
@@ -106,15 +106,15 @@ describe('browser pooling', () => {
 
   it('close all remaining browserInstances on pool.shutdown()', async () => {
     const browserPool = createBrowserPool();
-    putStrLn('Acquiring browserInstances without releasing...');
+    log.debug('Acquiring browserInstances without releasing...');
     await browserPool.acquire();
     await browserPool.acquire();
     const bi = await browserPool.acquire();
-    putStrLn('Navigating to page');
+    log.debug('Navigating to page');
     const bp = await bi.newPage(DefaultPageInstanceOptions);
     const httpResponse = await bp.gotoUrl('chrome://shorthang');
     browserPool.report();
-    putStrLn('Pool Shutdown');
+    log.debug('Pool Shutdown');
     await browserPool.shutdown();
   });
 });

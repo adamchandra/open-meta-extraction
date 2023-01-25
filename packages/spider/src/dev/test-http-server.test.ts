@@ -1,10 +1,9 @@
 import _ from 'lodash';
-import { startSpiderableTestServer } from './test-http-server';
+import { closeTestServer, resetTestServer } from './test-http-server';
 
-import fs from 'fs-extra';
 import { Server } from 'http';
-// import axios from 'axios';
-import { setLogEnvLevel } from '@watr/commonlib';
+import axios from 'axios';
+import { putStrLn, setLogEnvLevel } from '@watr/commonlib';
 
 describe('REST Worker Endpoints', () => {
   setLogEnvLevel('info');
@@ -12,31 +11,19 @@ describe('REST Worker Endpoints', () => {
 
   let testServer: Server | undefined;
 
-  beforeEach(async () => {
-    fs.emptyDirSync(workingDir);
-    fs.removeSync(workingDir);
-    fs.mkdirSync(workingDir);
-    return startSpiderableTestServer()
-      .then(async (server) => {
-        testServer = server;
-      });
+  beforeAll(async () => {
+    testServer = await resetTestServer(workingDir);
+    putStrLn('test server started');
   });
 
-  afterEach(async () => {
-    const pClose1 = new Promise((resolve) => {
-      if (testServer === undefined) return;
-      testServer.on('close', () => resolve(undefined));
-      testServer.close();
-    });
-    return pClose1;
+  afterAll(async () => {
+    return closeTestServer(testServer);
   });
 
-  it('should run end-to-end', async () => {
-    // const url = `http://localhost:9100/200~withFields`;
-    // const retval = await axios.post(
-    //   'http://localhost:3100/extractor/url',
-    // );
-    // const response = retval.data;
-    // // prettyPrint({ response });
+  it('should smokescreen run', async () => {
+    const url = `http://localhost:9100/echo?foo=bar`;
+    const retval = await axios.get(url);
+    const response = retval.data;
+    expect(response).toMatchObject({foo: 'bar'})
   });
 });

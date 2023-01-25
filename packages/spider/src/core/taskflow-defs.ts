@@ -30,6 +30,7 @@ export interface SpiderEnv extends NamespacedLogging, BrowserPoolCachingEnv {
   initialUrl: string;
   entryEncPath: HashEncodedPath;
   entryPath(): string;
+  getCachedPageInstance(): PageInstance|undefined;
 };
 
 const fp = ft.createTaskFlow<SpiderEnv>();
@@ -47,6 +48,7 @@ export const {
   takeWhileSuccess,
   collectFanout,
   valueEnvPair,
+  initArg,
   controlEnvPair
 } = fp;
 

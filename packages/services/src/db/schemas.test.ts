@@ -13,8 +13,15 @@ describe('MongoDB Schemas', () => {
 
   let mongoose: Mongoose | undefined = undefined;
 
-  beforeEach(async () => {
-    mongoose = await connectToMongoDB();
+  beforeAll(async () => {
+    mongoose = await connectToMongoDB(1000)
+      .catch(err => {
+        putStrLn('Could not connect to MongoDB; tests disabled')
+        return undefined;
+      });
+    putStrLn('Ready...');
+    if (!mongoose) return;
+    putStrLn('MongoDB drop/create database');
     await mongoose.connection.dropDatabase();
     await createCollections();
     putStrLn('MongoDB connected');

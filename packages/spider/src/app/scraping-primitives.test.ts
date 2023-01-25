@@ -1,72 +1,106 @@
 import _ from 'lodash';
+import { Server } from 'http';
 
-import * as TE from 'fp-ts/TaskEither';
 import { pipe } from 'fp-ts/function';
-import { createSpiderEnv, getHttpResponseBody, httpResponseToUrlFetchData, fetchUrl } from './scraping-primitives';
-import { compose, SpiderEnv, through } from '~/core/taskflow-defs';
-import { getServiceLogger, prettyPrint, putStrLn } from '@watr/commonlib';
+
+import {
+  createSpiderEnv,
+  getHttpResponseBody,
+  httpResponseToUrlFetchData,
+  fetchUrl
+} from './scraping-primitives';
+
+import {
+  SpiderEnv,
+  through,
+  initArg,
+} from '~/core/taskflow-defs';
+
+import { getServiceLogger, putStrLn, setLogEnvLevel } from '@watr/commonlib';
 import { createBrowserPool, ScriptablePageInstanceOptions } from '~/core/browser-pool';
+import { closeTestServer, resetTestServer } from '~/dev/test-http-server';
+
+const corpusRoot = 'test.d';
+
+async function withSpideringEnv(url: URL, fn: (env: SpiderEnv) => Promise<void>) {
+  const log = getServiceLogger('primitives')
+  const browserPool = createBrowserPool();
+  const env: SpiderEnv = await createSpiderEnv(log, browserPool, corpusRoot, url);
+
+  await fn(env);
+
+  await browserPool.release(env.browserInstance)
+  await browserPool.shutdown()
+}
 
 describe('scraping primitives', () => {
-  const corpusRoot = 'test.d';
-  it('should scrape a simple url', async () => {
-    const url = new URL('http://example.com')
-    const log = getServiceLogger('scraper')
+  setLogEnvLevel('info');
 
-    const browserPool = createBrowserPool();
+  const workingDir = './test.scratch.d';
 
-    const env: SpiderEnv = await createSpiderEnv(log, browserPool, corpusRoot, url);
+  let testServer: Server | undefined;
 
-    const spiderPipeline = compose(
-      fetchUrl(),
-      httpResponseToUrlFetchData
-    );
+  beforeAll(async () => {
+    testServer = await resetTestServer(workingDir);
+    putStrLn('test server started');
+  });
 
-    const pipeline = spiderPipeline(TE.right([url, env]));
-
-    const testPipeline = pipe(
-      pipeline,
-      through((succ) => {
-        prettyPrint({ succ })
-      })
-    )
-    await testPipeline();
-
-    await browserPool.release(env.browserInstance)
-    await browserPool.shutdown()
+  afterAll(async () => {
+    return closeTestServer(testServer);
   });
 
 
-  it('should use a page supporting javascript if needed', async () => {
-    const url = new URL('https://linkinghub.elsevier.com/retrieve/pii/S0893608007001189')
-    const log = getServiceLogger('scraper')
+  it('should scrape a simple url', async () => {
+    const url = new URL('http://localhost:9100/echo');
 
-    const browserPool = createBrowserPool();
+    await withSpideringEnv(url, async (env) => {
+      const pipeline = pipe(
+        initArg(url, env),
+        fetchUrl(),
+        through((response) => {
+          expect(response.ok()).toBe(true);
+        })
+      );
 
-    const env: SpiderEnv = await createSpiderEnv(log, browserPool, corpusRoot, url);
+      await pipeline();
+    });
+  });
 
-    const spiderPipeline = compose(
-      fetchUrl(ScriptablePageInstanceOptions),
-      getHttpResponseBody,
-      // httpResponseToUrlFetchData
-    );
 
-    const pipeline = spiderPipeline(TE.right([url, env]));
+  it('should block javascript by default', async () => {
+    const url = new URL('http://localhost:9100/echo?foo=bar');
 
-    putStrLn(`constructing testPipeline`)
+    await withSpideringEnv(url, async (env) => {
+      const pipeline = pipe(
+        initArg(url, env),
+        fetchUrl(),
+        through((_resp, env) => {
+          const pageInstance = env.getCachedPageInstance();
+          expect(pageInstance).toBeDefined();
+          expect(pageInstance!.page.isJavaScriptEnabled()).toBe(false);
+        })
+      );
 
-    const testPipeline = pipe(
-      pipeline,
-      through((succ) => {
-        prettyPrint({ succ })
-      })
-    )
-    await testPipeline();
+      await pipeline();
+    });
+  });
 
-    putStrLn(`Finished testPipeline`)
+  it('should allow javascript when specified', async () => {
+    const url = new URL('http://localhost:9100/echo?foo=bar');
 
-    await browserPool.release(env.browserInstance)
-    await browserPool.shutdown()
+    await withSpideringEnv(url, async (env) => {
+      const pipeline = pipe(
+        initArg(url, env),
+        fetchUrl(ScriptablePageInstanceOptions),
+        through((response, env) => {
+          const pageInstance = env.getCachedPageInstance();
+          expect(pageInstance).toBeDefined();
+          expect(pageInstance!.page.isJavaScriptEnabled()).toBe(true);
+        })
+      );
+
+      await pipeline();
+    });
   });
 
 });

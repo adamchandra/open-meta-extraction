@@ -19,6 +19,8 @@ export interface TaskFlow<Env extends BaseEnv> {
   // Construct a [value, env] pair
   valueEnvPair<A>(a: A, w: Env): WithEnv<A, Env>;
 
+  initArg<A>(a: A, w: Env): TE.TaskEither<CIWithEnv<Env>, WithEnv<A, Env>>;
+
   // Construct a [control, env] pair
   controlEnvPair(ci: ControlInstruction, w: Env): CIWithEnv<Env>;
 
@@ -88,6 +90,7 @@ export interface TaskFlow<Env extends BaseEnv> {
 export function createTaskFlow<Env extends BaseEnv>(): TaskFlow<Env> {
   const fp: TaskFlow<Env> = {
     valueEnvPair,
+    initArg,
     controlEnvPair,
     useNamespace,
     withCarriedWA,
@@ -163,6 +166,10 @@ export type WithEnv<A, Env extends BaseEnv> = [a: A, env: Env];
 
 function valueEnvPair<A, Env extends BaseEnv>(a: A, w: Env): WithEnv<A, Env> {
   return [a, w];
+}
+
+function initArg<A, Env extends BaseEnv>(a: A, env: Env): TE.TaskEither<CIWithEnv<Env>, WithEnv<A, Env>> {
+  return TE.right(valueEnvPair(a, env));
 }
 
 export type CIWithEnv<Env extends BaseEnv> = WithEnv<ControlInstruction, Env>;

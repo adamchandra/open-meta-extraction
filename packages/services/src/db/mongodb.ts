@@ -7,10 +7,11 @@ export function mongoConnectionString(): string {
   const config = initConfig();
   const ConnectionURL = config.get('mongodb:connectionUrl');
   const MongoDBName = config.get('mongodb:dbName');
-  return `${ConnectionURL}/${MongoDBName}`;
+  let connectUrl = `${ConnectionURL}/${MongoDBName}`;
+  return connectUrl;
 }
 
-export async function connectToMongoDB(): Promise<Mongoose> {
+export async function connectToMongoDB(connectTimeoutMS?: number): Promise<Mongoose> {
   const connstr = mongoConnectionString();
   putStrLn(`connecting to ${connstr}`);
   return mongoose.connect(connstr);
