@@ -1,11 +1,13 @@
 import _ from 'lodash';
 
-import { arglib, initConfig, putStrLn } from '@watr/commonlib';
+import { arglib, initConfig, prettyPrint, putStrLn } from '@watr/commonlib';
 import { formatStatusMessages, showStatusSummary } from '~/db/extraction-summary';
 import { connectToMongoDB, mongoConnectionString } from '~/db/mongodb';
 import { createCollections } from '~/db/schemas';
 import { FetchService } from '~/components/fetch-service';
 import { ExtractionService } from '~/components/extraction-service';
+import { OpenReviewExchange } from '~/components/openreview-exchange';
+import { Notes } from '~/components/openreview-gateway';
 
 const { opt, config, registerCmd } = arglib;
 
@@ -28,7 +30,7 @@ export function registerCLICommands(yargv: arglib.YArgsT) {
 
   registerCmd(
     yargv,
-    'run-relay-fetch',
+    'run-fetch-service',
     'Fetch new OpenReview URLs into local DB for spidering/extraction',
     opt.num('offset', 0),
     opt.num('count', Number.MAX_SAFE_INTEGER),
@@ -47,7 +49,7 @@ export function registerCLICommands(yargv: arglib.YArgsT) {
 
   registerCmd(
     yargv,
-    'run-relay-extract',
+    'run-extraction-service',
     'Spider new URLs, extract metadata, and POST results back to OpenReview API',
     opt.num('count', 0),
     opt.flag('post-results'),
@@ -62,11 +64,11 @@ export function registerCLICommands(yargv: arglib.YArgsT) {
 
     await extractionService.runRelayExtract({ count, postResultsToOpenReview })
       .finally(() => {
-        console.log('run-relay-extract: closing...');
+        console.log('run-extraction-service: closing...');
         return mongoose.connection.close();
       });
 
-    console.log('done! run-relay-extract');
+    console.log('done! run-extraction-service');
   });
 
   registerCmd(
@@ -94,4 +96,29 @@ export function registerCLICommands(yargv: arglib.YArgsT) {
     }
   });
 
+  registerCmd(
+    yargv,
+    'openreview-api',
+    'Interact with OpenReview.net REST API',
+  )(async (args: any) => {
+    initConfig();
+    const oex = new OpenReviewExchange()
+    const minDate = 0;
+
+    const notes = await oex.apiGET<Notes>('/notes',
+      { invitation: 'dblp.org/-/record',
+        mintcdate: minDate,
+        sort: 'tcdate:asc'
+      });
+    if (notes) {
+      putStrLn(`Note Count = ${notes.count}`)
+      if (notes.count > 0) {
+        const note = notes.notes[0];
+        prettyPrint({ note })
+        const noteN = notes.notes[notes.notes.length-1];
+        prettyPrint({ noteN })
+      }
+    }
+
+  });
 }

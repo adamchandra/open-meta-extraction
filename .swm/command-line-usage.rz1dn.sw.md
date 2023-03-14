@@ -19,9 +19,9 @@ cli <command>
 
 Commands:
   cli extraction-summary  Show A Summary of Spidering/Extraction Progress
-  cli run-relay-fetch     Fetch new OpenReview URLs into local DB for
+  cli run-fetch-service     Fetch new OpenReview URLs into local DB for
                           spidering/extraction
-  cli run-relay-extract   Spider new URLs, extract metadata, and POST results
+  cli run-extraction-service   Spider new URLs, extract metadata, and POST results
                           back to OpenReview API
   cli mongo-tools         Create/Delete/Update Mongo Database
   cli pm2-restart         Notification/Restart scheduler

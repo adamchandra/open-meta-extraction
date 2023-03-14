@@ -86,9 +86,9 @@ cli <command>
 
 Commands:
   cli extraction-summary  Show A Summary of Spidering/Extraction Progress
-  cli run-relay-fetch     Fetch new OpenReview URLs into local DB for
+  cli run-fetch-service     Fetch new OpenReview URLs into local DB for
                           spidering/extraction
-  cli run-relay-extract   Spider new URLs, extract metadata, and POST results
+  cli run-extraction-service   Spider new URLs, extract metadata, and POST results
                           back to OpenReview API
   cli mongo-tools         Create/Delete/Update Mongo Database
   cli pm2-restart         Notification/Restart scheduler
@@ -119,10 +119,10 @@ Drop/recreate collections in mongo db
 > ./bin/cli --env=dev mongo-tools --clean
 
 Fetch a batch of URLs from notes via OpenReview API, store in mongo
-> ./bin/cli --env=dev run-relay-fetch --offset 100 --count 100
+> ./bin/cli --env=dev run-fetch-service --offset 100 --count 100
 
 Spider/extract any unprocessed URLs in mongo, optionally posting results back to OpenReview API
-> ./bin/cli --env=dev run-relay-extract --post-results=false
+> ./bin/cli --env=dev run-extraction-service --post-results=false
 
 Show extraction stats for dev database
 > ./bin/cli --env=dev extraction-summary

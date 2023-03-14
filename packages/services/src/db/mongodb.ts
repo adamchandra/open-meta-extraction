@@ -11,7 +11,7 @@ export function mongoConnectionString(): string {
   return connectUrl;
 }
 
-export async function connectToMongoDB(connectTimeoutMS?: number): Promise<Mongoose> {
+export async function connectToMongoDB(): Promise<Mongoose> {
   const connstr = mongoConnectionString();
   putStrLn(`connecting to ${connstr}`);
   return mongoose.connect(connstr);

@@ -8,8 +8,6 @@ import {
   asyncForever
 } from '@watr/commonlib';
 
-import { Note } from './openreview-exchange';
-
 import { WorkflowStatus } from '~/db/schemas';
 
 import {
@@ -18,7 +16,11 @@ import {
   upsertNoteStatus
 } from '~/db/query-api';
 
-import { OpenReviewGateway } from './openreview-gateway';
+import {
+  OpenReviewGateway,
+  Note
+} from './openreview-gateway';
+
 import { Logger } from 'winston';
 
 const oneMinute = 60 * 1000;

@@ -1,5 +1,5 @@
 import _ from 'lodash';
-import { isUrl,  prettyPrint,  putStrLn, setLogEnvLevel } from '@watr/commonlib';
+import { isUrl, putStrLn, setLogEnvLevel } from '@watr/commonlib';
 import { connectToMongoDB } from './mongodb';
 import { createCollections } from './schemas';
 import { Mongoose } from 'mongoose';
@@ -14,22 +14,18 @@ describe('MongoDB Schemas', () => {
   let mongoose: Mongoose | undefined = undefined;
 
   beforeAll(async () => {
-    mongoose = await connectToMongoDB(1000)
-      .catch(err => {
+    mongoose = await connectToMongoDB()
+      .catch(() => {
         putStrLn('Could not connect to MongoDB; tests disabled')
         return undefined;
       });
-    putStrLn('Ready...');
     if (!mongoose) return;
-    putStrLn('MongoDB drop/create database');
     await mongoose.connection.dropDatabase();
     await createCollections();
-    putStrLn('MongoDB connected');
   });
 
   afterAll(async () => {
     if (mongoose === undefined) return;
-    putStrLn('MongoDB closing');
     return mongoose.connection.close();
   });
 
@@ -41,7 +37,7 @@ describe('MongoDB Schemas', () => {
         fc.oneof(fc.string(), fc.webUrl()),
         async (noteId, urlstr1, urlstr2) => {
           // Insert new document
-          const ret = await upsertNoteStatus({ noteId, urlstr: urlstr1 });
+          await upsertNoteStatus({ noteId, urlstr: urlstr1 });
           const byId = await findNoteStatusById(noteId);
           expect(byId).toBeDefined();
           if (byId === undefined) {
@@ -51,7 +47,7 @@ describe('MongoDB Schemas', () => {
           expect(byId.validUrl).toEqual(isUrl(urlstr1));
 
           // Modify existing document
-          const mod = await upsertNoteStatus({ noteId, urlstr: urlstr2 });
+          await upsertNoteStatus({ noteId, urlstr: urlstr2 });
           const modById = await findNoteStatusById(noteId);
           expect(modById).toBeDefined();
           if (modById === undefined) {
@@ -74,7 +70,7 @@ describe('MongoDB Schemas', () => {
         // fc.oneof(fc.string(), fc.webUrl(), fc.constant(undefined)), // response
         genHttpStatus,
         fc.string(), // TODO workflowStatus
-        async (noteId, hasAbstract, requestUrl, response, httpStatus, workflowStatus) => {
+        async (noteId, hasAbstract, requestUrl, response, httpStatus, _workflowStatus) => {
           // Insert new document
           const ret = await upsertHostStatus(noteId, 'available', { hasAbstract, requestUrl, response, httpStatus });
           const byId = await findHostStatusById(noteId);

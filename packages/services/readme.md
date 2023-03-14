@@ -1,36 +1,37 @@
-# Title
+# System Architecture
+
+## Components
+
+### OpenExchange
+- Low-level communication with OpenReview REST Api,
+- login/credentials, GET/POST
+
+### Gateway
+- Uses OpenExchange
+- Higher level communication with OpenReview
+
+### ShadowDB
+- Uses Gateway
+- Proxies Gateway operations
+- Maintains local DB to cache OpenReview data
+
+### Fetch Service
+- Uses ShadowDB
+- Runs scheduled data fetches from OpenReview
+
+### Extraction Service
+- Uses ShadowDB
+- Runs field extractors on any unprocessed data
+
+### Summary Data Service
+- Uses ShadowDB
+- Summarizes extraction progress,
+- Send notifications with summary
 
 
-```mermaid
-C4Context
-  title Open Meta Extraction Service Architecture
-
-  System_Ext(OpenReviewAPI, "OpenReview Server", "GET|POST /notes")
-
-  Enterprise_Boundary(all, "Services") {
-    Boundary(b0, "REST I/O") {
-      Component(gateway, "OpenReviewGateway")
-      BiRel(gateway, OpenReviewAPI, "Uses")
-
-      Component(shadowDB, "Shadow Database")
-      BiRel(shadowDB, gateway, "Uses")
-    }
-
-    Boundary(b1, "Running Services") {
-      Component(extractSvc, "Extraction Service")
-      Rel(extractSvc, shadowDB, "Uses")
-
-      Component(fetchSvc, "Fetch Service")
-      Rel(fetchSvc, shadowDB, "Uses")
-
-      Component(statusSvc, "Summary Stats Service")
-      Rel(statusSvc, shadowDB, "Uses")
-      Rel(statusSvc, gateway, "Uses")
-    }
-
-
-  }
-
-  UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="1")
-
-```
+### Resource Monitor TODO
+- Monitors disk usage
+- Log files
+- Browser /tmp files
+- Corpus files
+- Clean up and/or sends notifications when disk usage is high
