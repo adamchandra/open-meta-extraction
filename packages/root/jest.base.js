@@ -1,6 +1,3 @@
-// const preset = require('ts-jest/presets').jsWithTsESM;
-// const preset = require('ts-jest/presets').jsWithTsESM;
-
 function rootPath(packagePath, relpath) {
   if (relpath) {
     return ['<rootDir>', packagePath, relpath].join('/');
