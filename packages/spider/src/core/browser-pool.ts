@@ -1,7 +1,7 @@
 import _ from 'lodash';
 
 import * as E from 'fp-ts/Either';
-import onExit from 'signal-exit';
+import { onExit } from 'signal-exit';
 import { Pool } from 'tarn';
 
 import {
@@ -262,7 +262,7 @@ export function createBrowserPool(): BrowserPool {
     log.verbose(`pool/event: poolDestroySuccess:${eventId}`);
   });
 
-  onExit(function (code: number | null, signal: string | null) {
+  onExit(function (code?: number | null , signal?: string | null) {
     log.debug(`Node process got ${signal}/${code}; cleaning up browser pool`);
     pool.destroy();
   }, { alwaysLast: false });
