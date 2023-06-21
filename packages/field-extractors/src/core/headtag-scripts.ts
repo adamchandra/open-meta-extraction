@@ -39,6 +39,7 @@ export const gatherOpenGraphTags = collectFanout(
   selectMetaEvidence('og:description', 'property'),
 );
 
+/// [DEMO]
 export const gatherDublinCoreTags = collectFanout(
   selectMetaEvidence('DC.Description'),
   selectMetaEvidence('DCTERMS.Abstract'),
@@ -48,6 +49,7 @@ export const gatherDublinCoreTags = collectFanout(
   selectAllMetaEvidence('DC.Identifier'),
   selectAllMetaEvidence('DC.Type'),
 );
+/// [DEMO]
 
 export const gatherSchemaEvidence = forInputs(
   /response-body/, compose(

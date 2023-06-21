@@ -3,6 +3,8 @@ A set of services to spider and extract metadata (abstracts, titles, authors, pd
 
 Services may be run individually as command line applications, or as service that runs on a schedule (using PM2)
 
+[Additional Documentation](https://adamchandra.github.io/open-meta-extraction/#/spiderscraper)
+
 ** Overview
 This project provides a set of services to take the URL of a webpage for a
 research paper, and extract metadata for that paper. Metadata includes the

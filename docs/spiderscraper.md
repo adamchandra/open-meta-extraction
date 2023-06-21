@@ -5,6 +5,11 @@ preconfigured  levels  of script  and  resource  blocking, utilities  to  manage
 collections of  downloaded pages, and  extensive logging for  monitoring browser
 events.
 
+
+## Example Include
+
+[include headtag-scripts.ts](packages/field-extractors/src/core/headtag-scripts.ts ':include :type=code typescript :fragment=DEMO')
+
 # _API Usage_
 
 _A basic fetch function might look like the following:_
@@ -34,12 +39,4 @@ A working example is available in `📄 packages/spider/src/app/cli.ts`,
 Scraping primitives are defined in `📄 packages/spider/src/app/scraping-primitives.ts`, and control-flow primitives are defined in `📄 packages/spider/src/core/taskflow-defs.ts`.
 
 <br/>
-
-
-[Sourcegraph  Link](https://sourcegraph.com/github.com/adamchandra/open-meta-extraction@ea7197e5a0e12ab05307c1fd6125bc2d7b165fe6/-/blob/packages/field-extractors/src/core/extraction-rules.ts?L23-31)
-
-[Github link](https://github.com/adamchandra/open-meta-extraction/blob/ea7197e5a0e12ab05307c1fd6125bc2d7b165fe6/packages/field-extractors/src/core/extraction-rules.ts#L23-L31)
-
-
-[Relative Link](../packages/field-extractors/src/core/extraction-rules.ts?L23-31)
 
