@@ -6,6 +6,7 @@
 - Extension and Usage
   - [Adding new URL Rules](adding-a-url-specific-rule.md)
   - [Command-line Usage](command-line-usage.md)
+  - [Building Documentation](documentation.md)
+  - [TODO/Feature Wishlist](feature-wishlist.md)
 
 - [Prior Art](prior-art.md)
-

@@ -3,7 +3,7 @@ A set of services to spider and extract metadata (abstracts, titles, authors, pd
 
 Services may be run individually as command line applications, or as service that runs on a schedule (using PM2)
 
-[Additional Documentation](https://adamchandra.github.io/open-meta-extraction/#/spiderscraper)
+[Full Documentation](https://adamchandra.github.io/open-meta-extraction/#/)
 
 ** Overview
 This project provides a set of services to take the URL of a webpage for a
@@ -24,11 +24,13 @@ results, that fact is returned along with the results.
 
 *** Requirements
 - node >= v16.15
-  - I install via n (https://github.com/tj/n) or other node version management
+  I recommend using nvm node version management
 - rush
-  - > npm install -g @microsoft/rush
+  > npm install -g @microsoft/rush
 - pm2
-  - > npm install -g pm2
+  > npm install -g pm2
+- docsify-cli
+  > npm install -g docsify-cli
 - Chrome dependencies (runs headless via puppeteer)
   - > sudo apt install libnss3-dev libatk1.0-0 libatk-bridge2.0-0 libcups2 libgbm1 libpangocairo-1.0-0 libgtk-3-0
 - HTML Tidy
