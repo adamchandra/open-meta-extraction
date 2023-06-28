@@ -8,8 +8,10 @@ import { FetchService } from '~/components/fetch-service';
 import { ExtractionService } from '~/components/extraction-service';
 import { OpenReviewExchange } from '~/components/openreview-exchange';
 import { Notes } from '~/components/openreview-gateway';
+import { runMonitor } from '~/components/monitor-service';
 
 const { opt, config, registerCmd } = arglib;
+
 
 export function registerCLICommands(yargv: arglib.YArgsT) {
   registerCmd(
@@ -45,6 +47,18 @@ export function registerCLICommands(yargv: arglib.YArgsT) {
       .finally(() => {
         return mongoose.connection.close();
       });
+  });
+
+  registerCmd(
+    yargv,
+    'run-monitor-service',
+    'Periodically send notifications with system monitor report',
+    config(
+      opt.flag('send-notification'),
+    )
+  )(async (args: any) => {
+    const sendNotification: boolean = args.sendNotification;
+    await runMonitor({ sendNotification });
   });
 
   registerCmd(
@@ -106,7 +120,8 @@ export function registerCLICommands(yargv: arglib.YArgsT) {
     const minDate = 0;
 
     const notes = await oex.apiGET<Notes>('/notes',
-      { invitation: 'dblp.org/-/record',
+      {
+        invitation: 'dblp.org/-/record',
         mintcdate: minDate,
         sort: 'tcdate:asc'
       });
@@ -115,7 +130,7 @@ export function registerCLICommands(yargv: arglib.YArgsT) {
       if (notes.count > 0) {
         const note = notes.notes[0];
         prettyPrint({ note })
-        const noteN = notes.notes[notes.notes.length-1];
+        const noteN = notes.notes[notes.notes.length - 1];
         prettyPrint({ noteN })
       }
     }

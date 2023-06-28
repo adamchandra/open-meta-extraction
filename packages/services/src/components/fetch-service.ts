@@ -30,9 +30,8 @@ export class FetchService {
   log: Logger;
   gate: OpenReviewGateway;
 
-
   constructor() {
-    this.log = getServiceLogger('ShadowService');
+    this.log = getServiceLogger('FetchService');
     this.gate = new OpenReviewGateway();
   }
 

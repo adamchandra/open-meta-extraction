@@ -1,4 +1,5 @@
 - Modules
+  - [Architecture](architecture.md)
   - [Spider/scraper](spiderscraper.md)
   - [Field Extraction](field-extraction.md)
   - [Common Utils](common-utils.md)

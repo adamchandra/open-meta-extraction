@@ -16,19 +16,18 @@ import { CanonicalFieldRecords, getEnvCanonicalFields, SpiderAndExtractionTransf
 
 import { createBrowserPool, createSpiderEnv } from '@watr/spider';
 
-import { getNextSpiderableUrl, releaseSpiderableUrl, resetUrlsWithMissingFields, upsertHostStatus } from '~/db/query-api';
 import { Logger } from 'winston';
-import { ShadowService } from './shadow-service';
+import { ShadowDB } from './shadow-db';
 
 export class ExtractionService {
   log: Logger;
   gate: OpenReviewGateway;
-  shadow: ShadowService;
+  shadow: ShadowDB;
 
   constructor() {
     this.log = getServiceLogger('ExtractionService');
     this.gate = new OpenReviewGateway();
-    this.shadow = new ShadowService()
+    this.shadow = new ShadowDB()
   }
 
   async runRelayExtract({ count, postResultsToOpenReview }: RunRelayExtract) {
@@ -90,7 +89,7 @@ export class ExtractionService {
 
 
         if (postResultsToOpenReview) {
-          // TODO move hasField logic into ShadowService
+          // TODO move hasField logic into ShadowDB
           if (hasAbstract) {
             await this.shadow.doUpdateNoteField(noteId, 'abstract', theAbstract);
           }

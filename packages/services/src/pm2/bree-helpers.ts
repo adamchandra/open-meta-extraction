@@ -36,7 +36,14 @@ export function jobDef(
   jobName: string,
   jobArgv: string[],
   interval: string,
+  nameModifier?: string
 ): Bree.JobOptions {
+  let jobDisplayName = _.upperFirst(_.camelCase(jobName));
+  if (nameModifier) {
+    // Job names  must be  unique within Bree,  so append a  modifier if  we are
+    // going to run multiple jobs of the same type
+    jobDisplayName += `:${nameModifier}`
+  }
   const job: Bree.JobOptions = {
     name: jobName,
     interval,
@@ -48,27 +55,30 @@ export function jobDef(
   return job;
 }
 
-export function cliJob(
-  cliApp: string,
-  cliArgs: string[],
-  interval: string,
-  nameModifier?: string
-): Bree.JobOptions {
-  const baseName = _.upperFirst(_.camelCase(cliApp));
-  const qualifiedName = nameModifier ? `${baseName}:${nameModifier}` : baseName;
-  const jobPath = path.join(__dirname, 'jobs', 'run-cli.js');
+// /**
+//  * Run a cli job using the Bree scheduler
+//  */
+// export function cliJob(
+//   cliApp: string,
+//   cliArgs: string[],
+//   interval: string,
+//   nameModifier?: string
+// ): Bree.JobOptions {
+//   const baseName = _.upperFirst(_.camelCase(cliApp));
+//   const qualifiedName = nameModifier ? `${baseName}:${nameModifier}` : baseName;
+//   const jobPath = path.join(__dirname, 'jobs', 'run-cli.js');
 
-  const job: Bree.JobOptions = {
-    name: qualifiedName,
-    path: jobPath,
-    interval,
-    worker: {
-      argv: [cliApp, ...cliArgs],
-    },
-    outputWorkerMetadata: false,
-  };
-  return job;
-}
+//   const job: Bree.JobOptions = {
+//     name: qualifiedName,
+//     path: jobPath,
+//     interval,
+//     worker: {
+//       argv: [cliApp, ...cliArgs],
+//     },
+//     outputWorkerMetadata: false,
+//   };
+//   return job;
+// }
 
 
 export function createBreeScheduler(jobs: Bree.JobOptions[]): Bree {
@@ -114,3 +124,4 @@ export function createBreeScheduler(jobs: Bree.JobOptions[]): Bree {
   log.info('Bree Scheduler Started');
   return bree;
 }
+

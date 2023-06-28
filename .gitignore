@@ -84,3 +84,5 @@ config-*.json
 
 # Markdown temp files created by emacs previewer
 *.md.tmp
+
+# docs/packages/**

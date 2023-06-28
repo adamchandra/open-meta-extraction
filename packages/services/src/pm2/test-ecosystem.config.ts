@@ -12,8 +12,9 @@ const apps1 = appNames.map(name => {
 });
 
 const apps2 = [
-  pm2CliJob('scheduler'),
-  pm2CliJob('preflight-check', { autorestart: false })
+  // pm2CliJob('scheduler'),
+  pm2CliJob('preflight-check', { autorestart: false }),
+  pm2CliJob('run-monitor-service', { args: '--send-notification=false'})
 ];
 
 const apps = _.concat(apps1, apps2);

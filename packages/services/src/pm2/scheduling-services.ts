@@ -8,7 +8,7 @@ const { opt, config, registerCmd } = arglib;
 import _ from 'lodash';
 
 import { pm2x } from './pm2-helpers';
-import { cliJob, createBreeScheduler, jobDef } from './bree-helpers';
+import { createBreeScheduler, jobDef } from './bree-helpers';
 
 import { sigtraps } from '~/util/shutdown';
 import { Mongoose } from 'mongoose';
@@ -52,7 +52,8 @@ export function registerCommands(yargv: arglib.YArgsT) {
       'after 2 sec',
     ];
 
-    const jobs = timers.map((t, i) => cliJob('echo', [`--message='scheduled for:  ${t}'`], t, `${i}`));
+    // const jobs = timers.map((t, i) => cliJob('echo', [`--message='scheduled for:  ${t}'`], t, `${i}`));
+    const jobs = timers.map((t, i) => jobDef('echo', [`--message='scheduled for:  ${t}'`], t, `${i}`));
 
     createBreeScheduler(jobs);
 
@@ -70,8 +71,7 @@ export function registerCommands(yargv: arglib.YArgsT) {
     // Send status email once per day (on restart)
     const emailJob = jobDef('send-email', [], 'every 12 hours');
     // Restart extractor at least once per day
-    const restartJob = cliJob('pm2-restart', [], 'every 24 hours');
-    // Watch for file/sentinel change to restart
+    const restartJob = jobDef('pm2-restart', [], 'every 24 hours');
     // Monitor extraction rate and warn when too low
 
     createBreeScheduler([restartJob, emailJob]);
@@ -107,7 +107,7 @@ export function registerCommands(yargv: arglib.YArgsT) {
   });
 
   registerCmd(
-    yargv, 'preflight-check', 'Run checks at startup and halt pm2 apps if anything looks wrong'
+    yargv, 'preflight-check', 'Run sanity checks at startup and halt pm2 apps if anything looks wrong'
   )(async () => {
     const log = getServiceLogger('PreflightCheck');
     log.info('Starting Preflight Check');

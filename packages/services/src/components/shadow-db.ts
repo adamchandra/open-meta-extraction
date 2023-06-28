@@ -24,13 +24,13 @@ import { OpenReviewGateway, UpdatableField, Note, Notes } from './openreview-gat
 import { Logger } from 'winston';
 
 
-export class ShadowService {
+export class ShadowDB {
   log: Logger;
   gate: OpenReviewGateway;
 
 
   constructor() {
-    this.log = getServiceLogger('ShadowService');
+    this.log = getServiceLogger('ShadowDB');
     this.gate = new OpenReviewGateway();
   }
 

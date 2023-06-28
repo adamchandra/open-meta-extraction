@@ -1,5 +1,5 @@
 import _ from 'lodash';
-import { config, ArgvApp, registerCmd, YArgs } from '~/cli/arglib';
+import { config, ArgvApp, registerCmd, YArgs, opt } from '~/cli/arglib';
 import { prettyPrint } from '~/util/pretty-print';
 
 describe('Arglib tests', () => {
@@ -66,5 +66,15 @@ describe('Arglib tests', () => {
     // });
 
     // prettyPrint({ result });
+  });
+
+  test.only('should parse date/time/durations', async () => {
+    const result = await runCmd(
+      "--every=12h+3m+1x",
+      opt.timeInterval('every:Some Length of time'),
+    ).catch(error => {
+      prettyPrint({ caughtErr: error });
+    });
+    prettyPrint({ result });
   });
 });

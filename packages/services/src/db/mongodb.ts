@@ -42,3 +42,4 @@ export function createCurrentTimeOpt(): CurrentTimeOpt {
   };
   return mockedOpts;
 }
+

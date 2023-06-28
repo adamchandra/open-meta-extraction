@@ -1,0 +1,33 @@
+direction: down
+
+or: OpenReview {
+  shape: cloud
+}
+
+svc: Services {
+  FetchService <- _.gate: Fetch new records
+  FetchService -> _.db: Populate
+  ExtractionService <- _.db: Get next URL
+  ExtractionService -> _.db: Update local
+}
+
+gate: OpenGateway {
+      note: |`
+      *High-level ops*
+      `|
+
+
+      ox: OpenExchange {
+        note: |`
+        REST Primitives
+        `|
+      }
+      ox <-> _.or: REST
+}
+
+db: ShadowDB {
+  shape: cylinder
+  MongoDB { shape: cylinder }
+}
+
+db -> gate: Update remote

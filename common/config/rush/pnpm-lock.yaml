@@ -9225,7 +9225,7 @@ packages:
     dev: false
 
   file:projects/commonlib.tgz_ts-node@10.9.1:
-    resolution: {integrity: sha512-IsUY6YjUa3a8BDLEzIAo5ot4aRwAU+2fq+Xxmxfn1GgvvxA/7QFdj8d4mxWilYS3dSceNyaRG2+y54hWr3A+0g==, tarball: file:projects/commonlib.tgz}
+    resolution: {integrity: sha512-Ryyc0ch8C/PFCMqJaRXm/RX9Hb4vEHudKyer6VdrEYFD7SxwWCAwxyZzz26t6wSOCSwPuR+DIPl2JuDgYINb+Q==, tarball: file:projects/commonlib.tgz}
     id: file:projects/commonlib.tgz
     name: '@rush-temp/commonlib'
     version: 0.0.0
@@ -9244,6 +9244,7 @@ packages:
       '@types/yargs': 17.0.24
       async: 3.2.4
       crypto-js: 4.1.1
+      date-fns: 2.30.0
       diff: 5.1.0
       eslint: 8.43.0
       fp-ts: 2.16.0
