@@ -10,6 +10,28 @@ export interface Scheduler {
   run(): Promise<void>;
 }
 
+import * as E from 'fp-ts/Either';
+import later from '@breejs/later'
+import * as bree from '@breejs/later'
+
+export type ScheduleData = bree.ScheduleData;
+
+export function parseSchedule(scheduleSpec: string): E.Either<string[], ScheduleData> {
+  const schedule = later.parse.text(scheduleSpec);
+  const error = schedule['error'];
+  if (error > -1) {
+    const pos = '^'.padStart(error);
+    const errors = [
+      'Syntax error in schedule:',
+      `>  ${scheduleSpec}`,
+      `>  ${pos}`,
+      `See https://breejs.github.io/later/parsers.html#text for syntax`,
+    ];
+    return E.left(errors);
+  }
+  return E.right(schedule);
+}
+
 function decodeField<T>(
   test: (x: unknown) => x is T,
   field: string,

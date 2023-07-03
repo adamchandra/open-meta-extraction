@@ -23,6 +23,29 @@ export const AllLogLevels = [
   'silly',
 ];
 
+// import * as Transport from 'winston-transport';
+
+import { parentPort, isMainThread, workerData, threadId } from 'worker_threads';
+import { putStrLn } from './pretty-print';
+
+export class ParentPortTransport2 extends transports.Console {
+  constructor(opts: any) {
+    super(opts);
+  }
+  log(msg: any, done: () => void) {
+    if (parentPort !== null) {
+      putStrLn(`postMessage from child>..`);
+      // parentPort.postMessage(`from child> ${msg}`);
+      const { message, level, timestamp } = msg;
+      const logmessage = `${timestamp} worker:${threadId} ${level} ${message}`;
+      parentPort.postMessage(logmessage);
+    }
+
+    // done();
+  }
+}
+
+
 export function setLogEnvLevel(level: string): void {
   process.env['app.loglevel'] = level;
 }
@@ -49,6 +72,16 @@ export function getServiceLogger(label: string): Logger {
 
   let logLevel = getLogEnvLevel();
   const level = logLevel || 'debug';
+  const ppt = new ParentPortTransport2({
+    format: format.combine(
+      format.colorize(),
+      format.timestamp({
+        format: 'HH:mm:ss:sss'
+      }),
+      format.label({ label, message: true }),
+      format.printf(info => `(child) ${info.timestamp} ${info.level} ${info.message}`)
+    ),
+  });
 
   const logger = createLogger({
     level,
@@ -64,7 +97,8 @@ export function getServiceLogger(label: string): Logger {
           // format.simple(),
           format.printf(info => `${info.timestamp} ${info.level} ${info.message}`)
         ),
-      })
+      }),
+      ppt
     ],
   });
 

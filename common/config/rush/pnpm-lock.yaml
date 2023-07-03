@@ -3,6 +3,7 @@ lockfileVersion: 5.3
 specifiers:
   '@babel/cli': ~7.22.5
   '@babel/core': ~7.22.5
+  '@breejs/later': ~4.1.0
   '@koa/router': ~12.0.0
   '@ladjs/graceful': ~3.2.2
   '@retorquere/bibtex-parser': ~6.4.14
@@ -12,6 +13,7 @@ specifiers:
   '@rush-temp/services': file:./projects/services.tgz
   '@rush-temp/spider': file:./projects/spider.tgz
   '@types/async': ^3.2.20
+  '@types/breejs__later': ~4.1.2
   '@types/chai': ^4.3.5
   '@types/crypto-js': ^4.1.1
   '@types/diff': ^5.0.3
@@ -30,7 +32,7 @@ specifiers:
   '@types/through2': ^2.0.38
   '@types/url-parse': ^1.4.8
   '@types/xml2js': ~0.4.11
-  '@types/yargs': ^17.0.24
+  '@types/yargs': ~17.0.24
   '@typescript-eslint/eslint-plugin': ^5.60.0
   '@typescript-eslint/parser': ^5.60.0
   async: ^3.2.4
@@ -85,12 +87,14 @@ specifiers:
   typescript: ^4.9.5
   url-parse: ^1.5.10
   winston: ^3.9.0
+  winston-transport: ~4.5.0
   xml2js: ~0.6.0
   yargs: ^17.7.2
 
 dependencies:
   '@babel/cli': 7.22.5_@babel+core@7.22.5
   '@babel/core': 7.22.5
+  '@breejs/later': 4.1.0
   '@koa/router': 12.0.0
   '@ladjs/graceful': 3.2.2
   '@retorquere/bibtex-parser': 6.4.14
@@ -100,6 +104,7 @@ dependencies:
   '@rush-temp/services': file:projects/services.tgz
   '@rush-temp/spider': file:projects/spider.tgz_ts-node@10.9.1
   '@types/async': 3.2.20
+  '@types/breejs__later': 4.1.2
   '@types/chai': 4.3.5
   '@types/crypto-js': 4.1.1
   '@types/diff': 5.0.3
@@ -173,6 +178,7 @@ dependencies:
   typescript: 4.9.5
   url-parse: 1.5.10
   winston: 3.9.0
+  winston-transport: 4.5.0
   xml2js: 0.6.0
   yargs: 17.7.2
 
@@ -1399,6 +1405,10 @@ packages:
     dependencies:
       '@types/connect': 3.4.35
       '@types/node': 20.3.1
+    dev: false
+
+  /@types/breejs__later/4.1.2:
+    resolution: {integrity: sha512-qTLhBWIdaFcBhYu/2eg2B4bjXXtGKzKfN+Hpmr3A2fyXJx4hx1nMcP84NpfYAjZ8ktKsXhu37/P41W3x/cP7jg==}
     dev: false
 
   /@types/chai/4.3.5:
@@ -9225,7 +9235,7 @@ packages:
     dev: false
 
   file:projects/commonlib.tgz_ts-node@10.9.1:
-    resolution: {integrity: sha512-Ryyc0ch8C/PFCMqJaRXm/RX9Hb4vEHudKyer6VdrEYFD7SxwWCAwxyZzz26t6wSOCSwPuR+DIPl2JuDgYINb+Q==, tarball: file:projects/commonlib.tgz}
+    resolution: {integrity: sha512-lVKsA+a6D3kicTxljiih09w0OWX9UI3Hnv13EEm67/U62Kf3ITXOZC1TgK4ZC1PUH5bV2aAqpqI6IwhInaq6xg==, tarball: file:projects/commonlib.tgz}
     id: file:projects/commonlib.tgz
     name: '@rush-temp/commonlib'
     version: 0.0.0
@@ -9262,6 +9272,7 @@ packages:
       tsup: 7.0.0_ts-node@10.9.1+typescript@4.9.5
       typescript: 4.9.5
       winston: 3.9.0
+      winston-transport: 4.5.0
       yargs: 17.7.2
     transitivePeerDependencies:
       - '@swc/core'
@@ -9350,14 +9361,16 @@ packages:
     dev: false
 
   file:projects/services.tgz:
-    resolution: {integrity: sha512-qOkOkK90Cssiiq/FHI5h/sWQBSH4CVNO3tro5dzlOsm0Vb3VzGbqcSDOmf9ws9CqJuqcpOWy7s+klLRFPdO+8Q==, tarball: file:projects/services.tgz}
+    resolution: {integrity: sha512-RYvYg94JiFjDGZ31KdAf4Zwf2zgc21BHkCyhM4n3UKHrhEoiTrrA+tMhSCm75cywuKWEm7DiXqIiGn9BINQ97Q==, tarball: file:projects/services.tgz}
     name: '@rush-temp/services'
     version: 0.0.0
     dependencies:
+      '@breejs/later': 4.1.0
       '@koa/router': 12.0.0
       '@ladjs/graceful': 3.2.2
       '@retorquere/bibtex-parser': 6.4.14
       '@types/async': 3.2.20
+      '@types/breejs__later': 4.1.2
       '@types/chai': 4.3.5
       '@types/fs-extra': 11.0.1
       '@types/jest': 29.5.2
@@ -9400,6 +9413,7 @@ packages:
       tsup: 7.0.0_ts-node@10.9.1+typescript@4.9.5
       typescript: 4.9.5
       winston: 3.9.0
+      winston-transport: 4.5.0
       xml2js: 0.6.0
     transitivePeerDependencies:
       - '@aws-sdk/credential-providers'

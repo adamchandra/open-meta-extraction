@@ -2,16 +2,26 @@ import _ from 'lodash';
 import fs from 'fs-extra';
 import path from 'path';
 
-import yargs, { Argv, Arguments, Options, MiddlewareFunction } from 'yargs';
-import hideBin from 'yargs/helpers'
+import yargs, { Argv, Arguments, Options, MiddlewareFunction, PositionalOptions, ParserConfigurationOptions } from 'yargs';
+// import hideBin from 'yargs/helpers'
 
 import { putStrLn } from '~/util/pretty-print';
 import { AllLogLevels } from '~/util/basic-logging';
+
+
+
 export const YArgs = yargs;
+export type YargsInstance = typeof yargs;
 
 export type YArgsT = yargs.Argv;
 
 export type ArgvApp = (ya: Argv) => Argv;
+
+export interface MiddlewareCallback {
+  (argv: Arguments, yargs: YargsInstance):
+    | Partial<Arguments>
+    | Promise<Partial<Arguments>>;
+}
 
 export function config(...fs: ArgvApp[]): ArgvApp {
   return ya => _.reduce(fs, (acc, f) => f(acc), ya);
@@ -66,6 +76,17 @@ const optAndDesc = (optAndDesc: string, ext?: Options) => (ya: Argv): Argv => {
   }
 
   return ya.option(name, opts);
+};
+
+const positionalAndDesc = (optAndDesc: string, ext?: PositionalOptions) => (ya: Argv): Argv => {
+  const { name, desc } = splitArgDesc(optAndDesc, '');
+
+  const opts = ext || {};
+  if (desc.length > 0) {
+    opts.description = desc;
+  }
+
+  return ya.positional(name, opts);
 };
 
 const optFlag = (odesc: string, def?: boolean) => optAndDesc(odesc, {
@@ -135,6 +156,14 @@ export interface TimeInterval {
   milliseconds: number;
 }
 
+
+function useMiddleware(cb: MiddlewareCallback): ArgvApp {
+  return (ya) => {
+    const cb0 = cb as any;
+    ya.middleware(cb0, /* applyBeforeValidation= */ true);
+    return ya;
+  }
+}
 
 export const timeInterval = (argAndDesc: string) => (ya: Argv) => {
   const { name, desc } = splitArgDesc(argAndDesc, `timeInterval ${argAndDesc}`);
@@ -279,7 +308,6 @@ export async function runRegisteredCmds(useYargs: Argv): Promise<void> {
 
   await Promise.resolve(res);
 }
-
 export const opt = {
   config: configFile,
   existingDir,
@@ -294,4 +322,6 @@ export const opt = {
   num: optNum,
   str: optString,
   logLevel: optlogLevel,
+  positional: positionalAndDesc,
+  useMiddleware
 };

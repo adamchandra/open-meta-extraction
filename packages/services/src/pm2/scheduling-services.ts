@@ -1,19 +1,23 @@
 import {
   arglib, delay, getServiceLogger, initConfig, putStrLn,
-  asyncEachSeries, asyncForever
+  asyncEachSeries, asyncForever, prettyPrint
 } from '@watr/commonlib';
 
+import * as E from 'fp-ts/Either';
 const { opt, config, registerCmd } = arglib;
 
 import _ from 'lodash';
 
 import { pm2x } from './pm2-helpers';
-import { createBreeScheduler, jobDef } from './bree-helpers';
+import { createBreeCLIJob, createBreeScheduler, jobDef } from './bree-helpers';
 
 import { sigtraps } from '~/util/shutdown';
 import { Mongoose } from 'mongoose';
 import { connectToMongoDB } from '~/db/mongodb';
 import { createCollections } from '~/db/schemas';
+
+import later from '@breejs/later'
+import { parseSchedule } from '~/util/scheduler';
 
 export function registerCommands(yargv: arglib.YArgsT) {
   registerCmd(
@@ -82,32 +86,20 @@ export function registerCommands(yargv: arglib.YArgsT) {
   });
 
   registerCmd(
-    yargv, 'echo', 'Echo message to stdout, once or repeating', config(
-      opt.ion('message: the message to echo', {
-        type: 'string',
-        demandOption: true
-      }),
-      opt.ion('interval: repeat every [interval] ms', {
-        type: 'number',
-        demandOption: false
-      }),
+    yargv, 'echo', 'Echo message to stdout', config(
+      opt.str('message: the message to echo'),
     ))(async (args: any) => {
-    const { message, interval } = args;
-
-    if (interval && typeof interval === 'number') {
-      let counter = 0;
-      await asyncForever(async () => {
-        putStrLn(`${counter}: ${message}`);
-        counter += 1;
-        await delay(interval);
-      });
-    }
-
-    putStrLn(`once: ${message}`);
-  });
+      const { message } = args;
+      const log = getServiceLogger('Echo');
+      putStrLn(`echo> ${message}`);
+      log.info(`log/echo> ${message}`);
+    });
 
   registerCmd(
-    yargv, 'preflight-check', 'Run sanity checks at startup and halt pm2 apps if anything looks wrong'
+    yargv,
+    'preflight-check',
+    'Run sanity checks at startup and halt pm2 apps if anything looks wrong',
+    config()
   )(async () => {
     const log = getServiceLogger('PreflightCheck');
     log.info('Starting Preflight Check');
@@ -139,5 +131,42 @@ export function registerCommands(yargv: arglib.YArgsT) {
     } catch (error) {
       log.error(`Error stopping ${error}`);
     }
+
+  });
+
+  registerCmd(
+    yargv,
+    'schedule <scheduleSpec>',
+    'Run a Command-line app on a schedule',
+    config(
+      opt.positional('scheduleSpec: specify the schedule for running command', {
+        type: 'string',
+      }),
+    )
+  )(async (args: any) => {
+    const { scheduleSpec } = args;
+    const maybeSchedule = parseSchedule(scheduleSpec);
+    if (E.isLeft(maybeSchedule)) {
+      maybeSchedule.left.forEach(msg => {
+        putStrLn(msg)
+      })
+      return;
+    }
+    const scheduleData = maybeSchedule.right;
+
+    const log = getServiceLogger('Scheduler');
+
+    const argv = process.argv;
+    const argvCli = argv.slice(5);
+    prettyPrint({ argv, argvCli })
+    log.info(`Running ${argvCli.join(' ')}`);
+    const [cmd, ...remaining] = argvCli;
+
+    const job = createBreeCLIJob(cmd, remaining, scheduleSpec);
+    const bree = createBreeScheduler([job]);
+
+    await sigtraps(async () => {
+      log.info('Shutting down');
+    });
   });
 }

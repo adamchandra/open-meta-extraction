@@ -1,4 +1,4 @@
-import { getServiceLogger } from '@watr/commonlib';
+import { getServiceLogger, putStrLn } from '@watr/commonlib';
 import Bree from 'bree';
 import Graceful from '@ladjs/graceful';
 import path from 'path';
@@ -55,41 +55,47 @@ export function jobDef(
   return job;
 }
 
-// /**
-//  * Run a cli job using the Bree scheduler
-//  */
-// export function cliJob(
-//   cliApp: string,
-//   cliArgs: string[],
-//   interval: string,
-//   nameModifier?: string
-// ): Bree.JobOptions {
-//   const baseName = _.upperFirst(_.camelCase(cliApp));
-//   const qualifiedName = nameModifier ? `${baseName}:${nameModifier}` : baseName;
-//   const jobPath = path.join(__dirname, 'jobs', 'run-cli.js');
+/**
+ * Run a cli job using the Bree scheduler
+ */
+export function createBreeCLIJob(
+  cliApp: string,
+  cliArgs: string[],
+  interval: string,
+  nameModifier?: string
+): Bree.JobOptions {
+  const baseName = _.upperFirst(_.camelCase(cliApp));
+  const qualifiedName = nameModifier ? `${baseName}:${nameModifier}` : baseName;
+  const jobPath = path.join(__dirname, 'jobs', 'run-cli.js');
 
-//   const job: Bree.JobOptions = {
-//     name: qualifiedName,
-//     path: jobPath,
-//     interval,
-//     worker: {
-//       argv: [cliApp, ...cliArgs],
-//     },
-//     outputWorkerMetadata: false,
-//   };
-//   return job;
-// }
+  const job: Bree.JobOptions = {
+    name: qualifiedName,
+    path: jobPath,
+    interval,
+    worker: {
+      argv: [cliApp, ...cliArgs],
+      // stdout: true,
+    },
+    outputWorkerMetadata: true,
+  };
+  return job;
+}
 
 
 export function createBreeScheduler(jobs: Bree.JobOptions[]): Bree {
   const jobRoot = path.join(__dirname, 'jobs');
-  const log = getBreeLogger('Bree');
+  const log = getBreeLogger('Scheduler');
 
   const bree = new Bree({
     root: jobRoot,
+    logger: false,
     removeCompleted: false,
-    logger: log,
     jobs,
+    worker: {
+      stdout: true,
+      stderr: true,
+      // stdin: true,
+    },
 
     errorHandler: (error, workerMetadata) => {
       if (workerMetadata.threadId) {
@@ -97,15 +103,12 @@ export function createBreeScheduler(jobs: Bree.JobOptions[]): Bree {
       } else {
         log.error(`There was an error while running a worker ${workerMetadata.name}`);
       }
-
       log.error(error);
     },
+
     workerMessageHandler: (messageInfo: any) => {
       const { message } = messageInfo;
-      switch (message) {
-        default:
-          log.info(`jobmsg> ${message}`);
-      }
+      putStrLn(message);
     }
   });
 
@@ -124,4 +127,3 @@ export function createBreeScheduler(jobs: Bree.JobOptions[]): Bree {
   log.info('Bree Scheduler Started');
   return bree;
 }
-

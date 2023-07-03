@@ -40,7 +40,10 @@
     "date-fns": "~2.30.0",
     "fast-check": "~3.10.0",
     "migrate-mongo": "~10.0.0",
-    "@types/migrate-mongo": "~10.0.0"
+    "@types/migrate-mongo": "~10.0.0",
+    "@breejs/later": "~4.1.0",
+    "@types/breejs__later": "~4.1.2",
+    "winston-transport": "~4.5.0"
   },
   "devDependencies": {
     "@watr/root": "0.1.0",

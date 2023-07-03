@@ -119,12 +119,20 @@ export async function runJob(
 
   const workerData = getWorkerData();
   // const wdPretty = prettyFormat({ workerData, workerThreads})
-  const args: string[] = workerData.job?.worker?.argv || [];
+  // const args: string[] = workerData.job?.worker?.argv || [];
 
-  log(`Begin: PM2/RunJob ${baseNoExt}: ${args.join(' ')}`);
+  log(`JobBegin:${baseNoExt}`);
+
+  // if (parentPort !== null) {
+  //   parentPort.postMessage('starting job...');
+  //   process.stdout.on('data', (data) => {
+  //     parentPort?.postMessage('got stdout data');
+  //     parentPort?.postMessage(data.toString('utf8'));
+  //   });
+  // }
 
   await Promise.resolve(jobFunc(log, workerData));
 
-  log(`Done: PM2/RunJob '${baseNoExt}'`);
+  log(`JobDone '${baseNoExt}'`);
   exitJob();
 }
