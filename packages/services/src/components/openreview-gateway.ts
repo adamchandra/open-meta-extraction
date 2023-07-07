@@ -6,7 +6,7 @@ import _ from 'lodash';
 
 import {
   asyncEachOfSeries,
-  getServiceLogger, prettyPrint, putStrLn,
+  getServiceLogger, prettyPrint
 } from '@watr/commonlib';
 import { Logger } from 'winston';
 
@@ -47,6 +47,14 @@ export interface MessagePostData {
   subject: string;
   message: string,
   groups: string[];
+}
+
+export type NoteCursorKinds = 'front-cursor' | 'rear-cursor'
+export type NoteCursor = string;
+
+export interface NoteCursorRecord {
+  kind: NoteCursorKinds;
+  noteId: NoteCursor;
 }
 
 const OpenreviewStatusGroup = 'OpenReview.net/Status';
@@ -92,8 +100,8 @@ export class OpenReviewGateway {
     return this.opex.apiGET<Notes>('/notes', { invitation: 'dblp.org/-/record', sort: 'number:desc', offset });
   }
 
-  async fetchNotes(afterNoteId?: string): Promise<Notes | undefined> {
-    const queryParams: Record<string, string> = { invitation: 'dblp.org/-/record', sort: 'number:desc' };
+  async fetchNotes(afterNoteId?: NoteCursor): Promise<Notes | undefined> {
+    const queryParams: Record<string, string> = { invitation: 'dblp.org/-/record', sort: 'number:asc' };
     if (afterNoteId) {
       queryParams['after'] = afterNoteId;
     }

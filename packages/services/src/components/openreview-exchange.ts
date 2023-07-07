@@ -15,7 +15,8 @@ type ErrorTypes = AxiosError | unknown;
 
 import {
   getServiceLogger,
-  initConfig
+  initConfig,
+  prettyPrint
 } from '@watr/commonlib';
 
 import { Logger } from 'winston';
@@ -42,6 +43,7 @@ export class OpenReviewExchange {
     this.apiBaseURL = config.get('openreview:restApi');
     this.user = config.get('openreview:restUser');
     this.password = config.get('openreview:restPassword');
+    prettyPrint({ user: this.user, apiBase: this.apiBaseURL });
   }
 
 
@@ -95,7 +97,7 @@ export class OpenReviewExchange {
       .catch(displayRestError);
   }
 
-  async apiGET<R>(url: string, query: Record<string, string | number>, retries: number = 1): Promise<R | undefined> {
+  async apiGET<R>(url: string, query: Record<string, string | number>): Promise<R | undefined> {
     const run = () =>
       this.configAxios()
         .get(url, { params: query })
@@ -104,7 +106,7 @@ export class OpenReviewExchange {
     return this.apiAttempt(run, 1);
   }
 
-  async apiPOST<PD extends object, R>(url: string, postData: PD, retries: number = 1): Promise<R | undefined> {
+  async apiPOST<PD extends object, R>(url: string, postData: PD): Promise<R | undefined> {
     const run = () =>
       this.configAxios()
         .post(url, postData)

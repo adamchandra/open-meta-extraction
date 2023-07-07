@@ -44,10 +44,12 @@ export async function* generateFromBatch<T>(
   count: number
 ): AsyncGenerator<T, number, void> {
   let nextBatch: T[] = [];
+  // const runForever = count !== undefined && count === 0;
+  const runForever = count === 0;
 
   let index = 0;
 
-  for (let i = 0; i < count; i++) {
+  for (let i = 0; i < count || runForever; i++) {
     if (index === nextBatch.length) {
       const next = await batchFunc.next();
       if (next.done) {
