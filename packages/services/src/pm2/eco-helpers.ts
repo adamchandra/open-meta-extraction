@@ -1,14 +1,11 @@
-import { ENV_MODE } from '@watr/commonlib';
+import { ENV_MODE, putStrLn } from '@watr/commonlib';
 import _ from 'lodash';
+import { mungeJobName } from './bree-helpers';
 
-export interface CLIAppDef {
-  name: string;
-  args: string;
-}
+// const PM2_RUN_CLI_SCRIPT = './dist/src/cli/index.js';
+const PM2_RUN_CLI_SCRIPT = './dist/src/pm2/jobs/run-cli.js';
 
-const cliScript = './dist/src/cli/index.js';
-
-export function pm2Job(name: string, script: string, conf: Partial<PM2JobConfig>): Partial<PM2JobConfig> {
+function createPM2Job(name: string, script: string, conf: Partial<PM2JobConfig>): Partial<PM2JobConfig> {
   const cwd = process.cwd();
 
   return {
@@ -28,56 +25,53 @@ export function pm2Job(name: string, script: string, conf: Partial<PM2JobConfig>
   };
 }
 
-export function pm2CliJob(cliName: string, conf: Partial<PM2JobConfig> = {}): Partial<PM2JobConfig> {
-  const jobName = conf.name ? conf.name : _.upperFirst(_.camelCase(cliName));
+export function createPM2CliJob(cliName: string, conf: Partial<PM2JobConfig> = {}): Partial<PM2JobConfig> {
+  const qualifiedName = mungeJobName(cliName);
   const args = conf.args ? `${cliName} ${conf.args}` : cliName;
-  return pm2Job(jobName, cliScript, _.merge({}, conf, { args }));
+  return createPM2Job(qualifiedName, PM2_RUN_CLI_SCRIPT, _.merge({}, conf, { args }));
 }
 
+type CreateScheduledCliJobArgs = {
+  app: string,
+  schedule?: string, // if not present, run immediately
+  immediate?: boolean, // if schedule is present, run immediately in addition to whatever schedule is specified
+  args?: string,
+  appNameSuffix?: string,
+  once?: boolean // if true, app will not autorestart  when complete
+}
 
-export function appDef(name: string, script: string, args: string): Record<string, any> {
-  const cwd = process.cwd();
-  return {
-    name,
-    autorestart: false,
-    script,
-    args,
-    cwd,
-    env_test: {
-      NODE_ENV: 'test'
-    },
-    env_dev: {
-      NODE_ENV: 'dev'
-    },
-    env_prod: {
-      NODE_ENV: 'prod'
-    },
+export function createScheduledCliJob({
+  app,
+  args,
+  schedule,
+  appNameSuffix,
+  once
+}: CreateScheduledCliJobArgs): Partial<PM2JobConfig> {
+  const qualifiedName = mungeJobName(app, appNameSuffix);
+  const appAndArgV = app + (args? ` ${args}`: '')
+  if (schedule === undefined) {
+    putStrLn(`Starting immediate job: ${qualifiedName}`)
+    return createPM2Job(qualifiedName, PM2_RUN_CLI_SCRIPT, { args: appAndArgV, autorestart: !once });
+  }
+  putStrLn(`Starting scheduled job: ${qualifiedName}`)
+  const jobConf: Partial<PM2JobConfig> = {
+    args: `schedule '${schedule}' -- ${appAndArgV}`,
+    autorestart: !once
   };
-}
-
-
-/**
- * Create a pm2-compatible ecosystem record, where the apps are all CLI-apps
- */
-export function makeCLIEcosystem(appDefs: CLIAppDef[]): Record<string, any>[] {
-  const ecoSystemList = appDefs.map(def => {
-    return appDef(def.name, cliScript, def.args);
-  });
-
-  return ecoSystemList;
+  return createPM2Job(qualifiedName, PM2_RUN_CLI_SCRIPT, jobConf);
 }
 
 type ENV_KEY = `env_${ENV_MODE}`
 
 export type PM2JobConfig = Record<ENV_KEY, any> & {
   // General
-  name: string; //) “my-api” application name (default to script filename without extension)
-  script: string; //) ”./api/app.js” script path relative to pm2 start
-  cwd: string; //) “/var/www/” the directory from which your app will be launched
-  args: string; //) “-a 13 -b 12” string containing all arguments passed via CLI to script
-  interpreter: string; //) “/usr/bin/python” interpreter absolute path (default to node)
-  interpreter_args: string; //) ”–harmony” option to pass to the interpreter
-  node_args: string; //)   alias to interpreter_args
+  name: string; // “my-api” application name (default to script filename without extension)
+  script: string; // ”./api/app.js” script path relative to pm2 start
+  cwd: string; // “/var/www/” the directory from which your app will be launched
+  args: string; // “-a 13 -b 12” string containing all arguments passed via CLI to script
+  interpreter: string; // “/usr/bin/python” interpreter absolute path (default to node)
+  interpreter_args: string; // ”–harmony” option to pass to the interpreter
+  node_args: string; //   alias to interpreter_args
 
   // Advanced
   instances: number; //  -1 number of app instance to be launched

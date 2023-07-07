@@ -1,5 +1,8 @@
-import { pm2CliJob } from './eco-helpers';
+import { createScheduledCliJob } from './eco-helpers';
 import _ from 'lodash';
+import { prettyPrint, putStrLn } from '@watr/commonlib';
+
+const isDryRun =  process.env['DRY_RUN'];
 
 const appNames: string[] = [
   'Howard',
@@ -7,18 +10,18 @@ const appNames: string[] = [
   'Martha'
 ];
 
-const apps1 = appNames.map(name => {
-  return pm2CliJob('echo', { name: `Say ${name}`, args: `--message='Hello from ${name}' --interval 1000` });
+const apps1 = appNames.map((name, i) => {
+  return createScheduledCliJob({ app: 'echo', args: `--message='Hello from ${name}, dry=${isDryRun}'`, schedule: 'every 3 seconds', appNameSuffix: `${i}`});
 });
 
-const apps2 = [
-  // pm2CliJob('scheduler'),
-  pm2CliJob('preflight-check', { autorestart: false }),
-  pm2CliJob('run-monitor-service', { args: '--send-notification=false'})
-];
+// const apps2 = [
+//   createScheduledCliJob({ app: 'echo', args: `--message='Hello from ${name}, dry=${isDryRun}'`, schedule: 'every 3 seconds', appNameSuffix: `#${i}`});
+// ];
 
-const apps = _.concat(apps1, apps2);
+// const apps = _.concat(apps1, apps2);
+
+prettyPrint({ apps1 });
 
 module.exports = {
-  apps
+  apps: apps1
 };

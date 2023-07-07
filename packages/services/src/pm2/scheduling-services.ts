@@ -9,42 +9,43 @@ const { opt, config, registerCmd } = arglib;
 import _ from 'lodash';
 
 import { pm2x } from './pm2-helpers';
-import { createBreeCLIJob, createBreeScheduler, jobDef } from './bree-helpers';
+import { createBreeCLIJob, createBreeScheduler, createBreeJob } from './bree-helpers';
 
 import { sigtraps } from '~/util/shutdown';
 import { Mongoose } from 'mongoose';
 import { connectToMongoDB } from '~/db/mongodb';
 import { createCollections } from '~/db/schemas';
 
-import later from '@breejs/later'
 import { parseSchedule } from '~/util/scheduler';
 
 export function registerCommands(yargv: arglib.YArgsT) {
-  registerCmd(
-    yargv, 'pm2-restart', 'Notification/Restart scheduler'
-  )(async () => {
-    const log = getServiceLogger('PM2Restart');
-    log.info('PM2 Restart');
 
-    const skipRE = /(pm2.?restart|scheduler)/i;
-    const appList = await pm2x.list();
-    const appNames = appList.map(a => a.name || '').filter(n => n.length > 0);
+  // TODO delete dead code
+  //   registerCmd(
+  //     yargv, 'pm2-restart', 'Notification/Restart scheduler'
+  //   )(async () => {
+  //     const log = getServiceLogger('PM2Restart');
+  //     log.info('PM2 Restart');
 
-    await asyncEachSeries(appNames, async (name) => {
-      if (skipRE.test(name)) {
-        return;
-      }
-      log.info(`stopping ${name}`);
-      return pm2x.stop(name);
-    });
-    await asyncEachSeries(appNames, async (name) => {
-      if (skipRE.test(name)) {
-        return;
-      }
-      log.info(`restarting ${name}`);
-      return pm2x.restart(name);
-    });
-  });
+  //     const skipRE = /(pm2.?restart|scheduler)/i;
+  //     const appList = await pm2x.list();
+  //     const appNames = appList.map(a => a.name || '').filter(n => n.length > 0);
+
+  //     await asyncEachSeries(appNames, async (name) => {
+  //       if (skipRE.test(name)) {
+  //         return;
+  //       }
+  //       log.info(`stopping ${name}`);
+  //       return pm2x.stop(name);
+  //     });
+  //     await asyncEachSeries(appNames, async (name) => {
+  //       if (skipRE.test(name)) {
+  //         return;
+  //       }
+  //       log.info(`restarting ${name}`);
+  //       return pm2x.restart(name);
+  //     });
+  //   });
 
   registerCmd(
     yargv, 'test-scheduler', 'Testing app for scheduler'
@@ -57,7 +58,7 @@ export function registerCommands(yargv: arglib.YArgsT) {
     ];
 
     // const jobs = timers.map((t, i) => cliJob('echo', [`--message='scheduled for:  ${t}'`], t, `${i}`));
-    const jobs = timers.map((t, i) => jobDef('echo', [`--message='scheduled for:  ${t}'`], t, `${i}`));
+    const jobs = timers.map((t, i) => createBreeJob('echo', [`--message='scheduled for:  ${t}'`], t, `${i}`));
 
     createBreeScheduler(jobs);
 
@@ -66,24 +67,6 @@ export function registerCommands(yargv: arglib.YArgsT) {
     });
   });
 
-  registerCmd(
-    yargv, 'scheduler', 'Notification/Restart scheduler'
-  )(async () => {
-    const log = getServiceLogger('Scheduler');
-    log.info('Starting Scheduler');
-
-    // Send status email once per day (on restart)
-    const emailJob = jobDef('send-email', [], 'every 12 hours');
-    // Restart extractor at least once per day
-    const restartJob = jobDef('pm2-restart', [], 'every 24 hours');
-    // Monitor extraction rate and warn when too low
-
-    createBreeScheduler([restartJob, emailJob]);
-
-    await sigtraps(async () => {
-      log.info('Shutting down');
-    });
-  });
 
   registerCmd(
     yargv, 'echo', 'Echo message to stdout', config(
@@ -102,36 +85,82 @@ export function registerCommands(yargv: arglib.YArgsT) {
     config()
   )(async () => {
     const log = getServiceLogger('PreflightCheck');
-    log.info('Starting Preflight Check');
 
     let mongoose: Mongoose | undefined = undefined;
+
+    async function closeMongoose() {
+      if (mongoose !== undefined) {
+        log.info('Closing Mongoose..')
+        await mongoose.connection.close()
+          .catch((error) => {
+            log.error(`Error stopping mongoos ${error}`);
+          })
+      }
+    }
+
+    async function stopAllPM2() {
+      log.info('PM2 stop all..')
+      await pm2x.stop('all')
+        .catch(error => {
+          log.error(`Error stopping ${error}`);
+        });
+    }
+
+    async function startAllPM2() {
+      try {
+        log.info('PM2 restart all..');
+        await pm2x.restart('all')
+          .catch(error => {
+            log.error(`Error starting ${error}`);
+          });
+      } catch (error) {
+        log.error(`Error stopping ${error}`);
+      }
+    }
+
+    async function die(msg: string) {
+      log.error(`Halting. Reason: ${msg}`);
+      process.exit(1);
+    }
+
+    log.info('Starting Preflight Check');
+    const pm2Apps = await pm2x.list();
+    const existingPM2AppNames = pm2Apps.map((app) => {
+      const name = app.name || '<unnamed>'
+      return { name };
+    })
+    prettyPrint({ existingPM2AppNames });
+
     try {
       initConfig();
-
-      mongoose = await connectToMongoDB();
-      if (mongoose === undefined) {
-        log.error('Could not connect to MongoDB');
-      }
-      await createCollections();
-
-      log.info('Found Config');
-
-      return;
-    } catch (error) {
-      log.error('No Config; stopping pm2 apps');
+    } catch (error: any) {
+      await stopAllPM2();
+      die(`No Config found; stopping pm2 apps: ${error}`);
     }
+    log.info('Found config file');
 
-    if (mongoose !== undefined) {
-      await mongoose.connection.close();
-    }
 
     try {
-      log.info('Stopping..');
-      await pm2x.stop('all');
+      mongoose = await connectToMongoDB();
+      if (mongoose === undefined) {
+        await stopAllPM2();
+        await closeMongoose();
+        die('Could not connect to MongoDB');
+      }
+      await createCollections();
     } catch (error) {
-      log.error(`Error stopping ${error}`);
+      log.info(`Error with MongoDB: ${error}`);
+      await closeMongoose();
+      await stopAllPM2();
+      die('Error connecting to MongoDB')
     }
 
+    log.info('Ensured MongoDB is running');
+
+    await closeMongoose();
+
+    log.info('Everything looks good, deleting self..')
+    pm2x.delete('PreflightCheck');
   });
 
   registerCmd(
@@ -145,21 +174,20 @@ export function registerCommands(yargv: arglib.YArgsT) {
     )
   )(async (args: any) => {
     const { scheduleSpec } = args;
+    const log = getServiceLogger('Scheduler');
     const maybeSchedule = parseSchedule(scheduleSpec);
+
     if (E.isLeft(maybeSchedule)) {
+      log.info('Scheduling specification has errors:');
       maybeSchedule.left.forEach(msg => {
         putStrLn(msg)
       })
       return;
     }
-    const scheduleData = maybeSchedule.right;
-
-    const log = getServiceLogger('Scheduler');
 
     const argv = process.argv;
     const argvCli = argv.slice(5);
-    prettyPrint({ argv, argvCli })
-    log.info(`Running ${argvCli.join(' ')}`);
+    log.info(`Scheduling ${argvCli.join(' ')}`);
     const [cmd, ...remaining] = argvCli;
 
     const job = createBreeCLIJob(cmd, remaining, scheduleSpec);

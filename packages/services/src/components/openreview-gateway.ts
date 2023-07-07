@@ -1,8 +1,12 @@
 /*
  * REST communication with OpenReview
- */
+*/
+
+import _ from 'lodash';
+
 import {
-  getServiceLogger,
+  asyncEachOfSeries,
+  getServiceLogger, prettyPrint, putStrLn,
 } from '@watr/commonlib';
 import { Logger } from 'winston';
 
@@ -26,6 +30,11 @@ export interface NoteContent {
 
 export interface Note {
   id: string;
+  number: number,
+  cdate: number,
+  mdate: number,
+  tcdate: number,
+  tmdate: number,
   content: NoteContent;
 }
 
@@ -59,15 +68,36 @@ export class OpenReviewGateway {
     this.opex = new OpenReviewExchange();
   }
 
+  // TODO delete this block
+  // We just deployed  a change we discussed  with you a while back.  We now allow
+  // querying notes using the after parameter instead of the offset parameter. The
+  // after  parameter  is much  more  efficient  than  the offset  parameter  when
+  // querying  dblp notes.  Would  you  mind making  the  change  in the  abstract
+  // extractor? The change should hopefully  be straightforward. The after keyword
+  // takes the  id of the last  note that was returned  by the backend and  a sort
+  // parameter is required. In your case I think it's number:desc, so that remains
+  // unchanged. For example, suppose you query the first page as follows:
+  //
+  // GET /notes?invitation=dblp.org/-/record&sort=number:desc
+  //
+  // Then the result contains the note ids: [ qwerew, 12eaxssr, ..., lastid123 ]
+  //
+  // In order to get the next page you would need to do the following call
+  //
+  // GET /notes?invitation=dblp.org/-/record&sort=number:desc&after=lastid123
+  // and so on until you get all Notes.
+  // Please let me know if something is not clear. Thanks! (edited)
+
   async doFetchNotes(offset: number): Promise<Notes | undefined> {
     return this.opex.apiGET<Notes>('/notes', { invitation: 'dblp.org/-/record', sort: 'number:desc', offset });
   }
 
-  /**
-   * Fetch the next batch of notes newer than the given date
-   */
-  async fetchNotesByDate(minDate: number): Promise<Notes | undefined> {
-    return this.opex.apiGET<Notes>('/notes', { invitation: 'dblp.org/-/record', tcdate: minDate, sort: 'tcdate:asc' });
+  async fetchNotes(afterNoteId?: string): Promise<Notes | undefined> {
+    const queryParams: Record<string, string> = { invitation: 'dblp.org/-/record', sort: 'number:desc' };
+    if (afterNoteId) {
+      queryParams['after'] = afterNoteId;
+    }
+    return this.opex.apiGET<Notes>('/notes', queryParams);
   }
 
   async doUpdateNoteField(
@@ -111,6 +141,35 @@ export class OpenReviewGateway {
     this.log.info(`Sent message ${mp.subject}`);
   }
 
+  async testNoteFetching() {
+    let startingNote: string | undefined;
+    const noteList: any[][] = [];
+    await asyncEachOfSeries(_.range(5), async (ri, i) => {
+      const notes = await this.fetchNotes(startingNote);
+
+      if (notes) {
+        const abbrevNotes = notes.notes.map(note => {
+          const { id, number, cdate, tcdate, mdate, tmdate } = note;
+          const mdateHr = fmtTime(mdate);
+          const cdateHr = fmtTime(cdate);
+          const tcdateHr = fmtTime(tcdate);
+          const tmdateHr = fmtTime(tmdate);
+          return {
+            id, number, mdateHr, tmdateHr, cdateHr, tcdateHr
+          }
+        });
+        const first10 = abbrevNotes.slice(0, 10);
+        noteList.push(first10);
+        startingNote = first10[0]['id'];
+        // putStrLn(`Note Count = ${notes.count}`)
+        // putStrLn(`Notes returned = ${notes.notes.length}`)
+        // prettyPrint({ first10 });
+      }
+    });
+    const zipped = _.zip(noteList)
+    prettyPrint({ zipped });
+  }
+
 }
 
 /**
@@ -124,4 +183,17 @@ function makeMessagePost(subject: string, message: string): MessagePostData {
     message,
     groups: [OpenreviewStatusGroup]
   };
+}
+
+function fmtTime(unixTimestamp: number): string {
+  var a = new Date(unixTimestamp);
+  var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  var year = a.getFullYear();
+  var month = months[a.getMonth()];
+  var date = a.getDate();
+  var hour = a.getHours();
+  var min = a.getMinutes();
+  var sec = a.getSeconds();
+  var time = date + ' ' + month + ' ' + year + ' ' + hour + ':' + min + ':' + sec;
+  return time;
 }

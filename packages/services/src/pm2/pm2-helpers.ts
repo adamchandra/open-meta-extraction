@@ -1,4 +1,4 @@
-import { getServiceLogger } from '@watr/commonlib';
+import { getServiceLogger, prettyPrint } from '@watr/commonlib';
 import pm2 from 'pm2';
 import workerThreads, { parentPort } from 'worker_threads';
 import process from 'process';
@@ -118,18 +118,8 @@ export async function runJob(
   const log: JobLogger = getJobLogger(baseNoExt);
 
   const workerData = getWorkerData();
-  // const wdPretty = prettyFormat({ workerData, workerThreads})
-  // const args: string[] = workerData.job?.worker?.argv || [];
 
   log(`JobBegin:${baseNoExt}`);
-
-  // if (parentPort !== null) {
-  //   parentPort.postMessage('starting job...');
-  //   process.stdout.on('data', (data) => {
-  //     parentPort?.postMessage('got stdout data');
-  //     parentPort?.postMessage(data.toString('utf8'));
-  //   });
-  // }
 
   await Promise.resolve(jobFunc(log, workerData));
 

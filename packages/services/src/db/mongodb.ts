@@ -1,5 +1,6 @@
 import { initConfig, isTestingEnv, putStrLn } from '@watr/commonlib';
 import mongoose from 'mongoose';
+import path from 'path'
 
 import { Mongoose } from 'mongoose';
 
@@ -7,6 +8,7 @@ export function mongoConnectionString(): string {
   const config = initConfig();
   const ConnectionURL = config.get('mongodb:connectionUrl');
   const MongoDBName = config.get('mongodb:dbName');
+  // const connectUrl = path.join(ConnectionURL, MongoDBName)
   let connectUrl = `${ConnectionURL}/${MongoDBName}`;
   return connectUrl;
 }
@@ -14,7 +16,7 @@ export function mongoConnectionString(): string {
 export async function connectToMongoDB(): Promise<Mongoose> {
   const connstr = mongoConnectionString();
   putStrLn(`connecting to ${connstr}`);
-  return mongoose.connect(connstr);
+  return mongoose.connect(connstr, {connectTimeoutMS: 5000});
 }
 
 interface CurrentTimeOpt {
@@ -42,4 +44,3 @@ export function createCurrentTimeOpt(): CurrentTimeOpt {
   };
   return mockedOpts;
 }
-

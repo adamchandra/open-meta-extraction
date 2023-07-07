@@ -1,13 +1,12 @@
 import _ from 'lodash';
 
-import { arglib, initConfig, prettyPrint, putStrLn } from '@watr/commonlib';
+import { arglib, initConfig, putStrLn } from '@watr/commonlib';
 import { formatStatusMessages, showStatusSummary } from '~/db/extraction-summary';
 import { connectToMongoDB, mongoConnectionString } from '~/db/mongodb';
 import { createCollections } from '~/db/schemas';
 import { FetchService } from '~/components/fetch-service';
 import { ExtractionService } from '~/components/extraction-service';
-import { OpenReviewExchange } from '~/components/openreview-exchange';
-import { Notes } from '~/components/openreview-gateway';
+import { OpenReviewGateway } from '~/components/openreview-gateway';
 import { runMonitor } from '~/components/monitor-service';
 
 const { opt, config, registerCmd } = arglib;
@@ -43,10 +42,10 @@ export function registerCLICommands(yargv: arglib.YArgsT) {
     const mongoose = await connectToMongoDB();
     const fetchService = new FetchService();
 
-    await fetchService.runRelayFetch(offset, count)
-      .finally(() => {
-        return mongoose.connection.close();
-      });
+    // await fetchService.runRelayFetch(offset, count)
+    //   .finally(() => {
+    //     return mongoose.connection.close();
+    //   });
   });
 
   registerCmd(
@@ -116,24 +115,7 @@ export function registerCLICommands(yargv: arglib.YArgsT) {
     'Interact with OpenReview.net REST API',
   )(async (args: any) => {
     initConfig();
-    const oex = new OpenReviewExchange()
-    const minDate = 0;
-
-    const notes = await oex.apiGET<Notes>('/notes',
-      {
-        invitation: 'dblp.org/-/record',
-        mintcdate: minDate,
-        sort: 'tcdate:asc'
-      });
-    if (notes) {
-      putStrLn(`Note Count = ${notes.count}`)
-      if (notes.count > 0) {
-        const note = notes.notes[0];
-        prettyPrint({ note })
-        const noteN = notes.notes[notes.notes.length - 1];
-        prettyPrint({ noteN })
-      }
-    }
-
+    const openreviewGateway = new OpenReviewGateway();
+    await openreviewGateway.testNoteFetching();
   });
 }

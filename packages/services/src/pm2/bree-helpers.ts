@@ -32,7 +32,7 @@ export function getBreeLogger(name: string): BreeLogger {
   return breeLogger;
 }
 
-export function jobDef(
+export function createBreeJob(
   jobName: string,
   jobArgv: string[],
   interval: string,
@@ -54,6 +54,14 @@ export function jobDef(
   };
   return job;
 }
+export function mungeJobName(
+  app: string,
+  appNameSuffix?: string
+): string {
+  const baseName = _.upperFirst(_.camelCase(app));
+  const qualifiedName = appNameSuffix ? `${baseName}${appNameSuffix}` : baseName;
+  return qualifiedName;
+}
 
 /**
  * Run a cli job using the Bree scheduler
@@ -64,8 +72,8 @@ export function createBreeCLIJob(
   interval: string,
   nameModifier?: string
 ): Bree.JobOptions {
-  const baseName = _.upperFirst(_.camelCase(cliApp));
-  const qualifiedName = nameModifier ? `${baseName}:${nameModifier}` : baseName;
+  const qualifiedName = mungeJobName(cliApp, nameModifier);
+
   const jobPath = path.join(__dirname, 'jobs', 'run-cli.js');
 
   const job: Bree.JobOptions = {
