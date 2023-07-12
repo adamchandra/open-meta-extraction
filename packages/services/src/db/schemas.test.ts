@@ -1,32 +1,23 @@
 import _ from 'lodash';
 import { isUrl, putStrLn, setLogEnvLevel } from '@watr/commonlib';
-import { connectToMongoDB } from './mongodb';
-import { createCollections } from './schemas';
-import { Mongoose } from 'mongoose';
-import { findHostStatusById, findNoteStatusById, upsertHostStatus, upsertNoteStatus } from './query-api';
+import { MongoQueries } from './query-api';
 
 import * as fc from 'fast-check';
-import { genHttpStatus } from './mongo-test-utils';
+import { genHttpStatus } from './mock-data';
 
 describe('MongoDB Schemas', () => {
   setLogEnvLevel('debug');
 
-  let mongoose: Mongoose | undefined = undefined;
+  const mdb = new MongoQueries();
 
   beforeAll(async () => {
-    mongoose = await connectToMongoDB()
-      .catch(() => {
-        putStrLn('Could not connect to MongoDB; tests disabled')
-        return undefined;
-      });
-    if (!mongoose) return;
-    await mongoose.connection.dropDatabase();
-    await createCollections();
+    await mdb.connect();
+    await mdb.dropDatabase();
+    await mdb.createDatabase();
   });
 
   afterAll(async () => {
-    if (mongoose === undefined) return;
-    return mongoose.connection.close();
+    await mdb.close();
   });
 
   it('should create/find note status', async () => {
@@ -37,8 +28,8 @@ describe('MongoDB Schemas', () => {
         fc.oneof(fc.string(), fc.webUrl()),
         async (noteId, urlstr1, urlstr2) => {
           // Insert new document
-          await upsertNoteStatus({ noteId, urlstr: urlstr1 });
-          const byId = await findNoteStatusById(noteId);
+          await mdb.upsertNoteStatus({ noteId, urlstr: urlstr1 });
+          const byId = await mdb.findNoteStatusById(noteId);
           expect(byId).toBeDefined();
           if (byId === undefined) {
             fail('invalid null value');
@@ -47,8 +38,8 @@ describe('MongoDB Schemas', () => {
           expect(byId.validUrl).toEqual(isUrl(urlstr1));
 
           // Modify existing document
-          await upsertNoteStatus({ noteId, urlstr: urlstr2 });
-          const modById = await findNoteStatusById(noteId);
+          await mdb.upsertNoteStatus({ noteId, urlstr: urlstr2 });
+          const modById = await mdb.findNoteStatusById(noteId);
           expect(modById).toBeDefined();
           if (modById === undefined) {
             fail('invalid null value');
@@ -72,8 +63,8 @@ describe('MongoDB Schemas', () => {
         fc.string(), // TODO workflowStatus
         async (noteId, hasAbstract, requestUrl, response, httpStatus, _workflowStatus) => {
           // Insert new document
-          const ret = await upsertHostStatus(noteId, 'available', { hasAbstract, requestUrl, response, httpStatus });
-          const byId = await findHostStatusById(noteId);
+          const ret = await mdb.upsertHostStatus(noteId, 'available', { hasAbstract, requestUrl, response, httpStatus });
+          const byId = await mdb.findHostStatusById(noteId);
           expect(byId).toBeDefined();
           if (byId === undefined) {
             fail('invalid null value');

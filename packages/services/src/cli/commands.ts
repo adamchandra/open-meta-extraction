@@ -2,7 +2,7 @@ import _ from 'lodash';
 
 import { arglib, initConfig, putStrLn } from '@watr/commonlib';
 import { formatStatusMessages, showStatusSummary } from '~/db/extraction-summary';
-import { connectToMongoDB, mongoConnectionString } from '~/db/mongodb';
+import { connectToMongoDB, mongoConnectionString, resetMongoDB } from '~/db/mongodb';
 import { createCollections } from '~/db/schemas';
 import { FetchService } from '~/components/fetch-service';
 import { ExtractionService } from '~/components/extraction-service';
@@ -99,10 +99,7 @@ export function registerCLICommands(yargv: arglib.YArgsT) {
     if (clean) {
       putStrLn('Cleaning Database');
       const mongoose = await connectToMongoDB();
-      putStrLn('dropDatabase..');
-      await mongoose.connection.dropDatabase();
-      putStrLn('createCollections..');
-      await createCollections();
+      await resetMongoDB();
       putStrLn('Close connections');
       await mongoose.connection.close();
       putStrLn('...done');

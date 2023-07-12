@@ -193,7 +193,7 @@ function makeMessagePost(subject: string, message: string): MessagePostData {
   };
 }
 
-function fmtTime(unixTimestamp: number): string {
+export function fmtTime(unixTimestamp: number): string {
   var a = new Date(unixTimestamp);
   var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   var year = a.getFullYear();

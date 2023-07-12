@@ -103,7 +103,31 @@ HostStatusSchema.on('index', error => {
 
 export const HostStatus = model<HostStatus>('HostStatus', HostStatusSchema);
 
+
+export interface FetchCursor {
+  _id: string;
+  noteId: string;
+  name: string;
+  fieldName: string;
+  createdAt: Date;
+  updatedAt: Date;
+
+}
+export const FetchCursorSchema = new Schema<FetchCursor>({
+  _id: { type: String },
+  noteId: { type: String, required: true },
+  name: { type: String, required: true, unique: true },
+  fieldName: { type: String, required: true, index: true },
+}, {
+  collection: 'fetch_cursor',
+  timestamps: createCurrentTimeOpt(),
+  _id: false
+});
+
+export const FetchCursor = model<FetchCursor>('FetchCursor', FetchCursorSchema);
+
 export async function createCollections() {
   await NoteStatus.createCollection();
   await HostStatus.createCollection();
+  await FetchCursor.createCollection();
 }

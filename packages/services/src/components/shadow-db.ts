@@ -1,37 +1,35 @@
 import _ from 'lodash';
 
 import {
-  asyncEachSeries,
   getServiceLogger,
-  delay,
-  asyncForever
 } from '@watr/commonlib';
 
 
 import { WorkflowStatus } from '~/db/schemas';
 
 import {
-  findNoteStatusById,
-  getNextSpiderableUrl,
+  MongoQueries,
   HostStatusDocument,
-  resetUrlsWithMissingFields,
-  upsertHostStatus,
-  upsertNoteStatus,
-  releaseSpiderableUrl
 } from '~/db/query-api';
 
-import { OpenReviewGateway, UpdatableField, Note, Notes } from './openreview-gateway';
+import { Note, OpenReviewGateway, UpdatableField  } from './openreview-gateway';
 import { Logger } from 'winston';
 
 
 export class ShadowDB {
   log: Logger;
   gate: OpenReviewGateway;
+  mdb: MongoQueries;
 
 
   constructor() {
     this.log = getServiceLogger('ShadowDB');
     this.gate = new OpenReviewGateway();
+    this.mdb = new MongoQueries();
+  }
+
+  async connect() {
+    await this.mdb.connect();
   }
 
   // async updateNoteFields(
@@ -78,94 +76,45 @@ export class ShadowDB {
   }
 
   async getNextAvailableUrl(): Promise<HostStatusDocument | undefined> {
-    const nextSpiderable = await getNextSpiderableUrl();
+    const nextSpiderable = await this.mdb.getNextSpiderableUrl();
 
     // TODO change this retry logic to only reset on code updates
     if (nextSpiderable === undefined) {
       this.log.info('runRelayExtract(): no more spiderable urls in mongo');
-      await resetUrlsWithMissingFields();
+      await this.mdb.resetUrlsWithMissingFields();
       return;
     }
     return;
   }
 
   async releaseSpiderableUrl(hostStatus: HostStatusDocument, newStatus: WorkflowStatus): Promise<HostStatusDocument> {
-    return releaseSpiderableUrl(hostStatus, newStatus);
+    return this.mdb.releaseSpiderableUrl(hostStatus, newStatus);
   }
 
-  /**
-   * params:
-   *   fetch sort order (newest/oldest)
-   *   fetch starting offset
-   *   fetch count
-   *
-   */
-  async doFetchNotes(offset: number): Promise<Notes | undefined> {
-    const self = this;
-    try {
-      const nextNotes = await self.gate.doFetchNotes(offset);
-      if (!nextNotes) {
-        return;
-      }
-
-      const { notes, count } = nextNotes;
-      const fetchLength = notes.length;
-
-      self.log.info(`fetched ${notes.length} (of ${count}) notes`);
-
-      // offset += fetchLength;
-
-      // const noteSliceEndIndex = runForever ? fetchLength : numProcessed + numToFetch;
-      // const notesToProcess = notes.slice(0, noteSliceEndIndex);
-
-      // self.log.info(`Processing a batch of size ${notesToProcess.length}`);
-      // const addedNoteCount = await self._commitNoteBatch(notesToProcess, true);
-      // self.log.info(`  ... added ${addedNoteCount} notes`);
-      // numProcessed += addedNoteCount;
-      // self.log.info(`Upserted (${numProcessed}/${count})`);
-    } catch (error) {
-      return Promise.reject(error);
+  async saveNoteToShadowDB(note: Note): Promise<void> {
+    const urlstr = note.content.html;
+    const existingNote = await this.mdb.findNoteStatusById(note.id);
+    const noteExists = existingNote !== undefined;
+    if (noteExists) {
+      this.log.info('Found fetched note in local MongoDB; stopping fetcher');
+      return;
     }
 
-    return undefined;
+    const noteStatus = await this.mdb.upsertNoteStatus({ noteId: note.id, urlstr });
+    if (!noteStatus.validUrl) {
+      this.log.info(`NoteStatus: invalid url '${urlstr}'`);
+      return;
+    }
+    const requestUrl = noteStatus.url;
+    if (requestUrl === undefined) {
+      return Promise.reject(`Invalid state: NoteStatus(${note.id}).validUrl===true, url===undefined`);
+    }
+
+    const abs = note.content.abstract;
+    const pdfLink = note.content.pdf;
+    const hasAbstract = typeof abs === 'string';
+    const hasPdfLink = typeof pdfLink === 'string';
+    const status: WorkflowStatus = hasAbstract && hasPdfLink ? 'extractor:success' : 'available';
+    await this.mdb.upsertHostStatus(note.id, status, { hasAbstract, hasPdfLink, requestUrl });
   }
-
-  async _commitNoteBatch(notes: Note[], stopOnExistingNote: boolean): Promise<number> {
-    let numProcessed = 0;
-    let doneProcessing = false;
-
-    await asyncEachSeries(notes, async (note: Note) => {
-      if (doneProcessing) return;
-
-      const urlstr = note.content.html;
-      const existingNote = await findNoteStatusById(note.id);
-      const noteExists = existingNote !== undefined;
-      if (noteExists && stopOnExistingNote) {
-        this.log.info('Found fetched note in local MongoDB; stopping fetcher');
-        doneProcessing = true;
-        return;
-      }
-
-      const noteStatus = await upsertNoteStatus({ noteId: note.id, urlstr });
-      numProcessed += 1;
-      if (!noteStatus.validUrl) {
-        this.log.info(`NoteStatus: invalid url '${urlstr}'`);
-        return;
-      }
-      const requestUrl = noteStatus.url;
-      if (requestUrl === undefined) {
-        return Promise.reject(`Invalid state: NoteStatus(${note.id}).validUrl===true, url===undefined`);
-      }
-
-      const abs = note.content.abstract;
-      const pdfLink = note.content.pdf;
-      const hasAbstract = typeof abs === 'string';
-      const hasPdfLink = typeof pdfLink === 'string';
-      const status: WorkflowStatus = hasAbstract && hasPdfLink ? 'extractor:success' : 'available';
-      await upsertHostStatus(note.id, status, { hasAbstract, hasPdfLink, requestUrl });
-    });
-
-    return numProcessed;
-  }
-
 }

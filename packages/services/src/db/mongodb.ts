@@ -1,7 +1,7 @@
 import { initConfig, isTestingEnv, putStrLn } from '@watr/commonlib';
 import mongoose from 'mongoose';
-import path from 'path'
 
+import { createCollections } from '~/db/schemas';
 import { Mongoose } from 'mongoose';
 
 export function mongoConnectionString(): string {
@@ -16,8 +16,18 @@ export function mongoConnectionString(): string {
 export async function connectToMongoDB(): Promise<Mongoose> {
   const connstr = mongoConnectionString();
   putStrLn(`connecting to ${connstr}`);
-  return mongoose.connect(connstr, {connectTimeoutMS: 5000});
+  return mongoose.connect(connstr, { connectTimeoutMS: 5000 });
 }
+
+export async function resetMongoDB(): Promise<void> {
+  const config = initConfig();
+  const MongoDBName = config.get('mongodb:dbName');
+  putStrLn(`dropping MongoDB ${MongoDBName}`);
+  await mongoose.connection.dropDatabase();
+  putStrLn('createCollections..');
+  await createCollections();
+}
+
 
 interface CurrentTimeOpt {
   currentTime(): Date;

@@ -2,6 +2,7 @@ import _ from 'lodash';
 import Koa, { Context } from 'koa';
 import Router from '@koa/router';
 import { Server } from 'http';
+import axios from 'axios';
 
 import {
   putStrLn,
@@ -11,6 +12,7 @@ import {
 } from '@watr/commonlib';
 
 import fs from 'fs-extra';
+import Application from 'koa';
 
 const withFields = stripMargin(`
 |<html>
@@ -129,6 +131,72 @@ function htmlRouter(): Router<Koa.DefaultState, Koa.DefaultContext> {
   return router;
 }
 
+
+export async function withServer(
+  setup: (router: Router) => void,
+  run: (s: Server) => Promise<void>
+): Promise<void> {
+  const routes = new Router();
+  const app = new Koa();
+  setup(routes);
+  // TODO config port
+  const port = 9100;
+
+  app.use(routes.routes());
+  app.use(routes.allowedMethods());
+
+  const server = await new Promise<Server>((resolve) => {
+    const server = app.listen(port, () => {
+      log.info(`Koa is listening to http://localhost:${port}`);
+      resolve(server);
+    });
+  });
+
+  await run(server).catch(error => {
+    // prettyPrint({ error })
+    throw(error);
+  });
+
+  await closeTestServer(server);
+}
+
+export async function isGETEqual(
+  url: string,
+  data: any
+) {
+  const resp = await axios.get(url);
+  expect(resp.data).toEqual(data);
+}
+
+export async function isPOSTEqual(
+  url: string,
+  data: any
+) {
+  const resp = await axios.post(url);
+  expect(resp.data).toEqual(data);
+}
+
+export function respondWith(
+  body: Record<string, any>
+): (ctx: Application.ParameterizedContext) => void {
+  return (ctx) => {
+    const { response } = ctx;
+    response.type = 'application/json';
+    response.status = 200;
+    response.body = body;
+  };
+}
+
+export function responseHandler(
+  body: Record<string, any>
+): (ctx: Application.ParameterizedContext) => void {
+  return (ctx) => {
+    const { response } = ctx;
+    response.type = 'application/json';
+    response.status = 200;
+    response.body = body;
+  };
+}
 
 export async function startTestServer(): Promise<Server> {
   const app = new Koa();

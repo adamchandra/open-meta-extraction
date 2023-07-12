@@ -16,10 +16,13 @@ type ErrorTypes = AxiosError | unknown;
 import {
   getServiceLogger,
   initConfig,
-  prettyPrint
+  prettyFormat,
+  prettyPrint,
+  putStrLn
 } from '@watr/commonlib';
 
 import { Logger } from 'winston';
+import { ClientRequest } from 'http';
 
 export interface User {
   id: string;
@@ -43,7 +46,6 @@ export class OpenReviewExchange {
     this.apiBaseURL = config.get('openreview:restApi');
     this.user = config.get('openreview:restUser');
     this.password = config.get('openreview:restPassword');
-    prettyPrint({ user: this.user, apiBase: this.apiBaseURL });
   }
 
 
@@ -79,6 +81,7 @@ export class OpenReviewExchange {
     }
 
     this.log.info(`Logging in as ${this.user}`);
+
     if (this.user === undefined || this.password === undefined) {
       return Promise.reject(new Error('Openreview API: user or password not defined'));
     }
@@ -94,7 +97,7 @@ export class OpenReviewExchange {
     return this.configAxios()
       .post('/login', { id: this.user, password: this.password })
       .then(r => r.data)
-      .catch(displayRestError);
+      .catch(e => displayRestError(this.log, e));
   }
 
   async apiGET<R>(url: string, query: Record<string, string | number>): Promise<R | undefined> {
@@ -121,7 +124,7 @@ export class OpenReviewExchange {
     await this.getCredentials();
     return apiCall()
       .catch(error => {
-        displayRestError(error);
+        displayRestError(this.log, error);
         this.credentials = undefined;
         this.log.warn(`API Error ${error}: retries=${retries} `);
         return this.apiAttempt(apiCall, retries - 1);
@@ -135,15 +138,24 @@ function isAxiosError(error: any): error is AxiosError {
   return error['isAxiosError'] !== undefined && error['isAxiosError'];
 }
 
-export function displayRestError(error: ErrorTypes): void {
+export function displayRestError(log: Logger, error: ErrorTypes): void {
   if (isAxiosError(error)) {
-    console.log('HTTP Request Error: ');
-    const { response } = error;
-    if (response !== undefined) {
-      const { status, statusText, data } = response;
-      console.log(`Error: ${status}/${statusText}`);
-      console.log(data);
+    const { request, response, message } = error;
+    const errorList: string[] = []
+    errorList.push(`HTTP Request Error: ${message}`);
+    if (request) {
+      const req: ClientRequest = request;
+      // const headers = req.getHeaders()
+      // const headerFmt = `${headers}`; // prettyFormat(headers)
+      // const headerLines = headerFmt.split('\n');
+      const path = req.path;
+      errorList.push(`Request: path=${path}`);
     }
+    if (response) {
+      const { status, statusText } = response;
+      errorList.push(`Response: ${message}: response=${status}/${statusText}`);
+    }
+    putStrLn(errorList.join('\n'));
     return;
   }
 

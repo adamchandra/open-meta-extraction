@@ -1,40 +1,39 @@
 import _ from 'lodash';
 import { setLogEnvLevel } from '@watr/commonlib';
-import { connectToMongoDB } from './mongodb';
-import { createCollections } from './schemas';
-import { Mongoose } from 'mongoose';
-import {  getNextSpiderableUrl, resetUrlsWithMissingFields, upsertHostStatus, upsertNoteStatus } from './query-api';
-import {  populateDBHostNoteStatus } from './mongo-test-utils';
+import { MongoQueries } from './query-api';
+import { populateDBHostNoteStatus } from './mock-data';
 
 describe('MongoDB Queries', () => {
   setLogEnvLevel('debug');
 
-  let mongoose: Mongoose | undefined = undefined;
+  const mdb = new MongoQueries();
+
+  beforeAll(async () => {
+    await mdb.connect();
+  });
 
   beforeEach(async () => {
-    mongoose = await connectToMongoDB();
-    await mongoose.connection.dropDatabase();
-    await createCollections();
+    await mdb.dropDatabase();
+    await mdb.createDatabase();
   });
 
   afterAll(async () => {
-    if (mongoose === undefined) return;
-    return mongoose.connection.close();
+    await mdb.close();
   });
 
 
   it('get/update next spiderable host/url', async () => {
-    const initEntry = await upsertHostStatus('asdf', 'available', { hasAbstract: false });
+    const initEntry = await mdb.upsertHostStatus('asdf', 'available', { hasAbstract: false });
 
     expect(initEntry._id).toEqual('asdf')
 
-    const nextSpiderable = await getNextSpiderableUrl();
+    const nextSpiderable = await mdb.getNextSpiderableUrl();
 
     expect(nextSpiderable).toBeDefined
 
     if (nextSpiderable !== undefined) {
       const noteId = nextSpiderable._id;
-      const updateRes = await upsertHostStatus(noteId, 'spider:success', {
+      const updateRes = await mdb.upsertHostStatus(noteId, 'spider:success', {
         httpStatus: 200
       });
       expect(updateRes._id).toEqual('asdf')
@@ -42,9 +41,28 @@ describe('MongoDB Queries', () => {
   });
 
   it('should release all locks, allow for re-extraction of failed notes', async () => {
-    await populateDBHostNoteStatus(200);
+    await populateDBHostNoteStatus(mdb, 200);
     // putStrLn(formatStatusMessages(await showStatusSummary()));
-    await resetUrlsWithMissingFields();
+    await mdb.resetUrlsWithMissingFields();
     // putStrLn(formatStatusMessages(await showStatusSummary()));
   });
+
+  it('should create/update/delete fetch cursors', async () => {
+    expect(await mdb.getNamedCursor('front-cursor')).toBeUndefined()
+    expect(await mdb.getNamedCursor('rear-cursor')).toBeUndefined()
+    expect(await mdb.updateFetchCursor('rear-cursor', '1', '*')).toMatchObject({ name: 'rear-cursor', noteId: '1', fieldName: '*' })
+    expect(await mdb.updateFetchCursor('rear-cursor', '2', 'abstract')).toMatchObject({ name: 'rear-cursor', noteId: '2', fieldName: 'abstract' })
+    expect(await mdb.updateFetchCursor('front-cursor', '2', 'pdf-link')).toMatchObject({ name: 'front-cursor', noteId: '2', fieldName: 'pdf-link' });
+    expect(await mdb.deleteNamedCursor('front-cursor')).toBe(true);
+    expect(await mdb.deleteNamedCursor('front-cursor')).toBe(false);
+    expect(await mdb.getNamedCursor('front-cursor')).toBeUndefined()
+  });
+
+  it.only('should record success/failure of field extraction', async () => {
+
+  });
+
+  // it('should crud noteStatus records', async () => {});
+  // it('should record success/failure of field extraction', async () => {});
+  // it('should find all notes w/unattempted field extractions', async () => {});
 });

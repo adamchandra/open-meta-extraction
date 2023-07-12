@@ -1,121 +1,102 @@
-import request from 'supertest';
 import _ from 'lodash';
-import jsonServer from 'json-server';
-import { Server } from 'http';
-import { prettyPrint, putStrLn, setLogEnvLevel } from '@watr/commonlib';
+import { initConfig, prettyPrint, setLogEnvLevel } from '@watr/commonlib';
 import { FetchService } from './fetch-service';
 
+import { connectToMongoDB, resetMongoDB } from '~/db/mongodb';
+import { respondWith, withServer } from '@watr/spider';
+import { HostStatus, NoteStatus } from '~/db/schemas';
+import { asNoteBatch, createFakeNote, createFakeNoteList, createFakeNotes } from '~/db/mock-data';
 
-type ApiData = Record<string, any>;
+
+
+const withServerAndCleanMongo: typeof withServer = async (setup, run) => {
+  let mongoose: Awaited<ReturnType<typeof connectToMongoDB>> | undefined;
+
+  try {
+    const config = initConfig();
+    const MongoDBName = config.get('mongodb:dbName');
+    mongoose = await connectToMongoDB();
+    if (! /.+test.*/.test(MongoDBName)) {
+      throw new Error(`Tried to reset mongodb ${MongoDBName}; can only reset a db w/name matching /test/`);
+    }
+    await resetMongoDB();
+    return await withServer(
+      (r) => {
+        r.post('/login', respondWith({ token: 'fake-token', user: { id: '~TestUser;' } }));
+        setup(r)
+      },
+      run
+    );
+  } finally {
+    if (mongoose) {
+      await mongoose.connection.close();
+    }
+  }
+}
+
 
 describe('Fetch Service', () => {
 
-  setLogEnvLevel('debug');
-  // let server = jsonServer.create();
-  let httpServer: Server | undefined;
+  setLogEnvLevel('trace');
 
-  let router: jsonServer.JsonServerRouter<ApiData>;
-  let db: ApiData;
-
-  afterEach(async () => {
-    return new Promise<void>(resolve => {
-      if (httpServer) {
-        httpServer.close(() => {
-          resolve();
-        });
-        httpServer = undefined;
-      }
-    })
-    // if (server) {
-    //   const s = server as any;
-    //   await s.close()
-    // }
-  });
-  beforeEach(async () => {
-
-    // const rewriterRules = {
-    //   '/api/*': '/$1',
-    //   '/blog/posts/:id/show': '/posts/:id',
-    //   '/comments/special/:userId-:body': '/comments/?userId=:userId&body=:body',
-    //   '/firstpostwithcomments': '/posts/1?_embed=comments',
-    //   '/articles\\?_id=:id': '/posts/:id',
-    // }
-
-    db = {}
-
-    db.login = [
-
-    ];
-
-    db.posts = [
-      { id: 1, body: 'foo' },
-      { id: 2, body: 'bar' },
-    ]
-
-    db.tags = [
-      { id: 1, body: 'Technology' },
-      { id: 2, body: 'Photography' },
-      { id: 3, body: 'photo' },
-    ]
-
-    db.users = [
-      { id: 1, username: 'Jim', tel: '0123' },
-      { id: 2, username: 'George', tel: '123' },
-    ]
-
-    db.comments = [
-      { id: 1, body: 'foo', published: true, postId: 1, userId: 1 },
-      { id: 2, body: 'bar', published: false, postId: 1, userId: 2 },
-      { id: 3, body: 'baz', published: false, postId: 2, userId: 1 },
-      { id: 4, body: 'qux', published: true, postId: 2, userId: 2 },
-      { id: 5, body: 'quux', published: false, postId: 2, userId: 1 },
-    ]
-
-    const server = jsonServer.create();
-    server.use(jsonServer.defaults())
-
-    server.use(jsonServer.bodyParser);
-
-    server.use((req, res, next) => {
-      const { body, headers } = req;
-      prettyPrint({ msg: 'middle', body, headers });
-      if (req.method === 'POST') {
-        req.body.createdAt = Date.now()
-      }
-      // Continue to JSON Server router
-      next()
-    })
-
-    server.post('/login', (req, resp) => {
-      const { body, headers } = req;
-      prettyPrint({ msg: '/login', body, headers });
-      resp.jsonp({ user: 'foo' })
+  it('should create fake notes', async () => {
+    const fake = createFakeNote({
+      noteNumber: 1,
+      hasAbstract: false,
+      hasPDFLink: false,
+      hasHTMLLink: true
     });
-
-    router = jsonServer.router(db)
-    // server.use(jsonServer.rewriter(rewriterRules))
-    server.use(router)
-    httpServer = server.listen(8865);
+    // prettyPrint({ fake })
+    const notes = createFakeNotes(3)
+    // prettyPrint({ notes })
   });
 
+  it('should run fetch loop', async () => {
+    let noteList = createFakeNoteList(3);
+    const totalNotes = 4000;
 
-  it('should smokescreen run', async () => {
-    const response = await request(httpServer)
-      .get('/comments?postId=2&published=true')
-    // .expect('Content-Type', /json/)
-    // .expect(200, [db.comments[3]])
-
-    const { body, headers, status } = response;
-    prettyPrint({ body, headers, status });
-  });
-
-  it.only('should run fetch loop', async () => {
-    const fetchService = new FetchService();
-    try {
+    await withServerAndCleanMongo((r) => {
+      r.get('/notes', (ctx) => {
+        const { query } = ctx;
+        const { after } = query;
+        if (_.isString(after)) {
+          noteList = _.dropWhile(noteList, (n) => n.id !== after);
+          noteList = _.drop(noteList, 1);
+        }
+        respondWith(asNoteBatch(totalNotes, noteList))(ctx)
+      });
+      // r.post('/notes', assert-correct-post);
+    }, async () => {
+      const fetchService = new FetchService();
       await fetchService.runFetchLoop(undefined, 4);
-    } catch (error) {
-      prettyPrint({ error })
-    }
+      // assert MongoDB is populated correctly
 
+      const notes = await NoteStatus.find();
+      notes.forEach(note => {
+        prettyPrint({ note })
+      });
+      const hosts = await HostStatus.find();
+      hosts.forEach(host => {
+        prettyPrint({ host })
+      });
+
+      //
+    });
   });
+
+  it('should start fetch from cursor', async () => {
+    await withServerAndCleanMongo((r) => {
+      r.get('/notes', (ctx) => {
+        const { query } = ctx;
+        const { after } = query;
+        expect(after).toEqual('')
+      });
+    }, async () => {
+      const fetchService = new FetchService();
+      await fetchService.runFetchLoop(undefined, 4);
+
+    });
+  });
+
+  // it('should ', async () => {});
 });

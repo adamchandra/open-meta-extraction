@@ -1,29 +1,30 @@
 import _ from 'lodash';
 import { putStrLn, setLogEnvLevel } from '@watr/commonlib';
-import { connectToMongoDB } from './mongodb';
-import { Mongoose } from 'mongoose';
 import { formatStatusMessages, showStatusSummary } from './extraction-summary';
-import { populateDBHostNoteStatus } from './mongo-test-utils';
-import { createCollections } from './schemas';
+import { populateDBHostNoteStatus } from './mock-data';
+import { MongoQueries } from './query-api';
 
 describe('Create Extraction Status Summary', () => {
   setLogEnvLevel('debug');
 
-  let mongoose: Mongoose | undefined = undefined;
+  const mdb = new MongoQueries();
 
-  beforeEach(async () => {
-    mongoose = await connectToMongoDB();
-    await mongoose.connection.dropDatabase();
-    await createCollections();
+  beforeAll(async () => {
+    await mdb.connect();
   });
 
   afterAll(async () => {
-    if (mongoose === undefined) return;
-    return mongoose.connection.close();
+    await mdb.close();
+  });
+
+
+  beforeEach(async () => {
+    await mdb.dropDatabase();
+    await mdb.createDatabase();
   });
 
   it('create status summary', async () => {
-    await populateDBHostNoteStatus(200);
+    await populateDBHostNoteStatus(mdb, 200);
     const summaryMessages = await showStatusSummary();
     const formatted = formatStatusMessages(summaryMessages);
     putStrLn(formatted);

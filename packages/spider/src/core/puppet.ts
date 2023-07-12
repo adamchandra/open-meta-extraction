@@ -39,7 +39,7 @@ export async function launchBrowser(): Promise<Browser> {
   useStealthPlugin();
   useAnonPlugin();
   return puppeteer.launch({
-    headless: true,
+    headless: 'new',
     channel: 'chrome',
     // These arguments seem to be required to avoid bug where chrome doesn't shutdown on browser.close()
     // executablePath: process.env.CHROME_EXECUTABLE,
