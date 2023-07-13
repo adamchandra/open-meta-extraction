@@ -7,13 +7,11 @@ import {
 import {
   OpenReviewGateway,
   Note,
-  NoteCursor,
 } from './openreview-gateway';
 
 import { Logger } from 'winston';
 import { generateFromBatch } from '~/util/generators';
 import { ShadowDB } from './shadow-db';
-
 
 
 export class FetchService {
@@ -27,35 +25,49 @@ export class FetchService {
     this.shadow = new ShadowDB();
   }
 
-  async *createNoteBatchGenerator(noteCursor?: NoteCursor): AsyncGenerator<Note[], void, void> {
-    let curNoteCursor = noteCursor;
+  async *createNoteBatchGenerator(startingNoteId?: string): AsyncGenerator<Note[], void, void> {
+    let curNoteId = startingNoteId;
     while (true) {
-      putStrLn(`generateNoteBatches(from=${curNoteCursor})`);
-      const noteBatch = await this.gate.fetchNotes(curNoteCursor);
+      putStrLn(`generateNoteBatches(from=${curNoteId})`);
+      const noteBatch = await this.gate.fetchNotes(curNoteId);
       if (noteBatch === undefined || noteBatch.notes.length === 0) {
         this.log.debug('Exhausted Openreview /notes');
         return;
       }
-      this.log.debug(`Fetched ${noteBatch.notes.length} /notes after:${curNoteCursor} (of ${noteBatch.count} total)`);
+      this.log.debug(`Fetched ${noteBatch.notes.length} /notes after:${curNoteId} (of ${noteBatch.count} total)`);
       const endNote = noteBatch.notes[noteBatch.notes.length - 1];
-      curNoteCursor = endNote.id;
+      curNoteId = endNote.id;
       yield noteBatch.notes;
     }
   }
 
-  createNoteGenerator(noteCursor?: NoteCursor, limit?: number): AsyncGenerator<Note, number, void> {
-    return generateFromBatch<Note>(this.createNoteBatchGenerator(noteCursor), limit? limit : 0);
+  createNoteGenerator(startingNoteId?: string, limit?: number): AsyncGenerator<Note, number, void> {
+    return generateFromBatch<Note>(this.createNoteBatchGenerator(startingNoteId), limit? limit : 0);
   }
 
-  async runFetchLoop(fromCursor?: NoteCursor, limit?: number) {
-    this.log.info(`Starting Fetch Service ${fromCursor? 'from cursor'+fromCursor: ''}`);
+  async updateFetchCursor(noteId: string) {
+    this.shadow.updateCursor('fetch-openreview-notes', noteId);
+  }
+  async getFetchCursor() {
+    return await this.shadow.getCursor('fetch-openreview-notes');
+  }
 
-    const noteGenerator = this.createNoteGenerator(fromCursor, limit);
+  async runFetchLoop(limit?: number) {
+    this.log.info(`Starting Fetch Service`);
+    const startingNote = await this.getFetchCursor()
+    const startingNoteId = startingNote? startingNote.noteId : undefined;
+    if (startingNoteId) {
+      this.log.info(`Resuming Fetch Service from note ${startingNoteId}`);
+    }
+
+    const noteGenerator = this.createNoteGenerator(startingNoteId, limit);
 
     let cur = await noteGenerator.next();
     for (; !cur.done; cur = await noteGenerator.next()) {
-      putStrLn(`Saving note ${cur.value.id}`);
-      await this.shadow.saveNoteToShadowDB(cur.value);
+      const note = cur.value;
+      putStrLn(`Saving note ${note.id}`);
+      await this.shadow.saveNote(note, true);
+      this.updateFetchCursor(note.id);
     }
     putStrLn('FetchLoop complete');
   }

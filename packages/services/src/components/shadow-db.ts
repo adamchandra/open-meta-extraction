@@ -1,18 +1,16 @@
 import _ from 'lodash';
 
-import {
-  getServiceLogger,
-} from '@watr/commonlib';
+import { getServiceLogger } from '@watr/commonlib';
 
-
-import { WorkflowStatus } from '~/db/schemas';
+import { FetchCursor, NoteStatus, WorkflowStatus } from '~/db/schemas';
 
 import {
   MongoQueries,
   HostStatusDocument,
+  CursorRole,
 } from '~/db/query-api';
 
-import { Note, OpenReviewGateway, UpdatableField  } from './openreview-gateway';
+import { Note, OpenReviewGateway, UpdatableField } from './openreview-gateway';
 import { Logger } from 'winston';
 
 
@@ -32,6 +30,9 @@ export class ShadowDB {
     await this.mdb.connect();
   }
 
+  async close() {
+    await this.mdb.close();
+  }
   // async updateNoteFields(
   //   noteId: string,
   //   fields: Record<UpdatableField, string|undefined>
@@ -91,23 +92,30 @@ export class ShadowDB {
     return this.mdb.releaseSpiderableUrl(hostStatus, newStatus);
   }
 
-  async saveNoteToShadowDB(note: Note): Promise<void> {
+  async findNote(noteId: string): Promise<NoteStatus | undefined> {
+    return this.mdb.findNoteStatusById(noteId);
+  }
+
+  async saveNote(note: Note, upsert: boolean): Promise<void> {
     const urlstr = note.content.html;
     const existingNote = await this.mdb.findNoteStatusById(note.id);
     const noteExists = existingNote !== undefined;
-    if (noteExists) {
-      this.log.info('Found fetched note in local MongoDB; stopping fetcher');
+    if (noteExists && !upsert) {
+      this.log.info('SaveNote: note already exists, skipping');
       return;
     }
 
-    const noteStatus = await this.mdb.upsertNoteStatus({ noteId: note.id, urlstr });
+    this.log.info(`SaveNote: ${noteExists ? 'overwriting existing' : 'inserting new'} note`);
+
+    const noteStatus = await this.mdb.upsertNoteStatus({ noteId: note.id, number: note.number, urlstr });
     if (!noteStatus.validUrl) {
-      this.log.info(`NoteStatus: invalid url '${urlstr}'`);
+      this.log.info(`SaveNote: NoteStatus: invalid url '${urlstr}'`);
       return;
     }
     const requestUrl = noteStatus.url;
     if (requestUrl === undefined) {
-      return Promise.reject(`Invalid state: NoteStatus(${note.id}).validUrl===true, url===undefined`);
+      this.log.error(`Invalid state: NoteStatus(${note.id}).validUrl===true, url===undefined`);
+      return;
     }
 
     const abs = note.content.abstract;
@@ -116,5 +124,20 @@ export class ShadowDB {
     const hasPdfLink = typeof pdfLink === 'string';
     const status: WorkflowStatus = hasAbstract && hasPdfLink ? 'extractor:success' : 'available';
     await this.mdb.upsertHostStatus(note.id, status, { hasAbstract, hasPdfLink, requestUrl });
+
+    if (hasAbstract) {
+      this.mdb.upsertFieldStatus(note.id, 'abstract', abs, 'preexisting');
+    }
+    if (hasPdfLink) {
+      this.mdb.upsertFieldStatus(note.id, 'pdf', pdfLink, 'preexisting');
+    }
+  }
+
+  async updateCursor(role: CursorRole, noteId: string) {
+    this.mdb.updateCursor(role, noteId);
+  }
+
+  async getCursor(role: CursorRole): Promise<FetchCursor | undefined> {
+    return this.mdb.getCursor(role);
   }
 }

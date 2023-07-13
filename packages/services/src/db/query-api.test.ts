@@ -22,6 +22,22 @@ describe('MongoDB Queries', () => {
   });
 
 
+
+  it('should crud noteStatus records', async () => {
+
+  });
+
+  it('should create/update/delete fetch cursors', async () => {
+    expect(await mdb.getCursor('extract-*')).toBeUndefined()
+    expect(await mdb.getCursor('fetch-openreview-notes')).toBeUndefined()
+    expect(await mdb.updateCursor('extract-*', '1')).toMatchObject({ role: 'extract-*', noteId: '1' })
+    expect(await mdb.updateCursor('extract-abstract', '2')).toMatchObject({ role: 'extract-abstract', noteId: '2' })
+    expect(await mdb.updateCursor('extract-pdf-link', '2')).toMatchObject({ role: 'extract-pdf-link', noteId: '2' });
+    expect(await mdb.deleteCursor('extract-*')).toBe(true);
+    expect(await mdb.deleteCursor('extract-*')).toBe(false);
+    expect(await mdb.getCursor('extract-*')).toBeUndefined()
+  });
+
   it('get/update next spiderable host/url', async () => {
     const initEntry = await mdb.upsertHostStatus('asdf', 'available', { hasAbstract: false });
 
@@ -47,22 +63,8 @@ describe('MongoDB Queries', () => {
     // putStrLn(formatStatusMessages(await showStatusSummary()));
   });
 
-  it('should create/update/delete fetch cursors', async () => {
-    expect(await mdb.getNamedCursor('front-cursor')).toBeUndefined()
-    expect(await mdb.getNamedCursor('rear-cursor')).toBeUndefined()
-    expect(await mdb.updateFetchCursor('rear-cursor', '1', '*')).toMatchObject({ name: 'rear-cursor', noteId: '1', fieldName: '*' })
-    expect(await mdb.updateFetchCursor('rear-cursor', '2', 'abstract')).toMatchObject({ name: 'rear-cursor', noteId: '2', fieldName: 'abstract' })
-    expect(await mdb.updateFetchCursor('front-cursor', '2', 'pdf-link')).toMatchObject({ name: 'front-cursor', noteId: '2', fieldName: 'pdf-link' });
-    expect(await mdb.deleteNamedCursor('front-cursor')).toBe(true);
-    expect(await mdb.deleteNamedCursor('front-cursor')).toBe(false);
-    expect(await mdb.getNamedCursor('front-cursor')).toBeUndefined()
-  });
+  // it.only('should record success/failure of field extraction', async () => {});
 
-  it.only('should record success/failure of field extraction', async () => {
-
-  });
-
-  // it('should crud noteStatus records', async () => {});
   // it('should record success/failure of field extraction', async () => {});
   // it('should find all notes w/unattempted field extractions', async () => {});
 });

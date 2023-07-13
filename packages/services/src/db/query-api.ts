@@ -1,8 +1,8 @@
 import _ from 'lodash';
-import { FetchCursor, HostStatus, HostStatusUpdateFields, NoteStatus, WorkflowStatus, createCollections } from './schemas';
+import { FetchCursor, FieldStatus, HostStatus, HostStatusUpdateFields, NoteStatus, WorkflowStatus, createCollections } from './schemas';
 import * as E from 'fp-ts/Either';
 import { Document, Mongoose } from 'mongoose';
-import { getServiceLogger, initConfig, prettyPrint, validateUrl } from '@watr/commonlib';
+import { getServiceLogger, initConfig, prettyPrint, shaEncodeAsHex, validateUrl } from '@watr/commonlib';
 import { Logger } from 'winston';
 import { connectToMongoDB } from './mongodb';
 
@@ -10,22 +10,15 @@ export type HostStatusDocument = Document<unknown, any, HostStatus> & HostStatus
 
 type upsertNoteStatusArgs = {
   noteId: string,
-  urlstr?: string
+  urlstr?: string,
+  number?: number,
 }
 
-// type ConnectStatus =
-//   'unconnected'
-//   | 'connecting'
-//   | 'connected'
-//   | 'closing'
-//   | 'closed'
-//   ;
 
 export class MongoQueries {
   log: Logger;
   config: ReturnType<typeof initConfig>;
   mongoose?: Mongoose;
-  // connectStatus: ConnectStatus;
 
   constructor() {
     this.log = getServiceLogger('MongoQueries');
@@ -60,7 +53,7 @@ export class MongoQueries {
   }
 
   async upsertNoteStatus({
-    noteId, urlstr
+    noteId, urlstr, number
   }: upsertNoteStatusArgs): Promise<NoteStatus> {
     const maybeUrl = validateUrl(urlstr);
     const validUrl = E.isRight(maybeUrl);
@@ -74,7 +67,7 @@ export class MongoQueries {
 
     return NoteStatus.findOneAndUpdate(
       { _id: noteId },
-      { validUrl, url: urlOrErrStr },
+      { number, validUrl, url: urlOrErrStr },
       { new: true, upsert: true }
     );
   }
@@ -169,27 +162,44 @@ export class MongoQueries {
     prettyPrint({ resetUrlsWithoutAbstractsUpdate, resetUrlsWithoutPdfLinkUpdate, resetLockedUrlsUpdate });
   }
 
-  async getNamedCursor(name: CursorName): Promise<FetchCursor | undefined> {
-    const cursor = await FetchCursor.findOne({name});
+  async getCursor(role: CursorRole): Promise<FetchCursor | undefined> {
+    const cursor = await FetchCursor.findOne({ role });
     if (cursor === null || cursor === undefined) {
       return;
     }
     return cursor;
   }
-  async deleteNamedCursor(name: CursorName): Promise<boolean> {
-    const cursor = await FetchCursor.findOneAndRemove({name});
+
+  async deleteCursor(role: CursorRole): Promise<boolean> {
+    const cursor = await FetchCursor.findOneAndRemove({ role });
     return cursor !== null;
   }
 
-  async updateFetchCursor(name: CursorName, noteId: string, fieldName: FieldName): Promise<FetchCursor> {
+  async updateCursor(role: CursorRole, noteId: string): Promise<FetchCursor> {
     return FetchCursor.findOneAndUpdate(
-      { name },
-      { name, fieldName, noteId },
+      { role },
+      { role, noteId },
       { new: true, upsert: true }
     );
   }
+
+  async upsertFieldStatus(
+    noteId: string,
+    fieldType: string,
+    fieldValue: string,
+    state: string,
+  ): Promise<FieldStatus> {
+    const contentHash = shaEncodeAsHex(fieldValue);
+    return FieldStatus.findOneAndUpdate(
+      { _id: noteId, fieldType },
+      { _id: noteId, fieldType, state, contentHash },
+      { new: true, upsert: true }
+    );
+  }
+
 
 }
 
 export type CursorName = 'front-cursor' | 'rear-cursor';
 export type FieldName = 'abstract' | 'pdf-link' | '*';
+export type CursorRole = 'fetch-openreview-notes' | `extract-${FieldName}`

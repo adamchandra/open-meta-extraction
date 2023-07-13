@@ -1,14 +1,16 @@
 ** List project plan for current task
 
-** Modify openreview note fetcher to use '?after=' param
+** TASK Modify openreview note fetcher to use '?after=' param
 *** Fetch Service
 - [-] Modify runRelayFetch logic to store and use last known noteId (most recently fetched).
   - [X] Implement a note iterator/generator with a limit count
+  - [ ] Use named cursor
+    e.g., 'front/abstract', 'rear/*'
   - [ ] Store note nums in db such that it is easy to tell if there are gaps in our fetched list
     - e.g., forward note cursor, reverse note cursor
     - this would mean including all nums, including those we can't use (marked as 'unusable' or something)
-  - [ ] write logic as if fetching from beginning w/ sort num:asc was efficient
-- [ ] Create parallel fetch loop to re-run all papers (if scraper logic changes, for example)
+  - [ ] Run fetching w/ sort num:asc
+- [ ] Create logic to re-run fetch for all papers
   - [ ] Use named cursors, stored in mongodb
 - [ ] Create test plan
   - [ ] Run against live site and verify
@@ -21,8 +23,17 @@
 
 
 ** Next Actions
-- merge fetch service / shadow-db / mongo query api
-- Create extracted-field collection, store abs/pdf attempts/status individually
-- Create cursor collection, store rest params, name (uniq)
-- Create mongo migration
-- add 'number' field to note
+- [ ] Create top-level fetch loops, parameterized for different cursors
+- [ ] Create FieldStatus collection, store abs/pdf attempts/status/value-hash individually
+- [ ] Create cursor collection, store rest params, name (uniq)
+- [X] add 'number' field to note
+- [ ] Create mongo migration
+
+
+** Ideas
+- keep track of slow extraction ids
+- Fetch should only hit openreview api 1 time.
+  - keep track of hash of extracted fields, make note of
+    when they change
+  - re-extracting from the beginning is a local-only operation,
+    make a log record when updates should/do happen

@@ -68,36 +68,6 @@ const htmlSamples: Record<string, string> = {
 
 const log = getServiceLogger('test-server');
 
-// function openreviewRouter(): Router<Koa.DefaultState, Koa.DefaultContext> {
-//   const router = new Router({
-//     prefix: '/api.openreview.net'
-//   });
-
-//   async function postLogin(ctx: Context): Promise<void> {
-//     const { user, password } = ctx.request.body;
-//     log.info(`user: ${user}: password: ${password}`);
-//     // interface Credentials {
-//     ctx.response.body = {
-//       token: 'mock-token',
-//       user: { id: 29 }
-//     };
-//   }
-
-//   async function getNotes(ctx: Context): Promise<void> {
-//     const fmt = prettyFormat(ctx.request.query, { colors: false });
-//     log.info(fmt);
-//     ctx.response.body = {
-//       notes: [],
-//       count: 0
-//     };
-//   }
-
-//   router.post('/login', koaBody(), postLogin);
-
-//   router.get('/notes', getNotes);
-
-//   return router;
-// }
 
 function htmlRouter(): Router<Koa.DefaultState, Koa.DefaultContext> {
   const router = new Router({ routerPath: '/echo' });

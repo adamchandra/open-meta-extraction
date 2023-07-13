@@ -1,6 +1,6 @@
 import _ from 'lodash';
-import { asyncEachOfSeries } from '@watr/commonlib';
-import {  MongoQueries } from './query-api';
+import { asyncEachOfSeries, prettyPrint, putStrLn } from '@watr/commonlib';
+import { MongoQueries } from './query-api';
 import * as fc from 'fast-check';
 import { WorkflowStatuses } from './schemas';
 import { Note, Notes } from '~/components/openreview-gateway';
@@ -23,11 +23,11 @@ export async function populateDBHostNoteStatus(mdb: MongoQueries, n: number) {
         await mdb.upsertHostStatus(
           `note#${index}`,
           workflowStatus, {
-            hasAbstract: index % 9 === 0,
-            requestUrl: urlstr,
-            response: urlstr,
-            httpStatus
-          });
+          hasAbstract: index % 9 === 0,
+          requestUrl: urlstr,
+          response: urlstr,
+          httpStatus
+        });
 
       }
     }
@@ -85,8 +85,9 @@ export function createFakeNote({
   }
 }
 
-export function createFakeNoteList(count: number): Note[] {
-  return _.map(_.range(1, count + 1), (i) => createFakeNote({
+export function createFakeNoteList(count: number, startingNumber: number = 1): Note[] {
+  const ids = _.range(startingNumber, startingNumber+count);
+  return _.map(ids, (i) => createFakeNote({
     noteNumber: i,
     hasAbstract: false,
     hasPDFLink: false,
@@ -101,7 +102,7 @@ export function asNoteBatch(count: number, notes: Note[]): Notes {
   };
 }
 
-export function createFakeNotes(count: number): Notes {
-  const notes = createFakeNoteList(count)
+export function createFakeNotes(count: number, startingNumber: number = 1): Notes {
+  const notes = createFakeNoteList(count, startingNumber)
   return asNoteBatch(count, notes);
 }

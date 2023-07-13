@@ -8,7 +8,6 @@ export function mongoConnectionString(): string {
   const config = initConfig();
   const ConnectionURL = config.get('mongodb:connectionUrl');
   const MongoDBName = config.get('mongodb:dbName');
-  // const connectUrl = path.join(ConnectionURL, MongoDBName)
   let connectUrl = `${ConnectionURL}/${MongoDBName}`;
   return connectUrl;
 }
@@ -53,4 +52,30 @@ export function createCurrentTimeOpt(): CurrentTimeOpt {
     }
   };
   return mockedOpts;
+}
+
+type RunWithMongo = (m: Mongoose) => Promise<void>;
+export async function withMongo(
+  run: RunWithMongo,
+  emptyDB: boolean
+): Promise<void> {
+
+  const config = initConfig();
+  const MongoDBName = config.get('mongodb:dbName');
+  const mongoose = await connectToMongoDB();
+  putStrLn('mongo connected...')
+  if (emptyDB) {
+    if (! /.+test.*/.test(MongoDBName)) {
+      throw new Error(`Tried to reset mongodb ${MongoDBName}; can only reset a db w/name matching /test/`);
+    }
+    putStrLn('mongo resetting...')
+    await resetMongoDB();
+  }
+  try {
+    putStrLn('mongo running client...')
+    await run(mongoose);
+  } finally {
+    putStrLn('mongo closing...')
+    await mongoose.connection.close();
+  }
 }

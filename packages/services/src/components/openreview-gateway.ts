@@ -49,14 +49,6 @@ export interface MessagePostData {
   groups: string[];
 }
 
-export type NoteCursorKinds = 'front-cursor' | 'rear-cursor'
-export type NoteCursor = string;
-
-export interface NoteCursorRecord {
-  kind: NoteCursorKinds;
-  noteId: NoteCursor;
-}
-
 const OpenreviewStatusGroup = 'OpenReview.net/Status';
 
 
@@ -100,7 +92,7 @@ export class OpenReviewGateway {
     return this.opex.apiGET<Notes>('/notes', { invitation: 'dblp.org/-/record', sort: 'number:desc', offset });
   }
 
-  async fetchNotes(afterNoteId?: NoteCursor): Promise<Notes | undefined> {
+  async fetchNotes(afterNoteId?: string): Promise<Notes | undefined> {
     const queryParams: Record<string, string> = { invitation: 'dblp.org/-/record', sort: 'number:asc' };
     if (afterNoteId) {
       queryParams['after'] = afterNoteId;
@@ -152,7 +144,7 @@ export class OpenReviewGateway {
   async testNoteFetching() {
     let startingNote: string | undefined;
     const noteList: any[][] = [];
-    await asyncEachOfSeries(_.range(5), async (ri, i) => {
+    await asyncEachOfSeries(_.range(5), async () => {
       const notes = await this.fetchNotes(startingNote);
 
       if (notes) {
