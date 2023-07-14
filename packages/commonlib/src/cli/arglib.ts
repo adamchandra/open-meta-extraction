@@ -268,9 +268,10 @@ export const configFile = (ya: Argv): Argv => {
 };
 
 
-export const setOpt = (ya: Argv) => {
-  return ya.option;
-};
+// TODO this causes a compiler crash!!!!
+// export const setOptx = (ya: Argv) => {
+//   return ya.option;
+// };
 
 export function registerCmd(
   useYargs: Argv,
@@ -313,7 +314,7 @@ export const opt = {
   existingDir,
   existingFile,
   timeInterval,
-  obj: setOpt,
+  // obj: setOpt,
   dir: existingDir,
   file: existingFile,
   cwd: setCwd,

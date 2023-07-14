@@ -197,7 +197,7 @@ export async function closeTestServer(server: Server | undefined): Promise<void>
   return new Promise((resolve) => {
     if (server === undefined) return;
     server.on('close', () => {
-      putStrLn('test server stopped');
+      putStrLn('test server closed.');
       resolve(undefined);
     });
     server.close();

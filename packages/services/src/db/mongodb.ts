@@ -1,8 +1,10 @@
-import { initConfig, isTestingEnv, putStrLn } from '@watr/commonlib';
+import { getServiceLogger, initConfig, isTestingEnv, putStrLn } from '@watr/commonlib';
 import mongoose from 'mongoose';
 
 import { createCollections } from '~/db/schemas';
 import { Mongoose } from 'mongoose';
+
+const log = getServiceLogger('MongoDB');
 
 export function mongoConnectionString(): string {
   const config = initConfig();
@@ -14,16 +16,16 @@ export function mongoConnectionString(): string {
 
 export async function connectToMongoDB(): Promise<Mongoose> {
   const connstr = mongoConnectionString();
-  putStrLn(`connecting to ${connstr}`);
+  log.info(`connecting to ${connstr}`);
   return mongoose.connect(connstr, { connectTimeoutMS: 5000 });
 }
 
 export async function resetMongoDB(): Promise<void> {
   const config = initConfig();
   const MongoDBName = config.get('mongodb:dbName');
-  putStrLn(`dropping MongoDB ${MongoDBName}`);
+  log.info(`dropping MongoDB ${MongoDBName}`);
   await mongoose.connection.dropDatabase();
-  putStrLn('createCollections..');
+  log.info('createCollections..');
   await createCollections();
 }
 
@@ -39,7 +41,7 @@ export function createCurrentTimeOpt(): CurrentTimeOpt {
     };
     return defaultOpt;
   }
-  putStrLn('Using MongoDB Mock Timestamps');
+  log.info('Using MongoDB Mock Timestamps');
   const currentFakeDate = new Date();
   currentFakeDate.setDate(currentFakeDate.getDate() - 14);
   const mockedOpts: CurrentTimeOpt = {
@@ -63,19 +65,19 @@ export async function withMongo(
   const config = initConfig();
   const MongoDBName = config.get('mongodb:dbName');
   const mongoose = await connectToMongoDB();
-  putStrLn('mongo connected...')
+  log.info('mongo connected...')
   if (emptyDB) {
     if (! /.+test.*/.test(MongoDBName)) {
       throw new Error(`Tried to reset mongodb ${MongoDBName}; can only reset a db w/name matching /test/`);
     }
-    putStrLn('mongo resetting...')
+    log.info('mongo resetting...')
     await resetMongoDB();
   }
   try {
-    putStrLn('mongo running client...')
+    log.info('mongo running client...')
     await run(mongoose);
   } finally {
-    putStrLn('mongo closing...')
+    log.info('mongo closing...')
     await mongoose.connection.close();
   }
 }

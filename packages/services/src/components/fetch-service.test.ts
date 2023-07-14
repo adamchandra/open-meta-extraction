@@ -1,88 +1,68 @@
 import _ from 'lodash';
-import { prettyPrint, setLogEnvLevel } from '@watr/commonlib';
+import { setLogEnvLevel } from '@watr/commonlib';
 import { FetchService } from './fetch-service';
 
 import { respondWith } from '@watr/spider';
-import { HostStatus, NoteStatus } from '~/db/schemas';
-import { asNoteBatch, createFakeNote, createFakeNoteList, createFakeNotes } from '~/db/mock-data';
+import { FetchCursor, HostStatus, NoteStatus } from '~/db/schemas';
+import { asNoteBatch, createFakeNoteList, createFakeNotes } from '~/db/mock-data';
 import { withServerAndCleanMongo } from './testing-utils';
 
 
-function fakeNoteBatch(totalSize: number, batchSize: number) {
-  return asNoteBatch(totalSize, createFakeNoteList(batchSize))
-}
-
 describe('Fetch Service', () => {
 
-  setLogEnvLevel('trace');
+  setLogEnvLevel('warn');
 
-  it.only('should create fake notes', async () => {
-    // const fake = createFakeNote({
-    //   noteNumber: 1,
-    //   hasAbstract: false,
-    //   hasPDFLink: false,
-    //   hasHTMLLink: true
-    // });
-    // // prettyPrint({ fake })
+  it('should create fake notes', async () => {
     const notes = createFakeNotes(3)
+    expect(notes.notes[0]).toMatchObject({ id: 'note#1', number: 1 });
+    expect(notes.notes[2]).toMatchObject({ id: 'note#3', number: 3 });
 
-    createFakeNotes(3, 2)
-    createFakeNotes(3, 5)
-    // prettyPrint({ notes })
+    expect(createFakeNotes(2, 2).notes)
+      .toMatchObject([{id: 'note#2', number: 2}, { id: 'note#3', number: 3 }]);
   });
 
-  it('should run fetch loop', async () => {
-    let noteList = createFakeNoteList(3);
+  it('should run fetch loop with cursor', async () => {
     const totalNotes = 4000;
-
+    let batchSize = 3;
+    const fourNoteIds = _.range(4).map(i => `note#${i+1}`)
+    const eightNoteIds = _.range(8).map(i => `note#${i+1}`)
 
     await withServerAndCleanMongo((r) => {
       r.get('/notes', (ctx) => {
         const { query } = ctx;
         const { after } = query;
+        let prevIdNum = 0;
         if (_.isString(after)) {
-          noteList = _.dropWhile(noteList, (n) => n.id !== after);
-          noteList = _.drop(noteList, 1);
+          const idnum = after.split('#')[1];
+          prevIdNum = parseInt(idnum, 10);
         }
+        const noteList = createFakeNoteList(batchSize, prevIdNum+1);
         respondWith(asNoteBatch(totalNotes, noteList))(ctx)
       });
-      // r.post('/notes', assert-correct-post);
     }, async () => {
       const fetchService = new FetchService();
       await fetchService.runFetchLoop(4);
+
       // assert MongoDB is populated correctly
+      let notes = await NoteStatus.find();
+      expect(notes.map(n => n.id)).toMatchObject(fourNoteIds);
 
-      const notes = await NoteStatus.find();
-      notes.forEach(note => {
-        prettyPrint({ note })
-      });
-      const hosts = await HostStatus.find();
-      hosts.forEach(host => {
-        prettyPrint({ host })
-      });
+      let cursors = await FetchCursor.find();
+      expect(cursors.map(n => n.noteId)).toMatchObject(['note#4']);
+      let hosts = await HostStatus.find();
+      expect(hosts.map(n => n._id)).toMatchObject(fourNoteIds);
 
-      //
-    });
-  });
 
-  it('should start fetch from cursor', async () => {
-    await withServerAndCleanMongo((r) => {
-      r.get('/notes', (ctx) => {
-        const { query } = ctx;
-        const { after } = query;
-        // expect(after).toBeUndefined();
-
-        respondWith(fakeNoteBatch(100, 3))(ctx)
-      });
-    }, async () => {
-      const fetchService = new FetchService();
-      // TODO create/test cursors
       await fetchService.runFetchLoop(4);
-      const cursor = await fetchService.getFetchCursor();
-      prettyPrint({ cursor })
 
+      notes = await NoteStatus.find();
+      expect(notes.map(n => n.id)).toMatchObject(eightNoteIds);
+
+      cursors = await FetchCursor.find();
+      expect(cursors.map(n => n.noteId)).toMatchObject(['note#8']);
+      hosts = await HostStatus.find();
+      expect(hosts.map(n => n._id)).toMatchObject(eightNoteIds);
     });
   });
 
-  // it('should ', async () => {});
 });

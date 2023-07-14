@@ -1,7 +1,7 @@
 import _ from 'lodash';
 
 import {
-  getServiceLogger, putStrLn,
+  getServiceLogger
 } from '@watr/commonlib';
 
 import {
@@ -28,7 +28,7 @@ export class FetchService {
   async *createNoteBatchGenerator(startingNoteId?: string): AsyncGenerator<Note[], void, void> {
     let curNoteId = startingNoteId;
     while (true) {
-      putStrLn(`generateNoteBatches(from=${curNoteId})`);
+      this.log.debug(`generateNoteBatches(from=${curNoteId})`);
       const noteBatch = await this.gate.fetchNotes(curNoteId);
       if (noteBatch === undefined || noteBatch.notes.length === 0) {
         this.log.debug('Exhausted Openreview /notes');
@@ -48,6 +48,7 @@ export class FetchService {
   async updateFetchCursor(noteId: string) {
     this.shadow.updateCursor('fetch-openreview-notes', noteId);
   }
+
   async getFetchCursor() {
     return await this.shadow.getCursor('fetch-openreview-notes');
   }
@@ -65,10 +66,10 @@ export class FetchService {
     let cur = await noteGenerator.next();
     for (; !cur.done; cur = await noteGenerator.next()) {
       const note = cur.value;
-      putStrLn(`Saving note ${note.id}`);
+      this.log.info(`Saving note ${note.id}`);
       await this.shadow.saveNote(note, true);
       this.updateFetchCursor(note.id);
     }
-    putStrLn('FetchLoop complete');
+    this.log.info('FetchLoop complete');
   }
 }
