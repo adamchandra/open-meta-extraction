@@ -38,7 +38,7 @@ type CreateScheduledCliJobArgs = {
   args?: string,
   appNameSuffix?: string,
   once?: boolean // if true, app will not autorestart  when complete
-}
+};
 
 export function createScheduledCliJob({
   app,
@@ -48,12 +48,12 @@ export function createScheduledCliJob({
   once
 }: CreateScheduledCliJobArgs): Partial<PM2JobConfig> {
   const qualifiedName = mungeJobName(app, appNameSuffix);
-  const appAndArgV = app + (args? ` ${args}`: '')
+  const appAndArgV = app + (args? ` ${args}`: '');
   if (schedule === undefined) {
-    putStrLn(`Starting immediate job: ${qualifiedName}`)
+    putStrLn(`Starting immediate job: ${qualifiedName}`);
     return createPM2Job(qualifiedName, PM2_RUN_CLI_SCRIPT, { args: appAndArgV, autorestart: !once });
   }
-  putStrLn(`Starting scheduled job: ${qualifiedName}`)
+  putStrLn(`Starting scheduled job: ${qualifiedName}`);
   const jobConf: Partial<PM2JobConfig> = {
     args: `schedule '${schedule}' -- ${appAndArgV}`,
     autorestart: !once
@@ -61,7 +61,7 @@ export function createScheduledCliJob({
   return createPM2Job(qualifiedName, PM2_RUN_CLI_SCRIPT, jobConf);
 }
 
-type ENV_KEY = `env_${ENV_MODE}`
+type ENV_KEY = `env_${ENV_MODE}`;
 
 export type PM2JobConfig = Record<ENV_KEY, any> & {
   // General
@@ -78,15 +78,15 @@ export type PM2JobConfig = Record<ENV_KEY, any> & {
   exec_mode: string; //  “cluster” mode to start your app, can be “cluster” or “fork”, default fork
   watch: boolean; // or [] true enable watch & restart feature, if a file change in the folder or subfolder, your app will get reloaded
   ignore_watch: (string | RegExp)[]; // [”[\/\\]\./”, “node_modules”] list of regex to ignore some file or folder names by the watch feature
-  max_memory_restart: string; //“150M” your app will be restarted if it exceeds the amount of memory specified. human-friendly format : it can be “10M”, “100K”, “2G” and so on…
-  env: object; //{“NODE_ENV”: “development”, “ID”: “42”} env variables which will appear in your app
+  max_memory_restart: string; // “150M” your app will be restarted if it exceeds the amount of memory specified. human-friendly format : it can be “10M”, “100K”, “2G” and so on…
+  env: object; // {“NODE_ENV”: “development”, “ID”: “42”} env variables which will appear in your app
   // env_: object; //{“NODE_ENV”: “production”, “ID”: “89”} inject when doing pm2 restart app.yml --env
   source_map_support: boolean; // true default to true, [enable/disable source map file]
-  instance_var: string; //“NODE_APP_INSTANCE” see documentation
-  filter_env: string[]; //of string [ “REACT_” ] Excludes global variables starting with “REACT_” and will not allow their penetration into the cluster.
+  instance_var: string; // “NODE_APP_INSTANCE” see documentation
+  filter_env: string[]; // of string [ “REACT_” ] Excludes global variables starting with “REACT_” and will not allow their penetration into the cluster.
 
   // Logs
-  log_date_format: string; //“YYYY-MM-DD HH:mm Z” log date format (see log section)
+  log_date_format: string; // “YYYY-MM-DD HH:mm Z” log date format (see log section)
   error_file: string; //  error file path (default to $HOME/.pm2/logs/XXXerr.log)
   out_file: string; //  output file path (default to $HOME/.pm2/logs/XXXout.log)
   combine_logs: boolean; //   true if set to true, avoid to suffix logs file with the process id
@@ -110,15 +110,15 @@ export type PM2JobConfig = Record<ENV_KEY, any> & {
 
   // Deployment
   // key               SSH key path String $HOME/.ssh
-  //user              SSH user String
-  //host              SSH host [String]
-  //ssh_options       SSH options with no command-line flag, see ‘man ssh’ String or [String]
-  //ref               GIT remote/branch String
-  //repo              GIT remote String
-  //path              path in the server String
-  //pre-setup         Pre-setup command or path to a script on your local machine String
-  //post-setup        Post-setup commands or path to a script on the host machine String
-  //pre-deploy-local  pre-deploy action String
-  //post-deploy       post-deploy action String
+  // user              SSH user String
+  // host              SSH host [String]
+  // ssh_options       SSH options with no command-line flag, see ‘man ssh’ String or [String]
+  // ref               GIT remote/branch String
+  // repo              GIT remote String
+  // path              path in the server String
+  // pre-setup         Pre-setup command or path to a script on your local machine String
+  // post-setup        Post-setup commands or path to a script on the host machine String
+  // pre-deploy-local  pre-deploy action String
+  // post-deploy       post-deploy action String
 
-}
+};

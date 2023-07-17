@@ -1,31 +1,30 @@
 import _ from 'lodash';
 import { setLogEnvLevel } from '@watr/commonlib';
+import { respondWith } from '@watr/spider';
 import { FetchService } from './fetch-service';
 
-import { respondWith } from '@watr/spider';
 import { FetchCursor, HostStatus, NoteStatus } from '~/db/schemas';
 import { asNoteBatch, createFakeNoteList, createFakeNotes } from '~/db/mock-data';
 import { withServerAndCleanMongo } from './testing-utils';
 
 
 describe('Fetch Service', () => {
-
   setLogEnvLevel('warn');
 
   it('should create fake notes', async () => {
-    const notes = createFakeNotes(3)
+    const notes = createFakeNotes(3);
     expect(notes.notes[0]).toMatchObject({ id: 'note#1', number: 1 });
     expect(notes.notes[2]).toMatchObject({ id: 'note#3', number: 3 });
 
     expect(createFakeNotes(2, 2).notes)
-      .toMatchObject([{id: 'note#2', number: 2}, { id: 'note#3', number: 3 }]);
+      .toMatchObject([{ id: 'note#2', number: 2 }, { id: 'note#3', number: 3 }]);
   });
 
   it('should run fetch loop with cursor', async () => {
     const totalNotes = 4000;
-    let batchSize = 3;
-    const fourNoteIds = _.range(4).map(i => `note#${i+1}`)
-    const eightNoteIds = _.range(8).map(i => `note#${i+1}`)
+    const batchSize = 3;
+    const fourNoteIds = _.range(4).map(i => `note#${i+1}`);
+    const eightNoteIds = _.range(8).map(i => `note#${i+1}`);
 
     await withServerAndCleanMongo((r) => {
       r.get('/notes', (ctx) => {
@@ -34,10 +33,10 @@ describe('Fetch Service', () => {
         let prevIdNum = 0;
         if (_.isString(after)) {
           const idnum = after.split('#')[1];
-          prevIdNum = parseInt(idnum, 10);
+          prevIdNum = Number.parseInt(idnum, 10);
         }
         const noteList = createFakeNoteList(batchSize, prevIdNum+1);
-        respondWith(asNoteBatch(totalNotes, noteList))(ctx)
+        respondWith(asNoteBatch(totalNotes, noteList))(ctx);
       });
     }, async () => {
       const fetchService = new FetchService();
@@ -64,5 +63,4 @@ describe('Fetch Service', () => {
       expect(hosts.map(n => n._id)).toMatchObject(eightNoteIds);
     });
   });
-
 });

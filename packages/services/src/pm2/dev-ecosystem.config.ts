@@ -1,6 +1,6 @@
 // import { createPM2CliJob } from './eco-helpers';
-import { createScheduledCliJob } from './eco-helpers';
 import _ from 'lodash';
+import { createScheduledCliJob } from './eco-helpers';
 
 
 const apps = [
@@ -15,7 +15,6 @@ const apps = [
 
   // UTC time = EST + 4 hours
   // createScheduledCliJob({ app: 'run-monitor-service', schedule: 'at 12:00 AM also at 12:00 PM' }),
-
 
 
 ];

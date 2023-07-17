@@ -1,8 +1,7 @@
 import { getServiceLogger, initConfig, isTestingEnv, putStrLn } from '@watr/commonlib';
-import mongoose from 'mongoose';
+import mongoose, { Mongoose } from 'mongoose';
 
 import { createCollections } from '~/db/schemas';
-import { Mongoose } from 'mongoose';
 
 const log = getServiceLogger('MongoDB');
 
@@ -10,7 +9,7 @@ export function mongoConnectionString(): string {
   const config = initConfig();
   const ConnectionURL = config.get('mongodb:connectionUrl');
   const MongoDBName = config.get('mongodb:dbName');
-  let connectUrl = `${ConnectionURL}/${MongoDBName}`;
+  const connectUrl = `${ConnectionURL}/${MongoDBName}`;
   return connectUrl;
 }
 
@@ -61,23 +60,22 @@ export async function withMongo(
   run: RunWithMongo,
   emptyDB: boolean
 ): Promise<void> {
-
   const config = initConfig();
   const MongoDBName = config.get('mongodb:dbName');
   const mongoose = await connectToMongoDB();
-  log.info('mongo connected...')
+  log.info('mongo connected...');
   if (emptyDB) {
-    if (! /.+test.*/.test(MongoDBName)) {
+    if (!/.+test.*/.test(MongoDBName)) {
       throw new Error(`Tried to reset mongodb ${MongoDBName}; can only reset a db w/name matching /test/`);
     }
-    log.info('mongo resetting...')
+    log.info('mongo resetting...');
     await resetMongoDB();
   }
   try {
-    log.info('mongo running client...')
+    log.info('mongo running client...');
     await run(mongoose);
   } finally {
-    log.info('mongo closing...')
+    log.info('mongo closing...');
     await mongoose.connection.close();
   }
 }

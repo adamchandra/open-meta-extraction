@@ -10,13 +10,12 @@ export async function withShadowDB(
 ) {
   return withMongo(async () => {
     const sdb = new ShadowDB();
-    await sdb.connect()
-    await run(sdb)
-    await sdb.close()
+    await sdb.connect();
+    await run(sdb);
+    await sdb.close();
   }, true);
 }
 describe('Shadow DB', () => {
-
   setLogEnvLevel('trace');
 
   it('should save note', async () => {

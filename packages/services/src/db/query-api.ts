@@ -1,9 +1,9 @@
 import _ from 'lodash';
-import { FetchCursor, FieldStatus, HostStatus, HostStatusUpdateFields, NoteStatus, WorkflowStatus, createCollections } from './schemas';
 import * as E from 'fp-ts/Either';
 import { Document, Mongoose } from 'mongoose';
 import { getServiceLogger, initConfig, prettyPrint, shaEncodeAsHex, validateUrl } from '@watr/commonlib';
 import { Logger } from 'winston';
+import { FetchCursor, FieldStatus, HostStatus, HostStatusUpdateFields, NoteStatus, WorkflowStatus, createCollections } from './schemas';
 import { connectToMongoDB } from './mongodb';
 
 export type HostStatusDocument = Document<unknown, any, HostStatus> & HostStatus;
@@ -12,7 +12,7 @@ type upsertNoteStatusArgs = {
   noteId: string,
   urlstr?: string,
   number?: number,
-}
+};
 
 
 export class MongoQueries {
@@ -39,7 +39,7 @@ export class MongoQueries {
 
   conn() {
     if (!this.mongoose) {
-      throw new Error('No MongoDB Connection')
+      throw new Error('No MongoDB Connection');
     }
     return this.mongoose.connection;
   }
@@ -74,7 +74,7 @@ export class MongoQueries {
 
   async findNoteStatusById(noteId: string): Promise<NoteStatus | undefined> {
     const ret = await NoteStatus.findOne({ _id: noteId });
-    return ret !== null ? ret : undefined;
+    return ret === null ? undefined : ret;
   }
 
   async upsertHostStatus(
@@ -82,7 +82,6 @@ export class MongoQueries {
     workflowStatus: WorkflowStatus,
     fields: HostStatusUpdateFields
   ): Promise<HostStatusDocument> {
-
     const setQ: Record<string, any> = {};
     const unsetQ: Record<string, any> = {};
 
@@ -117,7 +116,7 @@ export class MongoQueries {
 
   async findHostStatusById(noteId: string): Promise<HostStatusDocument | undefined> {
     const ret = await HostStatus.findOne({ _id: noteId });
-    return ret !== null ? ret : undefined;
+    return ret === null ? undefined : ret;
   }
 
   async getNextSpiderableUrl(): Promise<HostStatusDocument | undefined> {
@@ -131,7 +130,7 @@ export class MongoQueries {
       { workflowStatus: 'spider:locked' },
       { new: true }
     );
-    return next !== null ? next : undefined;
+    return next === null ? undefined : next;
   }
 
   async releaseSpiderableUrl(hostStatus: HostStatusDocument, newStatus: WorkflowStatus): Promise<HostStatusDocument> {
@@ -191,15 +190,13 @@ export class MongoQueries {
   ): Promise<FieldStatus> {
     const contentHash = shaEncodeAsHex(fieldValue);
     return FieldStatus.findOneAndUpdate(
-      { _id: noteId, fieldType },
-      { _id: noteId, fieldType, state, contentHash },
+      { noteId, fieldType },
+      { noteId, fieldType, state, contentHash },
       { new: true, upsert: true }
     );
   }
-
-
 }
 
 export type CursorName = 'front-cursor' | 'rear-cursor';
 export type FieldName = 'abstract' | 'pdf-link' | '*';
-export type CursorRole = 'fetch-openreview-notes' | `extract-${FieldName}`
+export type CursorRole = 'fetch-openreview-notes' | `extract-${FieldName}`;

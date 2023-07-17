@@ -1,7 +1,8 @@
 import _ from 'lodash';
 
-import { getServiceLogger } from '@watr/commonlib';
+import { getServiceLogger, putStrLn } from '@watr/commonlib';
 
+import { Logger } from 'winston';
 import { FetchCursor, NoteStatus, WorkflowStatus } from '~/db/schemas';
 
 import {
@@ -11,7 +12,6 @@ import {
 } from '~/db/query-api';
 
 import { Note, OpenReviewGateway, UpdatableField } from './openreview-gateway';
-import { Logger } from 'winston';
 
 
 export class ShadowDB {
@@ -72,8 +72,6 @@ export class ShadowDB {
     //   // httpStatus,
     //   // response: responseUrl
     // });
-
-
   }
 
   async getNextAvailableUrl(): Promise<HostStatusDocument | undefined> {
@@ -85,7 +83,7 @@ export class ShadowDB {
       await this.mdb.resetUrlsWithMissingFields();
       return;
     }
-    return;
+    return nextSpiderable;
   }
 
   async releaseSpiderableUrl(hostStatus: HostStatusDocument, newStatus: WorkflowStatus): Promise<HostStatusDocument> {
@@ -98,8 +96,10 @@ export class ShadowDB {
 
   async saveNote(note: Note, upsert: boolean): Promise<void> {
     const urlstr = note.content.html;
+    putStrLn(`saveNote(${note.id}, upsert: ${upsert})`);
     const existingNote = await this.mdb.findNoteStatusById(note.id);
     const noteExists = existingNote !== undefined;
+    putStrLn(`saveNote(${note.id}); existing? ${noteExists}`);
     if (noteExists && !upsert) {
       this.log.info('SaveNote: note already exists, skipping');
       return;
@@ -107,9 +107,10 @@ export class ShadowDB {
 
     this.log.info(`SaveNote: ${noteExists ? 'overwriting existing' : 'inserting new'} note`);
 
+    putStrLn(`saveNote(${note.id}); upserting...`);
     const noteStatus = await this.mdb.upsertNoteStatus({ noteId: note.id, number: note.number, urlstr });
     if (!noteStatus.validUrl) {
-      this.log.info(`SaveNote: NoteStatus: invalid url '${urlstr}'`);
+      this.log.debug('SaveNote: no valid url.');
       return;
     }
     const requestUrl = noteStatus.url;
@@ -118,6 +119,7 @@ export class ShadowDB {
       return;
     }
 
+    putStrLn(`saveNote(${note.id}); field updates...`);
     const abs = note.content.abstract;
     const pdfLink = note.content.pdf;
     const hasAbstract = typeof abs === 'string';
@@ -126,15 +128,15 @@ export class ShadowDB {
     await this.mdb.upsertHostStatus(note.id, status, { hasAbstract, hasPdfLink, requestUrl });
 
     if (hasAbstract) {
-      this.mdb.upsertFieldStatus(note.id, 'abstract', abs, 'preexisting');
+      await this.mdb.upsertFieldStatus(note.id, 'abstract', abs, 'preexisting');
     }
     if (hasPdfLink) {
-      this.mdb.upsertFieldStatus(note.id, 'pdf', pdfLink, 'preexisting');
+      await this.mdb.upsertFieldStatus(note.id, 'pdf', pdfLink, 'preexisting');
     }
   }
 
-  async updateCursor(role: CursorRole, noteId: string) {
-    this.mdb.updateCursor(role, noteId);
+  async updateCursor(role: CursorRole, noteId: string): Promise<FetchCursor> {
+    return this.mdb.updateCursor(role, noteId);
   }
 
   async getCursor(role: CursorRole): Promise<FetchCursor | undefined> {

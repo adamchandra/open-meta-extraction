@@ -63,13 +63,16 @@ module.exports = {
                 '@typescript-eslint/no-redeclare': ['off'],
                 '@typescript-eslint/comma-dangle': ['off'],
 
+                '@typescript-eslint/no-floating-promises': ['off'],
+                '@typescript-eslint/no-misused-promises': ['off'],
+                'promise/always-return': ['error'],
+                'promise/catch-or-return': ['error'],
+                'promise/no-callback-in-promise': ['error'],
                 /////////////////
                 //// Temporarily disabled Rules (enable and fix as appropriate)
                 '@typescript-eslint/naming-convention': ['off'],
                 '@typescript-eslint/no-explicit-any': ['off'],
-                '@typescript-eslint/no-floating-promises': ['off'],
                 '@typescript-eslint/no-inferrable-types': ['off'],
-                '@typescript-eslint/no-misused-promises': ['off'],
                 '@typescript-eslint/no-shadow': ['off'],
                 '@typescript-eslint/no-unsafe-argument': ['off'],
                 '@typescript-eslint/no-unsafe-assignment': ['off'],
@@ -110,9 +113,6 @@ module.exports = {
                 'no-plusplus': ['off'],
                 'no-restricted-globals': ['off'],
                 'no-underscore-dangle': ['off'],
-                'promise/always-return': ['off'],
-                'promise/catch-or-return': ['off'],
-                'promise/no-callback-in-promise': ['off'],
                 'semi-style': ['off'],
                 'unicorn/consistent-destructuring': ['off'],
                 'unicorn/consistent-function-scoping': ['off'],

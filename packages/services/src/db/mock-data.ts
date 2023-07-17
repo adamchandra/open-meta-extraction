@@ -1,7 +1,7 @@
 import _ from 'lodash';
 import { asyncEachOfSeries, prettyPrint, putStrLn } from '@watr/commonlib';
-import { MongoQueries } from './query-api';
 import * as fc from 'fast-check';
+import { MongoQueries } from './query-api';
 import { WorkflowStatuses } from './schemas';
 import { Note, Notes } from '~/components/openreview-gateway';
 
@@ -22,18 +22,17 @@ export async function populateDBHostNoteStatus(mdb: MongoQueries, n: number) {
         const httpStatus = (((index % 4) + 2) * 100) + (index % 3);
         await mdb.upsertHostStatus(
           `note#${index}`,
-          workflowStatus, {
-          hasAbstract: index % 9 === 0,
-          requestUrl: urlstr,
-          response: urlstr,
-          httpStatus
-        });
-
+          workflowStatus,
+          {
+            hasAbstract: index % 9 === 0,
+            requestUrl: urlstr,
+            response: urlstr,
+            httpStatus
+          });
       }
     }
   );
 }
-
 const a200s = Array(20).fill(200);
 const a404s = Array(4).fill(200);
 const aCodes = _.concat(a200s, a404s, [301, 302, 500]);
@@ -46,7 +45,7 @@ type CreateFakeNote = {
   hasAbstract: boolean;
   hasHTMLLink: boolean;
   hasPDFLink: boolean;
-}
+};
 
 export function createFakeNote({
   noteNumber,
@@ -60,8 +59,8 @@ export function createFakeNote({
   const date = new Date(inputStr);
   const dateAsNum = date.getTime();
   const abs = hasAbstract ? 'Some Abstract Text' : undefined;
-  const pdf = hasPDFLink ? `http://localhost:9100/pdf/${number}` : undefined
-  const html = hasHTMLLink ? `http://localhost:9100/html/${number}` : undefined
+  const pdf = hasPDFLink ? `http://localhost:9100/pdf/${number}` : undefined;
+  const html = hasHTMLLink ? `http://localhost:9100/html/${number}` : undefined;
 
   return {
     id: `note#${number}`,
@@ -71,7 +70,7 @@ export function createFakeNote({
     tcdate: dateAsNum,
     tmdate: dateAsNum,
     content: {
-      'abstract': abs,
+      abstract: abs,
       pdf, // URL of PDF
       html, // URL for paper landing page
       venueid: '',
@@ -82,7 +81,7 @@ export function createFakeNote({
       venue: '',
       _bibtex: '',
     }
-  }
+  };
 }
 
 export function createFakeNoteList(count: number, startingNumber: number = 1): Note[] {
@@ -103,6 +102,6 @@ export function asNoteBatch(count: number, notes: Note[]): Notes {
 }
 
 export function createFakeNotes(count: number, startingNumber: number = 1): Notes {
-  const notes = createFakeNoteList(count, startingNumber)
+  const notes = createFakeNoteList(count, startingNumber);
   return asNoteBatch(count, notes);
 }

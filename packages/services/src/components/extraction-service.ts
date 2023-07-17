@@ -11,12 +11,12 @@ import {
   delay,
 } from '@watr/commonlib';
 
-import { OpenReviewGateway } from './openreview-gateway'
 import { CanonicalFieldRecords, getEnvCanonicalFields, SpiderAndExtractionTransform } from '@watr/field-extractors';
 
 import { createBrowserPool, createSpiderEnv } from '@watr/spider';
 
 import { Logger } from 'winston';
+import { OpenReviewGateway } from './openreview-gateway';
 import { ShadowDB } from './shadow-db';
 
 export class ExtractionService {
@@ -27,7 +27,7 @@ export class ExtractionService {
   constructor() {
     this.log = getServiceLogger('ExtractionService');
     this.gate = new OpenReviewGateway();
-    this.shadow = new ShadowDB()
+    this.shadow = new ShadowDB();
   }
 
   async runRelayExtract({ count, postResultsToOpenReview }: RunRelayExtract) {
@@ -50,7 +50,6 @@ export class ExtractionService {
 
     return asyncDoUntil(
       async () => {
-
         const nextSpiderable = await this.shadow.getNextAvailableUrl();
 
         if (nextSpiderable === undefined) {
@@ -69,7 +68,7 @@ export class ExtractionService {
         const fieldExtractionResults = await SpiderAndExtractionTransform(TE.right([init, spiderEnv]))();
 
         if (E.isLeft(fieldExtractionResults)) {
-          return await this.shadow.releaseSpiderableUrl(nextSpiderable, 'extractor:fail');
+          return this.shadow.releaseSpiderableUrl(nextSpiderable, 'extractor:fail');
         }
 
         const [, extractionEnv] = fieldExtractionResults.right;
@@ -104,7 +103,6 @@ export class ExtractionService {
         //   httpStatus,
         //   response: responseUrl
         // });
-
       },
       stopCondition
     ).finally(() => {

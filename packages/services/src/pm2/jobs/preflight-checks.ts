@@ -1,6 +1,6 @@
-import { runJob } from '../pm2-helpers';
 import { getServiceLogger, initConfig } from '@watr/commonlib';
 import { parentPort } from 'worker_threads';
+import { runJob } from '../pm2-helpers';
 
 runJob(__filename, async (logger, workerData: any) => {
   const log = getServiceLogger('PreflightChecks');
@@ -9,7 +9,7 @@ runJob(__filename, async (logger, workerData: any) => {
 
   try {
     initConfig();
-  } catch(error) {
+  } catch {
     errorStatus = 'error';
   }
 

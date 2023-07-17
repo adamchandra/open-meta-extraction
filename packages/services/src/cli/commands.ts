@@ -33,15 +33,16 @@ export function registerCLICommands(yargv: arglib.YArgsT) {
     yargv,
     'run-fetch-service',
     'Fetch new OpenReview URLs into local DB for spidering/extraction',
-    opt.num('offset', 0),
-    opt.num('count', Number.MAX_SAFE_INTEGER),
+    opt.num('limit: Only fetch the specified # of notes before exiting', 0),
   )(async (args: any) => {
-    const offset: number = args.offset;
-    const count: number = args.count;
+    const { limit } = args;
     initConfig();
-    const mongoose = await connectToMongoDB();
+    const conn = await connectToMongoDB();
     const fetchService = new FetchService();
+    await fetchService.runFetchLoop(limit);
+    await fetchService.close();
 
+    await conn.connection.close();
     // await fetchService.runRelayFetch(offset, count)
     //   .finally(() => {
     //     return mongoose.connection.close();
@@ -56,7 +57,7 @@ export function registerCLICommands(yargv: arglib.YArgsT) {
       opt.flag('send-notification'),
     )
   )(async (args: any) => {
-    const sendNotification: boolean = args.sendNotification;
+    const { sendNotification } = args;
     await runMonitor({ sendNotification });
   });
 
@@ -67,7 +68,7 @@ export function registerCLICommands(yargv: arglib.YArgsT) {
     opt.num('count', 0),
     opt.flag('post-results'),
   )(async (args: any) => {
-    const count: number = args.count;
+    const { count } = args;
     const postResultsToOpenReview: boolean = args.postResults;
 
     initConfig();
@@ -76,9 +77,10 @@ export function registerCLICommands(yargv: arglib.YArgsT) {
     const mongoose = await connectToMongoDB();
 
     await extractionService.runRelayExtract({ count, postResultsToOpenReview })
-      .finally(() => {
+      .finally(async () => {
         console.log('run-extraction-service: closing...');
-        return mongoose.connection.close();
+        await mongoose.connection.close();
+        return;
       });
 
     console.log('done! run-extraction-service');
@@ -90,7 +92,7 @@ export function registerCLICommands(yargv: arglib.YArgsT) {
     'Create/Delete/Update Mongo Database',
     opt.flag('clean'),
   )(async (args: any) => {
-    const clean: boolean = args.clean;
+    const { clean } = args;
     initConfig();
     const conn = mongoConnectionString();
     putStrLn('Mongo Tools');

@@ -42,7 +42,7 @@ export function createBreeJob(
   if (nameModifier) {
     // Job names  must be  unique within Bree,  so append a  modifier if  we are
     // going to run multiple jobs of the same type
-    jobDisplayName += `:${nameModifier}`
+    jobDisplayName += `:${nameModifier}`;
   }
   const job: Bree.JobOptions = {
     name: jobName,

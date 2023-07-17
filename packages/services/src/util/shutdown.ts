@@ -1,21 +1,20 @@
-
 export async function sigtraps(cb: () => Promise<void>): Promise<void> {
   return new Promise((resolve) => {
-    process.once('SIGINT', function() {
+    process.once('SIGINT', () => {
       console.log('got SIGINT');
-      cb().then(resolve);
+      return cb().then(resolve);
     });
-    process.once('SIGTERM', function() {
+    process.once('SIGTERM', () => {
       console.log('got SIGTERM');
-      cb().then(resolve);
+      return cb().then(resolve);
     });
-    process.once('SIGHUP', function() {
+    process.once('SIGHUP', () => {
       console.log('got SIGHUP');
-      cb().then(resolve);
+      return cb().then(resolve);
     });
-    process.once('SIGUSR2', function() {
+    process.once('SIGUSR2', () => {
       console.log('got SIGUSR2');
-      cb().then(resolve);
+      return cb().then(resolve);
     });
   });
 }

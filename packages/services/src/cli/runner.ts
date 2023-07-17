@@ -27,11 +27,11 @@ export async function runCli() {
         Error was: ${err}
         `;
       }
-      putStrLn(errorMessage)
+      putStrLn(errorMessage);
       arglib.YArgs.showHelp();
       process.exit(1);
     })
     .argv;
 
-  return Promise.resolve(runResult);
+  return runResult;
 }

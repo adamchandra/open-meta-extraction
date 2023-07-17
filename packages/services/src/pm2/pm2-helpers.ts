@@ -6,7 +6,7 @@ import path from 'path';
 
 function pm2List(): Promise<pm2.ProcessDescription[]> {
   return new Promise<pm2.ProcessDescription[]>((resolve, reject) => {
-    pm2.list(function (error: Error, ls: pm2.ProcessDescription[]) {
+    pm2.list((error: Error, ls: pm2.ProcessDescription[]) => {
       if (error) {
         reject(error);
         return;
@@ -18,7 +18,7 @@ function pm2List(): Promise<pm2.ProcessDescription[]> {
 
 async function pm2Start(...args: Parameters<typeof pm2.start>): Promise<void> {
   return new Promise<void>((resolve, reject) => {
-    pm2.start(args[0], args[1], function (error: Error) {
+    pm2.start(args[0], args[1], (error: Error) => {
       if (error) {
         reject(error);
         return;
@@ -29,7 +29,7 @@ async function pm2Start(...args: Parameters<typeof pm2.start>): Promise<void> {
 }
 async function pm2Restart(proc: string | number): Promise<void> {
   return new Promise<void>((resolve, reject) => {
-    pm2.restart(proc, function (error: Error) {
+    pm2.restart(proc, (error: Error) => {
       if (error) {
         reject(error);
         return;
@@ -41,7 +41,7 @@ async function pm2Restart(proc: string | number): Promise<void> {
 
 async function pm2Stop(proc: string | number): Promise<void> {
   return new Promise<void>((resolve, reject) => {
-    pm2.stop(proc, function (error: Error) {
+    pm2.stop(proc, (error: Error) => {
       if (error) {
         reject(error);
         return;
@@ -53,7 +53,7 @@ async function pm2Stop(proc: string | number): Promise<void> {
 
 async function pm2Delete(proc: string | number): Promise<void> {
   return new Promise<void>((resolve, reject) => {
-    pm2.delete(proc, function (error: Error) {
+    pm2.delete(proc, (error: Error) => {
       if (error) {
         reject(error);
         return;
@@ -74,7 +74,6 @@ export const pm2x = {
   // connect: promisify(pm2.connect),
   // disconnect: promisify(pm2.disconnect),
 };
-
 
 
 function exitJob() {
@@ -114,7 +113,7 @@ export async function runJob(
   jobFunc: (logger: JobLogger, workerData: any) => void | Promise<void>
 ): Promise<void> {
   const baseName = path.basename(jobFilename);
-  const baseNoExt = baseName.substring(0, baseName.length - 3);
+  const baseNoExt = baseName.slice(0, Math.max(0, baseName.length - 3));
   const log: JobLogger = getJobLogger(baseNoExt);
 
   const workerData = getWorkerData();

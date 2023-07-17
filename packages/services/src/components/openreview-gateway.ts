@@ -64,7 +64,7 @@ export class OpenReviewGateway {
   opex: OpenReviewExchange;
 
   constructor() {
-    this.log = getServiceLogger('OpenReviewGateway')
+    this.log = getServiceLogger('OpenReviewGateway');
     this.opex = new OpenReviewExchange();
   }
 
@@ -88,14 +88,14 @@ export class OpenReviewGateway {
   // and so on until you get all Notes.
   // Please let me know if something is not clear. Thanks! (edited)
 
-  async doFetchNotes(offset: number): Promise<Notes | undefined> {
-    return this.opex.apiGET<Notes>('/notes', { invitation: 'dblp.org/-/record', sort: 'number:desc', offset });
-  }
+  // async doFetchNotes(offset: number): Promise<Notes | undefined> {
+  //   return this.opex.apiGET<Notes>('/notes', { invitation: 'dblp.org/-/record', sort: 'number:desc', offset });
+  // }
 
   async fetchNotes(afterNoteId?: string): Promise<Notes | undefined> {
     const queryParams: Record<string, string> = { invitation: 'dblp.org/-/record', sort: 'number:asc' };
     if (afterNoteId) {
-      queryParams['after'] = afterNoteId;
+      queryParams.after = afterNoteId;
     }
     return this.opex.apiGET<Notes>('/notes', queryParams);
   }
@@ -126,7 +126,8 @@ export class OpenReviewGateway {
         }
         this.log.info(`updated Note.${fieldName} ${noteId}; updateId: ${updatedNote.id}`);
         this.log.info(`      = '${fieldValue.slice(0, 75)} ...'`);
-      })
+        return;
+      });
   }
 
   /**
@@ -156,20 +157,19 @@ export class OpenReviewGateway {
           const tmdateHr = fmtTime(tmdate);
           return {
             id, number, mdateHr, tmdateHr, cdateHr, tcdateHr
-          }
+          };
         });
         const first10 = abbrevNotes.slice(0, 10);
         noteList.push(first10);
-        startingNote = first10[0]['id'];
+        startingNote = first10[0].id;
         // putStrLn(`Note Count = ${notes.count}`)
         // putStrLn(`Notes returned = ${notes.notes.length}`)
         // prettyPrint({ first10 });
       }
     });
-    const zipped = _.zip(noteList)
+    const zipped = _.zip(noteList);
     prettyPrint({ zipped });
   }
-
 }
 
 /**
@@ -186,14 +186,14 @@ function makeMessagePost(subject: string, message: string): MessagePostData {
 }
 
 export function fmtTime(unixTimestamp: number): string {
-  var a = new Date(unixTimestamp);
-  var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  var year = a.getFullYear();
-  var month = months[a.getMonth()];
-  var date = a.getDate();
-  var hour = a.getHours();
-  var min = a.getMinutes();
-  var sec = a.getSeconds();
-  var time = date + ' ' + month + ' ' + year + ' ' + hour + ':' + min + ':' + sec;
+  const a = new Date(unixTimestamp);
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const year = a.getFullYear();
+  const month = months[a.getMonth()];
+  const date = a.getDate();
+  const hour = a.getHours();
+  const min = a.getMinutes();
+  const sec = a.getSeconds();
+  const time = `${date} ${month} ${year} ${hour}:${min}:${sec}`;
   return time;
 }

@@ -1,7 +1,6 @@
-
-import { randomBytes } from "crypto";
-import { generateFromBatch } from "./generators";
-import { prettyPrint, putStrLn } from "@watr/commonlib";
+import { randomBytes } from 'crypto';
+import { prettyPrint, putStrLn } from '@watr/commonlib';
+import { generateFromBatch } from './generators';
 
 
 // This function generates an array of 10 random 3-letter strings
@@ -11,11 +10,11 @@ export async function* rndStringBatchGen(
   batchSize: number,
   finalBatchSize: number
 ): AsyncGenerator<string[], void, void> {
-  let randomStrings: string[] = [];
+  const randomStrings: string[] = [];
   for (let batchNum = 0; batchNum < batchCount; batchNum++) {
     const bs = batchNum < batchCount - 1 ? batchSize : finalBatchSize;
     for (let i = 0; i < bs; i++) {
-      let randomString = randomBytes(3).toString("hex").substring(0, 3);
+      const randomString = randomBytes(3).toString('hex').slice(0, 3);
       randomStrings.push(randomString);
     }
     yield randomStrings;
@@ -43,7 +42,6 @@ export async function* increasingNumStrings(
 }
 
 describe('Generator Utils', () => {
-  // TODO finish test
   it('generate strings', async () => {
     const generator = generateFromBatch(increasingNumStrings(3, 3, 1), 8);
     let s = await generator.next();
@@ -51,5 +49,26 @@ describe('Generator Utils', () => {
       prettyPrint({ msg: 'iter', s });
     }
     prettyPrint({ msg: 'done', s });
+  });
+  it('end if limit is specified', async () => {
+    const limit = 10;
+    const generator = generateFromBatch(increasingNumStrings(10, 3, 1), limit);
+
+    let next = await generator.next();
+    for(; !next.done; next = await generator.next()) {
+      expect(typeof next.value).toBe('string');
+    }
+    expect(next.value).toEqual(limit);
+  });
+
+  it.only('end if limit is specified and batch size is bigger than limit', async () => {
+    const limit = 10;
+    const generator = generateFromBatch(increasingNumStrings(1, 30, 30), limit);
+
+    let next = await generator.next();
+    for(; !next.done; next = await generator.next()) {
+      expect(typeof next.value).toBe('string');
+    }
+    expect(next.value).toEqual(limit);
   });
 });

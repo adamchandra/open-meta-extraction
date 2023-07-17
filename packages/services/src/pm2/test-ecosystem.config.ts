@@ -1,8 +1,8 @@
-import { createScheduledCliJob } from './eco-helpers';
 import _ from 'lodash';
 import { prettyPrint, putStrLn } from '@watr/commonlib';
+import { createScheduledCliJob } from './eco-helpers';
 
-const isDryRun =  process.env['DRY_RUN'];
+const isDryRun = process.env.DRY_RUN;
 
 const appNames: string[] = [
   'Howard',
@@ -11,7 +11,7 @@ const appNames: string[] = [
 ];
 
 const apps1 = appNames.map((name, i) => {
-  return createScheduledCliJob({ app: 'echo', args: `--message='Hello from ${name}, dry=${isDryRun}'`, schedule: 'every 3 seconds', appNameSuffix: `${i}`});
+  return createScheduledCliJob({ app: 'echo', args: `--message='Hello from ${name}, dry=${isDryRun}'`, schedule: 'every 3 seconds', appNameSuffix: `${i}` });
 });
 
 // const apps2 = [

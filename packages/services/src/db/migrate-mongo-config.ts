@@ -1,9 +1,9 @@
-import { initConfig } from "@watr/commonlib";
+import { initConfig } from '@watr/commonlib';
+import path from 'path';
 
 const appconfig = initConfig();
 const ConnectionURL = appconfig.get('mongodb:connectionUrl');
 const MongoDBName = appconfig.get('mongodb:dbName');
-import path from 'path';
 
 const thisDir = path.dirname(__filename);
 const migrationsDir = path.join(thisDir, 'migrations');
@@ -27,10 +27,10 @@ const config = {
   migrationsDir,
 
   // The mongodb collection where the applied changes are stored. Only edit this when really necessary.
-  changelogCollectionName: "changelog",
+  changelogCollectionName: 'changelog',
 
   // The file extension to create migrations and search for in migration dir
-  migrationFileExtension: ".js",
+  migrationFileExtension: '.js',
 
   // Enable the algorithm to create a checksum of the file contents and use that in the comparison to determine
   // if the file should be run.  Requires that scripts are coded to be run multiple times.

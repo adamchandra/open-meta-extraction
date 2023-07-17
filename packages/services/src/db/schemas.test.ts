@@ -1,8 +1,8 @@
 import _ from 'lodash';
-import { isUrl, putStrLn, setLogEnvLevel } from '@watr/commonlib';
+import { isUrl, setLogEnvLevel } from '@watr/commonlib';
+import * as fc from 'fast-check';
 import { MongoQueries } from './query-api';
 
-import * as fc from 'fast-check';
 import { genHttpStatus } from './mock-data';
 
 describe('MongoDB Schemas', () => {
@@ -21,30 +21,38 @@ describe('MongoDB Schemas', () => {
   });
 
   it('should create/find note status', async () => {
+    let i = 1;
     await fc.assert(
       fc.asyncProperty(
         fc.string(),
         fc.oneof(fc.string(), fc.webUrl()),
         fc.oneof(fc.string(), fc.webUrl()),
-        async (noteId, urlstr1, urlstr2) => {
+        async (noteId, urlstr, urlmod) => {
+          noteId = `${noteId}${i}`;
+          const number = i;
+          i++;
           // Insert new document
-          await mdb.upsertNoteStatus({ noteId, urlstr: urlstr1 });
-          const byId = await mdb.findNoteStatusById(noteId);
+          let byId = await mdb.findNoteStatusById(noteId);
+          expect(byId).toBeUndefined();
+          byId = await mdb.upsertNoteStatus({ noteId, urlstr, number  });
+
           expect(byId).toBeDefined();
           if (byId === undefined) {
             fail('invalid null value');
           }
 
-          expect(byId.validUrl).toEqual(isUrl(urlstr1));
+          expect(byId.validUrl).toEqual(isUrl(byId.url));
 
           // Modify existing document
-          await mdb.upsertNoteStatus({ noteId, urlstr: urlstr2 });
+          await mdb.upsertNoteStatus({ noteId, urlstr: urlmod  });
           const modById = await mdb.findNoteStatusById(noteId);
           expect(modById).toBeDefined();
           if (modById === undefined) {
             fail('invalid null value');
           }
-          expect(modById.validUrl).toEqual(isUrl(urlstr2));
+          if (modById.validUrl) {
+            expect(modById.url).toEqual(new URL(urlmod).href);
+          }
         }
       ),
       { verbose: true }
@@ -80,5 +88,4 @@ describe('MongoDB Schemas', () => {
       { verbose: true }
     );
   });
-
 });

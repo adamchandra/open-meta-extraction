@@ -7,6 +7,7 @@ import {
   asyncForever
 } from '@watr/commonlib';
 
+import { Logger } from 'winston';
 import { WorkflowStatus } from '~/db/schemas';
 
 import {
@@ -14,7 +15,6 @@ import {
   Note
 } from './openreview-gateway';
 
-import { Logger } from 'winston';
 
 const oneMinute = 60 * 1000;
 const FetcherDelayTime = 5 * oneMinute;

@@ -1,7 +1,7 @@
 import { getServiceLogger, isUrl } from '@watr/commonlib';
 import { Schema, model } from 'mongoose';
-import { createCurrentTimeOpt } from './mongodb';
 import _ from 'lodash';
+import { createCurrentTimeOpt } from './mongodb';
 
 const log = getServiceLogger('MongoSchema');
 
@@ -22,7 +22,6 @@ export const NoteStatusSchema = new Schema<NoteStatus>({
 }, {
   collection: 'note_status',
   timestamps: createCurrentTimeOpt()
-  // _id: false
 });
 
 NoteStatusSchema.on('index', error => {
@@ -74,10 +73,10 @@ export interface HostStatus {
 }
 
 export type HostStatusUpdateFields = Partial<
-  Pick<
-    HostStatus,
-    'hasAbstract' | 'response' | 'requestUrl' | 'httpStatus' | 'hasPdfLink'
-  >>;
+Pick<
+HostStatus,
+'hasAbstract' | 'response' | 'requestUrl' | 'httpStatus' | 'hasPdfLink'
+>>;
 
 function NonNullable(v: unknown): boolean {
   return v !== null;
@@ -121,7 +120,6 @@ export const FetchCursorSchema = new Schema<FetchCursor>({
 }, {
   collection: 'fetch_cursor',
   timestamps: createCurrentTimeOpt(),
-  _id: false
 });
 
 export const FetchCursor = model<FetchCursor>('FetchCursor', FetchCursorSchema);
@@ -132,10 +130,10 @@ type FieldState =
   | 'found:rejected'
   | 'attempted' // set before extractor begins, and changed when extractor completes
   | 'notfound'
-;
+  ;
 
 export interface FieldStatus {
-  _id: string; // == NoteID
+  noteId: string;
   fieldType: string;
   contentHash: string;
   state: FieldState;
@@ -143,22 +141,20 @@ export interface FieldStatus {
   updatedAt: Date;
 }
 
-// export type FieldStatusUpdateFields = Partial<
-//   Pick<
-//     FieldStatus,
-//     'hasAbstract' |  'response' | 'requestUrl' | 'httpStatus' | 'hasPdfLink'
-//   >>;
-
 
 export const FieldStatusSchema = new Schema<FieldStatus>({
-  _id: { type: String },
-  fieldType: { type: String, required: true, index: true },
+  noteId: { type: String, required: true },
+  fieldType: { type: String, required: true },
   state: { type: String, required: true, index: true },
   contentHash: { type: String, required: false },
 }, {
   collection: 'field_status',
   timestamps: createCurrentTimeOpt()
 });
+
+// unique on (noteId, fieldType),
+// e.g., ('note#23', 'abstract')
+FieldStatusSchema.index({ noteId: 1, fieldType: 1 });
 
 FieldStatusSchema.on('index', error => {
   log.error('FieldStatus: indexing', error.message);

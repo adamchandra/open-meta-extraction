@@ -26,5 +26,4 @@ runJob(__filename, async (logger, workerData: any) => {
     return;
   }
   await gateway.postStatusMessage(subject, message);
-
 });

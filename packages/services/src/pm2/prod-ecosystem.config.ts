@@ -1,11 +1,9 @@
-import { createScheduledCliJob } from './eco-helpers';
 import _ from 'lodash';
+import { createScheduledCliJob } from './eco-helpers';
 
 // TODO env.dryrun to start everything but not make state changes...
-const isDryRun =  process.env['DRY_RUN'];
-if (isDryRun) {
-
-}
+const isDryRun = process.env.DRY_RUN;
+if (isDryRun) {}
 const apps = [
 
   // TODO constant job, but need to monitor and cleanup after running

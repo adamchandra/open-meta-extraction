@@ -1,7 +1,7 @@
-import { HostStatus, NoteStatus } from './schemas';
 import _ from 'lodash';
 
 import { subDays } from 'date-fns';
+import { HostStatus, NoteStatus } from './schemas';
 
 interface BoolIDCounts {
   _id: boolean;
@@ -140,7 +140,6 @@ function formatHttpStatusByDomain(byDomain: StrIDCounts[]): string[] {
 }
 
 
-
 export async function showStatusSummary(): Promise<string[][]> {
   const daysAgo7 = subDays(new Date(), 7);
   const selectOneWeek = {
@@ -271,7 +270,7 @@ export async function showStatusSummary(): Promise<string[][]> {
     return _id ? [`Notes With Abstracts: ${count}`] : [];
   });
   const totalWithPdfLinkMessage: string[] = _.flatMap(hostStatusSummary.totalWithPdfLinks, ({ _id, count }) => {
-    return _id ? [`Notes With PDF Links: ${count}`] : [`Notes Without PDF Links: ${count}`] ;
+    return _id ? [`Notes With PDF Links: ${count}`] : [`Notes Without PDF Links: ${count}`];
   });
 
   const totalWithUrlsMessage = _.flatMap(noteStatusSummary.totalWithUrls, ({ _id, count }) => {

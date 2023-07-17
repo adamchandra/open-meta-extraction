@@ -4,22 +4,22 @@ import {
 } from '@watr/commonlib';
 
 import * as E from 'fp-ts/Either';
-const { opt, config, registerCmd } = arglib;
 
 import _ from 'lodash';
 
+import { Mongoose } from 'mongoose';
 import { pm2x } from './pm2-helpers';
 import { createBreeCLIJob, createBreeScheduler, createBreeJob } from './bree-helpers';
 
 import { sigtraps } from '~/util/shutdown';
-import { Mongoose } from 'mongoose';
 import { connectToMongoDB } from '~/db/mongodb';
 import { createCollections } from '~/db/schemas';
 
 import { parseSchedule } from '~/util/scheduler';
 
-export function registerCommands(yargv: arglib.YArgsT) {
+const { opt, config, registerCmd } = arglib;
 
+export function registerCommands(yargv: arglib.YArgsT) {
   // TODO delete dead code
   //   registerCmd(
   //     yargv, 'pm2-restart', 'Notification/Restart scheduler'
@@ -72,11 +72,11 @@ export function registerCommands(yargv: arglib.YArgsT) {
     yargv, 'echo', 'Echo message to stdout', config(
       opt.str('message: the message to echo'),
     ))(async (args: any) => {
-      const { message } = args;
-      const log = getServiceLogger('Echo');
-      putStrLn(`echo> ${message}`);
-      log.info(`log/echo> ${message}`);
-    });
+    const { message } = args;
+    const log = getServiceLogger('Echo');
+    putStrLn(`echo> ${message}`);
+    log.info(`log/echo> ${message}`);
+  });
 
   registerCmd(
     yargv,
@@ -86,20 +86,20 @@ export function registerCommands(yargv: arglib.YArgsT) {
   )(async () => {
     const log = getServiceLogger('PreflightCheck');
 
-    let mongoose: Mongoose | undefined = undefined;
+    let mongoose: Mongoose | undefined;
 
     async function closeMongoose() {
       if (mongoose !== undefined) {
-        log.info('Closing Mongoose..')
+        log.info('Closing Mongoose..');
         await mongoose.connection.close()
           .catch((error) => {
             log.error(`Error stopping mongoos ${error}`);
-          })
+          });
       }
     }
 
     async function stopAllPM2() {
-      log.info('PM2 stop all..')
+      log.info('PM2 stop all..');
       await pm2x.stop('all')
         .catch(error => {
           log.error(`Error stopping ${error}`);
@@ -126,9 +126,9 @@ export function registerCommands(yargv: arglib.YArgsT) {
     log.info('Starting Preflight Check');
     const pm2Apps = await pm2x.list();
     const existingPM2AppNames = pm2Apps.map((app) => {
-      const name = app.name || '<unnamed>'
+      const name = app.name || '<unnamed>';
       return { name };
-    })
+    });
     prettyPrint({ existingPM2AppNames });
 
     try {
@@ -152,14 +152,14 @@ export function registerCommands(yargv: arglib.YArgsT) {
       log.info(`Error with MongoDB: ${error}`);
       await closeMongoose();
       await stopAllPM2();
-      die('Error connecting to MongoDB')
+      die('Error connecting to MongoDB');
     }
 
     log.info('Ensured MongoDB is running');
 
     await closeMongoose();
 
-    log.info('Everything looks good, deleting self..')
+    log.info('Everything looks good, deleting self..');
     pm2x.delete('PreflightCheck');
   });
 
@@ -180,12 +180,12 @@ export function registerCommands(yargv: arglib.YArgsT) {
     if (E.isLeft(maybeSchedule)) {
       log.info('Scheduling specification has errors:');
       maybeSchedule.left.forEach(msg => {
-        putStrLn(msg)
-      })
+        putStrLn(msg);
+      });
       return;
     }
 
-    const argv = process.argv;
+    const { argv } = process;
     const argvCli = argv.slice(5);
     log.info(`Scheduling ${argvCli.join(' ')}`);
     const [cmd, ...remaining] = argvCli;
