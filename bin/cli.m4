@@ -19,6 +19,7 @@ readonly climain="./packages/services/dist/src/cli"
 arg env
 
 export NODE_ENV="$env"
+
 doit node "$climain" "${_arg_leftovers[@]}"
 
 # ] <-- needed because of Argbash

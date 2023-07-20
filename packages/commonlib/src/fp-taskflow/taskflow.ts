@@ -1,7 +1,7 @@
-/**
+/*
  * Definitions for control flow abstractions for creating pipelines for
  * spidering, field extractors
- **/
+ */
 
 import _ from 'lodash';
 
@@ -87,31 +87,6 @@ export interface TaskFlow<Env extends BaseEnv> {
   }
 }
 
-export function createTaskFlow<Env extends BaseEnv>(): TaskFlow<Env> {
-  const fp: TaskFlow<Env> = {
-    valueEnvPair,
-    initArg,
-    controlEnvPair,
-    useNamespace,
-    withCarriedWA,
-    forEachDo,
-    collectFanout,
-    eachOrElse,
-    takeWhileSuccess,
-    through,
-    throughLeft,
-    tapLeft,
-    tapEitherEnv,
-    tap,
-    mapEnv,
-    filter,
-    log,
-    Transform,
-    ExtractionTask,
-    ClientFunc,
-  };
-  return fp;
-}
 
 function isELeft<A>(a: any): a is E.Left<A> {
   const isObj = typeof a === 'object';
@@ -244,53 +219,58 @@ const Transform = {
   lift: <A, B, Env extends BaseEnv>(
     fab: ClientFunc<A, B, Env>,
     postHook?: (a: A, eb: Perhaps<B>, env: Env) => void,
-  ): Transform<A, B, Env> => (er: ExtractionTask<A, Env>) => pipe(er, TE.fold(
-    ([controlInstruction, env]) => {
-      return ExtractionTask.liftFail(controlInstruction, env);
-    },
-    ([prev, env]) => {
-      return () => Promise.resolve(fab(prev, env))
-        .then(async (result) => {
+  ): Transform<A, B, Env> => (er: ExtractionTask<A, Env>) => {
 
-          if (isELeft(result)) {
-            const ci = result.left;
-            //
-            if (postHook) {
-              postHook(prev, result, env);
-            }
-            return EventualResult.liftFail<B, Env>(ci, env);
-          }
-          if (isERight(result)) {
-            const b = result.right;
-            ///
-            if (postHook) {
-              postHook(prev, result, env);
-            }
-            return EventualResult.lift<B, Env>(b, env);
-          }
-          if (_.isFunction(result)) {
-            return result()
-              .then(res => {
+    return pipe(
+      er,
+      TE.fold(
+        ([controlInstruction, env]) => {
+          return ExtractionTask.liftFail(controlInstruction, env);
+        },
+        ([prev, env]) => {
+          return () => Promise.resolve(fab(prev, env))
+            .then(async (result) => {
+
+              if (isELeft(result)) {
+                const ci = result.left;
+                //
                 if (postHook) {
-                  postHook(prev, res, env);
+                  postHook(prev, result, env);
                 }
-                if (E.isLeft(res)) {
-                  return EventualResult.liftFail<B, Env>(res.left, env);
+                return EventualResult.liftFail<B, Env>(ci, env);
+              }
+              if (isERight(result)) {
+                const b = result.right;
+                ///
+                if (postHook) {
+                  postHook(prev, result, env);
                 }
-                return EventualResult.lift<B, Env>(res.right, env);
-              });
-          }
+                return EventualResult.lift<B, Env>(b, env);
+              }
+              if (_.isFunction(result)) {
+                return result()
+                  .then(res => {
+                    if (postHook) {
+                      postHook(prev, res, env);
+                    }
+                    if (E.isLeft(res)) {
+                      return EventualResult.liftFail<B, Env>(res.left, env);
+                    }
+                    return EventualResult.lift<B, Env>(res.right, env);
+                  });
+              }
 
-          if (postHook) {
-            postHook(prev, E.right(result), env);
-          }
-          return EventualResult.lift(result, env);
-        })
-        .catch((error) => {
-          return EventualResult.liftFail<B, Env>(['halt', error.toString()], env);
-        });
-    }
-  )),
+              if (postHook) {
+                postHook(prev, E.right(result), env);
+              }
+              return EventualResult.lift(result, env);
+            })
+            .catch((error) => {
+              return EventualResult.liftFail<B, Env>(['halt', error.toString()], env);
+            });
+        }
+      ));
+  }
 };
 
 
@@ -326,6 +306,7 @@ const popNS:
   <A, Env extends BaseEnv>() => (ra: ExtractionTask<A, Env>) => {
     return pipe(
       ra,
+
       TE.map(([a, env]) => {
         env.ns.pop();
         env.exitNS(env.ns);
@@ -423,6 +404,30 @@ const forEachDo:
     );
   };
 
+const scatterAndSettle: <A, B, Env extends BaseEnv> (
+  ...funcs: Transform<A, B, Env>[]
+) => Transform<A, PerhapsWithEnv<B, Env>[], Env> =
+  <A, B, Env extends BaseEnv>(...funcs: Transform<A, B, Env>[]) =>
+    (ra: ExtractionTask<A, Env>) =>
+      pipe(
+        ra,
+        TE.chain(([a, env]: WithEnv<A, Env>) => {
+          const bbs = _.map(funcs, (func) => {
+            const env0 = _.clone(env);
+            return func(TE.right(valueEnvPair(a, env0)));
+          });
+          const sequenced = () => Async
+            .mapSeries<ExtractionTask<B, Env>, PerhapsWithEnv<B, Env>>(
+              bbs,
+              Async.asyncify(async (er: ExtractionTask<A, Env>) => er())
+            );
+          const pBsTask = pipe(
+            sequenced,
+            Task.map((perhapsBs) => valueEnvPair(perhapsBs, env))
+          );
+          return TE.fromTask(pBsTask);
+        })
+      );
 
 // Given a single input A, produce an array of Bs by running the given array of functions on the initial A
 const collectFanout:
@@ -452,37 +457,6 @@ const collectFanout:
   };
 
 
-const scatterAndSettle: <A, B, Env extends BaseEnv> (
-  ...funcs: Transform<A, B, Env>[]
-) => Transform<A, PerhapsWithEnv<B, Env>[], Env> =
-  <A, B, Env extends BaseEnv>(...funcs: Transform<A, B, Env>[]) =>
-    (ra: ExtractionTask<A, Env>) =>
-      pipe(
-        ra,
-        TE.chain(([a, env]: WithEnv<A, Env>) => {
-          const bbs = _.map(funcs, (func) => {
-            const env0 = _.clone(env);
-            return func(TE.right(valueEnvPair(a, env0)));
-          });
-          const sequenced = () => Async
-            .mapSeries<ExtractionTask<B, Env>, PerhapsWithEnv<B, Env>>(
-              bbs,
-              Async.asyncify(async (er: ExtractionTask<A, Env>) => er())
-            );
-          const pBsTask = pipe(
-            sequenced,
-            Task.map((perhapsBs) => valueEnvPair(perhapsBs, env))
-          );
-          return TE.fromTask(pBsTask);
-        })
-      );
-
-// Compose funcs
-const takeWhileSuccess: <A, Env extends BaseEnv> (...funcs: Transform<A, A, Env>[]) => Transform<A, A, Env> =
-  (...funcs) => useNamespace(
-    `takeWhileSuccess:${funcs.length}`,
-    __takeWhileSuccess(funcs, funcs.length)
-  );
 
 const __takeWhileSuccess:
   <A, Env extends BaseEnv>(funcs: Transform<A, A, Env>[], arrowCount: number) => Transform<A, A, Env> =
@@ -506,8 +480,12 @@ const __takeWhileSuccess:
     );
   };
 
-const eachOrElse: <A, B, Env extends BaseEnv> (...funcs: Transform<A, B, Env>[]) => Transform<A, B, Env> =
-  (...funcs) => __eachOrElse(funcs, funcs.length);
+// Compose funcs
+const takeWhileSuccess: <A, Env extends BaseEnv> (...funcs: Transform<A, A, Env>[]) => Transform<A, A, Env> =
+  (...funcs) => useNamespace(
+    `takeWhileSuccess:${funcs.length}`,
+    __takeWhileSuccess(funcs, funcs.length)
+  );
 
 const __eachOrElse: <A, B, Env extends BaseEnv>(funcs: Transform<A, B, Env>[], arrowCount: number) => Transform<A, B, Env> =
   (funcs, arrowCount) => (ra) => {
@@ -539,6 +517,10 @@ const __eachOrElse: <A, B, Env extends BaseEnv>(funcs: Transform<A, B, Env>[], a
       }),
     );
   };
+
+const eachOrElse: <A, B, Env extends BaseEnv> (...funcs: Transform<A, B, Env>[]) => Transform<A, B, Env> =
+  (...funcs) => __eachOrElse(funcs, funcs.length);
+
 
 const hook: <A, B, Env extends BaseEnv>(f: (a: A, b: Perhaps<B>, env: Env) => void) =>
   LogHook<A, B, Env> = (f) => f;
@@ -624,15 +606,15 @@ function mapEnv<A, Env extends BaseEnv, Env2 extends BaseEnv>(
     TE.bind('a', ({ inW }) => { const [a,] = inW; return TE.right(a); }),
     TE.bind('env1', ({ inW }) => { const [, env1] = inW; return TE.right(env1); }),
     TE.bind('env2', ({ a, env1 }) => {
-      const env2 = Promise.resolve<Env2>(fr(env1, a)).then(e => E.right<CIWithEnv<Env>, Env2>(e))
+      const env2 = Promise.resolve<Env2>(fr(env1, a)).then(e => E.right<CIWithEnv<Env>, Env2>(e));
       return () => env2;
     }),
     TE.mapLeft(([ci, env1]) => {
-      const envx = fl(env1)
+      const envx = fl(env1);
       return controlEnvPair(ci, envx);
     }),
     TE.map(({ a, env2 }) => {
-      return valueEnvPair(a, env2)
+      return valueEnvPair(a, env2);
     })
   );
 
@@ -711,3 +693,29 @@ const log = <A, Env extends BaseEnv>(
   level: LogLevel,
   f: (a: A, env: Env) => string
 ) => tap((a: A, env: Env) => env.log.log(level, `${f(a, env)}`));
+
+export function createTaskFlow<Env extends BaseEnv>(): TaskFlow<Env> {
+  const fp: TaskFlow<Env> = {
+    valueEnvPair,
+    initArg,
+    controlEnvPair,
+    useNamespace,
+    withCarriedWA,
+    forEachDo,
+    collectFanout,
+    eachOrElse,
+    takeWhileSuccess,
+    through,
+    throughLeft,
+    tapLeft,
+    tapEitherEnv,
+    tap,
+    mapEnv,
+    filter,
+    log,
+    Transform,
+    ExtractionTask,
+    ClientFunc,
+  };
+  return fp;
+}

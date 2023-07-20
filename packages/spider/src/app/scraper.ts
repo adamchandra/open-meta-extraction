@@ -29,7 +29,10 @@ export async function gotoUrlWithRewrites(
   logger: Logger,
 ): Promise<E.Either<string, HTTPResponse>> {
   const urlRewrites = pageInstance.opts.rewriteableUrls;
+
+  logger.debug(`gotoUrlWithRewrites(): initialGoto`)
   const response = await pageInstance.gotoUrl(url);
+  logger.debug(`gotoUrlWithRewrites(): got response`)
   if (E.isLeft(response)) {
     const error = response.left;
     logger.debug(`Attempting Rewrite for ${error}`);

@@ -14,6 +14,12 @@ import { generateFromBatch } from '~/util/generators';
 import { ShadowDB } from './shadow-db';
 
 
+export async function createFetchService(): Promise<FetchService> {
+  const s = new FetchService();
+  await s.connect();
+  return s;
+}
+
 export class FetchService {
   log: Logger;
   gate: OpenReviewGateway;
@@ -23,6 +29,10 @@ export class FetchService {
     this.log = getServiceLogger('FetchService');
     this.gate = new OpenReviewGateway();
     this.shadow = new ShadowDB();
+  }
+
+  async connect() {
+    await this.shadow.connect();
   }
 
   async close() {
@@ -51,11 +61,11 @@ export class FetchService {
   }
 
   async updateFetchCursor(noteId: string) {
-    return this.shadow.updateCursor('fetch-openreview-notes', noteId);
+    return this.shadow.updateLastFetchedNote(noteId);
   }
 
   async getFetchCursor() {
-    return this.shadow.getCursor('fetch-openreview-notes');
+    return this.shadow.getLastFetchedNote();
   }
 
   async runFetchLoop(limit?: number) {

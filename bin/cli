@@ -150,9 +150,11 @@ readonly script_dir="$_script_dir"
 source "$script_dir/_utils.sh"
 
 readonly climain="./packages/services/dist/src/cli"
+
 arg env
 
 export NODE_ENV="$env"
+
 doit node "$climain" "${_arg_leftovers[@]}"
 
 # ] <-- needed because of Argbash

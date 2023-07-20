@@ -1,6 +1,6 @@
 import _ from 'lodash';
 
-import { getServiceLogger, putStrLn } from '@watr/commonlib';
+import { getServiceLogger, putStrLn, shaEncodeAsHex } from '@watr/commonlib';
 
 import { Logger } from 'winston';
 import { FetchCursor, NoteStatus, WorkflowStatus } from '~/db/schemas';
@@ -8,17 +8,21 @@ import { FetchCursor, NoteStatus, WorkflowStatus } from '~/db/schemas';
 import {
   MongoQueries,
   HostStatusDocument,
-  CursorRole,
 } from '~/db/query-api';
 
 import { Note, OpenReviewGateway, UpdatableField } from './openreview-gateway';
 
 
+export async function createShadowDB(): Promise<ShadowDB> {
+  const s = new ShadowDB();
+  await s.connect();
+  return s;
+}
+
 export class ShadowDB {
   log: Logger;
   gate: OpenReviewGateway;
   mdb: MongoQueries;
-
 
   constructor() {
     this.log = getServiceLogger('ShadowDB');
@@ -33,61 +37,50 @@ export class ShadowDB {
   async close() {
     await this.mdb.close();
   }
-  // async updateNoteFields(
-  //   noteId: string,
-  //   fields: Record<UpdatableField, string|undefined>
-  // ): Promise<void> {
-  //   asyncEachSeries(_.keys(fields), (key) => {
-  //     const value = fields[key];
-  //     if (value !== undefined) {
-  //       await this.gate.doUpdateNoteField(noteId, key, value);
 
-  //     }
-  //   });
-  //   await this.gate.doUpdateNoteField(noteId, fieldName, fieldValue);
-  //   // TODO: change schema to something like:
-  //   //    `${fieldname}_status`: found | not_found
-  //   // await upsertHostStatus(noteId, 'extractor:success', {
-  //   //   `has${fieldName}`,
-  //   //   // hasAbstract,
-  //   //   // hasPdfLink,
-  //   //   // httpStatus,
-  //   //   // response: responseUrl
-  //   // });
-  // }
-
-
-  async doUpdateNoteField(
+  async updateFieldStatus(
     noteId: string,
     fieldName: UpdatableField,
-    fieldValue: string
+    fieldValue: string,
   ): Promise<void> {
-    await this.gate.doUpdateNoteField(noteId, fieldName, fieldValue);
-    // TODO: change schema to something like:
-    //    `${fieldname}_status`: found | not_found
-    // await upsertHostStatus(noteId, 'extractor:success', {
-    //   `has${fieldName}`,
-    //   // hasAbstract,
-    //   // hasPdfLink,
-    //   // httpStatus,
-    //   // response: responseUrl
-    // });
-  }
+    const priorStatus = await this.mdb.getFieldStatus(noteId, fieldName);
+    const newFieldValueHash = shaEncodeAsHex(fieldValue);
+    const fieldIsUnchanged = priorStatus && priorStatus.contentHash === newFieldValueHash;
 
-  async getNextAvailableUrl(): Promise<HostStatusDocument | undefined> {
-    const nextSpiderable = await this.mdb.getNextSpiderableUrl();
-
-    // TODO change this retry logic to only reset on code updates
-    if (nextSpiderable === undefined) {
-      this.log.info('runRelayExtract(): no more spiderable urls in mongo');
-      await this.mdb.resetUrlsWithMissingFields();
+    if (fieldIsUnchanged) {
+      this.log.info(`Updating note ${noteId}: ${fieldName} is unchanged`)
       return;
     }
-    return nextSpiderable;
+
+    await this.mdb.upsertFieldStatus(
+      noteId,
+      fieldName,
+      fieldValue
+    );
+    await this.gate.updateFieldStatus(noteId, fieldName, fieldValue);
   }
 
-  async releaseSpiderableUrl(hostStatus: HostStatusDocument, newStatus: WorkflowStatus): Promise<HostStatusDocument> {
-    return this.mdb.releaseSpiderableUrl(hostStatus, newStatus);
+  async getNextAvailableUrl(): Promise<FetchCursor | undefined> {
+    // TODO this could indefinitely lock a cursor
+    // perhaps use uniq ids for workers to disambiguate
+    let cursor = await this.mdb.getCursor('extract-fields');
+    if (!cursor) {
+      const note1 = await this.mdb.getNextNoteWithValidURL(-1);
+      if (!note1) return;
+      cursor = await this.mdb.createCursor('extract-fields', note1._id);
+    }
+    if (!cursor) return;
+    return this.mdb.advanceCursor(cursor._id);
+    // return this.mdb.lockCursor(cursor._id);
+  }
+
+  async getHostStatusForCursor(cursor: FetchCursor): Promise<HostStatusDocument | undefined> {
+    return this.mdb.findHostStatusById(cursor.noteId);
+  }
+
+  async releaseSpiderableUrl(cursor: FetchCursor): Promise<void> {
+    // await this.mdb.unlockCursor(cursor._id);
+    // await this.mdb.advanceCursor(cursor._id);
   }
 
   async findNote(noteId: string): Promise<NoteStatus | undefined> {
@@ -128,18 +121,19 @@ export class ShadowDB {
     await this.mdb.upsertHostStatus(note.id, status, { hasAbstract, hasPdfLink, requestUrl });
 
     if (hasAbstract) {
-      await this.mdb.upsertFieldStatus(note.id, 'abstract', abs, 'preexisting');
+      await this.mdb.upsertFieldStatus(note.id, 'abstract', abs);
     }
     if (hasPdfLink) {
-      await this.mdb.upsertFieldStatus(note.id, 'pdf', pdfLink, 'preexisting');
+      await this.mdb.upsertFieldStatus(note.id, 'pdf', pdfLink);
     }
   }
 
-  async updateCursor(role: CursorRole, noteId: string): Promise<FetchCursor> {
-    return this.mdb.updateCursor(role, noteId);
+  async updateLastFetchedNote(noteId: string): Promise<void> {
+    await this.mdb.updateCursor('fetch-openreview-notes', noteId);
   }
 
-  async getCursor(role: CursorRole): Promise<FetchCursor | undefined> {
-    return this.mdb.getCursor(role);
+  async getLastFetchedNote(): Promise<FetchCursor | undefined> {
+    return this.mdb.getCursor('fetch-openreview-notes');
   }
+
 }

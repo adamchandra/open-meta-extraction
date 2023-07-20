@@ -68,30 +68,6 @@ export class OpenReviewGateway {
     this.opex = new OpenReviewExchange();
   }
 
-  // TODO delete this block
-  // We just deployed  a change we discussed  with you a while back.  We now allow
-  // querying notes using the after parameter instead of the offset parameter. The
-  // after  parameter  is much  more  efficient  than  the offset  parameter  when
-  // querying  dblp notes.  Would  you  mind making  the  change  in the  abstract
-  // extractor? The change should hopefully  be straightforward. The after keyword
-  // takes the  id of the last  note that was returned  by the backend and  a sort
-  // parameter is required. In your case I think it's number:desc, so that remains
-  // unchanged. For example, suppose you query the first page as follows:
-  //
-  // GET /notes?invitation=dblp.org/-/record&sort=number:desc
-  //
-  // Then the result contains the note ids: [ qwerew, 12eaxssr, ..., lastid123 ]
-  //
-  // In order to get the next page you would need to do the following call
-  //
-  // GET /notes?invitation=dblp.org/-/record&sort=number:desc&after=lastid123
-  // and so on until you get all Notes.
-  // Please let me know if something is not clear. Thanks! (edited)
-
-  // async doFetchNotes(offset: number): Promise<Notes | undefined> {
-  //   return this.opex.apiGET<Notes>('/notes', { invitation: 'dblp.org/-/record', sort: 'number:desc', offset });
-  // }
-
   async fetchNotes(afterNoteId?: string): Promise<Notes | undefined> {
     const queryParams: Record<string, string> = { invitation: 'dblp.org/-/record', sort: 'number:asc' };
     if (afterNoteId) {
@@ -100,7 +76,7 @@ export class OpenReviewGateway {
     return this.opex.apiGET<Notes>('/notes', queryParams);
   }
 
-  async doUpdateNoteField(
+  async updateFieldStatus(
     noteId: string,
     fieldName: UpdatableField,
     fieldValue: string
@@ -162,9 +138,6 @@ export class OpenReviewGateway {
         const first10 = abbrevNotes.slice(0, 10);
         noteList.push(first10);
         startingNote = first10[0].id;
-        // putStrLn(`Note Count = ${notes.count}`)
-        // putStrLn(`Notes returned = ${notes.notes.length}`)
-        // prettyPrint({ first10 });
       }
     });
     const zipped = _.zip(noteList);

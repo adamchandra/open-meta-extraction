@@ -1,5 +1,5 @@
 import _ from 'lodash';
-import { asyncEachOfSeries, prettyPrint, putStrLn } from '@watr/commonlib';
+import { asyncEachOfSeries } from '@watr/commonlib';
 import * as fc from 'fast-check';
 import { MongoQueries } from './query-api';
 import { WorkflowStatuses } from './schemas';
@@ -13,7 +13,7 @@ export async function populateDBHostNoteStatus(mdb: MongoQueries, n: number) {
       const urlstr = validUrl ? `http://host-${index % 5}/page/${index}` : 'no-url';
       await mdb.upsertNoteStatus({
         noteId: `note#${index}`,
-        urlstr
+        number: index, urlstr
       });
 
       const wi = index % WorkflowStatuses.length;
@@ -85,7 +85,7 @@ export function createFakeNote({
 }
 
 export function createFakeNoteList(count: number, startingNumber: number = 1): Note[] {
-  const ids = _.range(startingNumber, startingNumber+count);
+  const ids = _.range(startingNumber, startingNumber + count);
   return _.map(ids, (i) => createFakeNote({
     noteNumber: i,
     hasAbstract: false,

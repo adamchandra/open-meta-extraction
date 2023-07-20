@@ -23,11 +23,11 @@
     "@watr/spider": "0.1.0",
     "url-parse": "^1.5.10",
     "async": "^3.2.4",
-    "fp-ts": "2.16.0",
+    "fp-ts": "2.13.1",
     "fs-extra": "^11.1.1",
     "lodash": "^4.17.21",
     "puppeteer": "^20.8.2",
-    "typescript": "^5.1.6",
+    "typescript": "^4.9.5",
     "winston": "^3.10.0",
     "xml2js": "~0.6.0"
   },

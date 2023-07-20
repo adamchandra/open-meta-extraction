@@ -104,8 +104,8 @@ export function getEnvCanonicalFields(env: ExtractionEnv): CanonicalFieldRecords
     if (fieldName === 'author') {
       return fieldInstances;
     }
-    const fi0 = fieldInstances[0];
-    return [fi0];
+    const fi0 = fieldInstances.at(0);
+    return fi0? [fi0] : [];
   });
 
   const canonicalRecords: CanonicalFieldRecords = {

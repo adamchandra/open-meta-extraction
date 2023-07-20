@@ -40,7 +40,7 @@ import {
 
 import { UrlFetchData, getFetchDataFromResponse } from '~/core/url-fetch-chains';
 import { Logger } from 'winston';
-import { cleanArtifactDir, getHashEncodedPath, taskflow } from '@watr/commonlib';
+import { cleanArtifactDir, getHashEncodedPath, putStrLn, taskflow } from '@watr/commonlib';
 
 // Initialize SpiderEnv
 export async function createSpiderEnv(
@@ -95,9 +95,11 @@ export const fetchUrl: (pageOpts?: PageInstanceOptions) => Transform<URL, HTTPRe
     const { browserInstance, log, browserPageCache, initialUrl } = env;
 
     const scrapingTask: TE.TaskEither<string, HTTPResponse> = async () => {
+      log.debug(`FetchUrl(): newPage`)
       const pageInstance = await browserInstance.newPage(pageOpts);
       browserPageCache[initialUrl] = pageInstance;
       blockedResourceReport(pageInstance, log);
+      log.debug(`FetchUrl(): blockedResources`)
       return await gotoUrlWithRewrites(pageInstance, url.toString(), log);
     };
 
@@ -144,4 +146,4 @@ export const cleanArtifacts: <A>() => Transform<A, A> =
   () => tap((_a, env) => {
     const entryPath = env.entryPath();
     cleanArtifactDir(entryPath);
-  }, 'Cleaning Artifacts');
+  }, 'Clean Artifacts');

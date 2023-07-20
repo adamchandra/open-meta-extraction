@@ -1,5 +1,5 @@
 import { getServiceLogger, isUrl } from '@watr/commonlib';
-import { Schema, model } from 'mongoose';
+import { Schema, model, Types } from 'mongoose';
 import _ from 'lodash';
 import { createCurrentTimeOpt } from './mongodb';
 
@@ -32,22 +32,28 @@ export const NoteStatus = model<NoteStatus>('NoteStatus', NoteStatusSchema);
 
 type WorkflowStatusKeys = {
   available: null,
-  'spider:locked': null,
+  'processing': null,
+  'spider:begun': null,
   'spider:success': null,
   'spider:fail': null,
-  'extractor:locked': null,
+  'extractor:begun': null,
   'extractor:success': null,
   'extractor:fail': null,
+  'fields:selected': null,
+  'fields:posted': null,
 };
 
 const workflowStatusKeys: WorkflowStatusKeys = {
   available: null,
-  'spider:locked': null,
+  'processing': null,
+  'spider:begun': null,
   'spider:success': null,
   'spider:fail': null,
-  'extractor:locked': null,
+  'extractor:begun': null,
   'extractor:success': null,
   'extractor:fail': null,
+  'fields:selected': null,
+  'fields:posted': null,
 };
 
 export type WorkflowStatus = keyof WorkflowStatusKeys;
@@ -72,10 +78,13 @@ export interface HostStatus {
   updatedAt: Date;
 }
 
-export type HostStatusUpdateFields = Partial<
-Pick<
-HostStatus,
-'hasAbstract' | 'response' | 'requestUrl' | 'httpStatus' | 'hasPdfLink'
+export type HostStatusUpdateFields = Partial<Pick<HostStatus,
+  'hasAbstract'
+  | 'hasPdfLink'
+  | 'response'
+  | 'requestUrl'
+  | 'httpStatus'
+  | 'workflowStatus'
 >>;
 
 function NonNullable(v: unknown): boolean {
@@ -106,17 +115,21 @@ export const HostStatus = model<HostStatus>('HostStatus', HostStatusSchema);
 
 
 export interface FetchCursor {
-  _id: string;
+  _id: Types.ObjectId;
   noteId: string;
+  noteNumber: number;
   role: string;
+  lockStatus: string;
   createdAt: Date;
   updatedAt: Date;
 
 }
 export const FetchCursorSchema = new Schema<FetchCursor>({
-  _id: { type: String },
+  // _id: { type: String },
   noteId: { type: String, required: true },
+  noteNumber: { type: Number, required: true },
   role: { type: String, required: true, unique: true },
+  lockStatus: { type: String },
 }, {
   collection: 'fetch_cursor',
   timestamps: createCurrentTimeOpt(),
@@ -125,18 +138,10 @@ export const FetchCursorSchema = new Schema<FetchCursor>({
 export const FetchCursor = model<FetchCursor>('FetchCursor', FetchCursorSchema);
 
 
-type FieldState =
-  'found:accepted'
-  | 'found:rejected'
-  | 'attempted' // set before extractor begins, and changed when extractor completes
-  | 'notfound'
-  ;
-
 export interface FieldStatus {
   noteId: string;
   fieldType: string;
   contentHash: string;
-  state: FieldState;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -145,7 +150,7 @@ export interface FieldStatus {
 export const FieldStatusSchema = new Schema<FieldStatus>({
   noteId: { type: String, required: true },
   fieldType: { type: String, required: true },
-  state: { type: String, required: true, index: true },
+  // state: { type: String, required: true, index: true },
   contentHash: { type: String, required: false },
 }, {
   collection: 'field_status',

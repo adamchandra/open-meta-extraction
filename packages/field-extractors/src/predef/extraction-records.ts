@@ -21,7 +21,6 @@ export interface CanonicalFieldRecords {
   noteId?: string;
   url?: string;
   finalUrl?: string;
-  title?: string;
   fields: FieldRecord[];
 }
 

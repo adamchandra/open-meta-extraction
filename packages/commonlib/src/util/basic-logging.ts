@@ -40,7 +40,6 @@ export class ParentPortTransport2 extends transports.Console {
       const logmessage = `${timestamp} worker:${threadId} ${level} ${message}`;
       parentPort.postMessage(logmessage);
     }
-
     // done();
   }
 }
@@ -98,7 +97,7 @@ export function getServiceLogger(label: string): Logger {
           format.printf(info => `${info.timestamp} ${info.level} ${info.message}`)
         ),
       }),
-      ppt
+      // ppt
     ],
   });
 

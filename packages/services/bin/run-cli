@@ -4,4 +4,4 @@ climain="./dist/src/cli"
 
 export NODE_ENV=dev
 
-node "$climain" "$@"
+node -r source-map-support/register "$climain" "$@"

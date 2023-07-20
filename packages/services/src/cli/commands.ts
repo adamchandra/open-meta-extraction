@@ -1,13 +1,15 @@
 import _ from 'lodash';
 
+
 import { arglib, initConfig, putStrLn } from '@watr/commonlib';
 import { formatStatusMessages, showStatusSummary } from '~/db/extraction-summary';
 import { connectToMongoDB, mongoConnectionString, resetMongoDB } from '~/db/mongodb';
-import { createCollections } from '~/db/schemas';
-import { FetchService } from '~/components/fetch-service';
-import { ExtractionService } from '~/components/extraction-service';
+import { createFetchService } from '~/components/fetch-service';
+import { createExtractionService } from '~/components/extraction-service';
 import { OpenReviewGateway } from '~/components/openreview-gateway';
 import { runMonitor } from '~/components/monitor-service';
+import { CursorRoles, createMongoQueries, isCursorRole } from '~/db/query-api';
+
 
 const { opt, config, registerCmd } = arglib;
 
@@ -19,7 +21,7 @@ export function registerCLICommands(yargv: arglib.YArgsT) {
     'Show A Summary of Spidering/Extraction Progress',
     config(
     )
-  )(async (args: any) => {
+  )(async () => {
     putStrLn('Extraction Summary');
     initConfig();
     const mongoose = await connectToMongoDB();
@@ -36,17 +38,34 @@ export function registerCLICommands(yargv: arglib.YArgsT) {
     opt.num('limit: Only fetch the specified # of notes before exiting', 0),
   )(async (args: any) => {
     const { limit } = args;
-    initConfig();
-    const conn = await connectToMongoDB();
-    const fetchService = new FetchService();
+    const fetchService = await createFetchService();
     await fetchService.runFetchLoop(limit);
     await fetchService.close();
+  });
 
-    await conn.connection.close();
-    // await fetchService.runRelayFetch(offset, count)
-    //   .finally(() => {
-    //     return mongoose.connection.close();
-    //   });
+  registerCmd(
+    yargv,
+    'update-cursor',
+    'Create/update/delete pointers to last fetched/extracted',
+    config(
+      opt.str('delete: delete the named cursor', undefined),
+    )
+  )(async (args: any) => {
+    const del = args.delete;
+
+    const mdb = await createMongoQueries();
+
+    if (isCursorRole(del)) {
+      const didDelete = await mdb.deleteCursor(del);
+      const msg = didDelete? 'deleted' : 'not deleted';
+      putStrLn(`Cursor was ${msg}`);
+    } else {
+      putStrLn(`Not a valid cursor role: ${del}`)
+      const r = CursorRoles.join(', ')
+      putStrLn(`Roles are: ${r}`)
+    }
+
+    await mdb.close();
   });
 
   registerCmd(
@@ -65,23 +84,15 @@ export function registerCLICommands(yargv: arglib.YArgsT) {
     yargv,
     'run-extraction-service',
     'Spider new URLs, extract metadata, and POST results back to OpenReview API',
-    opt.num('count', 0),
+    opt.num('limit: Only extract the specified # of notes before exiting', 0),
     opt.flag('post-results'),
   )(async (args: any) => {
-    const { count } = args;
     const postResultsToOpenReview: boolean = args.postResults;
+    const limit: number = args.limit;
 
-    initConfig();
+    const extractionService = await createExtractionService();
 
-    const extractionService = new ExtractionService();
-    const mongoose = await connectToMongoDB();
-
-    await extractionService.runRelayExtract({ count, postResultsToOpenReview })
-      .finally(async () => {
-        console.log('run-extraction-service: closing...');
-        await mongoose.connection.close();
-        return;
-      });
+    await extractionService.runExtractionLoop({ limit, postResultsToOpenReview });
 
     console.log('done! run-extraction-service');
   });
@@ -112,7 +123,7 @@ export function registerCLICommands(yargv: arglib.YArgsT) {
     yargv,
     'openreview-api',
     'Interact with OpenReview.net REST API',
-  )(async (args: any) => {
+  )(async () => {
     initConfig();
     const openreviewGateway = new OpenReviewGateway();
     await openreviewGateway.testNoteFetching();

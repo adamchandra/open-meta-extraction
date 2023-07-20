@@ -12,20 +12,24 @@
   - [ ] Run fetching w/ sort num:asc
 - [ ] Create logic to re-run fetch for all papers
   - [ ] Use named cursors, stored in mongodb
-- [ ] Create test plan
-  - [ ] Run against live site and verify
-  - [ ] Run against mocked api
-    - [ ] Koa-based api mimicking openreview
-  - [ ] Profile and report api fetch times
+- [X] Create test plan
+  - [X] Run against live site w/dev config
+  - [X] Run against mocked api
+    - [X] Koa-based api mimicking openreview
+      - [X] /login api mockup
+      - [X] /notes api mockup
+  - [X] Profile and report api fetch times
 - [ ] Delete downloaded htmls/artifacts when done
 - [ ] Delete /tmp files created by chrome
 - [ ] Reap dead chrome instances
 
 
+
 ** Next Actions
 - [ ] Create top-level fetch loops, parameterized for different cursors
-- [ ] Create FieldStatus collection, store abs/pdf attempts/status/value-hash individually
-- [ ] Create cursor collection, store rest params, name (uniq)
+
+- [X] Create FieldStatus collection, store abs/pdf attempts/status/value-hash individually
+- [X] Create cursor collection
 - [X] add 'number' field to note
 - [ ] Create mongo migration
 
@@ -37,3 +41,15 @@
     when they change
   - re-extracting from the beginning is a local-only operation,
     make a log record when updates should/do happen
+
+** Cursor design/implementation
+*** Cursor is (noteId, role)
+*** Fetch Cursor
+*** Extraction Cursor filters
+**** abstract/pdf-link/both
+**** just process certain domains
+- Use host_status responseUrl to avoid redirect issues
+*** Operations
+**** Worker locks/owns current cursor
+**** Worker unlocks cursor
+**** Worker advances cursor to next available note
