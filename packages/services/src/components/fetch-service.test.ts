@@ -3,7 +3,7 @@ import { setLogEnvLevel } from '@watr/commonlib';
 import { respondWith } from '@watr/spider';
 import { FetchService } from './fetch-service';
 
-import { FetchCursor, HostStatus, NoteStatus } from '~/db/schemas';
+import { FetchCursor, UrlStatus, NoteStatus } from '~/db/schemas';
 import { asNoteBatch, createFakeNoteList, createFakeNotes } from '~/db/mock-data';
 import { withServerAndCleanMongo } from './testing-utils';
 
@@ -48,7 +48,7 @@ describe('Fetch Service', () => {
 
       let cursors = await FetchCursor.find();
       expect(cursors.map(n => n.noteId)).toMatchObject(['note#4']);
-      let hosts = await HostStatus.find();
+      let hosts = await UrlStatus.find();
       expect(hosts.map(n => n._id)).toMatchObject(fourNoteIds);
 
 
@@ -59,7 +59,7 @@ describe('Fetch Service', () => {
 
       cursors = await FetchCursor.find();
       expect(cursors.map(n => n.noteId)).toMatchObject(['note#8']);
-      hosts = await HostStatus.find();
+      hosts = await UrlStatus.find();
       expect(hosts.map(n => n._id)).toMatchObject(eightNoteIds);
     });
   });

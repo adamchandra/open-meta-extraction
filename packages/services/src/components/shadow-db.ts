@@ -1,13 +1,13 @@
 import _ from 'lodash';
 
-import { getServiceLogger, putStrLn, shaEncodeAsHex } from '@watr/commonlib';
+import { getServiceLogger, shaEncodeAsHex } from '@watr/commonlib';
 
 import { Logger } from 'winston';
 import { FetchCursor, NoteStatus, WorkflowStatus } from '~/db/schemas';
 
 import {
   MongoQueries,
-  HostStatusDocument,
+  UrlStatusDocument,
 } from '~/db/query-api';
 
 import { Note, OpenReviewGateway, UpdatableField } from './openreview-gateway';
@@ -67,15 +67,13 @@ export class ShadowDB {
     if (!cursor) {
       const note1 = await this.mdb.getNextNoteWithValidURL(-1);
       if (!note1) return;
-      cursor = await this.mdb.createCursor('extract-fields', note1._id);
+      return this.mdb.createCursor('extract-fields', note1._id);
     }
-    if (!cursor) return;
     return this.mdb.advanceCursor(cursor._id);
-    // return this.mdb.lockCursor(cursor._id);
   }
 
-  async getHostStatusForCursor(cursor: FetchCursor): Promise<HostStatusDocument | undefined> {
-    return this.mdb.findHostStatusById(cursor.noteId);
+  async getUrlStatusForCursor(cursor: FetchCursor): Promise<UrlStatusDocument | undefined> {
+    return this.mdb.findUrlStatusById(cursor.noteId);
   }
 
   async releaseSpiderableUrl(cursor: FetchCursor): Promise<void> {
@@ -89,10 +87,8 @@ export class ShadowDB {
 
   async saveNote(note: Note, upsert: boolean): Promise<void> {
     const urlstr = note.content.html;
-    putStrLn(`saveNote(${note.id}, upsert: ${upsert})`);
     const existingNote = await this.mdb.findNoteStatusById(note.id);
     const noteExists = existingNote !== undefined;
-    putStrLn(`saveNote(${note.id}); existing? ${noteExists}`);
     if (noteExists && !upsert) {
       this.log.info('SaveNote: note already exists, skipping');
       return;
@@ -100,7 +96,6 @@ export class ShadowDB {
 
     this.log.info(`SaveNote: ${noteExists ? 'overwriting existing' : 'inserting new'} note`);
 
-    putStrLn(`saveNote(${note.id}); upserting...`);
     const noteStatus = await this.mdb.upsertNoteStatus({ noteId: note.id, number: note.number, urlstr });
     if (!noteStatus.validUrl) {
       this.log.debug('SaveNote: no valid url.');
@@ -112,13 +107,12 @@ export class ShadowDB {
       return;
     }
 
-    putStrLn(`saveNote(${note.id}); field updates...`);
     const abs = note.content.abstract;
     const pdfLink = note.content.pdf;
     const hasAbstract = typeof abs === 'string';
     const hasPdfLink = typeof pdfLink === 'string';
-    const status: WorkflowStatus = hasAbstract && hasPdfLink ? 'extractor:success' : 'available';
-    await this.mdb.upsertHostStatus(note.id, status, { hasAbstract, hasPdfLink, requestUrl });
+    const status: WorkflowStatus = hasAbstract && hasPdfLink ? 'extractor:success' : 'unknown';
+    await this.mdb.upsertUrlStatus(note.id, status, { hasAbstract, hasPdfLink, requestUrl });
 
     if (hasAbstract) {
       await this.mdb.upsertFieldStatus(note.id, 'abstract', abs);
@@ -128,8 +122,8 @@ export class ShadowDB {
     }
   }
 
-  async updateLastFetchedNote(noteId: string): Promise<void> {
-    await this.mdb.updateCursor('fetch-openreview-notes', noteId);
+  async updateLastFetchedNote(noteId: string): Promise<FetchCursor> {
+    return this.mdb.updateCursor('fetch-openreview-notes', noteId);
   }
 
   async getLastFetchedNote(): Promise<FetchCursor | undefined> {

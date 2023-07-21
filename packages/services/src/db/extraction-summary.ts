@@ -1,7 +1,7 @@
 import _ from 'lodash';
 
 import { subDays } from 'date-fns';
-import { HostStatus, NoteStatus } from './schemas';
+import { UrlStatus, NoteStatus } from './schemas';
 
 interface BoolIDCounts {
   _id: boolean;
@@ -242,7 +242,7 @@ export async function showStatusSummary(): Promise<string[][]> {
 
   const noteStatusSummary: NoteStatusSummary = noteStatusRes[0];
 
-  const res = await HostStatus.aggregate([{
+  const res = await UrlStatus.aggregate([{
     $facet: {
       noteCount: [count],
       updateByDay: [selectOneWeek, groupByUpdateDay, { $sort: { _id: 1 } }],
@@ -254,22 +254,22 @@ export async function showStatusSummary(): Promise<string[][]> {
     }
   }]);
 
-  const hostStatusSummary: ExtractionStatusSummary = res[0];
+  const urlStatusSummary: ExtractionStatusSummary = res[0];
 
   const noteCount = noteStatusSummary.noteCount.length === 0 ? 0 : noteStatusSummary.noteCount[0].total;
 
   const updateByDayMessage: string[] = [
     'Updated Notes Per Day, Last 7 days',
-    ..._.map(hostStatusSummary.updateByDay, ({ _id, count }) => {
+    ..._.map(urlStatusSummary.updateByDay, ({ _id, count }) => {
       return `    ${_id}: ${count}`;
     })
   ];
 
 
-  const totalWithAbstractsMessage: string[] = _.flatMap(hostStatusSummary.totalWithAbstracts, ({ _id, count }) => {
+  const totalWithAbstractsMessage: string[] = _.flatMap(urlStatusSummary.totalWithAbstracts, ({ _id, count }) => {
     return _id ? [`Notes With Abstracts: ${count}`] : [];
   });
-  const totalWithPdfLinkMessage: string[] = _.flatMap(hostStatusSummary.totalWithPdfLinks, ({ _id, count }) => {
+  const totalWithPdfLinkMessage: string[] = _.flatMap(urlStatusSummary.totalWithPdfLinks, ({ _id, count }) => {
     return _id ? [`Notes With PDF Links: ${count}`] : [`Notes Without PDF Links: ${count}`];
   });
 
@@ -279,13 +279,13 @@ export async function showStatusSummary(): Promise<string[][]> {
 
   const absByDomainMessages = formatAbstractStatusByDomain(
     'Extracted Abstracts By Domain, out of Notes with valid URLs',
-    hostStatusSummary.withAbstractsByDomain
+    urlStatusSummary.withAbstractsByDomain
   );
 
-  const httpStatusByDomainMessages = formatHttpStatusByDomain(hostStatusSummary.withHttpStatusByDomain);
+  const httpStatusByDomainMessages = formatHttpStatusByDomain(urlStatusSummary.withHttpStatusByDomain);
   const workflowStatus = [
     'Workflow Status Counts',
-    ...collateStrIDCounts(hostStatusSummary.workflowStatus)
+    ...collateStrIDCounts(urlStatusSummary.workflowStatus)
   ];
 
   return [

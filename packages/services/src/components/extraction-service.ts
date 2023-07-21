@@ -47,7 +47,7 @@ export class ExtractionService {
   }
 
   async updateWorkflowStatus(noteId: string, workflowStatus: WorkflowStatus): Promise<boolean> {
-    const update = await this.shadow.mdb.updateHostStatus(noteId, { workflowStatus });
+    const update = await this.shadow.mdb.updateUrlStatus(noteId, { workflowStatus });
     if (!update) {
       this.log.error(`Problem updating workflow status='${workflowStatus}' for note ${noteId}`)
     }
@@ -71,6 +71,7 @@ export class ExtractionService {
         return true;
       }
       await browserPool.clearCache();
+      browserPool.report();
       const atCountLimit = currCount >= limit;
       prettyPrint({ atCountLimit, runForever })
       putStrLn(`stop? atCountLimit(${atCountLimit} = curr:${currCount} >= lim:${limit}`)
@@ -94,16 +95,16 @@ export class ExtractionService {
           this.log.info('No more spiderable URLs available');
           return 'done';
         }
-        const nextHostStatus = await this.shadow.getHostStatusForCursor(nextNoteCursor);
-        if (!nextHostStatus) {
-          throw new Error(`Invalid state: nextNoteCursor(${nextNoteCursor.noteId}) had not corresponding hostStatus`)
+        const nextUrlStatus = await this.shadow.getUrlStatusForCursor(nextNoteCursor);
+        if (!nextUrlStatus) {
+          throw new Error(`Invalid state: nextNoteCursor(${nextNoteCursor.noteId}) had not corresponding urlStatus`)
         }
-        this.log.debug(`next Host = ${nextHostStatus.requestUrl}`);
+        this.log.debug(`next Host = ${nextUrlStatus.requestUrl}`);
 
         currCount += 1;
 
-        const noteId = nextHostStatus._id;
-        const url = nextHostStatus.requestUrl;
+        const noteId = nextUrlStatus._id;
+        const url = nextUrlStatus.requestUrl;
         self.log.info(`Starting URL: ${url}`);
         await this.updateWorkflowStatus(noteId, 'processing');
 
@@ -121,7 +122,19 @@ export class ExtractionService {
 
 
         if (E.isLeft(fieldExtractionResults)) {
+          const [errCode, { urlFetchData }]= fieldExtractionResults.left;
           self.log.debug(`Extraction Failed, exiting...`);
+
+          const { status } = urlFetchData;
+          let httpStatus = 0;
+          try { httpStatus = Number.parseInt(status); } catch {}
+
+          await this.shadow.mdb.updateUrlStatus(noteId, {
+            httpStatus,
+            // response: responseUrl
+          });
+          prettyPrint({ errCode, urlFetchData });
+
           await this.updateWorkflowStatus(noteId, 'extractor:fail');
           await this.shadow.releaseSpiderableUrl(nextNoteCursor);
           return 'continue';
@@ -157,7 +170,7 @@ export class ExtractionService {
         }
 
         await this.shadow.releaseSpiderableUrl(nextNoteCursor);
-        await this.shadow.mdb.updateHostStatus(noteId, {
+        await this.shadow.mdb.updateUrlStatus(noteId, {
           hasAbstract,
           hasPdfLink,
           httpStatus,

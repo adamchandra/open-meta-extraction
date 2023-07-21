@@ -1,15 +1,15 @@
 import _ from 'lodash';
 import * as E from 'fp-ts/Either';
 import { Document, Mongoose, Types } from 'mongoose';
-import { getServiceLogger, initConfig, shaEncodeAsHex, validateUrl } from '@watr/commonlib';
+import { asyncEachSeries, asyncMapSeries, getServiceLogger, initConfig, prettyPrint, shaEncodeAsHex, validateUrl } from '@watr/commonlib';
 import { Logger } from 'winston';
-import { FetchCursor, FieldStatus, HostStatus, HostStatusUpdateFields, NoteStatus, WorkflowStatus, createCollections } from './schemas';
+import { FetchCursor, FieldStatus, UrlStatus, UrlStatusUpdateFields, NoteStatus, WorkflowStatus, createCollections } from './schemas';
 import { connectToMongoDB } from './mongodb';
 import { UpdatableField } from '~/components/openreview-gateway';
 // import { TransactionOptions } from 'mongodb';
 
 export type CursorID = Types.ObjectId;
-export type HostStatusDocument = Document<unknown, any, HostStatus> & HostStatus;
+export type UrlStatusDocument = Document<unknown, any, UrlStatus> & UrlStatus;
 export type NoteStatusDocument = Document<unknown, any, NoteStatus> & NoteStatus;
 export type FetchCursorDocument = Document<unknown, any, FetchCursor> & FetchCursor;
 
@@ -90,14 +90,24 @@ export class MongoQueries {
   async getNextNoteWithValidURL(noteNumber: number): Promise<NoteStatus | undefined> {
     const s = await NoteStatus.findOne(
       { number: { $gt: noteNumber }, validUrl: true },
+      null,
+      { sort: { number: 1 } }
+    );
+    return s || undefined;
+  }
+  async getPrevNoteWithValidURL(noteNumber: number): Promise<NoteStatus | undefined> {
+    const s = await NoteStatus.findOne(
+      { number: { $lt: noteNumber }, validUrl: true },
+      null,
+      { sort: { number: -1 } }
     );
     return s || undefined;
   }
 
-  async updateHostStatus(
+  async updateUrlStatus(
     noteId: string,
-    _fields?: HostStatusUpdateFields,
-  ): Promise<HostStatusDocument|undefined> {
+    _fields?: UrlStatusUpdateFields,
+  ): Promise<UrlStatusDocument | undefined> {
     const fields = _fields || {};
     const setQ: Record<string, any> = {};
     const unsetQ: Record<string, any> = {};
@@ -124,7 +134,7 @@ export class MongoQueries {
       $unset: unsetQ,
     };
 
-    const updated = await HostStatus.findOneAndUpdate(
+    const updated = await UrlStatus.findOneAndUpdate(
       { _id: noteId },
       updateQ,
       { new: true, runValidators: true }
@@ -132,11 +142,11 @@ export class MongoQueries {
     return updated || undefined;
   }
 
-  async upsertHostStatus(
+  async upsertUrlStatus(
     noteId: string,
     workflowStatus: WorkflowStatus,
-    fields: HostStatusUpdateFields,
-  ): Promise<HostStatusDocument> {
+    fields: UrlStatusUpdateFields,
+  ): Promise<UrlStatusDocument> {
     const setQ: Record<string, any> = {};
     const unsetQ: Record<string, any> = {};
 
@@ -162,7 +172,7 @@ export class MongoQueries {
       $unset: unsetQ,
     };
 
-    const updated = await HostStatus.findOneAndUpdate(
+    const updated = await UrlStatus.findOneAndUpdate(
       { _id: noteId },
       updateQ,
       { new: true, upsert: true, runValidators: true }
@@ -170,8 +180,8 @@ export class MongoQueries {
     return updated || undefined;
   }
 
-  async findHostStatusById(noteId: string): Promise<HostStatusDocument | undefined> {
-    const ret = await HostStatus.findOne({ _id: noteId });
+  async findUrlStatusById(noteId: string): Promise<UrlStatusDocument | undefined> {
+    const ret = await UrlStatus.findOne({ _id: noteId });
     return ret === null ? undefined : ret;
   }
 
@@ -208,6 +218,57 @@ export class MongoQueries {
 
     const c = await FetchCursor.findById(cursorId);
     if (c) return c;
+  }
+
+  async moveCursor(cursorId: CursorID, distance: number): Promise<FetchCursor | string> {
+    if (distance === 0) {
+      return 'Cannot move cursor a distance of 0';
+    }
+    const direction = distance > 0 ? 'forward' : 'back';
+    const absDist = Math.abs(distance);
+    this.log.info(`Moving Cursor ${direction} by ${absDist}`);
+
+    const current = await FetchCursor.findById(cursorId);
+    if (!current) return `No cursor w/id ${cursorId}`;
+
+    const { noteNumber } = current;
+    let currNote = noteNumber;
+    let notes = await asyncMapSeries(_.range(absDist), async () => {
+      if (distance > 0) {
+        const n = await this.getNextNoteWithValidURL(currNote);
+        if (!n) return undefined;
+        currNote = n.number;
+        return n;
+      }
+      const n = await this.getPrevNoteWithValidURL(currNote);
+      if (!n) return undefined;
+      currNote = n.number;
+      return n;
+    });
+
+    notes = _.flatMap(notes, (n) => _.isUndefined(n) ? [] : [n]);
+
+    if (notes.length < absDist) {
+      return `Too few notes (${notes.length} found) to move ${direction} from note:${current.noteId}, #${current.noteNumber}`;
+    }
+
+    const lastNote = notes.at(-1);
+    if (!lastNote) {
+      throw Error('Error: notes are empty');
+    }
+
+    const nextCursor = await FetchCursor.findByIdAndUpdate(cursorId,
+      {
+        noteId: lastNote._id,
+        noteNumber: lastNote.number,
+        lockStatus: 'available'
+      }, { new: true });
+
+    if (!nextCursor) {
+      return 'No next cursor';
+    };
+
+    return nextCursor;
   }
 
   async getCursor(role: CursorRole): Promise<FetchCursor | undefined> {
@@ -270,7 +331,7 @@ export type ExtractedFieldName = UpdatableField; // 'abstract' | 'pdf-link';
 export type ExtractedFieldStatus = 'preexisting' | 'not-found' | 'found' | 'failed' | 'locked';
 
 export type CursorRole = 'fetch-openreview-notes' | 'extract-fields';
-export const CursorRoles: CursorRole[] = [ 'fetch-openreview-notes', 'extract-fields'];
+export const CursorRoles: CursorRole[] = ['fetch-openreview-notes', 'extract-fields'];
 
 export function isCursorRole(s: unknown): s is CursorRole {
   return typeof s === 'string' && _.includes(CursorRoles, s)
@@ -316,20 +377,20 @@ export function isCursorRole(s: unknown): s is CursorRole {
 
   // TODO delete code block
   // async resetUrlsWithMissingFields(): Promise<void> {
-  //   const resetUrlsWithoutAbstractsUpdate = await HostStatus.updateMany({
+  //   const resetUrlsWithoutAbstractsUpdate = await UrlStatus.updateMany({
   //     hasAbstract: false,
   //     httpStatus: { $not: { $in: [404, 500] } }
   //   }, {
   //     workflowStatus: 'available'
   //   });
 
-  //   const resetUrlsWithoutPdfLinkUpdate = await HostStatus.updateMany({
+  //   const resetUrlsWithoutPdfLinkUpdate = await UrlStatus.updateMany({
   //     hasPdfLink: false,
   //     httpStatus: { $not: { $in: [404, 500] } }
   //   }, {
   //     workflowStatus: 'available'
   //   });
-  //   const resetLockedUrlsUpdate = await HostStatus.updateMany({
+  //   const resetLockedUrlsUpdate = await UrlStatus.updateMany({
   //     workflowStatus: { $in: ['spider-locked', 'extractor-locked'] }
   //   }, {
   //     workflowStatus: 'available'
@@ -341,7 +402,7 @@ export function isCursorRole(s: unknown): s is CursorRole {
   // TODO dtb
   // async findNextViewTmp(): Promise<void> {
   //   await this.conn().createCollection('nextAvailableURL', {
-  //     viewOn: 'host_status',
+  //     viewOn: 'url_status',
   //     pipeline: [
   //       {
   //         $lookup: {

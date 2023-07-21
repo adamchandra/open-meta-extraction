@@ -95,7 +95,7 @@ export const fetchUrl: (pageOpts?: PageInstanceOptions) => Transform<URL, HTTPRe
     const { browserInstance, log, browserPageCache, initialUrl } = env;
 
     const scrapingTask: TE.TaskEither<string, HTTPResponse> = async () => {
-      log.debug(`FetchUrl(): newPage`)
+      log.debug(`FetchUrl(): newPage`);
       const pageInstance = await browserInstance.newPage(pageOpts);
       browserPageCache[initialUrl] = pageInstance;
       blockedResourceReport(pageInstance, log);

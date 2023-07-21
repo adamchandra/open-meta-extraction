@@ -71,8 +71,8 @@ describe('MongoDB Schemas', () => {
         fc.string(), // TODO workflowStatus
         async (noteId, hasAbstract, requestUrl, response, httpStatus, _workflowStatus) => {
           // Insert new document
-          const ret = await mdb.upsertHostStatus(noteId, 'available', { hasAbstract, requestUrl, response, httpStatus });
-          const byId = await mdb.findHostStatusById(noteId);
+          const ret = await mdb.upsertUrlStatus(noteId, 'unknown', { hasAbstract, requestUrl, response, httpStatus });
+          const byId = await mdb.findUrlStatusById(noteId);
           expect(byId).toBeDefined();
           if (byId === undefined) {
             fail('invalid null value');
@@ -82,7 +82,7 @@ describe('MongoDB Schemas', () => {
           expect(byId.validResponseUrl).toEqual(isUrl(response));
           expect(byId.responseHost !== undefined).toEqual(isUrl(response));
 
-          // const lockedStatus = await upsertHostStatus(noteId, 'spider:locked', {});
+          // const lockedStatus = await upsertUrlStatus(noteId, 'spider:locked', {});
         }
       ),
       { verbose: true }

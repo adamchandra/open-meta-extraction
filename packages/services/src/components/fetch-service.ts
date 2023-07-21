@@ -82,11 +82,9 @@ export class FetchService {
     let cur = await noteGenerator.next();
     for (; !cur.done; cur = await noteGenerator.next()) {
       const note = cur.value;
-      putStrLn(`Saving note ${note.id}, #${note.number}`)
-      // this.log.info(`Saving note ${note.id}, #${note.number}`);
+      this.log.info(`Saving note ${note.id}, #${note.number}`);
       await this.shadow.saveNote(note, true);
-      const cursor = await this.updateFetchCursor(note.id);
-      prettyPrint( { cursor } );
+      await this.updateFetchCursor(note.id);
     }
     this.log.info('FetchLoop complete');
   }

@@ -121,7 +121,7 @@ export class FetchService {
   //     const hasAbstract = typeof abs === 'string';
   //     const hasPdfLink = typeof pdfLink === 'string';
   //     const status: WorkflowStatus = hasAbstract && hasPdfLink ? 'extractor:success' : 'available';
-  //     await upsertHostStatus(note.id, status, { hasAbstract, hasPdfLink, requestUrl });
+  //     await upsertUrlStatus(note.id, status, { hasAbstract, hasPdfLink, requestUrl });
   //   });
 
   //   return numProcessed;

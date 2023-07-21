@@ -58,11 +58,11 @@ describe('MongoDB Queries', () => {
 
 
   it('get/update next spiderable host/url', async () => {
-    // select HostStatus hs on hs.requestUrl == ns.url
+    // select UrlStatus hs on hs.requestUrl == ns.url
     //   join FieldStatus fs on fs.
 
 
-    const initEntry = await mdb.upsertHostStatus('asdf', 'available', { hasAbstract: false });
+    const initEntry = await mdb.upsertUrlStatus('asdf', 'unknown', { hasAbstract: false });
 
     expect(initEntry._id).toEqual('asdf');
 
@@ -72,7 +72,7 @@ describe('MongoDB Queries', () => {
 
     // if (nextSpiderable !== undefined) {
     //   const noteId = nextSpiderable._id;
-    //   const updateRes = await mdb.upsertHostStatus(noteId, 'spider:success', {
+    //   const updateRes = await mdb.upsertUrlStatus(noteId, 'spider:success', {
     //     httpStatus: 200
     //   });
     //   expect(updateRes._id).toEqual('asdf');

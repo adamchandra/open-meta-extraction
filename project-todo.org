@@ -48,7 +48,7 @@
 *** Extraction Cursor filters
 **** abstract/pdf-link/both
 **** just process certain domains
-- Use host_status responseUrl to avoid redirect issues
+- Use url_status responseUrl to avoid redirect issues
 *** Operations
 **** Worker locks/owns current cursor
 **** Worker unlocks cursor

@@ -31,7 +31,7 @@ NoteStatusSchema.on('index', error => {
 export const NoteStatus = model<NoteStatus>('NoteStatus', NoteStatusSchema);
 
 type WorkflowStatusKeys = {
-  available: null,
+  unknown: null,
   'processing': null,
   'spider:begun': null,
   'spider:success': null,
@@ -44,7 +44,7 @@ type WorkflowStatusKeys = {
 };
 
 const workflowStatusKeys: WorkflowStatusKeys = {
-  available: null,
+  unknown: null,
   'processing': null,
   'spider:begun': null,
   'spider:success': null,
@@ -63,7 +63,7 @@ export function isWorkflowStatus(s: unknown): s is WorkflowStatus {
   return typeof s === 'string' && _.includes(WorkflowStatuses, s);
 }
 
-export interface HostStatus {
+export interface UrlStatus {
   _id: string;
   hasAbstract: boolean;
   hasPdfLink: boolean;
@@ -78,7 +78,7 @@ export interface HostStatus {
   updatedAt: Date;
 }
 
-export type HostStatusUpdateFields = Partial<Pick<HostStatus,
+export type UrlStatusUpdateFields = Partial<Pick<UrlStatus,
   'hasAbstract'
   | 'hasPdfLink'
   | 'response'
@@ -92,7 +92,7 @@ function NonNullable(v: unknown): boolean {
 }
 
 
-export const HostStatusSchema = new Schema<HostStatus>({
+export const UrlStatusSchema = new Schema<UrlStatus>({
   _id: { type: String },
   hasAbstract: { type: Boolean, required: true },
   hasPdfLink: { type: Boolean, required: true },
@@ -103,15 +103,15 @@ export const HostStatusSchema = new Schema<HostStatus>({
   workflowStatus: { type: String, required: true, index: true, validate: isWorkflowStatus },
   httpStatus: { type: Number, required: false },
 }, {
-  collection: 'host_status',
+  collection: 'url_status',
   timestamps: createCurrentTimeOpt()
 });
 
-HostStatusSchema.on('index', error => {
-  log.error('HostStatus: indexing', error.message);
+UrlStatusSchema.on('index', error => {
+  log.error('UrlStatus: indexing', error.message);
 });
 
-export const HostStatus = model<HostStatus>('HostStatus', HostStatusSchema);
+export const UrlStatus = model<UrlStatus>('UrlStatus', UrlStatusSchema);
 
 
 export interface FetchCursor {
@@ -169,7 +169,7 @@ export const FieldStatus = model<FieldStatus>('FieldStatus', FieldStatusSchema);
 
 export async function createCollections() {
   await NoteStatus.createCollection();
-  await HostStatus.createCollection();
+  await UrlStatus.createCollection();
   await FetchCursor.createCollection();
   await FieldStatus.createCollection();
 }

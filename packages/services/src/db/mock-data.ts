@@ -20,7 +20,7 @@ export async function populateDBHostNoteStatus(mdb: MongoQueries, n: number) {
       const workflowStatus = WorkflowStatuses[wi];
       if (validUrl) {
         const httpStatus = (((index % 4) + 2) * 100) + (index % 3);
-        await mdb.upsertHostStatus(
+        await mdb.upsertUrlStatus(
           `note#${index}`,
           workflowStatus,
           {

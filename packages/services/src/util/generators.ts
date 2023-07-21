@@ -44,17 +44,14 @@ export async function* generateFromBatch<T>(
   limit: number
 ): AsyncGenerator<T, number, void> {
   let nextBatch: T[] = [];
-  // const runForever = count !== undefined && count === 0;
   const runForever = limit === 0;
 
   let index = 0;
 
   for (let i = 0; i < limit || runForever; i++) {
-    putStrLn(`genFromBatch: iter:${i} of limit:${limit}, w/index:${index}`)
     if (index === nextBatch.length) {
       const next = await batchFunc.next();
       if (next.done) {
-        putStrLn(`genFromBatch: done (exhaust)!`)
         return i;
       }
       nextBatch = next.value;
@@ -63,6 +60,5 @@ export async function* generateFromBatch<T>(
     yield nextBatch[index];
     index++;
   }
-  putStrLn(`genFromBatch: done(limit)!`)
   return limit;
 }

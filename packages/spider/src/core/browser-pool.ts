@@ -18,36 +18,222 @@ import { interceptRequestCycle, logBrowserEvent, interceptPageEvents } from './p
 
 import { launchBrowser } from './puppet';
 import { BlockableResource, RewritableUrl, RewritableUrls } from './resource-blocking';
+import { Logger } from 'winston';
 
-export interface BrowserPool {
+export class BrowserPool {
   pool: Pool<BrowserInstance>;
-  acquire(): Promise<BrowserInstance>;
-  release(b: BrowserInstance): Promise<void>;
-  use<A>(f: (browser: BrowserInstance) => A | Promise<A>): Promise<A>;
-  shutdown(): Promise<void>;
-  report(): void;
-  clearCache(): Promise<void>;
   cachedResources: Record<string, BrowserInstance>;
+  log: Logger;
+
+  constructor(pool: Pool<BrowserInstance>) {
+    this.pool = pool;
+    this.log = getServiceLogger('BrowserPool')
+    this.cachedResources = {};
+  }
+  async acquire(): Promise<BrowserInstance> {
+    const acq = this.pool.acquire();
+    const b: BrowserInstance = await acq.promise;
+    const pid = b.pid().toString()
+    this.cachedResources[pid] = b;
+    return b;
+
+  }
+  async release(b: BrowserInstance): Promise<void> {
+    const pid = b.pid().toString()
+    this.log.debug(`this.pool.release(B<${pid}>)`);
+    delete this.cachedResources[pid];
+    let normalShutdown = false;
+
+    b.browser.removeAllListeners();
+    const pages = await b.browser.pages();
+
+    await asyncEach(pages, async (page) => {
+      const url = page.url();
+      page.removeAllListeners();
+      this.log.debug(`    release(Page<${url}>)`);
+      return page.close();
+    });
+    normalShutdown = true;
+    // if (!normalShutdown) {
+    //   this.log.warn(`this.pool.release(B<${pid}>): abnormal shutdown, running kill()`);
+    //   await b.kill();
+    // }
+    await b.kill();
+    // b.browser.
+    this.pool.release(b);
+    this.log.debug(`this.pool.release(B<${pid}>): done`);
+
+  }
+  async use<A>(f: (browser: BrowserInstance) => A | Promise<A>): Promise<A> {
+    const acq = this.pool.acquire();
+    const browser = await acq.promise;
+    const a = await Promise
+      .resolve(f(browser))
+      .finally(() => {
+        this.pool.release(browser);
+      });
+
+    return a;
+
+  }
+  async shutdown(): Promise<void> {
+    this.log.debug('pool.shutdown()');
+    const cachedInstances: Array<[string, BrowserInstance]> = _.toPairs(this.cachedResources);
+    const cachedBrowsers = _.map(cachedInstances, ([, v]) => v);
+    await asyncEach(cachedBrowsers, b => this.release(b));
+
+    await this.pool.destroy();
+
+  }
+  report(): void {
+    const numFree = this.pool.numFree();
+    const numPendingAcquires = this.pool.numPendingAcquires();
+    const numPendingCreates = this.pool.numPendingCreates();
+    const numPendingValidations = this.pool.numPendingValidations();
+    const numUsed = this.pool.numUsed();
+
+    const cachedInstances: Array<[string, BrowserInstance]> = _.toPairs(this.cachedResources);
+    const cachedPIDs = _.map(cachedInstances, ([k]) => k);
+    const cachedInstanceIds = cachedPIDs.join('; ');
+
+    prettyPrint({
+      numUsed,
+      numFree,
+      numPendingAcquires,
+      numPendingCreates,
+      numPendingValidations,
+      cachedInstanceIds
+    });
+
+  }
+  async clearCache(): Promise<void> {
+    this.log.debug('pool.clearCache()');
+    const cachedResources = this.cachedResources;
+    const cachedInstances: Array<[string, BrowserInstance]> = _.toPairs(cachedResources);
+    const cachedBrowsers = _.map(cachedInstances, ([, v]) => v);
+    const cachedPIDs = _.map(cachedInstances, ([k]) => k);
+    await asyncEach(cachedBrowsers, b => this.release(b));
+    _.each(cachedPIDs, pid => {
+      delete cachedResources[pid];
+    });
+
+  }
 }
 
-export interface BrowserInstance {
+export class BrowserInstance {
   browser: Browser;
-  pid(): number;
   logPrefix: string;
   createdAt: Date;
-  newPage(opts: PageInstanceOptions): Promise<PageInstance>;
   events: string[];
-  isStale(): boolean;
-  kill(): Promise<void>;
-  asString(): string;
+  log: Logger;
+
+  constructor(b: Browser) {
+    this.browser = b;
+    this.logPrefix = '';
+    this.createdAt = new Date();
+    this.events = [];
+    this.log = getServiceLogger('Browser')
+  }
+
+  async setupBrowser() {
+    // TODO either re-instantiate browser or just setup event logging
+    logBrowserEvent(this, this.log);
+    const bproc = this.browser.process();
+    if (bproc !== null) {
+      // Triggered on child process stdio streams closing
+      bproc.on('close', (_signum: number, signame: NodeJS.Signals) => {
+        this.log.debug(`Browser#${this.pid()} onClose: ${signame} / ${_signum}`);
+        this.events.push('close');
+      });
+
+      // Triggered on child process final exit
+      bproc.on('exit', (_signum: number, signame: NodeJS.Signals) => {
+        this.log.debug(`Browser#${this.pid()} onExit: ${signame} / ${_signum}`);
+        this.events.push('exit');
+      });
+    }
+  }
+
+  pid(): number {
+
+    const proc = this.browser.process();
+    if (proc === null) return -1;
+    const pid = proc.pid;
+    return pid === undefined ? -1 : pid;
+  }
+
+  async newPage(opts: PageInstanceOptions): Promise<PageInstance> {
+    this.log.debug('newPage:begin');
+    this.log.debug(`newPage:browser.isConnected()=${this.browser.isConnected()}`);
+
+    const page = await this.browser.newPage();
+    this.log.debug('newPage:acquired');
+    page.setDefaultNavigationTimeout(opts.defaultNavigationTimeout);
+    page.setDefaultTimeout(opts.defaultTimeout);
+    page.setJavaScriptEnabled(opts.javaScriptEnabled);
+    page.setRequestInterception(opts.requestInterception);
+    this.log.debug('newPage:setProps');
+
+    const pageInstance = new PageInstance(page, opts);
+    interceptPageEvents(pageInstance, this.log);
+    interceptRequestCycle(pageInstance, this.log);
+    this.log.debug('newPage:done');
+    return pageInstance;
+
+  }
+  isStale(): boolean {
+    const closedOrExited = this.events.some(s => s === 'close' || s === 'exit');
+    return closedOrExited;
+
+  }
+  async kill(): Promise<void> {
+    const bproc = this.browser.process();
+    if (bproc === null) return;
+
+    const pid = bproc.pid;
+    if (pid === undefined) return;
+
+    return new Promise(resolve => {
+      bproc.removeAllListeners();
+
+      bproc.on('exit', (_signum: number, signame: NodeJS.Signals) => {
+        this.log.debug(`Killed Browser#${pid}: ${signame}`);
+        this.events.push('exit');
+        resolve();
+      });
+
+      try {
+        process.kill(pid, 'SIGKILL');
+      } catch (error) {
+        this.log.debug(`process.kill() error: ${error}`);
+        this.events.push('exit');
+        resolve();
+      }
+    });
+  }
+
+  asString(): string {
+    const pid = this.pid();
+    return `Browser#${pid}`;
+  }
 }
 
-export interface PageInstance {
+export class PageInstance {
   page: Page;
   logPrefix: string;
   createdAt: Date;
   opts: PageInstanceOptions;
-  gotoUrl(url: string): Promise<E.Either<string, HTTPResponse>>;
+
+  constructor(page: Page, opts: PageInstanceOptions) {
+    this.page = page;
+    this.createdAt = new Date();
+    this.opts = opts;
+    this.logPrefix = '';
+  }
+
+  async gotoUrl(url: string): Promise<E.Either<string, HTTPResponse>> {
+    return gotoUrlSimpleVersion(this, url);
+  }
 }
 
 export interface PageInstanceOptions {
@@ -84,93 +270,27 @@ export const ScriptablePageInstanceOptions: PageInstanceOptions = {
   requestInterception: true,
 };
 
-export function createBrowserPool(): BrowserPool {
-  const log = getServiceLogger(`browser-pool`);
 
+
+export function createUnderlyingPool(): Pool<BrowserInstance> {
+  const log = getServiceLogger(`pool<browser>`);
   const pool = new Pool<BrowserInstance>({
     async create(): Promise<BrowserInstance> {
-      const logPrefix: string = '';
       return launchBrowser().then(browser => {
-        const browserInstance: BrowserInstance = {
-          browser,
-          asString(): string {
-            const pid = this.pid();
-            return `Browser#${pid}`;
-          },
-          async kill(): Promise<void> {
-            const bproc = this.browser.process();
-            if (bproc === null) return;
-
-            const pid = bproc.pid;
-            if (pid === undefined) return;
-
-            return new Promise(resolve => {
-              bproc.removeAllListeners();
-
-              bproc.on('exit', (_signum: number, signame: NodeJS.Signals) => {
-                log.debug(`Killed Browser#${pid}: ${signame}`);
-                browserInstance.events.push('exit');
-                resolve();
-              });
-
-              try {
-                process.kill(pid, 'SIGKILL');
-              } catch (error) {
-                log.debug(`process.kill() error: ${error}`);
-                this.events.push('exit');
-                resolve();
-              }
-            });
-
-          },
-          isStale(): boolean {
-            const closedOrExited = this.events.some(s => s === 'close' || s === 'exit');
-            return closedOrExited;
-          },
-          events: [],
-          pid(): number {
-            const proc = browser.process();
-            if (proc === null) return -1;
-            const pid = proc.pid;
-            return pid === undefined ? -1 : pid;
-          },
-          logPrefix,
-          createdAt: new Date(),
-
-          async newPage(opts: PageInstanceOptions): Promise<PageInstance> {
-            const page = await browser.newPage();
-            page.setDefaultNavigationTimeout(opts.defaultNavigationTimeout);
-            page.setDefaultTimeout(opts.defaultTimeout);
-            page.setJavaScriptEnabled(opts.javaScriptEnabled);
-            page.setRequestInterception(opts.requestInterception);
-
-            const pageInstance: PageInstance = {
-              page,
-              logPrefix,
-              createdAt: new Date(),
-              opts,
-              gotoUrl(url: string): Promise<E.Either<string, HTTPResponse>> {
-                return gotoUrlSimpleVersion(this, url);
-              }
-            };
-            interceptPageEvents(pageInstance, log);
-            interceptRequestCycle(pageInstance, log);
-            return pageInstance;
-          }
-        };
+        const browserInstance = new BrowserInstance(browser);
 
         logBrowserEvent(browserInstance, log);
         const bproc = browser.process();
         if (bproc !== null) {
           // Triggered on child process stdio streams closing
           bproc.on('close', (_signum: number, signame: NodeJS.Signals) => {
-            log.debug(`Browser#${browserInstance.pid()} onClose: ${signame}`);
+            log.debug(`Browser#${browserInstance.pid()} onClose: ${signame} / ${_signum}`);
             browserInstance.events.push('close');
           });
 
           // Triggered on child process final exit
           bproc.on('exit', (_signum: number, signame: NodeJS.Signals) => {
-            log.debug(`Browser#${browserInstance.pid()} onExit: ${signame}`);
+            log.debug(`Browser#${browserInstance.pid()} onExit: ${signame} / ${_signum}`);
             browserInstance.events.push('exit');
           });
         }
@@ -267,93 +387,17 @@ export function createBrowserPool(): BrowserPool {
     pool.destroy();
   }, { alwaysLast: false });
 
-
-  return {
-    pool,
-    cachedResources: {},
-    async acquire(): Promise<BrowserInstance> {
-      const acq = pool.acquire();
-      const b: BrowserInstance = await acq.promise;
-      const pid = b.pid().toString()
-      this.cachedResources[pid] = b;
-      return b;
-    },
-    async clearCache(): Promise<void> {
-      log.debug('pool.clearCache()');
-      const cachedResources = this.cachedResources;
-      const cachedInstances: Array<[string, BrowserInstance]> = _.toPairs(cachedResources);
-      const cachedBrowsers = _.map(cachedInstances, ([, v]) => v);
-      const cachedPIDs = _.map(cachedInstances, ([k]) => k);
-      await asyncEach(cachedBrowsers, b => this.release(b));
-      _.each(cachedPIDs, pid => {
-        delete cachedResources[pid];
-      });
-    },
-    async release(b: BrowserInstance): Promise<void> {
-      const pid = b.pid().toString()
-      log.debug(`pool.release(B<${pid}>)`);
-      delete this.cachedResources[pid];
-      let normalShutdown = false;
-
-      b.browser.removeAllListeners();
-      const pages = await b.browser.pages();
-
-      await asyncEach(pages, async (page) => {
-        const url = page.url();
-        page.removeAllListeners();
-        log.debug(`    release(Page<${url}>)`);
-        return page.close();
-      });
-      normalShutdown = true;
-      if (!normalShutdown) {
-        log.warn(`pool.release(B<${pid}>): abnormal shutdown, running kill()`);
-        await b.kill();
-      }
-      pool.release(b);
-      log.debug(`pool.release(B<${pid}>): done`);
-    },
-    async use<A>(f: (browser: BrowserInstance) => A | Promise<A>): Promise<A> {
-      const acq = this.pool.acquire();
-      const browser = await acq.promise;
-      const a = await Promise
-        .resolve(f(browser))
-        .finally(() => {
-          this.pool.release(browser);
-        });
-
-      return a;
-    },
-    async shutdown() {
-      log.debug('pool.shutdown()');
-      const cachedInstances: Array<[string, BrowserInstance]> = _.toPairs(this.cachedResources);
-      const cachedBrowsers = _.map(cachedInstances, ([, v]) => v);
-      await asyncEach(cachedBrowsers, b => this.release(b));
-
-      await pool.destroy();
-    },
-    report() {
-      const numFree = this.pool.numFree();
-      const numPendingAcquires = this.pool.numPendingAcquires();
-      const numPendingCreates = this.pool.numPendingCreates();
-      const numPendingValidations = this.pool.numPendingValidations();
-      const numUsed = this.pool.numUsed();
-
-      const cachedInstances: Array<[string, BrowserInstance]> = _.toPairs(this.cachedResources);
-      const cachedPIDs = _.map(cachedInstances, ([k]) => k);
-      const cachedInstanceIds = cachedPIDs.join('; ');
-
-      prettyPrint({
-        numUsed,
-        numFree,
-        numPendingAcquires,
-        numPendingCreates,
-        numPendingValidations,
-        cachedInstanceIds
-      });
-    },
-
-  };
+  return pool;
 }
+
+
+export function createBrowserPool(): BrowserPool {
+  const pool = createUnderlyingPool();
+  const browserPool = new BrowserPool(pool);
+  return browserPool;
+}
+
+
 
 async function gotoUrlSimpleVersion(pageInstance: PageInstance, url: string): Promise<E.Either<string, HTTPResponse>> {
   const { page, opts } = pageInstance;
@@ -361,7 +405,7 @@ async function gotoUrlSimpleVersion(pageInstance: PageInstance, url: string): Pr
 
   return page.goto(url, { waitUntil })
     .then(resp => {
-      if (resp===null) {
+      if (resp === null) {
         return E.left(`null HTTPResponse to ${url}`);
       }
       return E.right(resp);
