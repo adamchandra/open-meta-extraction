@@ -20,32 +20,6 @@ import { parseSchedule } from '~/util/scheduler';
 const { opt, config, registerCmd } = arglib;
 
 export function registerCommands(yargv: arglib.YArgsT) {
-  // TODO delete dead code
-  //   registerCmd(
-  //     yargv, 'pm2-restart', 'Notification/Restart scheduler'
-  //   )(async () => {
-  //     const log = getServiceLogger('PM2Restart');
-  //     log.info('PM2 Restart');
-
-  //     const skipRE = /(pm2.?restart|scheduler)/i;
-  //     const appList = await pm2x.list();
-  //     const appNames = appList.map(a => a.name || '').filter(n => n.length > 0);
-
-  //     await asyncEachSeries(appNames, async (name) => {
-  //       if (skipRE.test(name)) {
-  //         return;
-  //       }
-  //       log.info(`stopping ${name}`);
-  //       return pm2x.stop(name);
-  //     });
-  //     await asyncEachSeries(appNames, async (name) => {
-  //       if (skipRE.test(name)) {
-  //         return;
-  //       }
-  //       log.info(`restarting ${name}`);
-  //       return pm2x.restart(name);
-  //     });
-  //   });
 
   registerCmd(
     yargv, 'test-scheduler', 'Testing app for scheduler'
@@ -71,12 +45,12 @@ export function registerCommands(yargv: arglib.YArgsT) {
   registerCmd(
     yargv, 'echo', 'Echo message to stdout', config(
       opt.str('message: the message to echo'),
-    ))(async (args: any) => {
-    const { message } = args;
-    const log = getServiceLogger('Echo');
-    putStrLn(`echo> ${message}`);
-    log.info(`log/echo> ${message}`);
-  });
+    ))((args: any) => {
+      const { message } = args;
+      const log = getServiceLogger('Echo');
+      putStrLn(`echo> ${message}`);
+      log.info(`log/echo> ${message}`);
+    });
 
   registerCmd(
     yargv,

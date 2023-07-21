@@ -1,6 +1,6 @@
 // import { createPM2CliJob } from './eco-helpers';
 import _ from 'lodash';
-import { createScheduledCliJob } from './eco-helpers';
+import { createDirectCliJob, createScheduledCliJob } from './eco-helpers';
 
 
 const apps = [
@@ -11,7 +11,8 @@ const apps = [
 
   // TODO: Specify whether fetch results should be recorded locally, for testing
   // TODO monitor the time it takes to make openreview rest queries
-  createScheduledCliJob({ app: 'run-fetch-service', schedule: 'every 4 hours', immediate: true }),
+  createDirectCliJob('run-fetch-service', '--limit=20'),
+  createDirectCliJob('run-extraction-service', '--post-results=false --limit=10'),
 
   // UTC time = EST + 4 hours
   // createScheduledCliJob({ app: 'run-monitor-service', schedule: 'at 12:00 AM also at 12:00 PM' }),

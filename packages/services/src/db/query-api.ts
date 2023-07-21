@@ -1,12 +1,11 @@
 import _ from 'lodash';
 import * as E from 'fp-ts/Either';
 import { Document, Mongoose, Types } from 'mongoose';
-import { asyncEachSeries, asyncMapSeries, getServiceLogger, initConfig, prettyPrint, shaEncodeAsHex, validateUrl } from '@watr/commonlib';
+import { asyncMapSeries, getServiceLogger, initConfig, shaEncodeAsHex, validateUrl } from '@watr/commonlib';
 import { Logger } from 'winston';
 import { FetchCursor, FieldStatus, UrlStatus, UrlStatusUpdateFields, NoteStatus, WorkflowStatus, createCollections } from './schemas';
 import { connectToMongoDB } from './mongodb';
 import { UpdatableField } from '~/components/openreview-gateway';
-// import { TransactionOptions } from 'mongodb';
 
 export type CursorID = Types.ObjectId;
 export type UrlStatusDocument = Document<unknown, any, UrlStatus> & UrlStatus;
@@ -336,96 +335,3 @@ export const CursorRoles: CursorRole[] = ['fetch-openreview-notes', 'extract-fie
 export function isCursorRole(s: unknown): s is CursorRole {
   return typeof s === 'string' && _.includes(CursorRoles, s)
 }
-// Advance the cursor using transactions, which only works if MongoDB is running with replication sets.
-// async advanceCursorReplSet(cursorId: CursorID): Promise<FetchCursor | undefined> {
-//   const sess = await this.conn().startSession();
-
-//   try {
-
-//     await sess.withTransaction(async (session) => {
-//       const released = await FetchCursor.findById(cursorId, null, { session });
-//       if (!released) return;
-//       const { noteNumber } = released;
-//       const noteStatus = await NoteStatus.findOne(
-  //         { number: { $gt: noteNumber }, validUrl: true },
-  //         null,
-  //         { session }
-  //       );
-  //       if (!noteStatus) {
-  //         await session.abortTransaction();
-  //         return;
-  //       };
-
-  //       const advanced = await FetchCursor.findByIdAndUpdate(
-  //         cursorId,
-  //         { noteId: noteStatus._id, lockStatus: 'available' },
-  //         { session }
-  //       );
-
-  //       if (!advanced) {
-  //         await session.abortTransaction();
-  //         return;
-  //       };
-  //     });
-
-  //   } finally {
-  //     await sess.endSession();
-  //   }
-  //   const c = await FetchCursor.findById(cursorId);
-  //   if (c) return c;
-  // }
-
-  // TODO delete code block
-  // async resetUrlsWithMissingFields(): Promise<void> {
-  //   const resetUrlsWithoutAbstractsUpdate = await UrlStatus.updateMany({
-  //     hasAbstract: false,
-  //     httpStatus: { $not: { $in: [404, 500] } }
-  //   }, {
-  //     workflowStatus: 'available'
-  //   });
-
-  //   const resetUrlsWithoutPdfLinkUpdate = await UrlStatus.updateMany({
-  //     hasPdfLink: false,
-  //     httpStatus: { $not: { $in: [404, 500] } }
-  //   }, {
-  //     workflowStatus: 'available'
-  //   });
-  //   const resetLockedUrlsUpdate = await UrlStatus.updateMany({
-  //     workflowStatus: { $in: ['spider-locked', 'extractor-locked'] }
-  //   }, {
-  //     workflowStatus: 'available'
-  //   });
-
-  //   prettyPrint({ resetUrlsWithoutAbstractsUpdate, resetUrlsWithoutPdfLinkUpdate, resetLockedUrlsUpdate });
-  // }
-
-  // TODO dtb
-  // async findNextViewTmp(): Promise<void> {
-  //   await this.conn().createCollection('nextAvailableURL', {
-  //     viewOn: 'url_status',
-  //     pipeline: [
-  //       {
-  //         $lookup: {
-  //           from: "field_status",
-  //           localField: "_id",
-  //           foreignField: "noteId",
-  //           as: "inventoryDocs"
-  //         }
-  //       },
-  //       {
-  //         $project:
-  //         {
-  //           _id: 0,
-  //           prodId: 1,
-  //           orderId: 1,
-  //           numPurchased: 1,
-  //           price: "$inventoryDocs.price"
-  //         }
-  //       },
-  //       { $unwind: "$price" }
-  //     ]
-  //     // collation: {  }
-  //     // {
-  //   })
-
-  // }

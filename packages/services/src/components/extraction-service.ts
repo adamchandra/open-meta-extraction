@@ -62,12 +62,25 @@ export class ExtractionService {
     const corpusRoot = getCorpusRootDir();
     const browserPool = createBrowserPool();
 
-    const maxRate = 5 * 1000;// 5 second max spidering rate
+    const oneSecond = 1000;
+    const oneMinute = 60 * oneSecond;
+    const oneHour = 60 * oneMinute;
+
+    const pauseIntervalAfterNoteExhaustion = 2 * oneHour;
+    // Don't run faster than given rate
+    const minTimePerIteration = 5 * oneSecond;
     let currTime = new Date();
 
     async function stopCondition(msg: string): Promise<boolean> {
       putStrLn(`stopCondition(msg=${msg})`);
       if (msg === 'done') {
+
+        if (runForever) {
+          // Pause before exiting.
+          // PM2 will relaunch immediately
+          await delay(pauseIntervalAfterNoteExhaustion)
+        }
+
         return true;
       }
       await browserPool.clearCache();
@@ -78,7 +91,7 @@ export class ExtractionService {
       if (atCountLimit && !runForever) {
         return true;
       }
-      currTime = await self.rateLimit(currTime, maxRate);
+      currTime = await self.rateLimit(currTime, minTimePerIteration);
       return atCountLimit && !runForever;
     }
 
@@ -91,7 +104,6 @@ export class ExtractionService {
         this.log.debug(msg);
 
         if (!nextNoteCursor) {
-          // TODO maybe just pause for a while instead of exiting and relying on bree to restart
           this.log.info('No more spiderable URLs available');
           return 'done';
         }
@@ -122,7 +134,7 @@ export class ExtractionService {
 
 
         if (E.isLeft(fieldExtractionResults)) {
-          const [errCode, { urlFetchData }]= fieldExtractionResults.left;
+          const [errCode, { urlFetchData }] = fieldExtractionResults.left;
           self.log.debug(`Extraction Failed, exiting...`);
 
           const { status } = urlFetchData;

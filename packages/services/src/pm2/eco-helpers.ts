@@ -2,10 +2,10 @@ import { ENV_MODE, putStrLn } from '@watr/commonlib';
 import _ from 'lodash';
 import { mungeJobName } from './bree-helpers';
 
-// const PM2_RUN_CLI_SCRIPT = './dist/src/cli/index.js';
 const PM2_RUN_CLI_SCRIPT = './dist/src/pm2/jobs/run-cli.js';
+const DIRECT_RUN_CLI_SCRIPT = './dist/src/cli/index.js';
 
-function createPM2Job(name: string, script: string, conf: Partial<PM2JobConfig>): Partial<PM2JobConfig> {
+export function createPM2Job(name: string, script: string, conf: Partial<PM2JobConfig>): Partial<PM2JobConfig> {
   const cwd = process.cwd();
 
   return {
@@ -23,6 +23,12 @@ function createPM2Job(name: string, script: string, conf: Partial<PM2JobConfig>)
     },
     ...conf,
   };
+}
+
+export function createDirectCliJob(app: string, args: string): Partial<PM2JobConfig> {
+  const qualifiedName = mungeJobName(app);
+  const appAndArgs = `${app} ${args}`;
+  return createPM2Job(qualifiedName, DIRECT_RUN_CLI_SCRIPT, { args: appAndArgs, autorestart: true });
 }
 
 export function createPM2CliJob(cliName: string, conf: Partial<PM2JobConfig> = {}): Partial<PM2JobConfig> {
@@ -48,7 +54,7 @@ export function createScheduledCliJob({
   once
 }: CreateScheduledCliJobArgs): Partial<PM2JobConfig> {
   const qualifiedName = mungeJobName(app, appNameSuffix);
-  const appAndArgV = app + (args? ` ${args}`: '');
+  const appAndArgV = app + (args ? ` ${args}` : '');
   if (schedule === undefined) {
     putStrLn(`Starting immediate job: ${qualifiedName}`);
     return createPM2Job(qualifiedName, PM2_RUN_CLI_SCRIPT, { args: appAndArgV, autorestart: !once });

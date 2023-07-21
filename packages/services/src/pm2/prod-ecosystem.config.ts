@@ -1,12 +1,9 @@
 import _ from 'lodash';
 import { createScheduledCliJob } from './eco-helpers';
 
-// TODO env.dryrun to start everything but not make state changes...
-const isDryRun = process.env.DRY_RUN;
-if (isDryRun) {}
 const apps = [
+  // TODO cron job to cleanup
 
-  // TODO constant job, but need to monitor and cleanup after running
   createScheduledCliJob({ app: 'run-extraction-service', args: '--post-results' }),
 
   // TODO: Specify whether fetch results should be recorded locally, for testing

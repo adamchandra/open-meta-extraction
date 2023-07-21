@@ -1,6 +1,7 @@
 import _ from 'lodash';
 
 import {
+  delay,
   getServiceLogger, prettyPrint, putStrLn
 } from '@watr/commonlib';
 
@@ -68,11 +69,12 @@ export class FetchService {
     return this.shadow.getLastFetchedNote();
   }
 
+
   async runFetchLoop(limit?: number) {
-    limit = _.isNumber(limit) && limit > 0? limit : undefined;
+    limit = _.isNumber(limit) && limit > 0 ? limit : undefined;
     this.log.info('Starting Fetch Service');
     const startingNote = await this.getFetchCursor();
-    const startingNoteId = startingNote? startingNote.noteId : undefined;
+    const startingNoteId = startingNote ? startingNote.noteId : undefined;
     if (startingNoteId) {
       this.log.info(`Resuming Fetch Service from note ${startingNoteId}`);
     }
@@ -87,5 +89,15 @@ export class FetchService {
       await this.updateFetchCursor(note.id);
     }
     this.log.info('FetchLoop complete');
+    if (limit === 0) {
+      // Pause for a given time period, then exit
+      // PM2 will relaunch
+
+      const oneSecond = 1000;
+      const oneMinute = 60 * oneSecond;
+      const oneHour = 60 * oneMinute;
+      this.log.info('Delaying for 4 hours before restart');
+      await delay(4 * oneHour);
+    }
   }
 }

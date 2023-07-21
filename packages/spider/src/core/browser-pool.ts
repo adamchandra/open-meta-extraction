@@ -135,8 +135,7 @@ export class BrowserInstance {
     this.log = getServiceLogger('Browser')
   }
 
-  async setupBrowser() {
-    // TODO either re-instantiate browser or just setup event logging
+  installEventHandlers(): void {
     logBrowserEvent(this, this.log);
     const bproc = this.browser.process();
     if (bproc !== null) {
@@ -278,22 +277,7 @@ export function createUnderlyingPool(): Pool<BrowserInstance> {
     async create(): Promise<BrowserInstance> {
       return launchBrowser().then(browser => {
         const browserInstance = new BrowserInstance(browser);
-
-        logBrowserEvent(browserInstance, log);
-        const bproc = browser.process();
-        if (bproc !== null) {
-          // Triggered on child process stdio streams closing
-          bproc.on('close', (_signum: number, signame: NodeJS.Signals) => {
-            log.debug(`Browser#${browserInstance.pid()} onClose: ${signame} / ${_signum}`);
-            browserInstance.events.push('close');
-          });
-
-          // Triggered on child process final exit
-          bproc.on('exit', (_signum: number, signame: NodeJS.Signals) => {
-            log.debug(`Browser#${browserInstance.pid()} onExit: ${signame} / ${_signum}`);
-            browserInstance.events.push('exit');
-          });
-        }
+        browserInstance.installEventHandlers();
         return browserInstance;
       }).catch(error => {
         log.error(error);

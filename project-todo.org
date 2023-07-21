@@ -2,14 +2,11 @@
 
 ** TASK Modify openreview note fetcher to use '?after=' param
 *** Fetch Service
-- [-] Modify runRelayFetch logic to store and use last known noteId (most recently fetched).
+- [X] Modify runRelayFetch logic to store and use last known noteId (most recently fetched).
   - [X] Implement a note iterator/generator with a limit count
-  - [ ] Use named cursor
+  - [X] Use named cursor
     e.g., 'front/abstract', 'rear/*'
-  - [ ] Store note nums in db such that it is easy to tell if there are gaps in our fetched list
-    - e.g., forward note cursor, reverse note cursor
-    - this would mean including all nums, including those we can't use (marked as 'unusable' or something)
-  - [ ] Run fetching w/ sort num:asc
+  - [X] Run fetching w/ sort num:asc
 - [ ] Create logic to re-run fetch for all papers
   - [ ] Use named cursors, stored in mongodb
 - [X] Create test plan
@@ -26,12 +23,12 @@
 
 
 ** Next Actions
-- [ ] Create top-level fetch loops, parameterized for different cursors
 
-- [X] Create FieldStatus collection, store abs/pdf attempts/status/value-hash individually
-- [X] Create cursor collection
-- [X] add 'number' field to note
-- [ ] Create mongo migration
+- [ ] Deploy new code manually
+  - [ ] merge adam -> iesl
+  - [ ] Get PM2 running w/o bree wrapper
+
+- [ ] refactor monitor/stats module to show basic functionality
 
 
 ** Ideas
@@ -41,6 +38,9 @@
     when they change
   - re-extracting from the beginning is a local-only operation,
     make a log record when updates should/do happen
+- use PM2 hooks to autodeploy
+- allow multiple extraction workers when responseUrl is known and hosts can be spread out over time
+- Make spider not write body/header files (use cli option to control behavior)
 
 ** Cursor design/implementation
 *** Cursor is (noteId, role)

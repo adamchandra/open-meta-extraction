@@ -268,7 +268,7 @@ export const configFile = (ya: Argv): Argv => {
 };
 
 
-// TODO this causes a compiler crash!!!!
+// N.B. this causes a compiler crash in typescript >= 5.* !!!!
 // export const setOptx = (ya: Argv) => {
 //   return ya.option;
 // };
